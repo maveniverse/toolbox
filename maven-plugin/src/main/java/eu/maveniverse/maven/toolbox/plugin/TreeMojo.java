@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -38,7 +39,7 @@ public class TreeMojo extends AbstractMojo {
     private MavenProject mavenProject;
 
     @Override
-    public void execute() throws MojoExecutionException {
+    public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             ArtifactTypeRegistry artifactTypeRegistry =
@@ -58,6 +59,8 @@ public class TreeMojo extends AbstractMojo {
             collectResult.getRoot().accept(new DependencyGraphDumper(getLog()::info));
         } catch (DependencyCollectionException e) {
             throw new MojoExecutionException(e);
+        } catch (IllegalArgumentException e) {
+            throw new MojoFailureException(e);
         }
     }
 }

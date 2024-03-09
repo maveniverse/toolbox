@@ -9,6 +9,7 @@ import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
 import java.util.Locale;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -39,7 +40,7 @@ public class GavTreeMojo extends AbstractMojo {
     private boolean verbose;
 
     @Override
-    public void execute() throws MojoExecutionException {
+    public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             Toolbox toolbox = new ToolboxImpl(context);
@@ -51,6 +52,8 @@ public class GavTreeMojo extends AbstractMojo {
             collectResult.getRoot().accept(new DependencyGraphDumper(getLog()::info));
         } catch (DependencyCollectionException e) {
             throw new MojoExecutionException(e);
+        } catch (IllegalArgumentException e) {
+            throw new MojoFailureException(e);
         }
     }
 }

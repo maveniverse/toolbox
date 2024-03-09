@@ -5,7 +5,6 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -61,9 +60,7 @@ public class ToolboxImpl implements Toolbox {
 
         CollectRequest collectRequest = new CollectRequest();
         collectRequest.setRootArtifact(root);
-        collectRequest.setDependencies(dependencies.stream()
-                .filter(d -> !resolutionScope.getDirectExcludedScopes().contains(d.getScope()))
-                .collect(Collectors.toList()));
+        collectRequest.setDependencies(dependencies);
         collectRequest.setManagedDependencies(managedDependencies);
         collectRequest.setRepositories(remoteRepositories);
         collectRequest.setRequestContext("project");

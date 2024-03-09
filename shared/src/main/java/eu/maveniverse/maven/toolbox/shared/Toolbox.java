@@ -1,9 +1,7 @@
 package eu.maveniverse.maven.toolbox.shared;
 
 import eu.maveniverse.maven.toolbox.shared.internal.ScopeDependencySelector;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -19,33 +17,17 @@ import org.eclipse.aether.util.filter.ScopeDependencyFilter;
 public interface Toolbox {
     enum ResolutionScope {
         COMPILE(
-                Collections.emptyList(),
                 ScopeDependencySelector.fromDirect(null, Arrays.asList(JavaScopes.RUNTIME, JavaScopes.TEST)),
                 new ScopeDependencyFilter(null, Arrays.asList(JavaScopes.RUNTIME, JavaScopes.TEST))),
-        RUNTIME(
-                Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST),
-                ScopeDependencySelector.fromRoot(null, Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
-                null),
-        TEST(
-                Collections.emptyList(),
-                ScopeDependencySelector.fromDirect(null, Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
-                null);
+        RUNTIME(ScopeDependencySelector.fromRoot(null, Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)), null),
+        TEST(ScopeDependencySelector.fromDirect(null, Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)), null);
 
-        private final List<String> directExcludedScopes;
         private final ScopeDependencySelector scopeDependencySelector;
         private final ScopeDependencyFilter scopeDependencyFilter;
 
-        ResolutionScope(
-                List<String> directExcludedScopes,
-                ScopeDependencySelector scopeDependencySelector,
-                ScopeDependencyFilter scopeDependencyFilter) {
-            this.directExcludedScopes = Collections.unmodifiableList(new ArrayList<>(directExcludedScopes));
+        ResolutionScope(ScopeDependencySelector scopeDependencySelector, ScopeDependencyFilter scopeDependencyFilter) {
             this.scopeDependencySelector = scopeDependencySelector;
             this.scopeDependencyFilter = scopeDependencyFilter;
-        }
-
-        public List<String> getDirectExcludedScopes() {
-            return directExcludedScopes;
         }
 
         public ScopeDependencySelector getScopeDependencySelector() {

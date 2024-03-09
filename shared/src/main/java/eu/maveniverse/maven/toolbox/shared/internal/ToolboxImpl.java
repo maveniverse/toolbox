@@ -2,12 +2,11 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.RequestTrace;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectRequest;
@@ -29,15 +28,14 @@ import org.slf4j.LoggerFactory;
 
 public class ToolboxImpl implements Toolbox {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final RepositorySystem repositorySystem;
+    private final Context context;
 
-    public ToolboxImpl(RepositorySystem repositorySystem) {
-        this.repositorySystem = requireNonNull(repositorySystem);
+    public ToolboxImpl(Context context) {
+        this.context = requireNonNull(context);
     }
 
     @Override
     public CollectResult collectAsProject(
-            RepositorySystemSession repositorySystemSession,
             ResolutionScope resolutionScope,
             Artifact root,
             List<Dependency> dependencies,
@@ -45,10 +43,9 @@ public class ToolboxImpl implements Toolbox {
             List<RemoteRepository> remoteRepositories,
             boolean verbose)
             throws DependencyCollectionException {
-        requireNonNull(repositorySystemSession);
         requireNonNull(resolutionScope);
 
-        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(repositorySystemSession);
+        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
         if (verbose) {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
             session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
@@ -67,7 +64,7 @@ public class ToolboxImpl implements Toolbox {
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
 
         logger.debug("Collecting {}", collectRequest);
-        CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
+        CollectResult result = context.repositorySystem().collectDependencies(session, collectRequest);
         if (resolutionScope.getScopeDependencyFilter() != null) {
             CloningDependencyVisitor cloning = new CloningDependencyVisitor();
             FilteringDependencyVisitor filter =
@@ -80,17 +77,15 @@ public class ToolboxImpl implements Toolbox {
 
     @Override
     public CollectResult collectAsDependency(
-            RepositorySystemSession repositorySystemSession,
             ResolutionScope resolutionScope,
             Dependency root,
             List<RemoteRepository> remoteRepositories,
             boolean verbose)
             throws DependencyCollectionException {
-        requireNonNull(repositorySystemSession);
         requireNonNull(resolutionScope);
         requireNonNull(root);
 
-        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(repositorySystemSession);
+        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
         if (verbose) {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
             session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
@@ -107,7 +102,7 @@ public class ToolboxImpl implements Toolbox {
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
 
         logger.debug("Collecting {}", collectRequest);
-        CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
+        CollectResult result = context.repositorySystem().collectDependencies(session, collectRequest);
         if (resolutionScope.getScopeDependencyFilter() != null) {
             CloningDependencyVisitor cloning = new CloningDependencyVisitor();
             FilteringDependencyVisitor filter =
@@ -119,16 +114,12 @@ public class ToolboxImpl implements Toolbox {
     }
 
     @Override
-    public List<ArtifactResult> resolveArtifacts(
-            RepositorySystemSession repositorySystemSession,
-            List<Artifact> artifacts,
-            List<RemoteRepository> remoteRepositories)
+    public List<ArtifactResult> resolveArtifacts(List<Artifact> artifacts, List<RemoteRepository> remoteRepositories)
             throws ArtifactResolutionException {
-        requireNonNull(repositorySystemSession);
         requireNonNull(artifacts);
 
         List<ArtifactRequest> artifactRequests = new ArrayList<>();
         artifacts.forEach(a -> artifactRequests.add(new ArtifactRequest(a, remoteRepositories, null)));
-        return repositorySystem.resolveArtifacts(repositorySystemSession, artifactRequests);
+        return context.repositorySystem().resolveArtifacts(context.repositorySystemSession(), artifactRequests);
     }
 }

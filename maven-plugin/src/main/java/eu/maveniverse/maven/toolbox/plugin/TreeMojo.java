@@ -43,12 +43,9 @@ public class TreeMojo extends AbstractMojo {
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             ArtifactTypeRegistry artifactTypeRegistry =
                     context.repositorySystemSession().getArtifactTypeRegistry();
-            Toolbox toolbox = new ToolboxImpl(context.repositorySystem());
-            Toolbox.ResolutionScope resolutionScope =
-                    Toolbox.ResolutionScope.valueOf(scope.toUpperCase(Locale.ENGLISH));
+            Toolbox toolbox = new ToolboxImpl(context);
             CollectResult collectResult = toolbox.collectAsProject(
-                    context.repositorySystemSession(),
-                    resolutionScope,
+                    Toolbox.ResolutionScope.valueOf(scope.toUpperCase(Locale.ENGLISH)),
                     RepositoryUtils.toArtifact(mavenProject.getArtifact()),
                     mavenProject.getDependencies().stream()
                             .map(d -> RepositoryUtils.toDependency(d, artifactTypeRegistry))

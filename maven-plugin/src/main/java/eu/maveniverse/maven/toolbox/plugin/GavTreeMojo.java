@@ -42,12 +42,9 @@ public class GavTreeMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            Toolbox toolbox = new ToolboxImpl(context.repositorySystem());
-            Toolbox.ResolutionScope resolutionScope =
-                    Toolbox.ResolutionScope.valueOf(scope.toUpperCase(Locale.ENGLISH));
+            Toolbox toolbox = new ToolboxImpl(context);
             CollectResult collectResult = toolbox.collectAsDependency(
-                    context.repositorySystemSession(),
-                    resolutionScope,
+                    Toolbox.ResolutionScope.valueOf(scope.toUpperCase(Locale.ENGLISH)),
                     new Dependency(new DefaultArtifact(gav), scope),
                     context.remoteRepositories(),
                     verbose);

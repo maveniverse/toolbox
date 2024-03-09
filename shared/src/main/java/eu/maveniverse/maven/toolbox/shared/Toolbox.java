@@ -3,7 +3,6 @@ package eu.maveniverse.maven.toolbox.shared;
 import eu.maveniverse.maven.toolbox.shared.internal.ScopeDependencySelector;
 import java.util.Arrays;
 import java.util.List;
-import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
@@ -44,7 +43,6 @@ public interface Toolbox {
      * dependencies for given resolution scope.
      */
     CollectResult collectAsProject(
-            RepositorySystemSession repositorySystemSession,
             ResolutionScope resolutionScope,
             Artifact root,
             List<Dependency> dependencies,
@@ -57,7 +55,6 @@ public interface Toolbox {
      * Collects given existing {@link Dependency} by reusing POM information for given resolution scope.
      */
     CollectResult collectAsDependency(
-            RepositorySystemSession repositorySystemSession,
             ResolutionScope resolutionScope,
             Dependency root,
             List<RemoteRepository> remoteRepositories,
@@ -67,9 +64,6 @@ public interface Toolbox {
     /**
      * Resolves given artifacts from given remote repositories.
      */
-    List<ArtifactResult> resolveArtifacts(
-            RepositorySystemSession repositorySystemSession,
-            List<Artifact> artifacts,
-            List<RemoteRepository> remoteRepositories)
+    List<ArtifactResult> resolveArtifacts(List<Artifact> artifacts, List<RemoteRepository> remoteRepositories)
             throws ArtifactResolutionException;
 }

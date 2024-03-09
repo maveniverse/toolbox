@@ -30,14 +30,23 @@ import org.eclipse.aether.graph.Dependency;
  * @see Dependency#isOptional()
  */
 public final class OptionalDependencySelector implements DependencySelector {
+    /**
+     * Excludes optional dependencies always (from root).
+     */
     public static OptionalDependencySelector fromRoot() {
         return from(1);
     }
 
+    /**
+     * Excludes optional transitive dependencies of direct dependencies.
+     */
     public static OptionalDependencySelector fromDirect() {
         return from(2);
     }
 
+    /**
+     * Excludes optional transitive dependencies from given depth (1=root, 2=direct, 3=transitives of direct ones...).
+     */
     public static OptionalDependencySelector from(int applyFrom) {
         if (applyFrom < 1) {
             throw new IllegalArgumentException("applyFrom must be non-zero and positive");

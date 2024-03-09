@@ -35,14 +35,23 @@ import org.eclipse.aether.graph.Dependency;
  * @see Dependency#getScope()
  */
 public final class ScopeDependencySelector implements DependencySelector {
+    /**
+     * Selects dependencies by scope always (from root).
+     */
     public static ScopeDependencySelector fromRoot(Collection<String> included, Collection<String> excluded) {
         return from(1, included, excluded);
     }
 
+    /**
+     * Selects dependencies by scope starting from direct dependencies.
+     */
     public static ScopeDependencySelector fromDirect(Collection<String> included, Collection<String> excluded) {
         return from(2, included, excluded);
     }
 
+    /**
+     * Selects dependencies by scope starting from given depth (1=root, 2=direct, 3=transitives of direct ones...).
+     */
     public static ScopeDependencySelector from(
             int applyFrom, Collection<String> included, Collection<String> excluded) {
         if (applyFrom < 1) {

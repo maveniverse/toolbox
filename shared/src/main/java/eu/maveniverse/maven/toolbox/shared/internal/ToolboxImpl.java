@@ -23,6 +23,8 @@ import org.eclipse.aether.util.graph.manager.DependencyManagerUtils;
 import org.eclipse.aether.util.graph.selector.AndDependencySelector;
 import org.eclipse.aether.util.graph.selector.ExclusionDependencySelector;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
+import org.eclipse.aether.util.graph.visitor.CloningDependencyVisitor;
+import org.eclipse.aether.util.graph.visitor.FilteringDependencyVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +70,15 @@ public class ToolboxImpl implements Toolbox {
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
 
         logger.debug("Collecting {}", collectRequest);
-        return repositorySystem.collectDependencies(session, collectRequest);
+        CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
+        if (resolutionScope.getScopeDependencyFilter() != null) {
+            CloningDependencyVisitor cloning = new CloningDependencyVisitor();
+            FilteringDependencyVisitor filter =
+                    new FilteringDependencyVisitor(cloning, resolutionScope.getScopeDependencyFilter());
+            result.getRoot().accept(filter);
+            result.setRoot(cloning.getRootNode());
+        }
+        return result;
     }
 
     @Override
@@ -100,7 +110,15 @@ public class ToolboxImpl implements Toolbox {
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
 
         logger.debug("Collecting {}", collectRequest);
-        return repositorySystem.collectDependencies(session, collectRequest);
+        CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
+        if (resolutionScope.getScopeDependencyFilter() != null) {
+            CloningDependencyVisitor cloning = new CloningDependencyVisitor();
+            FilteringDependencyVisitor filter =
+                    new FilteringDependencyVisitor(cloning, resolutionScope.getScopeDependencyFilter());
+            result.getRoot().accept(filter);
+            result.setRoot(cloning.getRootNode());
+        }
+        return result;
     }
 
     @Override

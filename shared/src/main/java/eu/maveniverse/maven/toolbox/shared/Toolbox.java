@@ -1,5 +1,6 @@
 package eu.maveniverse.maven.toolbox.shared;
 
+import eu.maveniverse.maven.toolbox.shared.internal.ScopeDependencySelector;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,22 +11,39 @@ import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 
 public interface Toolbox {
     enum ResolutionScope {
-        COMPILE(Arrays.asList(JavaScopes.RUNTIME, JavaScopes.TEST)),
-        RUNTIME(Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
-        TEST(Collections.emptyList());
+        COMPILE(
+                Arrays.asList(JavaScopes.RUNTIME, JavaScopes.TEST),
+                ScopeDependencySelector.fromRoot(null, Arrays.asList(JavaScopes.RUNTIME, JavaScopes.TEST))),
+        COMPILE_PLUS_RUNTIME(
+                Collections.singletonList(JavaScopes.TEST),
+                ScopeDependencySelector.fromRoot(null, Collections.singletonList(JavaScopes.TEST))),
+        RUNTIME(
+                Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST),
+                ScopeDependencySelector.fromRoot(null, Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST))),
+        TEST(
+                Collections.emptyList(),
+                ScopeDependencySelector.fromDirect(null, Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)));
 
-        private final List<String> excludedScopes;
+        private final List<String> directExcludedScopes;
+        private final ScopeDependencySelector scopeDependencySelector;
 
-        ResolutionScope(List<String> excludedScopes) {
-            this.excludedScopes = Collections.unmodifiableList(new ArrayList<>(excludedScopes));
+        ResolutionScope(List<String> directExcludedScopes, ScopeDependencySelector scopeDependencySelector) {
+            this.directExcludedScopes = Collections.unmodifiableList(new ArrayList<>(directExcludedScopes));
+            this.scopeDependencySelector = scopeDependencySelector;
         }
 
-        public List<String> getExcludedScopes() {
-            return excludedScopes;
+        public List<String> getDirectExcludedScopes() {
+            return directExcludedScopes;
+        }
+
+        public ScopeDependencySelector getScopeDependencySelector() {
+            return scopeDependencySelector;
         }
     }
 
@@ -53,4 +71,13 @@ public interface Toolbox {
             List<RemoteRepository> remoteRepositories,
             boolean verbose)
             throws DependencyCollectionException;
+
+    /**
+     * Resolves given artifacts from given remote repositories.
+     */
+    List<ArtifactResult> resolveArtifacts(
+            RepositorySystemSession repositorySystemSession,
+            List<Artifact> artifacts,
+            List<RemoteRepository> remoteRepositories)
+            throws ArtifactResolutionException;
 }

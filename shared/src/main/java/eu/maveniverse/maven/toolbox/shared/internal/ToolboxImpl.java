@@ -3,7 +3,9 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -14,11 +16,12 @@ import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.util.graph.manager.DependencyManagerUtils;
 import org.eclipse.aether.util.graph.selector.AndDependencySelector;
 import org.eclipse.aether.util.graph.selector.ExclusionDependencySelector;
-import org.eclipse.aether.util.graph.selector.OptionalDependencySelector;
-import org.eclipse.aether.util.graph.selector.ScopeDependencySelector;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,13 +53,15 @@ public class ToolboxImpl implements Toolbox {
             session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         }
         session.setDependencySelector(new AndDependencySelector(
-                new ScopeDependencySelector(null, resolutionScope.getExcludedScopes()),
-                new OptionalDependencySelector(),
+                resolutionScope.getScopeDependencySelector(),
+                OptionalDependencySelector.fromDirect(),
                 new ExclusionDependencySelector()));
 
         CollectRequest collectRequest = new CollectRequest();
         collectRequest.setRootArtifact(root);
-        collectRequest.setDependencies(dependencies);
+        collectRequest.setDependencies(dependencies.stream()
+                .filter(d -> !resolutionScope.getDirectExcludedScopes().contains(d.getScope()))
+                .collect(Collectors.toList()));
         collectRequest.setManagedDependencies(managedDependencies);
         collectRequest.setRepositories(remoteRepositories);
         collectRequest.setRequestContext("project");
@@ -84,8 +89,8 @@ public class ToolboxImpl implements Toolbox {
             session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         }
         session.setDependencySelector(new AndDependencySelector(
-                new ScopeDependencySelector(null, resolutionScope.getExcludedScopes()),
-                new OptionalDependencySelector(),
+                resolutionScope.getScopeDependencySelector(),
+                OptionalDependencySelector.fromDirect(),
                 new ExclusionDependencySelector()));
 
         CollectRequest collectRequest = new CollectRequest();
@@ -96,5 +101,19 @@ public class ToolboxImpl implements Toolbox {
 
         logger.debug("Collecting {}", collectRequest);
         return repositorySystem.collectDependencies(session, collectRequest);
+    }
+
+    @Override
+    public List<ArtifactResult> resolveArtifacts(
+            RepositorySystemSession repositorySystemSession,
+            List<Artifact> artifacts,
+            List<RemoteRepository> remoteRepositories)
+            throws ArtifactResolutionException {
+        requireNonNull(repositorySystemSession);
+        requireNonNull(artifacts);
+
+        List<ArtifactRequest> artifactRequests = new ArrayList<>();
+        artifacts.forEach(a -> artifactRequests.add(new ArtifactRequest(a, remoteRepositories, null)));
+        return repositorySystem.resolveArtifacts(repositorySystemSession, artifactRequests);
     }
 }

@@ -1,4 +1,13 @@
+/*
+ * Copyright (c) 2023-2024 Maveniverse Org.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v20.html
+ */
 package eu.maveniverse.maven.toolbox.plugin;
+
+import static eu.maveniverse.maven.toolbox.plugin.TreeMojo.toLanguageResolutionScope;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
@@ -6,7 +15,6 @@ import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
-import java.util.Locale;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -28,9 +36,10 @@ public class GavTreeMojo extends AbstractMojo {
     private String gav;
 
     /**
-     * The resolution scope to display, accepted values are "runtime", "compile" or "test".
+     * The resolution scope to display, accepted values are "main-runtime", "main-compile", "test-runtime" or
+     * "test-compile".
      */
-    @Parameter(property = "scope", defaultValue = "runtime", required = true)
+    @Parameter(property = "scope", defaultValue = "main-runtime", required = true)
     private String scope;
 
     /**
@@ -44,9 +53,9 @@ public class GavTreeMojo extends AbstractMojo {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             Toolbox toolbox = new ToolboxImpl(context);
-            CollectResult collectResult = toolbox.collectAsDependency(
-                    Toolbox.ResolutionScope.valueOf(scope.toUpperCase(Locale.ENGLISH)),
-                    new Dependency(new DefaultArtifact(gav), scope),
+            CollectResult collectResult = toolbox.collect(
+                    toLanguageResolutionScope(scope),
+                    new Dependency(new DefaultArtifact(gav), "compile"),
                     context.remoteRepositories(),
                     verbose);
             collectResult.getRoot().accept(new DependencyGraphDumper(getLog()::info));

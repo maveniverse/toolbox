@@ -1,12 +1,20 @@
+/*
+ * Copyright (c) 2023-2024 Maveniverse Org.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v20.html
+ */
 package eu.maveniverse.maven.toolbox.plugin;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
+import eu.maveniverse.maven.toolbox.shared.Atoms;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
-import java.util.Locale;
+import eu.maveniverse.maven.toolbox.shared.java.JavaLanguage;
 import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.plugin.AbstractMojo;
@@ -24,9 +32,10 @@ import org.eclipse.aether.util.graph.visitor.DependencyGraphDumper;
 @Mojo(name = "tree", threadSafe = true)
 public class TreeMojo extends AbstractMojo {
     /**
-     * The resolution scope to display, accepted values are "runtime", "compile" or "test".
+     * The resolution scope to display, accepted values are "main-runtime", "main-compile", "test-runtime" or
+     * "test-compile".
      */
-    @Parameter(property = "scope", defaultValue = "runtime", required = true)
+    @Parameter(property = "scope", defaultValue = "main-runtime", required = true)
     private String scope;
 
     /**
@@ -38,6 +47,13 @@ public class TreeMojo extends AbstractMojo {
     @Component
     private MavenProject mavenProject;
 
+    static Atoms.LanguageResolutionScope toLanguageResolutionScope(String value) {
+        return JavaLanguage.INSTANCE.getLanguageResolutionScopeUniverse().stream()
+                .filter(s -> s.getId().equals(value))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("unknown scope"));
+    }
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
@@ -45,8 +61,8 @@ public class TreeMojo extends AbstractMojo {
             ArtifactTypeRegistry artifactTypeRegistry =
                     context.repositorySystemSession().getArtifactTypeRegistry();
             Toolbox toolbox = new ToolboxImpl(context);
-            CollectResult collectResult = toolbox.collectAsProject(
-                    Toolbox.ResolutionScope.valueOf(scope.toUpperCase(Locale.ENGLISH)),
+            CollectResult collectResult = toolbox.collect(
+                    toLanguageResolutionScope(scope),
                     RepositoryUtils.toArtifact(mavenProject.getArtifact()),
                     mavenProject.getDependencies().stream()
                             .map(d -> RepositoryUtils.toDependency(d, artifactTypeRegistry))

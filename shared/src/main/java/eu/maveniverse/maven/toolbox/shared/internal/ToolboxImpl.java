@@ -1,11 +1,21 @@
+/*
+ * Copyright (c) 2023-2024 Maveniverse Org.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-v20.html
+ */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.Atoms;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RequestTrace;
 import org.eclipse.aether.artifact.Artifact;
@@ -17,6 +27,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.util.filter.ScopeDependencyFilter;
 import org.eclipse.aether.util.graph.manager.DependencyManagerUtils;
 import org.eclipse.aether.util.graph.selector.AndDependencySelector;
 import org.eclipse.aether.util.graph.selector.ExclusionDependencySelector;
@@ -35,8 +46,8 @@ public class ToolboxImpl implements Toolbox {
     }
 
     @Override
-    public CollectResult collectAsProject(
-            ResolutionScope resolutionScope,
+    public CollectResult collect(
+            Atoms.LanguageResolutionScope resolutionScope,
             Artifact root,
             List<Dependency> dependencies,
             List<Dependency> managedDependencies,
@@ -50,8 +61,18 @@ public class ToolboxImpl implements Toolbox {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
             session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         }
+        Set<String> includes = calculateIncludes(resolutionScope);
+        Set<String> transitiveExcludes = calculateTransitiveExcludes(resolutionScope);
+        logger.info("Collecting project scope {}", resolutionScope.getProjectScope());
+        logger.info(
+                "        resolution scope {}",
+                resolutionScope.getResolutionScope().getId());
+
         session.setDependencySelector(new AndDependencySelector(
-                resolutionScope.getScopeDependencySelector(),
+                resolutionScope.getResolutionMode() == Atoms.ResolutionMode.ELIMINATE
+                        ? ScopeDependencySelector.fromTo(2, 3, includes, null)
+                        : ScopeDependencySelector.fromTo(1, 3, includes, null),
+                ScopeDependencySelector.fromDirect(null, transitiveExcludes),
                 OptionalDependencySelector.fromDirect(),
                 new ExclusionDependencySelector()));
 
@@ -65,10 +86,10 @@ public class ToolboxImpl implements Toolbox {
 
         logger.debug("Collecting {}", collectRequest);
         CollectResult result = context.repositorySystem().collectDependencies(session, collectRequest);
-        if (resolutionScope.getScopeDependencyFilter() != null) {
+        if (resolutionScope.getResolutionMode() == Atoms.ResolutionMode.ELIMINATE) {
             CloningDependencyVisitor cloning = new CloningDependencyVisitor();
             FilteringDependencyVisitor filter =
-                    new FilteringDependencyVisitor(cloning, resolutionScope.getScopeDependencyFilter());
+                    new FilteringDependencyVisitor(cloning, new ScopeDependencyFilter(includes, null));
             result.getRoot().accept(filter);
             result.setRoot(cloning.getRootNode());
         }
@@ -76,8 +97,8 @@ public class ToolboxImpl implements Toolbox {
     }
 
     @Override
-    public CollectResult collectAsDependency(
-            ResolutionScope resolutionScope,
+    public CollectResult collect(
+            Atoms.LanguageResolutionScope resolutionScope,
             Dependency root,
             List<RemoteRepository> remoteRepositories,
             boolean verbose)
@@ -90,8 +111,18 @@ public class ToolboxImpl implements Toolbox {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
             session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         }
+        Set<String> includes = calculateIncludes(resolutionScope);
+        Set<String> transitiveExcludes = calculateTransitiveExcludes(resolutionScope);
+        logger.info("Collecting project scope {}", resolutionScope.getProjectScope());
+        logger.info(
+                "        resolution scope {}",
+                resolutionScope.getResolutionScope().getId());
+
         session.setDependencySelector(new AndDependencySelector(
-                resolutionScope.getScopeDependencySelector(),
+                resolutionScope.getResolutionMode() == Atoms.ResolutionMode.ELIMINATE
+                        ? ScopeDependencySelector.fromTo(2, 3, includes, null)
+                        : ScopeDependencySelector.fromTo(1, 3, includes, null),
+                ScopeDependencySelector.fromDirect(null, transitiveExcludes),
                 OptionalDependencySelector.fromDirect(),
                 new ExclusionDependencySelector()));
 
@@ -103,14 +134,61 @@ public class ToolboxImpl implements Toolbox {
 
         logger.debug("Collecting {}", collectRequest);
         CollectResult result = context.repositorySystem().collectDependencies(session, collectRequest);
-        if (resolutionScope.getScopeDependencyFilter() != null) {
+        if (resolutionScope.getResolutionMode() == Atoms.ResolutionMode.ELIMINATE) {
             CloningDependencyVisitor cloning = new CloningDependencyVisitor();
             FilteringDependencyVisitor filter =
-                    new FilteringDependencyVisitor(cloning, resolutionScope.getScopeDependencyFilter());
+                    new FilteringDependencyVisitor(cloning, new ScopeDependencyFilter(includes, null));
             result.getRoot().accept(filter);
             result.setRoot(cloning.getRootNode());
         }
         return result;
+    }
+
+    /**
+     * This method basically translates "scope" to {@link Atoms.LanguageDependencyScope} specific string IDs.
+     */
+    private Set<String> calculateIncludes(Atoms.LanguageResolutionScope scope) {
+        Atoms.ProjectScope projectScope = scope.getProjectScope();
+        Atoms.ResolutionScope resolutionScope = scope.getResolutionScope();
+        HashSet<String> includes = new HashSet<>();
+        for (Atoms.LanguageDependencyScope languageDependencyScope :
+                scope.getLanguage().getLanguageDependencyScopeUniverse()) {
+            if (languageDependencyScope.getProjectScopes().contains(projectScope)
+                    && resolutionScope.getContains().contains(languageDependencyScope.getDependencyScope())) {
+                // IF: project scope is contained in given language project scopes
+                // AND if resolution scope contains given language scope dependency scope
+                // the languageScope should be included, add it
+                includes.add(languageDependencyScope.getId());
+            }
+        }
+        return includes;
+    }
+
+    /**
+     * This method basically translates "scope" to {@link Atoms.LanguageDependencyScope} specific string IDs.
+     */
+    private Set<String> calculateTransitiveExcludes(Atoms.LanguageResolutionScope scope) {
+        Atoms.ProjectScope projectScope = scope.getProjectScope();
+        Atoms.ResolutionScope resolutionScope = scope.getResolutionScope();
+        HashSet<String> excludes = new HashSet<>();
+        for (Atoms.LanguageDependencyScope languageDependencyScope :
+                scope.getLanguage().getLanguageDependencyScopeUniverse()) {
+            // if the language scope is not meant to be here (is not present in this project scope)
+            if (!languageDependencyScope.getProjectScopes().contains(projectScope)) {
+                excludes.add(languageDependencyScope.getId());
+                continue;
+            }
+            // if the language scope is not transitive
+            if (!languageDependencyScope.isTransitive()) {
+                excludes.add(languageDependencyScope.getId());
+                continue;
+            }
+            // if the resolution scope explicitly excludes language scope's dependency scope
+            if (resolutionScope.getExcludesTransitively().contains(languageDependencyScope.getDependencyScope())) {
+                excludes.add(languageDependencyScope.getId());
+            }
+        }
+        return excludes;
     }
 
     @Override

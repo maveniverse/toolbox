@@ -13,12 +13,15 @@ import eu.maveniverse.maven.toolbox.shared.DependencyScope;
 import eu.maveniverse.maven.toolbox.shared.Language;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public final class JavaLanguage implements Language {
     public static final String NAME = "java";
 
-    public static final JavaLanguage MAVEN3 = new JavaLanguage(true);
-    public static final JavaLanguage MAVEN4 = new JavaLanguage(false);
+    public enum MavenLevel {
+        Maven3,
+        Maven4
+    }
 
     private static final String DS_NONE = "none";
     private static final String DS_COMPILE = "compile";
@@ -34,16 +37,14 @@ public final class JavaLanguage implements Language {
     private static final String RS_MAIN_COMPILE_PLUS_RUNTIME = "main-compilePlusRuntime";
     private static final String RS_MAIN_RUNTIME = "main-runtime";
     private static final String RS_MAIN_RUNTIME_PLUS_SYSTEM = "main-runtimePlusSystem";
-    private static final String RS_MAIN_RUNTIME_M3 = "main-runtimeM3";
-    private static final String RS_MAIN_RUNTIME_M3_PLUS_SYSTEM = "main-runtimeM3PlusSystem";
     private static final String RS_TEST_COMPILE = "test-compile";
     private static final String RS_TEST_RUNTIME = "test-runtime";
-    private final boolean systemIsTransitive;
+    private final MavenLevel mavenLevel;
     private final Map<String, JavaDependencyScope> dependencyScopes;
     private final Map<String, JavaResolutionScope> resolutionScopes;
 
-    private JavaLanguage(boolean systemIsTransitive) {
-        this.systemIsTransitive = systemIsTransitive;
+    public JavaLanguage(MavenLevel mavenLevel) {
+        this.mavenLevel = requireNonNull(mavenLevel, "mavenLevel");
         this.dependencyScopes = Collections.unmodifiableMap(buildDependencyScopes());
         this.resolutionScopes = Collections.unmodifiableMap(buildResolutionScopes());
     }
@@ -52,13 +53,15 @@ public final class JavaLanguage implements Language {
         HashMap<String, JavaDependencyScope> result = new HashMap<>();
         result.put(DS_NONE, new JavaDependencyScope(DS_NONE, this, false));
         result.put(DS_COMPILE, new JavaDependencyScope(DS_COMPILE, this, true));
-        result.put(DS_COMPILE_ONLY, new JavaDependencyScope(DS_COMPILE_ONLY, this, false));
         result.put(DS_RUNTIME, new JavaDependencyScope(DS_RUNTIME, this, true));
         result.put(DS_PROVIDED, new JavaDependencyScope(DS_PROVIDED, this, false));
-        result.put(DS_SYSTEM, new JavaDependencyScope(DS_SYSTEM, this, systemIsTransitive));
+        result.put(DS_SYSTEM, new JavaDependencyScope(DS_SYSTEM, this, mavenLevel == MavenLevel.Maven3));
         result.put(DS_TEST, new JavaDependencyScope(DS_TEST, this, false));
-        result.put(DS_TEST_RUNTIME, new JavaDependencyScope(DS_TEST_RUNTIME, this, false));
-        result.put(DS_TEST_ONLY, new JavaDependencyScope(DS_TEST_ONLY, this, false));
+        if (mavenLevel == MavenLevel.Maven4) {
+            result.put(DS_COMPILE_ONLY, new JavaDependencyScope(DS_COMPILE_ONLY, this, false));
+            result.put(DS_TEST_RUNTIME, new JavaDependencyScope(DS_TEST_RUNTIME, this, false));
+            result.put(DS_TEST_ONLY, new JavaDependencyScope(DS_TEST_ONLY, this, false));
+        }
         return result;
     }
 
@@ -78,7 +81,10 @@ public final class JavaLanguage implements Language {
                                 dependencyScopes.get(DS_COMPILE),
                                 dependencyScopes.get(DS_COMPILE_ONLY),
                                 dependencyScopes.get(DS_PROVIDED)),
-                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+                        Arrays.asList(
+                                dependencyScopes.get(DS_NONE),
+                                dependencyScopes.get(DS_PROVIDED),
+                                dependencyScopes.get(DS_TEST))));
         result.put(
                 RS_MAIN_COMPILE_PLUS_RUNTIME,
                 new JavaResolutionScope(
@@ -90,49 +96,35 @@ public final class JavaLanguage implements Language {
                                 dependencyScopes.get(DS_COMPILE_ONLY),
                                 dependencyScopes.get(DS_PROVIDED),
                                 dependencyScopes.get(DS_RUNTIME)),
-                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+                        Arrays.asList(
+                                dependencyScopes.get(DS_NONE),
+                                dependencyScopes.get(DS_PROVIDED),
+                                dependencyScopes.get(DS_TEST))));
         result.put(
                 RS_MAIN_RUNTIME,
                 new JavaResolutionScope(
                         RS_MAIN_RUNTIME,
                         this,
-                        ResolutionScope.Mode.REMOVE,
+                        mavenLevel == MavenLevel.Maven4 ? ResolutionScope.Mode.REMOVE : ResolutionScope.Mode.ELIMINATE,
                         Arrays.asList(dependencyScopes.get(DS_COMPILE), dependencyScopes.get(DS_RUNTIME)),
-                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+                        Arrays.asList(
+                                dependencyScopes.get(DS_NONE),
+                                dependencyScopes.get(DS_PROVIDED),
+                                dependencyScopes.get(DS_TEST))));
         result.put(
                 RS_MAIN_RUNTIME_PLUS_SYSTEM,
                 new JavaResolutionScope(
                         RS_MAIN_RUNTIME_PLUS_SYSTEM,
                         this,
-                        ResolutionScope.Mode.REMOVE,
+                        mavenLevel == MavenLevel.Maven4 ? ResolutionScope.Mode.REMOVE : ResolutionScope.Mode.ELIMINATE,
                         Arrays.asList(
                                 dependencyScopes.get(DS_COMPILE),
                                 dependencyScopes.get(DS_RUNTIME),
                                 dependencyScopes.get(DS_SYSTEM)),
-                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
-        result.put(
-                RS_MAIN_RUNTIME_M3,
-                new JavaResolutionScope(
-                        RS_MAIN_RUNTIME_M3,
-                        this,
-                        ResolutionScope.Mode.ELIMINATE,
                         Arrays.asList(
-                                dependencyScopes.get(DS_COMPILE),
-                                dependencyScopes.get(DS_RUNTIME),
-                                dependencyScopes.get(DS_SYSTEM)),
-                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
-        result.put(
-                RS_MAIN_RUNTIME_M3_PLUS_SYSTEM,
-                new JavaResolutionScope(
-                        RS_MAIN_RUNTIME_M3_PLUS_SYSTEM,
-                        this,
-                        ResolutionScope.Mode.ELIMINATE,
-                        Arrays.asList(
-                                dependencyScopes.get(DS_COMPILE),
-                                dependencyScopes.get(DS_COMPILE_ONLY),
-                                dependencyScopes.get(DS_RUNTIME),
-                                dependencyScopes.get(DS_PROVIDED)),
-                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+                                dependencyScopes.get(DS_NONE),
+                                dependencyScopes.get(DS_PROVIDED),
+                                dependencyScopes.get(DS_TEST))));
         result.put(
                 RS_TEST_COMPILE,
                 new JavaResolutionScope(
@@ -144,7 +136,10 @@ public final class JavaLanguage implements Language {
                                 dependencyScopes.get(DS_PROVIDED),
                                 dependencyScopes.get(DS_TEST),
                                 dependencyScopes.get(DS_TEST_ONLY)),
-                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+                        Arrays.asList(
+                                dependencyScopes.get(DS_NONE),
+                                dependencyScopes.get(DS_PROVIDED),
+                                dependencyScopes.get(DS_TEST))));
         result.put(
                 RS_TEST_RUNTIME,
                 new JavaResolutionScope(
@@ -156,7 +151,10 @@ public final class JavaLanguage implements Language {
                                 dependencyScopes.get(DS_PROVIDED),
                                 dependencyScopes.get(DS_TEST),
                                 dependencyScopes.get(DS_TEST_RUNTIME)),
-                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+                        Arrays.asList(
+                                dependencyScopes.get(DS_NONE),
+                                dependencyScopes.get(DS_PROVIDED),
+                                dependencyScopes.get(DS_TEST))));
         return result;
     }
 
@@ -167,7 +165,7 @@ public final class JavaLanguage implements Language {
 
     @Override
     public String getDescription() {
-        return systemIsTransitive ? "Java as in Maven3" : "Java as in Maven4";
+        return "Java (as in " + mavenLevel.name() + ")";
     }
 
     @Override
@@ -238,8 +236,10 @@ public final class JavaLanguage implements Language {
             this.id = requireNonNull(id, "id");
             this.javaLanguage = requireNonNull(javaLanguage, "javaLanguage");
             this.mode = requireNonNull(mode, "mode");
-            this.directlyIncluded = Collections.unmodifiableSet(new HashSet<>(directlyIncluded));
-            this.transitivelyExcluded = Collections.unmodifiableSet(new HashSet<>(transitivelyExcluded));
+            this.directlyIncluded = Collections.unmodifiableSet(
+                    directlyIncluded.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
+            this.transitivelyExcluded = Collections.unmodifiableSet(
+                    transitivelyExcluded.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
         }
 
         @Override

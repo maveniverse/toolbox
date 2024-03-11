@@ -54,7 +54,8 @@ public class TreeMojo extends AbstractMojo {
     private MavenProject mavenProject;
 
     static ResolutionScope toLanguageResolutionScope(boolean maven3, String value) {
-        JavaLanguage javaLanguage = maven3 ? JavaLanguage.MAVEN3 : JavaLanguage.MAVEN4;
+        JavaLanguage javaLanguage =
+                new JavaLanguage(maven3 ? JavaLanguage.MavenLevel.Maven3 : JavaLanguage.MavenLevel.Maven4);
         return javaLanguage
                 .getResolutionScope(value)
                 .orElseThrow(() -> new IllegalArgumentException("unknown resolution scope"));

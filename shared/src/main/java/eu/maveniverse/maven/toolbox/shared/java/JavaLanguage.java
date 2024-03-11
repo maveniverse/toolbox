@@ -23,26 +23,26 @@ public final class JavaLanguage implements Atoms.Language {
 
     @Override
     public Set<? extends Atoms.LanguageDependencyScope> getLanguageDependencyScopeUniverse() {
-        return JavaDependencyScope.UNIVERSE;
+        return JavaDependencyScope.ALL;
     }
 
     public Set<? extends Atoms.LanguageResolutionScope> getLanguageResolutionScopeUniverse() {
-        return JavaResolutionScope.UNIVERSE;
+        return JavaResolutionScope.ALL;
     }
 
     public static final class JavaDependencyScope extends Atoms.Atom implements Atoms.LanguageDependencyScope {
         private final boolean transitive;
-        private final Atoms.DependencyScope dependencyScope;
+        private final Set<Atoms.DependencyScope> dependencyScopes;
         private final Set<Atoms.ProjectScope> projectScopes;
 
         private JavaDependencyScope(
                 String id,
                 boolean transitive,
-                Atoms.DependencyScope dependencyScope,
+                Collection<Atoms.DependencyScope> dependencyScopes,
                 Collection<Atoms.ProjectScope> projectScopes) {
             super(id);
             this.transitive = transitive;
-            this.dependencyScope = dependencyScope;
+            this.dependencyScopes = Collections.unmodifiableSet(new HashSet<>(dependencyScopes));
             this.projectScopes = Collections.unmodifiableSet(new HashSet<>(projectScopes));
         }
 
@@ -56,8 +56,8 @@ public final class JavaLanguage implements Atoms.Language {
             return transitive;
         }
 
-        public Atoms.DependencyScope getDependencyScope() {
-            return dependencyScope;
+        public Set<Atoms.DependencyScope> getDependencyScopes() {
+            return dependencyScopes;
         }
 
         public Set<Atoms.ProjectScope> getProjectScopes() {
@@ -65,64 +65,53 @@ public final class JavaLanguage implements Atoms.Language {
         }
 
         public static final JavaDependencyScope NONE = new JavaDependencyScope(
-                "none", false, Atoms.DependencyScope.NONE, Collections.singleton(Atoms.ProjectScope.NONE));
-        public static final JavaDependencyScope COMPILE =
-                new JavaDependencyScope("compile", true, Atoms.DependencyScope.BOTH, Atoms.ProjectScope.ALL);
+                "none", false, Collections.singleton(Atoms.DependencyScope.NONE), Collections.emptySet());
+        public static final JavaDependencyScope COMPILE = new JavaDependencyScope(
+                "compile", true, Collections.singleton(Atoms.DependencyScope.BOTH), Atoms.ProjectScope.ALL);
         public static final JavaDependencyScope COMPILE_ONLY = new JavaDependencyScope(
                 "compileOnly",
                 false,
-                Atoms.DependencyScope.ONLY_COMPILE,
+                Collections.singleton(Atoms.DependencyScope.ONLY_COMPILE),
                 Collections.singleton(Atoms.ProjectScope.MAIN));
-        public static final JavaDependencyScope RUNTIME =
-                new JavaDependencyScope("runtime", true, Atoms.DependencyScope.ONLY_RUNTIME, Atoms.ProjectScope.ALL);
-        public static final JavaDependencyScope PROVIDED =
-                new JavaDependencyScope("provided", false, Atoms.DependencyScope.ONLY_COMPILE, Atoms.ProjectScope.ALL);
-        public static final JavaDependencyScope SYSTEM =
-                new JavaDependencyScope("system", false, Atoms.DependencyScope.BOTH, Atoms.ProjectScope.ALL);
+        public static final JavaDependencyScope RUNTIME = new JavaDependencyScope(
+                "runtime", true, Collections.singleton(Atoms.DependencyScope.ONLY_RUNTIME), Atoms.ProjectScope.ALL);
+        public static final JavaDependencyScope PROVIDED = new JavaDependencyScope(
+                "provided", false, Collections.singleton(Atoms.DependencyScope.ONLY_COMPILE), Atoms.ProjectScope.ALL);
+        public static final JavaDependencyScope SYSTEM = new JavaDependencyScope(
+                "system", false, Collections.singleton(Atoms.DependencyScope.BOTH), Atoms.ProjectScope.ALL);
         public static final JavaDependencyScope TEST = new JavaDependencyScope(
-                "test", false, Atoms.DependencyScope.BOTH, Collections.singleton(Atoms.ProjectScope.TEST));
+                "test",
+                false,
+                Collections.singleton(Atoms.DependencyScope.BOTH),
+                Collections.singleton(Atoms.ProjectScope.TEST));
         public static final JavaDependencyScope TEST_RUNTIME = new JavaDependencyScope(
                 "testRuntime",
                 false,
-                Atoms.DependencyScope.ONLY_RUNTIME,
+                Collections.singleton(Atoms.DependencyScope.ONLY_RUNTIME),
                 Collections.singleton(Atoms.ProjectScope.TEST));
         public static final JavaDependencyScope TEST_ONLY = new JavaDependencyScope(
-                "testOnly", false, Atoms.DependencyScope.ONLY_COMPILE, Collections.singleton(Atoms.ProjectScope.TEST));
+                "testOnly",
+                false,
+                Collections.singleton(Atoms.DependencyScope.ONLY_COMPILE),
+                Collections.singleton(Atoms.ProjectScope.TEST));
 
-        public static final Set<JavaDependencyScope> UNIVERSE = Collections.unmodifiableSet(new HashSet<>(
+        public static final Set<JavaDependencyScope> ALL = Collections.unmodifiableSet(new HashSet<>(
                 Arrays.asList(NONE, COMPILE, COMPILE_ONLY, RUNTIME, PROVIDED, SYSTEM, TEST, TEST_RUNTIME, TEST_ONLY)));
     }
 
-    public static final class JavaResolutionScope extends Atoms.Atom implements Atoms.LanguageResolutionScope {
-        public static final JavaResolutionScope MAIN_COMPILE = new JavaResolutionScope(
-                "main-compile", Atoms.ProjectScope.MAIN, Atoms.ResolutionScope.COMPILE, Atoms.ResolutionMode.ELIMINATE);
-        public static final JavaResolutionScope MAIN_RUNTIME = new JavaResolutionScope(
-                "main-runtime", Atoms.ProjectScope.MAIN, Atoms.ResolutionScope.RUNTIME, Atoms.ResolutionMode.REMOVE);
-        public static final JavaResolutionScope MAIN_RUNTIME_M3 = new JavaResolutionScope(
-                "main-runtime-m3",
-                Atoms.ProjectScope.MAIN,
-                Atoms.ResolutionScope.RUNTIME,
-                Atoms.ResolutionMode.ELIMINATE);
-        public static final JavaResolutionScope TEST_COMPILE = new JavaResolutionScope(
-                "test-compile", Atoms.ProjectScope.TEST, Atoms.ResolutionScope.COMPILE, Atoms.ResolutionMode.ELIMINATE);
-        public static final JavaResolutionScope TEST_RUNTIME = new JavaResolutionScope(
-                "test-runtime", Atoms.ProjectScope.TEST, Atoms.ResolutionScope.RUNTIME, Atoms.ResolutionMode.REMOVE);
-
-        public static final Set<JavaResolutionScope> UNIVERSE = Collections.unmodifiableSet(
-                new HashSet<>(Arrays.asList(MAIN_COMPILE, MAIN_RUNTIME, MAIN_RUNTIME_M3, TEST_COMPILE, TEST_RUNTIME)));
-
-        private final Atoms.ProjectScope projectScope;
-        private final Atoms.ResolutionScope resolutionScope;
+    private static final class JavaResolutionScope extends Atoms.Atom implements Atoms.LanguageResolutionScope {
+        private final Set<Atoms.ProjectScope> projectScopes;
+        private final Set<Atoms.ResolutionScope> resolutionScopes;
         private final Atoms.ResolutionMode resolutionMode;
 
-        public JavaResolutionScope(
+        private JavaResolutionScope(
                 String id,
-                Atoms.ProjectScope projectScope,
-                Atoms.ResolutionScope resolutionScope,
+                Collection<Atoms.ProjectScope> projectScopes,
+                Collection<Atoms.ResolutionScope> resolutionScopes,
                 Atoms.ResolutionMode resolutionMode) {
             super(id);
-            this.projectScope = projectScope;
-            this.resolutionScope = resolutionScope;
+            this.projectScopes = Collections.unmodifiableSet(new HashSet<>(projectScopes));
+            this.resolutionScopes = Collections.unmodifiableSet(new HashSet<>(resolutionScopes));
             this.resolutionMode = resolutionMode;
         }
 
@@ -132,18 +121,77 @@ public final class JavaLanguage implements Atoms.Language {
         }
 
         @Override
-        public Atoms.ProjectScope getProjectScope() {
-            return projectScope;
+        public Set<Atoms.ProjectScope> getProjectScopes() {
+            return projectScopes;
         }
 
         @Override
-        public Atoms.ResolutionScope getResolutionScope() {
-            return resolutionScope;
+        public Set<Atoms.ResolutionScope> getResolutionScopes() {
+            return resolutionScopes;
         }
 
         @Override
         public Atoms.ResolutionMode getResolutionMode() {
             return resolutionMode;
         }
+
+        public JavaResolutionScope plus(JavaDependencyScope dependencyScope) {
+            if (this == NONE) {
+                throw new IllegalStateException("NONE resolution scope is immutable");
+            } else if (this == EMPTY) {
+                return new JavaResolutionScope(
+                        dependencyScope.getId(),
+                        dependencyScope.getProjectScopes(),
+                        dependencyScope.getMemberOf(),
+                        resolutionMode);
+            }
+            if (this.projectScopes.containsAll(dependencyScope.getProjectScopes())
+                    && this.resolutionScopes.containsAll(dependencyScope.getMemberOf())) {
+                return this;
+            }
+            HashSet<Atoms.ProjectScope> projectScopes = new HashSet<>(this.projectScopes);
+            projectScopes.addAll(dependencyScope.getProjectScopes());
+            HashSet<Atoms.ResolutionScope> resolutionScopes = new HashSet<>(this.resolutionScopes);
+            resolutionScopes.addAll(dependencyScope.getMemberOf());
+            return new JavaResolutionScope(
+                    getId() + "+" + dependencyScope.getId(), projectScopes, resolutionScopes, resolutionMode);
+        }
+
+        public static final JavaResolutionScope NONE = new JavaResolutionScope(
+                "none", Collections.emptySet(), Collections.emptySet(), Atoms.ResolutionMode.ELIMINATE);
+        public static final JavaResolutionScope EMPTY = new JavaResolutionScope(
+                "empty", Collections.emptySet(), Collections.emptySet(), Atoms.ResolutionMode.ELIMINATE);
+        public static final JavaResolutionScope MAIN_COMPILE = new JavaResolutionScope(
+                "main-compile",
+                Collections.singleton(Atoms.ProjectScope.MAIN),
+                Collections.singleton(Atoms.ResolutionScope.COMPILE),
+                Atoms.ResolutionMode.ELIMINATE);
+        public static final JavaResolutionScope MAIN_COMPILE_PLUS_RUNTIME =
+                MAIN_COMPILE.plus(JavaDependencyScope.RUNTIME);
+        public static final JavaResolutionScope MAIN_RUNTIME = new JavaResolutionScope(
+                "main-runtime",
+                Collections.singleton(Atoms.ProjectScope.MAIN),
+                Collections.singleton(Atoms.ResolutionScope.RUNTIME),
+                Atoms.ResolutionMode.REMOVE);
+        public static final JavaResolutionScope MAIN_RUNTIME_PLUS_SYSTEM =
+                MAIN_RUNTIME.plus(JavaDependencyScope.SYSTEM);
+        public static final JavaResolutionScope MAIN_RUNTIME_M3 = new JavaResolutionScope(
+                "main-runtime-m3",
+                Collections.singleton(Atoms.ProjectScope.MAIN),
+                Collections.singleton(Atoms.ResolutionScope.RUNTIME),
+                Atoms.ResolutionMode.ELIMINATE);
+        public static final JavaResolutionScope TEST_COMPILE = new JavaResolutionScope(
+                "test-compile",
+                Collections.singleton(Atoms.ProjectScope.TEST),
+                Collections.singleton(Atoms.ResolutionScope.COMPILE),
+                Atoms.ResolutionMode.ELIMINATE);
+        public static final JavaResolutionScope TEST_RUNTIME = new JavaResolutionScope(
+                "test-runtime",
+                Collections.singleton(Atoms.ProjectScope.TEST),
+                Collections.singleton(Atoms.ResolutionScope.RUNTIME),
+                Atoms.ResolutionMode.REMOVE);
+
+        public static final Set<JavaResolutionScope> ALL = Collections.unmodifiableSet(new HashSet<>(
+                Arrays.asList(NONE, EMPTY, MAIN_COMPILE, MAIN_RUNTIME, MAIN_RUNTIME_M3, TEST_COMPILE, TEST_RUNTIME)));
     }
 }

@@ -7,20 +7,19 @@
  */
 package eu.maveniverse.maven.toolbox.shared;
 
-import static java.util.Objects.requireNonNull;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The "atoms" of the Toolbox that are used to assemble language specific dependency scopes and resolution scopes.
  * <p>
- * Essentially, we deal with 3-dimensional space: project scope, resolution scope, resolution mode. The lagnauges where languages
- * place their scopes.
+ * Essentially, we deal with 3-dimensional space: project scope, resolution scope, resolution mode. The languages
+ * place their scopes into this space (and name them and select the transitive ones).
  */
 public final class Atoms {
     /**
@@ -58,6 +57,56 @@ public final class Atoms {
     }
 
     /**
+     * Project scope: like "main", "test", etc...
+     */
+    public static final class ProjectScope extends Atom {
+        public static final ProjectScope MAIN = new ProjectScope("main");
+        public static final ProjectScope TEST = new ProjectScope("test");
+
+        public static final Set<ProjectScope> ALL =
+                Collections.unmodifiableSet(new HashSet<>(Arrays.asList(MAIN, TEST)));
+
+        private ProjectScope(String id) {
+            super(id);
+        }
+    }
+
+    /**
+     * Resolution scope: "compile" and "runtime".
+     */
+    public static final class ResolutionScope extends Atom {
+        public static final ResolutionScope COMPILE = new ResolutionScope("compile");
+        public static final ResolutionScope RUNTIME = new ResolutionScope("runtime");
+
+        public ResolutionScope(String id) {
+            super(id);
+        }
+    }
+
+    /**
+     * Resolution mode: "eliminate" or (just) "remove".
+     */
+    public static final class ResolutionMode extends Atom {
+        /**
+         * Mode where artifacts in non-wanted scopes are eliminated. In other words, this mode ensures that if a
+         * dependency was removed as it was in unwanted scope, it will guarantee that no such dependency will appear
+         * anywhere else in the resulting graph.
+         */
+        public static final ResolutionMode ELIMINATE = new ResolutionMode("eliminate");
+
+        /**
+         * Mode where artifacts in non-wanted scopes are removed only. In other words, this mode will NOT prevent
+         * (as in, removed will not "dominate") perhaps appearing other occurrences of same artifact under some other
+         * scope in the graph.
+         */
+        public static final ResolutionMode REMOVE = new ResolutionMode("remove");
+
+        private ResolutionMode(String id) {
+            super(id);
+        }
+    }
+
+    /**
      * Dependency scope: all the variations for all resolution scopes.
      */
     public static final class DependencyScope extends Atom {
@@ -67,104 +116,23 @@ public final class Atoms {
         // both              yes     | yes
         // onlyRuntime       no      | yes
         // onlyCompile       yes     | no
-        public static final DependencyScope NONE = new DependencyScope("none");
-        public static final DependencyScope BOTH = new DependencyScope("both");
-        public static final DependencyScope ONLY_RUNTIME = new DependencyScope("onlyRuntime");
-        public static final DependencyScope ONLY_COMPILE = new DependencyScope("onlyCompile");
+        public static final DependencyScope NONE = new DependencyScope("none", Collections.emptySet());
+        public static final DependencyScope BOTH =
+                new DependencyScope("both", Arrays.asList(ResolutionScope.COMPILE, ResolutionScope.RUNTIME));
+        public static final DependencyScope ONLY_RUNTIME =
+                new DependencyScope("onlyRuntime", Collections.singleton(ResolutionScope.RUNTIME));
+        public static final DependencyScope ONLY_COMPILE =
+                new DependencyScope("onlyCompile", Collections.singleton(ResolutionScope.COMPILE));
 
-        public static final Set<DependencyScope> ALL =
-                Collections.unmodifiableSet(new HashSet<>(Arrays.asList(NONE, BOTH, ONLY_RUNTIME, ONLY_COMPILE)));
+        private final Set<ResolutionScope> memberOf;
 
-        public DependencyScope(String id) {
+        private DependencyScope(String id, Collection<ResolutionScope> resolutionScopes) {
             super(id);
-        }
-    }
-
-    /**
-     * Project scope: like "main", "test", etc...
-     */
-    public static final class ProjectScope extends Atom {
-        public static final ProjectScope NONE = new ProjectScope("none");
-        public static final ProjectScope MAIN = new ProjectScope("main");
-        public static final ProjectScope TEST = new ProjectScope("test");
-        public static final Set<ProjectScope> ALL =
-                Collections.unmodifiableSet(new HashSet<>(Arrays.asList(NONE, MAIN, TEST)));
-
-        // TODO: this could be even extended? IT, etc
-
-        public ProjectScope(String id) {
-            super(id);
-        }
-    }
-
-    /**
-     * Resolution mode: eliminate or just remove.
-     */
-    public enum ResolutionMode {
-        /**
-         * Mode where non-wanted scopes are eliminated. In other words, this mode ensures that if a dependency was
-         * removed, as it was in unwanted scope, it will guarantee that no such dependency will appear anywhere else in
-         * the resulting graph.
-         */
-        ELIMINATE,
-
-        /**
-         * Mode where non-wanted scopes are removed only. In other words, they will NOT prevent (as in they will not
-         * "dominate") perhaps appearing other occurrences of same artifact under some other scope in the graph.
-         */
-        REMOVE
-    }
-
-    /**
-     * Resolution scope: essentially "compile" and "runtime".
-     */
-    public static final class ResolutionScope extends Atom {
-        public static final ResolutionScope NONE =
-                new ResolutionScope("none", Collections.emptySet(), DependencyScope.ALL);
-        public static final ResolutionScope EMPTY =
-                new ResolutionScope("empty", Collections.emptySet(), Collections.emptySet());
-        public static final ResolutionScope COMPILE = new ResolutionScope(
-                "compile",
-                Arrays.asList(DependencyScope.BOTH, DependencyScope.ONLY_COMPILE),
-                Arrays.asList(DependencyScope.NONE, DependencyScope.ONLY_RUNTIME));
-        public static final ResolutionScope RUNTIME = new ResolutionScope(
-                "runtime",
-                Arrays.asList(DependencyScope.BOTH, DependencyScope.ONLY_RUNTIME),
-                Arrays.asList(DependencyScope.NONE, DependencyScope.ONLY_COMPILE));
-
-        private final Set<DependencyScope> contains;
-        private final Set<DependencyScope> excludesTransitively;
-
-        public ResolutionScope(
-                String id, Collection<DependencyScope> contains, Collection<DependencyScope> excludesTransitively) {
-            super(id);
-            this.contains = Collections.unmodifiableSet(new HashSet<>(contains));
-            this.excludesTransitively = Collections.unmodifiableSet(new HashSet<>(excludesTransitively));
+            this.memberOf = Collections.unmodifiableSet(new HashSet<>(resolutionScopes));
         }
 
-        public Set<DependencyScope> getContains() {
-            return contains;
-        }
-
-        public Set<DependencyScope> getExcludesTransitively() {
-            return excludesTransitively;
-        }
-
-        public ResolutionScope plus(DependencyScope dependencyScope) {
-            requireNonNull(dependencyScope);
-            if (this == NONE) {
-                throw new IllegalStateException("NONE is not extensible resolution scope");
-            }
-            if (getContains().contains(dependencyScope)) {
-                return this;
-            }
-            if (this == EMPTY) {
-                return new ResolutionScope(
-                        dependencyScope.getId(), Collections.singleton(dependencyScope), Collections.emptySet());
-            }
-            HashSet<DependencyScope> dependencyScopes = new HashSet<>(getContains());
-            dependencyScopes.add(dependencyScope);
-            return new ResolutionScope(getId() + "+" + dependencyScope.getId(), dependencyScopes, excludesTransitively);
+        public Set<ResolutionScope> getMemberOf() {
+            return memberOf;
         }
     }
 
@@ -189,9 +157,16 @@ public final class Atoms {
 
         boolean isTransitive();
 
-        DependencyScope getDependencyScope();
+        Set<DependencyScope> getDependencyScopes();
 
         Set<ProjectScope> getProjectScopes();
+
+        default Set<ResolutionScope> getMemberOf() {
+            return getDependencyScopes().stream()
+                    .map(DependencyScope::getMemberOf)
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toSet());
+        }
     }
 
     /**
@@ -202,9 +177,9 @@ public final class Atoms {
 
         Language getLanguage();
 
-        ProjectScope getProjectScope();
+        Set<ProjectScope> getProjectScopes();
 
-        ResolutionScope getResolutionScope();
+        Set<ResolutionScope> getResolutionScopes();
 
         ResolutionMode getResolutionMode();
     }

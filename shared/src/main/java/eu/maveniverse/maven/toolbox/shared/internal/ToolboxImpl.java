@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RequestTrace;
 import org.eclipse.aether.artifact.Artifact;
@@ -65,10 +66,14 @@ public class ToolboxImpl implements Toolbox {
         Set<String> transitiveExcludes = calculateTransitiveExcludes(resolutionScope);
         logger.info(
                 "Collecting project scope: {}",
-                resolutionScope.getProjectScope().getId());
+                resolutionScope.getProjectScopes().stream()
+                        .map(Atoms.Atom::getId)
+                        .collect(Collectors.joining(",")));
         logger.info(
                 "        resolution scope: {}",
-                resolutionScope.getResolutionScope().getId());
+                resolutionScope.getResolutionScopes().stream()
+                        .map(Atoms.Atom::getId)
+                        .collect(Collectors.joining(",")));
         logger.info(
                 "                language: {}", resolutionScope.getLanguage().getId());
         logger.info("                includes: {}", includes);
@@ -121,10 +126,14 @@ public class ToolboxImpl implements Toolbox {
         Set<String> transitiveExcludes = calculateTransitiveExcludes(resolutionScope);
         logger.info(
                 "Collecting project scope: {}",
-                resolutionScope.getProjectScope().getId());
+                resolutionScope.getProjectScopes().stream()
+                        .map(Atoms.Atom::getId)
+                        .collect(Collectors.joining(",")));
         logger.info(
                 "        resolution scope: {}",
-                resolutionScope.getResolutionScope().getId());
+                resolutionScope.getResolutionScopes().stream()
+                        .map(Atoms.Atom::getId)
+                        .collect(Collectors.joining(",")));
         logger.info(
                 "                language: {}", resolutionScope.getLanguage().getId());
         logger.info("                includes: {}", includes);
@@ -160,13 +169,13 @@ public class ToolboxImpl implements Toolbox {
      * This method basically translates "scope" to {@link Atoms.LanguageDependencyScope} specific string IDs.
      */
     private Set<String> calculateIncludes(Atoms.LanguageResolutionScope scope) {
-        Atoms.ProjectScope projectScope = scope.getProjectScope();
-        Atoms.ResolutionScope resolutionScope = scope.getResolutionScope();
+        Set<Atoms.ProjectScope> projectScopes = scope.getProjectScopes();
+        Set<Atoms.ResolutionScope> resolutionScopes = scope.getResolutionScopes();
         HashSet<String> includes = new HashSet<>();
         for (Atoms.LanguageDependencyScope languageDependencyScope :
                 scope.getLanguage().getLanguageDependencyScopeUniverse()) {
-            if (languageDependencyScope.getProjectScopes().contains(projectScope)
-                    && resolutionScope.getContains().contains(languageDependencyScope.getDependencyScope())) {
+            if (hasIntersection(projectScopes, languageDependencyScope.getProjectScopes())
+                    && hasIntersection(resolutionScopes, languageDependencyScope.getMemberOf())) {
                 // IF: project scope is contained in given language project scopes
                 // AND if resolution scope contains given language scope dependency scope
                 // the languageScope should be included, add it
@@ -180,13 +189,13 @@ public class ToolboxImpl implements Toolbox {
      * This method basically translates "scope" to {@link Atoms.LanguageDependencyScope} specific string IDs.
      */
     private Set<String> calculateTransitiveExcludes(Atoms.LanguageResolutionScope scope) {
-        Atoms.ProjectScope projectScope = scope.getProjectScope();
-        Atoms.ResolutionScope resolutionScope = scope.getResolutionScope();
+        Set<Atoms.ProjectScope> projectScopes = scope.getProjectScopes();
+        Set<Atoms.ResolutionScope> resolutionScopes = scope.getResolutionScopes();
         HashSet<String> excludes = new HashSet<>();
         for (Atoms.LanguageDependencyScope languageDependencyScope :
                 scope.getLanguage().getLanguageDependencyScopeUniverse()) {
-            // if the language scope is not meant to be here (is not present in this project scope)
-            if (!languageDependencyScope.getProjectScopes().contains(projectScope)) {
+            // if the language scope is not meant to be here (is not present in wanted project scopes)
+            if (!hasIntersection(projectScopes, languageDependencyScope.getProjectScopes())) {
                 excludes.add(languageDependencyScope.getId());
                 continue;
             }
@@ -195,12 +204,16 @@ public class ToolboxImpl implements Toolbox {
                 excludes.add(languageDependencyScope.getId());
                 continue;
             }
-            // if the resolution scope explicitly excludes language scope's dependency scope
-            if (resolutionScope.getExcludesTransitively().contains(languageDependencyScope.getDependencyScope())) {
+            // if the resolution scopes has no language scope's dependency scope
+            if (!hasIntersection(resolutionScopes, languageDependencyScope.getMemberOf())) {
                 excludes.add(languageDependencyScope.getId());
             }
         }
         return excludes;
+    }
+
+    private <T> boolean hasIntersection(Set<T> one, Set<T> two) {
+        return one.stream().anyMatch(two::contains);
     }
 
     @Override

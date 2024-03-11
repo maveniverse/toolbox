@@ -66,6 +66,10 @@ public final class JavaLanguage implements Language {
     }
 
     private Map<String, JavaResolutionScope> buildResolutionScopes() {
+        Collection<JavaDependencyScope> nonTransitiveScopes = dependencyScopes.values().stream()
+                .filter(s -> !s.isTransitive())
+                .collect(Collectors.toSet());
+
         HashMap<String, JavaResolutionScope> result = new HashMap<>();
         result.put(
                 RS_NONE,
@@ -82,10 +86,7 @@ public final class JavaLanguage implements Language {
                                 dependencyScopes.get(DS_COMPILE_ONLY),
                                 dependencyScopes.get(DS_PROVIDED),
                                 dependencyScopes.get(DS_SYSTEM)),
-                        Arrays.asList(
-                                dependencyScopes.get(DS_NONE),
-                                dependencyScopes.get(DS_PROVIDED),
-                                dependencyScopes.get(DS_TEST))));
+                        nonTransitiveScopes));
         result.put(
                 RS_MAIN_COMPILE_PLUS_RUNTIME,
                 new JavaResolutionScope(
@@ -98,10 +99,7 @@ public final class JavaLanguage implements Language {
                                 dependencyScopes.get(DS_PROVIDED),
                                 dependencyScopes.get(DS_SYSTEM),
                                 dependencyScopes.get(DS_RUNTIME)),
-                        Arrays.asList(
-                                dependencyScopes.get(DS_NONE),
-                                dependencyScopes.get(DS_PROVIDED),
-                                dependencyScopes.get(DS_TEST))));
+                        nonTransitiveScopes));
         result.put(
                 RS_MAIN_RUNTIME,
                 new JavaResolutionScope(
@@ -109,10 +107,7 @@ public final class JavaLanguage implements Language {
                         this,
                         mavenLevel == MavenLevel.Maven4 ? ResolutionScope.Mode.REMOVE : ResolutionScope.Mode.ELIMINATE,
                         Arrays.asList(dependencyScopes.get(DS_COMPILE), dependencyScopes.get(DS_RUNTIME)),
-                        Arrays.asList(
-                                dependencyScopes.get(DS_NONE),
-                                dependencyScopes.get(DS_PROVIDED),
-                                dependencyScopes.get(DS_TEST))));
+                        nonTransitiveScopes));
         result.put(
                 RS_MAIN_RUNTIME_PLUS_SYSTEM,
                 new JavaResolutionScope(
@@ -123,10 +118,7 @@ public final class JavaLanguage implements Language {
                                 dependencyScopes.get(DS_COMPILE),
                                 dependencyScopes.get(DS_RUNTIME),
                                 dependencyScopes.get(DS_SYSTEM)),
-                        Arrays.asList(
-                                dependencyScopes.get(DS_NONE),
-                                dependencyScopes.get(DS_PROVIDED),
-                                dependencyScopes.get(DS_TEST))));
+                        nonTransitiveScopes));
         result.put(
                 RS_TEST_COMPILE,
                 new JavaResolutionScope(
@@ -138,10 +130,7 @@ public final class JavaLanguage implements Language {
                                 dependencyScopes.get(DS_PROVIDED),
                                 dependencyScopes.get(DS_TEST),
                                 dependencyScopes.get(DS_TEST_ONLY)),
-                        Arrays.asList(
-                                dependencyScopes.get(DS_NONE),
-                                dependencyScopes.get(DS_PROVIDED),
-                                dependencyScopes.get(DS_TEST))));
+                        nonTransitiveScopes));
         result.put(
                 RS_TEST_RUNTIME,
                 new JavaResolutionScope(
@@ -153,10 +142,7 @@ public final class JavaLanguage implements Language {
                                 dependencyScopes.get(DS_PROVIDED),
                                 dependencyScopes.get(DS_TEST),
                                 dependencyScopes.get(DS_TEST_RUNTIME)),
-                        Arrays.asList(
-                                dependencyScopes.get(DS_NONE),
-                                dependencyScopes.get(DS_PROVIDED),
-                                dependencyScopes.get(DS_TEST))));
+                        nonTransitiveScopes));
         return result;
     }
 

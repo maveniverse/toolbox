@@ -7,14 +7,158 @@
  */
 package eu.maveniverse.maven.toolbox.shared.java;
 
-import eu.maveniverse.maven.toolbox.shared.Atoms;
+import static java.util.Objects.requireNonNull;
+
+import eu.maveniverse.maven.toolbox.shared.DependencyScope;
+import eu.maveniverse.maven.toolbox.shared.Language;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import java.util.*;
 
-public final class JavaLanguage implements Atoms.Language {
+public final class JavaLanguage implements Language {
     public static final String NAME = "java";
-    public static final JavaLanguage INSTANCE = new JavaLanguage();
 
-    private JavaLanguage() {}
+    public static final JavaLanguage MAVEN3 = new JavaLanguage(true);
+    public static final JavaLanguage MAVEN4 = new JavaLanguage(false);
+
+    private static final String DS_NONE = "none";
+    private static final String DS_COMPILE = "compile";
+    private static final String DS_COMPILE_ONLY = "compileOnly";
+    private static final String DS_RUNTIME = "runtime";
+    private static final String DS_PROVIDED = "provided";
+    private static final String DS_SYSTEM = "system";
+    private static final String DS_TEST = "test";
+    private static final String DS_TEST_RUNTIME = "testRuntime";
+    private static final String DS_TEST_ONLY = "testOnly";
+    private static final String RS_NONE = "none";
+    private static final String RS_MAIN_COMPILE = "main-compile";
+    private static final String RS_MAIN_COMPILE_PLUS_RUNTIME = "main-compilePlusRuntime";
+    private static final String RS_MAIN_RUNTIME = "main-runtime";
+    private static final String RS_MAIN_RUNTIME_PLUS_SYSTEM = "main-runtimePlusSystem";
+    private static final String RS_MAIN_RUNTIME_M3 = "main-runtimeM3";
+    private static final String RS_MAIN_RUNTIME_M3_PLUS_SYSTEM = "main-runtimeM3PlusSystem";
+    private static final String RS_TEST_COMPILE = "test-compile";
+    private static final String RS_TEST_RUNTIME = "test-runtime";
+    private final boolean systemIsTransitive;
+    private final Map<String, JavaDependencyScope> dependencyScopes;
+    private final Map<String, JavaResolutionScope> resolutionScopes;
+
+    private JavaLanguage(boolean systemIsTransitive) {
+        this.systemIsTransitive = systemIsTransitive;
+        this.dependencyScopes = Collections.unmodifiableMap(buildDependencyScopes());
+        this.resolutionScopes = Collections.unmodifiableMap(buildResolutionScopes());
+    }
+
+    private Map<String, JavaDependencyScope> buildDependencyScopes() {
+        HashMap<String, JavaDependencyScope> result = new HashMap<>();
+        result.put(DS_NONE, new JavaDependencyScope(DS_NONE, this, false));
+        result.put(DS_COMPILE, new JavaDependencyScope(DS_COMPILE, this, true));
+        result.put(DS_COMPILE_ONLY, new JavaDependencyScope(DS_COMPILE_ONLY, this, false));
+        result.put(DS_RUNTIME, new JavaDependencyScope(DS_RUNTIME, this, true));
+        result.put(DS_PROVIDED, new JavaDependencyScope(DS_PROVIDED, this, false));
+        result.put(DS_SYSTEM, new JavaDependencyScope(DS_SYSTEM, this, systemIsTransitive));
+        result.put(DS_TEST, new JavaDependencyScope(DS_TEST, this, false));
+        result.put(DS_TEST_RUNTIME, new JavaDependencyScope(DS_TEST_RUNTIME, this, false));
+        result.put(DS_TEST_ONLY, new JavaDependencyScope(DS_TEST_ONLY, this, false));
+        return result;
+    }
+
+    private Map<String, JavaResolutionScope> buildResolutionScopes() {
+        HashMap<String, JavaResolutionScope> result = new HashMap<>();
+        result.put(
+                RS_NONE,
+                new JavaResolutionScope(
+                        RS_NONE, this, ResolutionScope.Mode.REMOVE, Collections.emptySet(), dependencyScopes.values()));
+        result.put(
+                RS_MAIN_COMPILE,
+                new JavaResolutionScope(
+                        RS_MAIN_COMPILE,
+                        this,
+                        ResolutionScope.Mode.ELIMINATE,
+                        Arrays.asList(
+                                dependencyScopes.get(DS_COMPILE),
+                                dependencyScopes.get(DS_COMPILE_ONLY),
+                                dependencyScopes.get(DS_PROVIDED)),
+                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+        result.put(
+                RS_MAIN_COMPILE_PLUS_RUNTIME,
+                new JavaResolutionScope(
+                        RS_MAIN_COMPILE_PLUS_RUNTIME,
+                        this,
+                        ResolutionScope.Mode.ELIMINATE,
+                        Arrays.asList(
+                                dependencyScopes.get(DS_COMPILE),
+                                dependencyScopes.get(DS_COMPILE_ONLY),
+                                dependencyScopes.get(DS_PROVIDED),
+                                dependencyScopes.get(DS_RUNTIME)),
+                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+        result.put(
+                RS_MAIN_RUNTIME,
+                new JavaResolutionScope(
+                        RS_MAIN_RUNTIME,
+                        this,
+                        ResolutionScope.Mode.REMOVE,
+                        Arrays.asList(dependencyScopes.get(DS_COMPILE), dependencyScopes.get(DS_RUNTIME)),
+                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+        result.put(
+                RS_MAIN_RUNTIME_PLUS_SYSTEM,
+                new JavaResolutionScope(
+                        RS_MAIN_RUNTIME_PLUS_SYSTEM,
+                        this,
+                        ResolutionScope.Mode.REMOVE,
+                        Arrays.asList(
+                                dependencyScopes.get(DS_COMPILE),
+                                dependencyScopes.get(DS_RUNTIME),
+                                dependencyScopes.get(DS_SYSTEM)),
+                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+        result.put(
+                RS_MAIN_RUNTIME_M3,
+                new JavaResolutionScope(
+                        RS_MAIN_RUNTIME_M3,
+                        this,
+                        ResolutionScope.Mode.ELIMINATE,
+                        Arrays.asList(
+                                dependencyScopes.get(DS_COMPILE),
+                                dependencyScopes.get(DS_RUNTIME),
+                                dependencyScopes.get(DS_SYSTEM)),
+                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+        result.put(
+                RS_MAIN_RUNTIME_M3_PLUS_SYSTEM,
+                new JavaResolutionScope(
+                        RS_MAIN_RUNTIME_M3_PLUS_SYSTEM,
+                        this,
+                        ResolutionScope.Mode.ELIMINATE,
+                        Arrays.asList(
+                                dependencyScopes.get(DS_COMPILE),
+                                dependencyScopes.get(DS_COMPILE_ONLY),
+                                dependencyScopes.get(DS_RUNTIME),
+                                dependencyScopes.get(DS_PROVIDED)),
+                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+        result.put(
+                RS_TEST_COMPILE,
+                new JavaResolutionScope(
+                        RS_TEST_COMPILE,
+                        this,
+                        ResolutionScope.Mode.ELIMINATE,
+                        Arrays.asList(
+                                dependencyScopes.get(DS_COMPILE),
+                                dependencyScopes.get(DS_PROVIDED),
+                                dependencyScopes.get(DS_TEST),
+                                dependencyScopes.get(DS_TEST_ONLY)),
+                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+        result.put(
+                RS_TEST_RUNTIME,
+                new JavaResolutionScope(
+                        RS_TEST_RUNTIME,
+                        this,
+                        ResolutionScope.Mode.ELIMINATE,
+                        Arrays.asList(
+                                dependencyScopes.get(DS_COMPILE),
+                                dependencyScopes.get(DS_PROVIDED),
+                                dependencyScopes.get(DS_TEST),
+                                dependencyScopes.get(DS_TEST_RUNTIME)),
+                        Arrays.asList(dependencyScopes.get(DS_PROVIDED), dependencyScopes.get(DS_TEST))));
+        return result;
+    }
 
     @Override
     public String getId() {
@@ -22,33 +166,49 @@ public final class JavaLanguage implements Atoms.Language {
     }
 
     @Override
-    public Set<? extends Atoms.LanguageDependencyScope> getLanguageDependencyScopeUniverse() {
-        return JavaDependencyScope.ALL;
+    public String getDescription() {
+        return systemIsTransitive ? "Java as in Maven3" : "Java as in Maven4";
     }
 
-    public Set<? extends Atoms.LanguageResolutionScope> getLanguageResolutionScopeUniverse() {
-        return JavaResolutionScope.ALL;
+    @Override
+    public Optional<DependencyScope> getDependencyScope(String id) {
+        return Optional.ofNullable(dependencyScopes.get(id));
     }
 
-    public static final class JavaDependencyScope extends Atoms.Atom implements Atoms.LanguageDependencyScope {
+    @Override
+    public Collection<? extends DependencyScope> getDependencyScopeUniverse() {
+        return dependencyScopes.values();
+    }
+
+    @Override
+    public Optional<ResolutionScope> getResolutionScope(String id) {
+        return Optional.ofNullable(resolutionScopes.get(id));
+    }
+
+    @Override
+    public Collection<? extends ResolutionScope> getResolutionScopeUniverse() {
+        return resolutionScopes.values();
+    }
+
+    private static final class JavaDependencyScope implements DependencyScope {
+        private final String id;
+        private final JavaLanguage javaLanguage;
         private final boolean transitive;
-        private final Set<Atoms.DependencyScope> dependencyScopes;
-        private final Set<Atoms.ProjectScope> projectScopes;
 
-        private JavaDependencyScope(
-                String id,
-                boolean transitive,
-                Collection<Atoms.DependencyScope> dependencyScopes,
-                Collection<Atoms.ProjectScope> projectScopes) {
-            super(id);
+        public JavaDependencyScope(String id, JavaLanguage javaLanguage, boolean transitive) {
+            this.id = requireNonNull(id, "id");
+            this.javaLanguage = requireNonNull(javaLanguage, "javaLanguage");
             this.transitive = transitive;
-            this.dependencyScopes = Collections.unmodifiableSet(new HashSet<>(dependencyScopes));
-            this.projectScopes = Collections.unmodifiableSet(new HashSet<>(projectScopes));
         }
 
         @Override
-        public Atoms.Language getLanguage() {
-            return JavaLanguage.INSTANCE;
+        public String getId() {
+            return id;
+        }
+
+        @Override
+        public Language getLanguage() {
+            return javaLanguage;
         }
 
         @Override
@@ -56,142 +216,60 @@ public final class JavaLanguage implements Atoms.Language {
             return transitive;
         }
 
-        public Set<Atoms.DependencyScope> getDependencyScopes() {
-            return dependencyScopes;
+        @Override
+        public String toString() {
+            return id;
         }
-
-        public Set<Atoms.ProjectScope> getProjectScopes() {
-            return projectScopes;
-        }
-
-        public static final JavaDependencyScope NONE = new JavaDependencyScope(
-                "none", false, Collections.singleton(Atoms.DependencyScope.NONE), Collections.emptySet());
-        public static final JavaDependencyScope COMPILE = new JavaDependencyScope(
-                "compile", true, Collections.singleton(Atoms.DependencyScope.BOTH), Atoms.ProjectScope.ALL);
-        public static final JavaDependencyScope COMPILE_ONLY = new JavaDependencyScope(
-                "compileOnly",
-                false,
-                Collections.singleton(Atoms.DependencyScope.ONLY_COMPILE),
-                Collections.singleton(Atoms.ProjectScope.MAIN));
-        public static final JavaDependencyScope RUNTIME = new JavaDependencyScope(
-                "runtime", true, Collections.singleton(Atoms.DependencyScope.ONLY_RUNTIME), Atoms.ProjectScope.ALL);
-        public static final JavaDependencyScope PROVIDED = new JavaDependencyScope(
-                "provided", false, Collections.singleton(Atoms.DependencyScope.ONLY_COMPILE), Atoms.ProjectScope.ALL);
-        public static final JavaDependencyScope SYSTEM = new JavaDependencyScope(
-                "system", false, Collections.singleton(Atoms.DependencyScope.BOTH), Atoms.ProjectScope.ALL);
-        public static final JavaDependencyScope TEST = new JavaDependencyScope(
-                "test",
-                false,
-                Collections.singleton(Atoms.DependencyScope.BOTH),
-                Collections.singleton(Atoms.ProjectScope.TEST));
-        public static final JavaDependencyScope TEST_RUNTIME = new JavaDependencyScope(
-                "testRuntime",
-                false,
-                Collections.singleton(Atoms.DependencyScope.ONLY_RUNTIME),
-                Collections.singleton(Atoms.ProjectScope.TEST));
-        public static final JavaDependencyScope TEST_ONLY = new JavaDependencyScope(
-                "testOnly",
-                false,
-                Collections.singleton(Atoms.DependencyScope.ONLY_COMPILE),
-                Collections.singleton(Atoms.ProjectScope.TEST));
-
-        public static final Set<JavaDependencyScope> ALL = Collections.unmodifiableSet(new HashSet<>(
-                Arrays.asList(NONE, COMPILE, COMPILE_ONLY, RUNTIME, PROVIDED, SYSTEM, TEST, TEST_RUNTIME, TEST_ONLY)));
     }
 
-    private static final class JavaResolutionScope extends Atoms.Atom implements Atoms.LanguageResolutionScope {
-        private final Set<Atoms.ProjectScope> projectScopes;
-        private final Set<Atoms.ResolutionScope> resolutionScopes;
-        private final Atoms.ResolutionMode resolutionMode;
+    private static final class JavaResolutionScope implements ResolutionScope {
+        private final String id;
+        private final JavaLanguage javaLanguage;
+        private final Mode mode;
+        private final Set<JavaDependencyScope> directlyIncluded;
+        private final Set<JavaDependencyScope> transitivelyExcluded;
 
         private JavaResolutionScope(
                 String id,
-                Collection<Atoms.ProjectScope> projectScopes,
-                Collection<Atoms.ResolutionScope> resolutionScopes,
-                Atoms.ResolutionMode resolutionMode) {
-            super(id);
-            this.projectScopes = Collections.unmodifiableSet(new HashSet<>(projectScopes));
-            this.resolutionScopes = Collections.unmodifiableSet(new HashSet<>(resolutionScopes));
-            this.resolutionMode = resolutionMode;
+                JavaLanguage javaLanguage,
+                Mode mode,
+                Collection<JavaDependencyScope> directlyIncluded,
+                Collection<JavaDependencyScope> transitivelyExcluded) {
+            this.id = requireNonNull(id, "id");
+            this.javaLanguage = requireNonNull(javaLanguage, "javaLanguage");
+            this.mode = requireNonNull(mode, "mode");
+            this.directlyIncluded = Collections.unmodifiableSet(new HashSet<>(directlyIncluded));
+            this.transitivelyExcluded = Collections.unmodifiableSet(new HashSet<>(transitivelyExcluded));
         }
 
         @Override
-        public Atoms.Language getLanguage() {
-            return JavaLanguage.INSTANCE;
+        public String getId() {
+            return id;
         }
 
         @Override
-        public Set<Atoms.ProjectScope> getProjectScopes() {
-            return projectScopes;
+        public Language getLanguage() {
+            return javaLanguage;
         }
 
         @Override
-        public Set<Atoms.ResolutionScope> getResolutionScopes() {
-            return resolutionScopes;
+        public Mode getMode() {
+            return mode;
         }
 
         @Override
-        public Atoms.ResolutionMode getResolutionMode() {
-            return resolutionMode;
+        public String toString() {
+            return id;
         }
 
-        public JavaResolutionScope plus(JavaDependencyScope dependencyScope) {
-            if (this == NONE) {
-                throw new IllegalStateException("NONE resolution scope is immutable");
-            } else if (this == EMPTY) {
-                return new JavaResolutionScope(
-                        dependencyScope.getId(),
-                        dependencyScope.getProjectScopes(),
-                        dependencyScope.getMemberOf(),
-                        resolutionMode);
-            }
-            if (this.projectScopes.containsAll(dependencyScope.getProjectScopes())
-                    && this.resolutionScopes.containsAll(dependencyScope.getMemberOf())) {
-                return this;
-            }
-            HashSet<Atoms.ProjectScope> projectScopes = new HashSet<>(this.projectScopes);
-            projectScopes.addAll(dependencyScope.getProjectScopes());
-            HashSet<Atoms.ResolutionScope> resolutionScopes = new HashSet<>(this.resolutionScopes);
-            resolutionScopes.addAll(dependencyScope.getMemberOf());
-            return new JavaResolutionScope(
-                    getId() + "+" + dependencyScope.getId(), projectScopes, resolutionScopes, resolutionMode);
+        @Override
+        public Set<JavaDependencyScope> getDirectlyIncluded() {
+            return directlyIncluded;
         }
 
-        public static final JavaResolutionScope NONE = new JavaResolutionScope(
-                "none", Collections.emptySet(), Collections.emptySet(), Atoms.ResolutionMode.ELIMINATE);
-        public static final JavaResolutionScope EMPTY = new JavaResolutionScope(
-                "empty", Collections.emptySet(), Collections.emptySet(), Atoms.ResolutionMode.ELIMINATE);
-        public static final JavaResolutionScope MAIN_COMPILE = new JavaResolutionScope(
-                "main-compile",
-                Collections.singleton(Atoms.ProjectScope.MAIN),
-                Collections.singleton(Atoms.ResolutionScope.COMPILE),
-                Atoms.ResolutionMode.ELIMINATE);
-        public static final JavaResolutionScope MAIN_COMPILE_PLUS_RUNTIME =
-                MAIN_COMPILE.plus(JavaDependencyScope.RUNTIME);
-        public static final JavaResolutionScope MAIN_RUNTIME = new JavaResolutionScope(
-                "main-runtime",
-                Collections.singleton(Atoms.ProjectScope.MAIN),
-                Collections.singleton(Atoms.ResolutionScope.RUNTIME),
-                Atoms.ResolutionMode.REMOVE);
-        public static final JavaResolutionScope MAIN_RUNTIME_PLUS_SYSTEM =
-                MAIN_RUNTIME.plus(JavaDependencyScope.SYSTEM);
-        public static final JavaResolutionScope MAIN_RUNTIME_M3 = new JavaResolutionScope(
-                "main-runtime-m3",
-                Collections.singleton(Atoms.ProjectScope.MAIN),
-                Collections.singleton(Atoms.ResolutionScope.RUNTIME),
-                Atoms.ResolutionMode.ELIMINATE);
-        public static final JavaResolutionScope TEST_COMPILE = new JavaResolutionScope(
-                "test-compile",
-                Collections.singleton(Atoms.ProjectScope.TEST),
-                Collections.singleton(Atoms.ResolutionScope.COMPILE),
-                Atoms.ResolutionMode.ELIMINATE);
-        public static final JavaResolutionScope TEST_RUNTIME = new JavaResolutionScope(
-                "test-runtime",
-                Collections.singleton(Atoms.ProjectScope.TEST),
-                Collections.singleton(Atoms.ResolutionScope.RUNTIME),
-                Atoms.ResolutionMode.REMOVE);
-
-        public static final Set<JavaResolutionScope> ALL = Collections.unmodifiableSet(new HashSet<>(
-                Arrays.asList(NONE, EMPTY, MAIN_COMPILE, MAIN_RUNTIME, MAIN_RUNTIME_M3, TEST_COMPILE, TEST_RUNTIME)));
+        @Override
+        public Set<JavaDependencyScope> getTransitivelyExcluded() {
+            return transitivelyExcluded;
+        }
     }
 }

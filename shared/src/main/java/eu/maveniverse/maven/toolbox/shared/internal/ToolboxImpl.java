@@ -10,10 +10,10 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.Atoms;
+import eu.maveniverse.maven.toolbox.shared.DependencyScope;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,7 +48,29 @@ public class ToolboxImpl implements Toolbox {
 
     @Override
     public CollectResult collect(
-            Atoms.LanguageResolutionScope resolutionScope,
+            ResolutionScope resolutionScope,
+            Artifact root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            List<RemoteRepository> remoteRepositories,
+            boolean verbose)
+            throws DependencyCollectionException {
+        return doCollect(resolutionScope, null, root, dependencies, managedDependencies, remoteRepositories, verbose);
+    }
+
+    @Override
+    public CollectResult collect(
+            ResolutionScope resolutionScope,
+            Dependency root,
+            List<RemoteRepository> remoteRepositories,
+            boolean verbose)
+            throws DependencyCollectionException {
+        return doCollect(resolutionScope, root, null, null, null, remoteRepositories, verbose);
+    }
+
+    private CollectResult doCollect(
+            ResolutionScope resolutionScope,
+            Dependency rootDependency,
             Artifact root,
             List<Dependency> dependencies,
             List<Dependency> managedDependencies,
@@ -56,164 +78,60 @@ public class ToolboxImpl implements Toolbox {
             boolean verbose)
             throws DependencyCollectionException {
         requireNonNull(resolutionScope);
+        if (rootDependency == null && root == null) {
+            throw new NullPointerException("one of rootDependency or root must be non-null");
+        }
 
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
         if (verbose) {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
             session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         }
-        Set<String> includes = calculateIncludes(resolutionScope);
-        Set<String> transitiveExcludes = calculateTransitiveExcludes(resolutionScope);
-        logger.info(
-                "Collecting project scope: {}",
-                resolutionScope.getProjectScopes().stream()
-                        .map(Atoms.Atom::getId)
-                        .collect(Collectors.joining(",")));
-        logger.info(
-                "        resolution scope: {}",
-                resolutionScope.getResolutionScopes().stream()
-                        .map(Atoms.Atom::getId)
-                        .collect(Collectors.joining(",")));
-        logger.info(
-                "                language: {}", resolutionScope.getLanguage().getId());
-        logger.info("                includes: {}", includes);
-        logger.info("                excludes: {}", transitiveExcludes);
+        logger.info("Collecting scope: {}", resolutionScope.getId());
+        logger.info("        language: {}", resolutionScope.getLanguage().getDescription());
+        logger.info("        includes: {}", resolutionScope.getDirectlyIncluded());
+        logger.info("        excludes: {}", resolutionScope.getTransitivelyExcluded());
 
+        Set<String> directlyIncluded = resolutionScope.getDirectlyIncluded().stream()
+                .map(DependencyScope::getId)
+                .collect(Collectors.toSet());
+        Set<String> directlyExcluded = resolutionScope.getLanguage().getDependencyScopeUniverse().stream()
+                .map(DependencyScope::getId)
+                .filter(s -> !directlyIncluded.contains(s))
+                .collect(Collectors.toSet());
+        Set<String> transitivelyExcluded = resolutionScope.getTransitivelyExcluded().stream()
+                .map(DependencyScope::getId)
+                .collect(Collectors.toSet());
         session.setDependencySelector(new AndDependencySelector(
-                resolutionScope.getResolutionMode() == Atoms.ResolutionMode.ELIMINATE
-                        ? ScopeDependencySelector.fromTo(2, 3, includes, null)
-                        : ScopeDependencySelector.fromTo(1, 3, includes, null),
-                ScopeDependencySelector.fromDirect(null, transitiveExcludes),
+                resolutionScope.getMode() == ResolutionScope.Mode.ELIMINATE
+                        ? ScopeDependencySelector.fromTo(2, 2, null, directlyExcluded)
+                        : ScopeDependencySelector.fromTo(1, 2, null, directlyExcluded),
+                ScopeDependencySelector.from(3, null, transitivelyExcluded),
                 OptionalDependencySelector.fromDirect(),
                 new ExclusionDependencySelector()));
 
         CollectRequest collectRequest = new CollectRequest();
-        collectRequest.setRootArtifact(root);
-        collectRequest.setDependencies(dependencies);
-        collectRequest.setManagedDependencies(managedDependencies);
+        if (rootDependency != null) {
+            collectRequest.setRoot(rootDependency);
+        } else {
+            collectRequest.setRootArtifact(root);
+            collectRequest.setDependencies(dependencies);
+            collectRequest.setManagedDependencies(managedDependencies);
+        }
         collectRequest.setRepositories(remoteRepositories);
         collectRequest.setRequestContext("project");
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
 
         logger.debug("Collecting {}", collectRequest);
         CollectResult result = context.repositorySystem().collectDependencies(session, collectRequest);
-        if (resolutionScope.getResolutionMode() == Atoms.ResolutionMode.ELIMINATE) {
+        if (resolutionScope.getMode() == ResolutionScope.Mode.ELIMINATE) {
             CloningDependencyVisitor cloning = new CloningDependencyVisitor();
             FilteringDependencyVisitor filter =
-                    new FilteringDependencyVisitor(cloning, new ScopeDependencyFilter(includes, null));
+                    new FilteringDependencyVisitor(cloning, new ScopeDependencyFilter(null, directlyExcluded));
             result.getRoot().accept(filter);
             result.setRoot(cloning.getRootNode());
         }
         return result;
-    }
-
-    @Override
-    public CollectResult collect(
-            Atoms.LanguageResolutionScope resolutionScope,
-            Dependency root,
-            List<RemoteRepository> remoteRepositories,
-            boolean verbose)
-            throws DependencyCollectionException {
-        requireNonNull(resolutionScope);
-        requireNonNull(root);
-
-        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
-        if (verbose) {
-            session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
-            session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
-        }
-        Set<String> includes = calculateIncludes(resolutionScope);
-        Set<String> transitiveExcludes = calculateTransitiveExcludes(resolutionScope);
-        logger.info(
-                "Collecting project scope: {}",
-                resolutionScope.getProjectScopes().stream()
-                        .map(Atoms.Atom::getId)
-                        .collect(Collectors.joining(",")));
-        logger.info(
-                "        resolution scope: {}",
-                resolutionScope.getResolutionScopes().stream()
-                        .map(Atoms.Atom::getId)
-                        .collect(Collectors.joining(",")));
-        logger.info(
-                "                language: {}", resolutionScope.getLanguage().getId());
-        logger.info("                includes: {}", includes);
-        logger.info("                excludes: {}", transitiveExcludes);
-
-        session.setDependencySelector(new AndDependencySelector(
-                resolutionScope.getResolutionMode() == Atoms.ResolutionMode.ELIMINATE
-                        ? ScopeDependencySelector.fromTo(2, 3, includes, null)
-                        : ScopeDependencySelector.fromTo(1, 3, includes, null),
-                ScopeDependencySelector.fromDirect(null, transitiveExcludes),
-                OptionalDependencySelector.fromDirect(),
-                new ExclusionDependencySelector()));
-
-        CollectRequest collectRequest = new CollectRequest();
-        collectRequest.setRoot(root);
-        collectRequest.setRepositories(remoteRepositories);
-        collectRequest.setRequestContext("project");
-        collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
-
-        logger.debug("Collecting {}", collectRequest);
-        CollectResult result = context.repositorySystem().collectDependencies(session, collectRequest);
-        if (resolutionScope.getResolutionMode() == Atoms.ResolutionMode.ELIMINATE) {
-            CloningDependencyVisitor cloning = new CloningDependencyVisitor();
-            FilteringDependencyVisitor filter =
-                    new FilteringDependencyVisitor(cloning, new ScopeDependencyFilter(includes, null));
-            result.getRoot().accept(filter);
-            result.setRoot(cloning.getRootNode());
-        }
-        return result;
-    }
-
-    /**
-     * This method basically translates "scope" to {@link Atoms.LanguageDependencyScope} specific string IDs.
-     */
-    private Set<String> calculateIncludes(Atoms.LanguageResolutionScope scope) {
-        Set<Atoms.ProjectScope> projectScopes = scope.getProjectScopes();
-        Set<Atoms.ResolutionScope> resolutionScopes = scope.getResolutionScopes();
-        HashSet<String> includes = new HashSet<>();
-        for (Atoms.LanguageDependencyScope languageDependencyScope :
-                scope.getLanguage().getLanguageDependencyScopeUniverse()) {
-            if (hasIntersection(projectScopes, languageDependencyScope.getProjectScopes())
-                    && hasIntersection(resolutionScopes, languageDependencyScope.getMemberOf())) {
-                // IF: project scope is contained in given language project scopes
-                // AND if resolution scope contains given language scope dependency scope
-                // the languageScope should be included, add it
-                includes.add(languageDependencyScope.getId());
-            }
-        }
-        return includes;
-    }
-
-    /**
-     * This method basically translates "scope" to {@link Atoms.LanguageDependencyScope} specific string IDs.
-     */
-    private Set<String> calculateTransitiveExcludes(Atoms.LanguageResolutionScope scope) {
-        Set<Atoms.ProjectScope> projectScopes = scope.getProjectScopes();
-        Set<Atoms.ResolutionScope> resolutionScopes = scope.getResolutionScopes();
-        HashSet<String> excludes = new HashSet<>();
-        for (Atoms.LanguageDependencyScope languageDependencyScope :
-                scope.getLanguage().getLanguageDependencyScopeUniverse()) {
-            // if the language scope is not meant to be here (is not present in wanted project scopes)
-            if (!hasIntersection(projectScopes, languageDependencyScope.getProjectScopes())) {
-                excludes.add(languageDependencyScope.getId());
-                continue;
-            }
-            // if the language scope is not transitive
-            if (!languageDependencyScope.isTransitive()) {
-                excludes.add(languageDependencyScope.getId());
-                continue;
-            }
-            // if the resolution scopes has no language scope's dependency scope
-            if (!hasIntersection(resolutionScopes, languageDependencyScope.getMemberOf())) {
-                excludes.add(languageDependencyScope.getId());
-            }
-        }
-        return excludes;
-    }
-
-    private <T> boolean hasIntersection(Set<T> one, Set<T> two) {
-        return one.stream().anyMatch(two::contains);
     }
 
     @Override

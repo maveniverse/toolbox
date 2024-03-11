@@ -59,8 +59,8 @@ public final class ScopeDependencySelector implements DependencySelector {
         if (applyFrom < 1) {
             throw new IllegalArgumentException("applyFrom must be non-zero and positive");
         }
-        if (applyTo <= applyFrom) {
-            throw new IllegalArgumentException("applyTo must be grater than applyFrom");
+        if (applyFrom > applyTo) {
+            throw new IllegalArgumentException("applyTo must be greater or equal than applyFrom");
         }
         return new ScopeDependencySelector(0, applyFrom, applyTo, included, excluded);
     }
@@ -87,7 +87,7 @@ public final class ScopeDependencySelector implements DependencySelector {
     @Override
     public boolean selectDependency(Dependency dependency) {
         requireNonNull(dependency, "dependency cannot be null");
-        if (depth < applyFrom || depth >= applyTo) {
+        if (depth < applyFrom || depth > applyTo) {
             return true;
         }
 

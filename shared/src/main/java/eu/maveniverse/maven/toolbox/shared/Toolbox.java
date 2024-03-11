@@ -23,7 +23,7 @@ public interface Toolbox {
      * dependencies for given resolution scope.
      */
     CollectResult collect(
-            Atoms.LanguageResolutionScope resolutionScope,
+            ResolutionScope resolutionScope,
             Artifact root,
             List<Dependency> dependencies,
             List<Dependency> managedDependencies,
@@ -35,7 +35,7 @@ public interface Toolbox {
      * Collects given existing {@link Dependency} by reusing POM information for given resolution scope.
      */
     CollectResult collect(
-            Atoms.LanguageResolutionScope resolutionScope,
+            ResolutionScope resolutionScope,
             Dependency root,
             List<RemoteRepository> remoteRepositories,
             boolean verbose)

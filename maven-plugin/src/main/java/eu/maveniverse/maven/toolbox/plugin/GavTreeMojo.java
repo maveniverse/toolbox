@@ -48,14 +48,20 @@ public class GavTreeMojo extends AbstractMojo {
     @Parameter(property = "verbose", defaultValue = "false", required = true)
     private boolean verbose;
 
+    /**
+     * Set it {@code true} for Maven3 way of working.
+     */
+    @Parameter(property = "maven3", defaultValue = "false", required = true)
+    private boolean maven3;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             Toolbox toolbox = new ToolboxImpl(context);
             CollectResult collectResult = toolbox.collect(
-                    toLanguageResolutionScope(scope),
-                    new Dependency(new DefaultArtifact(gav), "compile"),
+                    toLanguageResolutionScope(maven3, scope),
+                    new Dependency(new DefaultArtifact(gav), ""),
                     context.remoteRepositories(),
                     verbose);
             collectResult.getRoot().accept(new DependencyGraphDumper(getLog()::info));

@@ -92,21 +92,18 @@ public class ToolboxImpl implements Toolbox {
         logger.info("        includes: {}", resolutionScope.getDirectlyIncluded());
         logger.info("        excludes: {}", resolutionScope.getTransitivelyExcluded());
 
-        Set<String> directlyIncluded = resolutionScope.getDirectlyIncluded().stream()
+        Set<String> directlyExcludedLabels = resolutionScope.getLanguage().getDependencyScopeUniverse().stream()
+                .filter(s -> !resolutionScope.getDirectlyIncluded().contains(s))
                 .map(DependencyScope::getId)
                 .collect(Collectors.toSet());
-        Set<String> directlyExcluded = resolutionScope.getLanguage().getDependencyScopeUniverse().stream()
-                .map(DependencyScope::getId)
-                .filter(s -> !directlyIncluded.contains(s))
-                .collect(Collectors.toSet());
-        Set<String> transitivelyExcluded = resolutionScope.getTransitivelyExcluded().stream()
+        Set<String> transitivelyExcludedLabels = resolutionScope.getTransitivelyExcluded().stream()
                 .map(DependencyScope::getId)
                 .collect(Collectors.toSet());
         session.setDependencySelector(new AndDependencySelector(
                 resolutionScope.getMode() == ResolutionScope.Mode.ELIMINATE
-                        ? ScopeDependencySelector.fromTo(2, 2, null, directlyExcluded)
-                        : ScopeDependencySelector.fromTo(1, 2, null, directlyExcluded),
-                ScopeDependencySelector.from(3, null, transitivelyExcluded),
+                        ? ScopeDependencySelector.fromTo(2, 2, null, directlyExcludedLabels)
+                        : ScopeDependencySelector.fromTo(1, 2, null, directlyExcludedLabels),
+                ScopeDependencySelector.from(2, null, transitivelyExcludedLabels),
                 OptionalDependencySelector.fromDirect(),
                 new ExclusionDependencySelector()));
 
@@ -127,7 +124,7 @@ public class ToolboxImpl implements Toolbox {
         if (resolutionScope.getMode() == ResolutionScope.Mode.ELIMINATE) {
             CloningDependencyVisitor cloning = new CloningDependencyVisitor();
             FilteringDependencyVisitor filter =
-                    new FilteringDependencyVisitor(cloning, new ScopeDependencyFilter(null, directlyExcluded));
+                    new FilteringDependencyVisitor(cloning, new ScopeDependencyFilter(null, directlyExcludedLabels));
             result.getRoot().accept(filter);
             result.setRoot(cloning.getRootNode());
         }

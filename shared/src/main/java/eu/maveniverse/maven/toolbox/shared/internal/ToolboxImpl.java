@@ -63,10 +63,16 @@ public class ToolboxImpl implements Toolbox {
         }
         Set<String> includes = calculateIncludes(resolutionScope);
         Set<String> transitiveExcludes = calculateTransitiveExcludes(resolutionScope);
-        logger.info("Collecting project scope {}", resolutionScope.getProjectScope());
         logger.info(
-                "        resolution scope {}",
+                "Collecting project scope: {}",
+                resolutionScope.getProjectScope().getId());
+        logger.info(
+                "        resolution scope: {}",
                 resolutionScope.getResolutionScope().getId());
+        logger.info(
+                "                language: {}", resolutionScope.getLanguage().getId());
+        logger.info("                includes: {}", includes);
+        logger.info("                excludes: {}", transitiveExcludes);
 
         session.setDependencySelector(new AndDependencySelector(
                 resolutionScope.getResolutionMode() == Atoms.ResolutionMode.ELIMINATE
@@ -113,10 +119,16 @@ public class ToolboxImpl implements Toolbox {
         }
         Set<String> includes = calculateIncludes(resolutionScope);
         Set<String> transitiveExcludes = calculateTransitiveExcludes(resolutionScope);
-        logger.info("Collecting project scope {}", resolutionScope.getProjectScope());
         logger.info(
-                "        resolution scope {}",
+                "Collecting project scope: {}",
+                resolutionScope.getProjectScope().getId());
+        logger.info(
+                "        resolution scope: {}",
                 resolutionScope.getResolutionScope().getId());
+        logger.info(
+                "                language: {}", resolutionScope.getLanguage().getId());
+        logger.info("                includes: {}", includes);
+        logger.info("                excludes: {}", transitiveExcludes);
 
         session.setDependencySelector(new AndDependencySelector(
                 resolutionScope.getResolutionMode() == Atoms.ResolutionMode.ELIMINATE

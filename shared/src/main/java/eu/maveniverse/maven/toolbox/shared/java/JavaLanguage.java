@@ -51,13 +51,13 @@ public final class JavaLanguage implements Language {
 
     private Map<String, JavaDependencyScope> buildDependencyScopes() {
         HashMap<String, JavaDependencyScope> result = new HashMap<>();
-        result.put(DS_NONE, new JavaDependencyScope(DS_NONE, this, false));
         result.put(DS_COMPILE, new JavaDependencyScope(DS_COMPILE, this, true));
         result.put(DS_RUNTIME, new JavaDependencyScope(DS_RUNTIME, this, true));
         result.put(DS_PROVIDED, new JavaDependencyScope(DS_PROVIDED, this, false));
         result.put(DS_SYSTEM, new JavaDependencyScope(DS_SYSTEM, this, mavenLevel == MavenLevel.Maven3));
         result.put(DS_TEST, new JavaDependencyScope(DS_TEST, this, false));
         if (mavenLevel == MavenLevel.Maven4) {
+            result.put(DS_NONE, new JavaDependencyScope(DS_NONE, this, false));
             result.put(DS_COMPILE_ONLY, new JavaDependencyScope(DS_COMPILE_ONLY, this, false));
             result.put(DS_TEST_RUNTIME, new JavaDependencyScope(DS_TEST_RUNTIME, this, false));
             result.put(DS_TEST_ONLY, new JavaDependencyScope(DS_TEST_ONLY, this, false));
@@ -80,7 +80,8 @@ public final class JavaLanguage implements Language {
                         Arrays.asList(
                                 dependencyScopes.get(DS_COMPILE),
                                 dependencyScopes.get(DS_COMPILE_ONLY),
-                                dependencyScopes.get(DS_PROVIDED)),
+                                dependencyScopes.get(DS_PROVIDED),
+                                dependencyScopes.get(DS_SYSTEM)),
                         Arrays.asList(
                                 dependencyScopes.get(DS_NONE),
                                 dependencyScopes.get(DS_PROVIDED),
@@ -95,6 +96,7 @@ public final class JavaLanguage implements Language {
                                 dependencyScopes.get(DS_COMPILE),
                                 dependencyScopes.get(DS_COMPILE_ONLY),
                                 dependencyScopes.get(DS_PROVIDED),
+                                dependencyScopes.get(DS_SYSTEM),
                                 dependencyScopes.get(DS_RUNTIME)),
                         Arrays.asList(
                                 dependencyScopes.get(DS_NONE),

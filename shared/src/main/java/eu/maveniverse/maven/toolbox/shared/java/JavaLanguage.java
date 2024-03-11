@@ -236,8 +236,10 @@ public final class JavaLanguage implements Language {
             this.id = requireNonNull(id, "id");
             this.javaLanguage = requireNonNull(javaLanguage, "javaLanguage");
             this.mode = requireNonNull(mode, "mode");
+            // need to filter for null elements, as MavenLevel may add null elements
             this.directlyIncluded = Collections.unmodifiableSet(
                     directlyIncluded.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
+            // need to filter for null elements, as MavenLevel may add null elements
             this.transitivelyExcluded = Collections.unmodifiableSet(
                     transitivelyExcluded.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
         }

@@ -19,8 +19,44 @@ public final class JavaLanguage implements Language {
     public static final String NAME = "java";
 
     public enum MavenLevel {
-        Maven3,
-        Maven4
+        Maven2(true, true, true, false),
+        Maven3(true, false, true, false),
+        Maven4(false, false, false, true);
+
+        private final boolean systemScope;
+
+        private final boolean systemScopeTransitive;
+
+        private final boolean brokenRuntimeResolution;
+
+        private final boolean newDependencyScopes;
+
+        MavenLevel(
+                boolean systemScope,
+                boolean systemScopeTransitive,
+                boolean brokenRuntimeResolution,
+                boolean newDependencyScopes) {
+            this.systemScope = systemScope;
+            this.systemScopeTransitive = systemScopeTransitive;
+            this.brokenRuntimeResolution = brokenRuntimeResolution;
+            this.newDependencyScopes = newDependencyScopes;
+        }
+
+        public boolean isSystemScope() {
+            return systemScope;
+        }
+
+        public boolean isSystemScopeTransitive() {
+            return systemScopeTransitive;
+        }
+
+        public boolean isBrokenRuntimeResolution() {
+            return brokenRuntimeResolution;
+        }
+
+        public boolean isNewDependencyScopes() {
+            return newDependencyScopes;
+        }
     }
 
     private static final String DS_NONE = "none";
@@ -54,9 +90,11 @@ public final class JavaLanguage implements Language {
         result.put(DS_COMPILE, new JavaDependencyScope(DS_COMPILE, this, true));
         result.put(DS_RUNTIME, new JavaDependencyScope(DS_RUNTIME, this, true));
         result.put(DS_PROVIDED, new JavaDependencyScope(DS_PROVIDED, this, false));
-        result.put(DS_SYSTEM, new JavaDependencyScope(DS_SYSTEM, this, mavenLevel == MavenLevel.Maven3));
         result.put(DS_TEST, new JavaDependencyScope(DS_TEST, this, false));
-        if (mavenLevel == MavenLevel.Maven4) {
+        if (mavenLevel.isSystemScope()) {
+            result.put(DS_SYSTEM, new JavaDependencyScope(DS_SYSTEM, this, mavenLevel.isSystemScopeTransitive()));
+        }
+        if (mavenLevel.isNewDependencyScopes()) {
             result.put(DS_NONE, new JavaDependencyScope(DS_NONE, this, false));
             result.put(DS_COMPILE_ONLY, new JavaDependencyScope(DS_COMPILE_ONLY, this, false));
             result.put(DS_TEST_RUNTIME, new JavaDependencyScope(DS_TEST_RUNTIME, this, false));
@@ -105,7 +143,9 @@ public final class JavaLanguage implements Language {
                 new JavaResolutionScope(
                         RS_MAIN_RUNTIME,
                         this,
-                        mavenLevel == MavenLevel.Maven4 ? ResolutionScope.Mode.REMOVE : ResolutionScope.Mode.ELIMINATE,
+                        mavenLevel.isBrokenRuntimeResolution()
+                                ? ResolutionScope.Mode.ELIMINATE
+                                : ResolutionScope.Mode.REMOVE,
                         Arrays.asList(dependencyScopes.get(DS_COMPILE), dependencyScopes.get(DS_RUNTIME)),
                         nonTransitiveScopes));
         result.put(
@@ -113,7 +153,9 @@ public final class JavaLanguage implements Language {
                 new JavaResolutionScope(
                         RS_MAIN_RUNTIME_PLUS_SYSTEM,
                         this,
-                        mavenLevel == MavenLevel.Maven4 ? ResolutionScope.Mode.REMOVE : ResolutionScope.Mode.ELIMINATE,
+                        mavenLevel.isBrokenRuntimeResolution()
+                                ? ResolutionScope.Mode.ELIMINATE
+                                : ResolutionScope.Mode.REMOVE,
                         Arrays.asList(
                                 dependencyScopes.get(DS_COMPILE),
                                 dependencyScopes.get(DS_RUNTIME),

@@ -197,17 +197,6 @@ public final class JavaLanguage implements Language {
         return result;
     }
 
-    private Set<JavaDependencyScope> collectScopes(Collection<BuildScope> buildScopes) {
-        HashSet<JavaDependencyScope> result = new HashSet<>();
-        for (BuildScope buildScope : buildScopes) {
-            dependencyScopes.values().stream()
-                    .filter(s -> s.getPresence().contains(buildScope))
-                    .filter(s -> !s.getId().equals(DS_SYSTEM)) // system scope must be always explicitly added
-                    .forEach(result::add);
-        }
-        return result;
-    }
-
     private Map<String, JavaResolutionScope> buildResolutionScopes() {
         Collection<JavaDependencyScope> nonTransitiveScopes = dependencyScopes.values().stream()
                 .filter(s -> !s.isTransitive())
@@ -321,10 +310,22 @@ public final class JavaLanguage implements Language {
         return new HashSet<>(resolutionScopes.values());
     }
 
+    private Set<JavaDependencyScope> collectScopes(Collection<BuildScope> buildScopes) {
+        HashSet<JavaDependencyScope> result = new HashSet<>();
+        for (BuildScope buildScope : buildScopes) {
+            dependencyScopes.values().stream()
+                    .filter(s -> s.getPresence().contains(buildScope))
+                    .filter(s -> !s.getId().equals(DS_SYSTEM)) // system scope must be always explicitly added
+                    .forEach(result::add);
+        }
+        return result;
+    }
+
     private Optional<DependencyScope> deriveScope(DependencyScope parentScope, DependencyScope childScope) {
         JavaDependencyScope parent = parentScope != null ? validateAndCast(parentScope) : null;
         JavaDependencyScope child = validateAndCast(childScope);
 
+        // TODO: last bit to codify
         if ((DS_SYSTEM.equals(childScope.getId()) || DS_TEST.equals(childScope.getId()))) {
             return Optional.of(child);
         } else if (parent == null || DS_COMPILE.equals(parentScope.getId())) {

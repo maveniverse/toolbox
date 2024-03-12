@@ -29,7 +29,6 @@ import org.eclipse.aether.util.graph.visitor.FilteringDependencyVisitor;
 public final class JavaLanguage implements Language {
     public static final String NAME = "java";
 
-    // TODO: maven2 and maven3 does not distinguish test-compile and test-runtime, they have "test" for both.
     public enum MavenLevel {
         Maven2(
                 true,

@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.shared;
 
+import java.util.Set;
+
 /**
  * Build scope is certain combination of {@link ProjectPath} and {@link BuildPath}.
  */
@@ -17,12 +19,12 @@ public interface BuildScope {
     String getId();
 
     /**
-     * The project path this scope belongs to.
+     * The project paths this scope belongs to.
      */
-    ProjectPath getProjectPath();
+    Set<ProjectPath> getProjectPaths();
 
     /**
-     * The build path this scope belongs to.
+     * The build paths this scope belongs to.
      */
-    BuildPath getBuildPath();
+    Set<BuildPath> getBuildPaths();
 }

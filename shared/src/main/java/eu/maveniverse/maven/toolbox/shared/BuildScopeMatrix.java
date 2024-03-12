@@ -20,14 +20,13 @@ public final class BuildScopeMatrix {
     private final Set<BuildPath> buildPaths;
     private final Map<String, BuildScope> buildScopes;
 
-    public BuildScopeMatrix(Collection<ProjectPath> projectPaths, Collection<BuildPath> buildPaths) {
+    public BuildScopeMatrix(
+            Collection<ProjectPath> projectPaths, Collection<BuildPath> buildPaths, BuildScope... extras) {
         requireNonNull(projectPaths, "projectPath");
         requireNonNull(buildPaths, "buildPaths");
         if (projectPaths.isEmpty() || buildPaths.isEmpty()) {
             throw new IllegalArgumentException("empty matrix");
         }
-        this.projectPaths = Collections.unmodifiableSet(new HashSet<>(projectPaths));
-        this.buildPaths = Collections.unmodifiableSet(new HashSet<>(buildPaths));
         HashMap<String, BuildScope> buildScopes = new HashMap<>();
         for (ProjectPath projectPath : projectPaths) {
             for (BuildPath buildPath : buildPaths) {
@@ -39,18 +38,31 @@ public final class BuildScopeMatrix {
                     }
 
                     @Override
-                    public ProjectPath getProjectPath() {
-                        return projectPath;
+                    public Set<ProjectPath> getProjectPaths() {
+                        return Collections.singleton(projectPath);
                     }
 
                     @Override
-                    public BuildPath getBuildPath() {
-                        return buildPath;
+                    public Set<BuildPath> getBuildPaths() {
+                        return Collections.singleton(buildPath);
                     }
                 });
             }
         }
+        for (BuildScope extra : extras) {
+            buildScopes.put(extra.getId(), extra);
+        }
         this.buildScopes = Collections.unmodifiableMap(buildScopes);
+
+        // now collect all paths
+        HashSet<ProjectPath> pp = new HashSet<>(projectPaths);
+        HashSet<BuildPath> bp = new HashSet<>(buildPaths);
+        buildScopes.values().forEach(s -> {
+            pp.addAll(s.getProjectPaths());
+            bp.addAll(s.getBuildPaths());
+        });
+        this.projectPaths = Collections.unmodifiableSet(pp);
+        this.buildPaths = Collections.unmodifiableSet(bp);
     }
 
     private String createId(ProjectPath projectPath, BuildPath buildPath) {
@@ -71,12 +83,12 @@ public final class BuildScopeMatrix {
 
     public Collection<BuildScope> byProjectPath(ProjectPath projectPath) {
         return all().stream()
-                .filter(s -> s.getProjectPath().equals(projectPath))
+                .filter(s -> s.getProjectPaths().contains(projectPath))
                 .collect(Collectors.toSet());
     }
 
     public Collection<BuildScope> byBuildPath(BuildPath buildPath) {
-        return all().stream().filter(s -> s.getBuildPath().equals(buildPath)).collect(Collectors.toSet());
+        return all().stream().filter(s -> s.getBuildPaths().contains(buildPath)).collect(Collectors.toSet());
     }
 
     public Collection<BuildScope> singleton(ProjectPath projectPath, BuildPath buildPath) {
@@ -87,12 +99,13 @@ public final class BuildScopeMatrix {
         return Collections.singleton(result);
     }
 
-    public Collection<BuildScope> singletonById(String id) {
-        BuildScope result = buildScopes.get(id);
-        if (result == null) {
-            throw new IllegalArgumentException("no such build scope");
-        }
-        return Collections.singleton(result);
+    public Collection<BuildScope> select(ProjectPath projectPath, BuildPath buildPath) {
+        HashSet<BuildScope> result = new HashSet<>();
+        buildScopes.values().stream()
+                .filter(s -> s.getProjectPaths().contains(projectPath)
+                        && s.getBuildPaths().contains(buildPath))
+                .forEach(result::add);
+        return result;
     }
 
     public Collection<BuildScope> union(Collection<BuildScope> bs1, Collection<BuildScope> bs2) {

@@ -37,22 +37,32 @@ public final class JavaLanguage implements Language {
                 true,
                 false,
                 new BuildScopeMatrix(
-                        Arrays.asList(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.PROJECT_PATH_TEST),
-                        Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME))),
+                        Collections.singletonList(CommonBuilds.PROJECT_PATH_MAIN),
+                        Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME),
+                        CommonBuilds.MAVEN_TEST_BUILD_SCOPE)),
         Maven3(
                 true,
                 false,
                 true,
                 false,
                 new BuildScopeMatrix(
-                        Arrays.asList(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.PROJECT_PATH_TEST),
-                        Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME))),
-        Maven4(
+                        Collections.singletonList(CommonBuilds.PROJECT_PATH_MAIN),
+                        Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME),
+                        CommonBuilds.MAVEN_TEST_BUILD_SCOPE)),
+        Maven4WithoutSystem(
                 false,
                 false,
                 false,
                 true,
                 new BuildScopeMatrix(
+                        Arrays.asList(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.PROJECT_PATH_TEST),
+                        Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME))),
+        Maven4WithSystem(
+                true,
+                        false,
+                        false,
+                        true,
+                        new BuildScopeMatrix(
                         Arrays.asList(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.PROJECT_PATH_TEST),
                         Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME)));
 
@@ -146,7 +156,7 @@ public final class JavaLanguage implements Language {
                         false,
                         buildScopeMatrix.union(
                                 buildScopeMatrix.byBuildPath(CommonBuilds.BUILD_PATH_COMPILE),
-                                buildScopeMatrix.singleton(
+                                buildScopeMatrix.select(
                                         CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_RUNTIME))));
         result.put(
                 DS_TEST,
@@ -262,7 +272,7 @@ public final class JavaLanguage implements Language {
                         RS_TEST_COMPILE,
                         this,
                         ResolutionScope.Mode.ELIMINATE,
-                        buildScopeMatrix.singleton(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_COMPILE),
+                        buildScopeMatrix.select(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_COMPILE),
                         Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
                         nonTransitiveScopes));
         result.put(
@@ -271,7 +281,7 @@ public final class JavaLanguage implements Language {
                         RS_TEST_RUNTIME,
                         this,
                         ResolutionScope.Mode.ELIMINATE,
-                        buildScopeMatrix.singleton(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_RUNTIME),
+                        buildScopeMatrix.select(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_RUNTIME),
                         Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
                         nonTransitiveScopes));
         return result;
@@ -337,7 +347,8 @@ public final class JavaLanguage implements Language {
                     .sorted(Comparator.comparing(BuildPath::order))
                     .collect(Collectors.toList())) {
                 for (BuildScope buildScope : javaDependencyScope.getPresence()) {
-                    if (buildScope.getProjectPath() == projectPath && buildScope.getBuildPath() == buildPath) {
+                    if (buildScope.getProjectPaths().contains(projectPath)
+                            && buildScope.getBuildPaths().contains(buildPath)) {
                         return Optional.of(buildScope);
                     }
                 }
@@ -418,8 +429,8 @@ public final class JavaLanguage implements Language {
         HashSet<ProjectPath> projectPaths = new HashSet<>();
         HashSet<BuildPath> buildPaths = new HashSet<>();
         dependencyScope.getPresence().forEach(s -> {
-            projectPaths.add(s.getProjectPath());
-            buildPaths.add(s.getBuildPath());
+            projectPaths.addAll(s.getProjectPaths());
+            buildPaths.addAll(s.getBuildPaths());
         });
         int result = 0;
         if (dependencyScope.isTransitive()) {
@@ -540,8 +551,9 @@ public final class JavaLanguage implements Language {
             this.mode = requireNonNull(mode, "mode");
             this.wantedPresence = Collections.unmodifiableSet(new HashSet<>(wantedPresence));
             Set<JavaDependencyScope> included = collectScopes(wantedPresence);
-            if (explicitlyIncluded != null) {
-                included.addAll(explicitlyIncluded);
+            // here we may have null elements, based on existence of system scope
+            if (explicitlyIncluded != null && !explicitlyIncluded.isEmpty()) {
+                explicitlyIncluded.stream().filter(Objects::nonNull).forEach(included::add);
             }
             this.directlyIncluded = Collections.unmodifiableSet(included);
             this.transitivelyExcluded = Collections.unmodifiableSet(
@@ -638,7 +650,7 @@ public final class JavaLanguage implements Language {
                     System.out.println("  Presence: "
                             + s.getPresence().stream().map(BuildScope::getId).collect(Collectors.toSet()));
                     System.out.println("  Main project scope: "
-                            + s.getMainProjectBuildScope().get().getId());
+                            + s.getMainProjectBuildScope().map(BuildScope::getId).orElse("null"));
                 });
     }
 

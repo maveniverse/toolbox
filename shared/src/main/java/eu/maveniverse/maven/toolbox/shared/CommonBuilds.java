@@ -7,6 +7,11 @@
  */
 package eu.maveniverse.maven.toolbox.shared;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Set of constants meant to be used in "common builds".
  */
@@ -70,6 +75,23 @@ public final class CommonBuilds {
         @Override
         public int order() {
             return 2;
+        }
+    };
+
+    public static final BuildScope MAVEN_TEST_BUILD_SCOPE = new BuildScope() {
+        @Override
+        public String getId() {
+            return "test";
+        }
+
+        @Override
+        public Set<ProjectPath> getProjectPaths() {
+            return Collections.singleton(PROJECT_PATH_TEST);
+        }
+
+        @Override
+        public Set<BuildPath> getBuildPaths() {
+            return new HashSet<>(Arrays.asList(BUILD_PATH_COMPILE, BUILD_PATH_RUNTIME));
         }
     };
 }

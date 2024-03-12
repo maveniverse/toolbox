@@ -45,17 +45,16 @@ public class TreeMojo extends AbstractMojo {
     private boolean verbose;
 
     /**
-     * Set it {@code true} for Maven3 way of working.
+     * Set it for wanted {@link eu.maveniverse.maven.toolbox.shared.java.JavaLanguage.MavenLevel} way of working.
      */
-    @Parameter(property = "maven3", defaultValue = "false", required = true)
-    private boolean maven3;
+    @Parameter(property = "mavenLevel", defaultValue = "Maven4WithSystem", required = true)
+    private String mavenLevel;
 
     @Component
     private MavenProject mavenProject;
 
-    static ResolutionScope toLanguageResolutionScope(boolean maven3, String value) {
-        JavaLanguage javaLanguage =
-                new JavaLanguage(maven3 ? JavaLanguage.MavenLevel.Maven3 : JavaLanguage.MavenLevel.Maven4);
+    static ResolutionScope toLanguageResolutionScope(String mavenLevel, String value) {
+        JavaLanguage javaLanguage = new JavaLanguage(JavaLanguage.MavenLevel.valueOf(mavenLevel));
         return javaLanguage
                 .getResolutionScope(value)
                 .orElseThrow(() -> new IllegalArgumentException("unknown resolution scope"));
@@ -69,7 +68,7 @@ public class TreeMojo extends AbstractMojo {
                     context.repositorySystemSession().getArtifactTypeRegistry();
             Toolbox toolbox = new ToolboxImpl(context);
             CollectResult collectResult = toolbox.collect(
-                    toLanguageResolutionScope(maven3, scope),
+                    toLanguageResolutionScope(mavenLevel, scope),
                     RepositoryUtils.toArtifact(mavenProject.getArtifact()),
                     mavenProject.getDependencies().stream()
                             .map(d -> RepositoryUtils.toDependency(d, artifactTypeRegistry))

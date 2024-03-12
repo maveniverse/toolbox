@@ -49,10 +49,10 @@ public class GavTreeMojo extends AbstractMojo {
     private boolean verbose;
 
     /**
-     * Set it {@code true} for Maven3 way of working.
+     * Set it for wanted {@link eu.maveniverse.maven.toolbox.shared.java.JavaLanguage.MavenLevel} way of working.
      */
-    @Parameter(property = "maven3", defaultValue = "false", required = true)
-    private boolean maven3;
+    @Parameter(property = "mavenLevel", defaultValue = "Maven4WithSystem", required = true)
+    private String mavenLevel;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -60,7 +60,7 @@ public class GavTreeMojo extends AbstractMojo {
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             Toolbox toolbox = new ToolboxImpl(context);
             CollectResult collectResult = toolbox.collect(
-                    toLanguageResolutionScope(maven3, scope),
+                    toLanguageResolutionScope(mavenLevel, scope),
                     new Dependency(new DefaultArtifact(gav), ""),
                     context.remoteRepositories(),
                     verbose);

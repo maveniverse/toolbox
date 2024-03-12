@@ -58,10 +58,10 @@ public final class JavaLanguage implements Language {
                         Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME))),
         Maven4WithSystem(
                 true,
-                        false,
-                        false,
-                        true,
-                        new BuildScopeMatrix(
+                false,
+                false,
+                true,
+                new BuildScopeMatrix(
                         Arrays.asList(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.PROJECT_PATH_TEST),
                         Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME)));
 
@@ -650,7 +650,9 @@ public final class JavaLanguage implements Language {
                     System.out.println("  Presence: "
                             + s.getPresence().stream().map(BuildScope::getId).collect(Collectors.toSet()));
                     System.out.println("  Main project scope: "
-                            + s.getMainProjectBuildScope().map(BuildScope::getId).orElse("null"));
+                            + s.getMainProjectBuildScope()
+                                    .map(BuildScope::getId)
+                                    .orElse("null"));
                 });
     }
 

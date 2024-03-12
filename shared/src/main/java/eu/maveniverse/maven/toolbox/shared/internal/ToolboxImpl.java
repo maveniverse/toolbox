@@ -10,13 +10,10 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.DependencyScope;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RequestTrace;
 import org.eclipse.aether.artifact.Artifact;
@@ -28,13 +25,8 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.util.filter.ScopeDependencyFilter;
 import org.eclipse.aether.util.graph.manager.DependencyManagerUtils;
-import org.eclipse.aether.util.graph.selector.AndDependencySelector;
-import org.eclipse.aether.util.graph.selector.ExclusionDependencySelector;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
-import org.eclipse.aether.util.graph.visitor.CloningDependencyVisitor;
-import org.eclipse.aether.util.graph.visitor.FilteringDependencyVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,25 +79,10 @@ public class ToolboxImpl implements Toolbox {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
             session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         }
+        session.setDependencySelector(resolutionScope.getDependencySelector());
+        session.setDependencyGraphTransformer(resolutionScope.getDependencyGraphTransformer());
         logger.info("Collecting scope: {}", resolutionScope.getId());
         logger.info("        language: {}", resolutionScope.getLanguage().getDescription());
-        logger.info("        includes: {}", resolutionScope.getDirectlyIncluded());
-        logger.info("        excludes: {}", resolutionScope.getTransitivelyExcluded());
-
-        Set<String> directlyExcludedLabels = resolutionScope.getLanguage().getDependencyScopeUniverse().stream()
-                .filter(s -> !resolutionScope.getDirectlyIncluded().contains(s))
-                .map(DependencyScope::getId)
-                .collect(Collectors.toSet());
-        Set<String> transitivelyExcludedLabels = resolutionScope.getTransitivelyExcluded().stream()
-                .map(DependencyScope::getId)
-                .collect(Collectors.toSet());
-        session.setDependencySelector(new AndDependencySelector(
-                resolutionScope.getMode() == ResolutionScope.Mode.ELIMINATE
-                        ? ScopeDependencySelector.fromTo(2, 2, null, directlyExcludedLabels)
-                        : ScopeDependencySelector.fromTo(1, 2, null, directlyExcludedLabels),
-                ScopeDependencySelector.from(2, null, transitivelyExcludedLabels),
-                OptionalDependencySelector.fromDirect(),
-                new ExclusionDependencySelector()));
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
@@ -121,14 +98,7 @@ public class ToolboxImpl implements Toolbox {
 
         logger.debug("Collecting {}", collectRequest);
         CollectResult result = context.repositorySystem().collectDependencies(session, collectRequest);
-        if (resolutionScope.getMode() == ResolutionScope.Mode.ELIMINATE) {
-            CloningDependencyVisitor cloning = new CloningDependencyVisitor();
-            FilteringDependencyVisitor filter =
-                    new FilteringDependencyVisitor(cloning, new ScopeDependencyFilter(null, directlyExcludedLabels));
-            result.getRoot().accept(filter);
-            result.setRoot(cloning.getRootNode());
-        }
-        return result;
+        return resolutionScope.postProcess(result);
     }
 
     @Override

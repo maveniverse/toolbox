@@ -10,16 +10,46 @@ package eu.maveniverse.maven.toolbox.shared;
 import java.util.Collection;
 import java.util.Optional;
 
+/**
+ * Language definition.
+ */
 public interface Language {
+    /**
+     * The label.
+     */
     String getId();
 
+    /**
+     * Description (meant for human consumption).
+     */
     String getDescription();
 
+    /**
+     * Returns the "system" scope, if language has it.
+     * <p>
+     * This is a special scope. In this scope case, Resolver should handle it specially, as it has no POM (so is
+     * always a leaf on graph), is not in any repository, but is actually hosted on host OS file system. On resolution
+     * resolver merely checks is file present or not.
+     */
+    Optional<DependencyScope> getSystemScope();
+
+    /**
+     * Returns a language specific dependency scope by label.
+     */
     Optional<DependencyScope> getDependencyScope(String id);
 
-    Collection<? extends DependencyScope> getDependencyScopeUniverse();
+    /**
+     * Returns the "universe" (all) of language specific dependency scopes.
+     */
+    Collection<DependencyScope> getDependencyScopeUniverse();
 
+    /**
+     * Returns a language specific resolution scope by label.
+     */
     Optional<ResolutionScope> getResolutionScope(String id);
 
-    Collection<? extends ResolutionScope> getResolutionScopeUniverse();
+    /**
+     * Returns the "universe" (all) of language specific resolution scopes.
+     */
+    Collection<ResolutionScope> getResolutionScopeUniverse();
 }

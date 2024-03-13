@@ -426,20 +426,18 @@ public final class JavaLanguage implements Language {
     }
 
     private static int calculateWidth(JavaDependencyScope dependencyScope) {
-        HashSet<ProjectPath> projectPaths = new HashSet<>();
-        HashSet<BuildPath> buildPaths = new HashSet<>();
-        dependencyScope.getPresence().forEach(s -> {
-            projectPaths.addAll(s.getProjectPaths());
-            buildPaths.addAll(s.getBuildPaths());
-        });
         int result = 0;
         if (dependencyScope.isTransitive()) {
             result += 1000;
         }
-        for (ProjectPath projectPath : projectPaths) {
-            result += 1000 / projectPath.order();
+        for (BuildScope buildScope : dependencyScope.getPresence()) {
+            int weight = 0;
+            weight += buildScope.getBuildPaths().stream().map(BuildPath::order).reduce(0, Integer::sum);
+            weight += buildScope.getProjectPaths().stream()
+                    .map(ProjectPath::order)
+                    .reduce(0, Integer::sum);
+            result += 1000 / weight;
         }
-        result += buildPaths.size();
         return result;
     }
 

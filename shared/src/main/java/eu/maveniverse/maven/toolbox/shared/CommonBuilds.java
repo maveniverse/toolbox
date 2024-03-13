@@ -78,6 +78,10 @@ public final class CommonBuilds {
         }
     };
 
+    /**
+     * Maven2/Maven3 special build scope: it did not distinguish between "test compile"
+     * and "test runtime", but lumped both together into "test".
+     */
     public static final BuildScope MAVEN_TEST_BUILD_SCOPE = new BuildScope() {
         @Override
         public String getId() {

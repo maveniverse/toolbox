@@ -27,14 +27,15 @@ import org.eclipse.aether.util.graph.transformer.ConflictResolver.ScopeSelector;
  */
 public final class LanguageScopeSelector extends ScopeSelector {
     private final DependencyScope systemScope;
-    private final List<DependencyScope> dependencyScopesByWidth;
+    private final List<DependencyScope> dependencyScopesByWidthDescending;
 
     public LanguageScopeSelector(Language language) {
         requireNonNull(language, "language");
         this.systemScope = language.getSystemScope().orElse(null);
-        this.dependencyScopesByWidth = Collections.unmodifiableList(language.getDependencyScopeUniverse().stream()
-                .sorted(Comparator.comparing(DependencyScope::width).reversed())
-                .collect(Collectors.toList()));
+        this.dependencyScopesByWidthDescending =
+                Collections.unmodifiableList(language.getDependencyScopeUniverse().stream()
+                        .sorted(Comparator.comparing(DependencyScope::width).reversed())
+                        .collect(Collectors.toList()));
     }
 
     @Override
@@ -57,7 +58,11 @@ public final class LanguageScopeSelector extends ScopeSelector {
         return chooseEffectiveScope(scopes);
     }
 
-    private String chooseEffectiveScope(Set<String> scopes) {
+    /**
+     * Visible for testing. It chooses "widest" scope out of provided ones, unless system scope is present, in which
+     * case system scope is selected.
+     */
+    public String chooseEffectiveScope(Set<String> scopes) {
         if (scopes.size() > 1 && systemScope != null) {
             scopes.remove(systemScope.getId());
         }
@@ -67,7 +72,7 @@ public final class LanguageScopeSelector extends ScopeSelector {
         if (scopes.size() == 1) {
             effectiveScope = scopes.iterator().next();
         } else {
-            for (DependencyScope dependencyScope : dependencyScopesByWidth) {
+            for (DependencyScope dependencyScope : dependencyScopesByWidthDescending) {
                 if (scopes.contains(dependencyScope.getId())) {
                     return dependencyScope.getId();
                 }

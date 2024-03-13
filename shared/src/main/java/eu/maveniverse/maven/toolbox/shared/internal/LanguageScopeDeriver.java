@@ -11,13 +11,13 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.DependencyScope;
 import eu.maveniverse.maven.toolbox.shared.Language;
-import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver.ScopeContext;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver.ScopeDeriver;
 
 /**
- * A scope deriver for use with {@link ConflictResolver} that supports the scopes from {@link Language}.
+ * A scope deriver for use with {@link ConflictResolver} that supports the scopes from {@link Language}. It basically
+ * chooses "narrowest" scope, based on parent and child scopes.
  * <p>
  * This class also "bridges" between {@link DependencyScope} and Resolver that uses plain string labels for scopes.
  *
@@ -25,9 +25,11 @@ import org.eclipse.aether.util.graph.transformer.ConflictResolver.ScopeDeriver;
  */
 public final class LanguageScopeDeriver extends ScopeDeriver {
     private final Language language;
+    private final DependencyScope systemScope;
 
     public LanguageScopeDeriver(Language language) {
         this.language = requireNonNull(language, "language");
+        this.systemScope = language.getSystemScope().orElse(null);
     }
 
     @Override
@@ -35,17 +37,32 @@ public final class LanguageScopeDeriver extends ScopeDeriver {
         context.setDerivedScope(getDerivedScope(context.getParentScope(), context.getChildScope()));
     }
 
-    private String getDerivedScope(String parentScope, String childScope) {
-        final AtomicReference<String> derivedScope = new AtomicReference<>("");
+    /**
+     * Visible for testing. It chooses "narrowest" scope out of parent or child, unless child is system scope.
+     */
+    public String getDerivedScope(String parentScope, String childScope) {
+        // ask parent scope (nullable)
+        DependencyScope parent =
+                parentScope != null ? language.getDependencyScope(parentScope).orElse(null) : null;
+        // ask child scope (non-nullable, but may be unknown scope to language)
+        DependencyScope child = language.getDependencyScope(childScope).orElse(null);
 
-        // ask child scope
-        // if present, invoke deriveFromParent w/ asked parent scope
-        // if result present, set in derivedScope
-        language.getDependencyScope(childScope)
-                .flatMap(dependencyScope -> dependencyScope.deriveFromParent(
-                        language.getDependencyScope(parentScope).orElse(null)))
-                .ifPresent(scope -> derivedScope.set(scope.getId()));
-
-        return derivedScope.get();
+        // if system scope exists and child is system scope: system
+        if (systemScope != null && systemScope == child) {
+            return systemScope.getId();
+        }
+        // if no parent (i.e. is root): child scope as-is
+        if (parent == null) {
+            return child != null ? child.getId() : "";
+        }
+        if (child == null) {
+            return parent.getId();
+        }
+        // otherwise the narrowest out of parent or child
+        if (parent.width() < child.width()) {
+            return parent.getId();
+        } else {
+            return child.getId();
+        }
     }
 }

@@ -355,24 +355,6 @@ public final class JavaLanguage implements Language {
         return result;
     }
 
-    private Optional<DependencyScope> deriveScope(DependencyScope parentScope, DependencyScope childScope) {
-        JavaDependencyScope parent = parentScope != null ? validateAndCast(parentScope) : null;
-        JavaDependencyScope child = validateAndCast(childScope);
-
-        // TODO: last bit to codify
-        if ((DS_SYSTEM.equals(childScope.getId()) || DS_TEST.equals(childScope.getId()))) {
-            return Optional.of(child);
-        } else if (parent == null || DS_COMPILE.equals(parentScope.getId())) {
-            return Optional.of(child);
-        } else if (DS_TEST.equals(parentScope.getId()) || DS_RUNTIME.equals(parentScope.getId())) {
-            return Optional.of(parent);
-        } else if (DS_SYSTEM.equals(parentScope.getId()) || DS_PROVIDED.equals(parentScope.getId())) {
-            return getDependencyScope(DS_PROVIDED);
-        } else {
-            return getDependencyScope(DS_RUNTIME);
-        }
-    }
-
     private Optional<BuildScope> getMainProjectBuildScope(JavaDependencyScope javaDependencyScope) {
         for (ProjectPath projectPath : buildScopeMatrix.allProjectPaths().stream()
                 .sorted(Comparator.comparing(ProjectPath::order))
@@ -541,11 +523,6 @@ public final class JavaLanguage implements Language {
         }
 
         @Override
-        public Optional<DependencyScope> deriveFromParent(DependencyScope parent) {
-            return javaLanguage.deriveScope(parent, this);
-        }
-
-        @Override
         public Optional<BuildScope> getMainProjectBuildScope() {
             return javaLanguage.getMainProjectBuildScope(this);
         }
@@ -653,7 +630,7 @@ public final class JavaLanguage implements Language {
     }
 
     public static void main(String... args) {
-        JavaLanguage javaLanguage = new JavaLanguage(MavenLevel.Maven4Full);
+        JavaLanguage javaLanguage = new JavaLanguage(MavenLevel.Maven3);
         System.out.println();
         javaLanguage.dumpBuildScopes();
         System.out.println();
@@ -690,14 +667,15 @@ public final class JavaLanguage implements Language {
 
     private void dumpDependencyScopeDerives() {
         System.out.println(getDescription() + " defined dependency derive matrix:");
+        LanguageScopeDeriver deriver = new LanguageScopeDeriver(this);
         dependencyScopes.values().stream()
                 .sorted(Comparator.comparing(DependencyScope::width).reversed())
-                .forEach(s1 -> {
+                .forEach(parent -> {
                     dependencyScopes.values().stream()
                             .sorted(Comparator.comparing(DependencyScope::width).reversed())
-                            .forEach(s2 -> {
-                                System.out.println(
-                                        s1.getId() + " w/ parent " + s2.getId() + " -> " + s1.deriveFromParent(s2));
+                            .forEach(child -> {
+                                System.out.println(parent.getId() + " w/ child " + child.getId() + " -> "
+                                        + deriver.getDerivedScope(parent.getId(), child.getId()));
                             });
                 });
     }

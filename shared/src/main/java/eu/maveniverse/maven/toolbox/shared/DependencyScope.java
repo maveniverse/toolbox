@@ -48,12 +48,6 @@ public interface DependencyScope {
     int width();
 
     /**
-     * Derives this scope from parent scope. This is how "compile" dependencies are changed to "test" dependencies
-     * when their parent are put in "test" scope.
-     */
-    Optional<DependencyScope> deriveFromParent(DependencyScope parent);
-
-    /**
      * Returns the {@link BuildScope} that this scope deem as main.
      */
     Optional<BuildScope> getMainProjectBuildScope();

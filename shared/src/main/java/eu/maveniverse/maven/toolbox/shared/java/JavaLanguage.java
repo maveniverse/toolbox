@@ -63,7 +63,21 @@ public final class JavaLanguage implements Language {
                 true,
                 new BuildScopeMatrix(
                         Arrays.asList(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.PROJECT_PATH_TEST),
-                        Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME)));
+                        Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME))),
+        Maven4Full(
+                true,
+                false,
+                false,
+                true,
+                new BuildScopeMatrix(
+                        Arrays.asList(
+                                CommonBuilds.PROJECT_PATH_MAIN,
+                                CommonBuilds.PROJECT_PATH_TEST,
+                                CommonBuilds.PROJECT_PATH_IT),
+                        Arrays.asList(
+                                CommonBuilds.BUILD_PATH_PREPROCESS,
+                                CommonBuilds.BUILD_PATH_COMPILE,
+                                CommonBuilds.BUILD_PATH_RUNTIME)));
 
         private final boolean systemScope;
 
@@ -619,7 +633,7 @@ public final class JavaLanguage implements Language {
     }
 
     public static void main(String... args) {
-        JavaLanguage javaLanguage = new JavaLanguage(MavenLevel.Maven4WithSystem);
+        JavaLanguage javaLanguage = new JavaLanguage(MavenLevel.Maven4Full);
         System.out.println();
         javaLanguage.dumpBuildScopes();
         System.out.println();

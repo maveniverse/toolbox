@@ -653,9 +653,7 @@ public final class JavaLanguage implements Language {
         System.out.println(getDescription() + " defined build scopes:");
         buildScopeMatrix.all().stream()
                 .sorted(Comparator.comparing(BuildScope::order))
-                .forEach(s -> {
-                    System.out.println(s.getId() + " (order=" + s.order() + ")");
-                });
+                .forEach(s -> System.out.println(s.getId() + " (order=" + s.order() + ")"));
     }
 
     private void dumpDependencyScopes() {
@@ -678,14 +676,10 @@ public final class JavaLanguage implements Language {
         LanguageScopeDeriver deriver = new LanguageScopeDeriver(this);
         dependencyScopes.values().stream()
                 .sorted(Comparator.comparing(DependencyScope::width).reversed())
-                .forEach(parent -> {
-                    dependencyScopes.values().stream()
-                            .sorted(Comparator.comparing(DependencyScope::width).reversed())
-                            .forEach(child -> {
-                                System.out.println(parent.getId() + " w/ child " + child.getId() + " -> "
-                                        + deriver.getDerivedScope(parent.getId(), child.getId()));
-                            });
-                });
+                .forEach(parent -> dependencyScopes.values().stream()
+                        .sorted(Comparator.comparing(DependencyScope::width).reversed())
+                        .forEach(child -> System.out.println(parent.getId() + " w/ child " + child.getId() + " -> "
+                                + deriver.getDerivedScope(parent.getId(), child.getId()))));
     }
 
     private void dumpResolutionScopes() {

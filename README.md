@@ -11,7 +11,7 @@ Structure of the project:
 * Module "maven-plugin" is a Maven Plugin, that exposes Toolbox operations as Mojos. Each Mojo comes in two
 "flavors": without prefix (i.e. "tree"), that requires project, and uses `MavenProject` to get the data for requests, and "gav-" 
 prefixed ones (i.e. "gav-tree"), that do not require project, and is able to target any existing Artifact out there.
-* The "cli" is the Toolbox CLI, it implements same operations as maven-plugin, but in a form of a CLI application (similarly to MIMA CLI).
+* The "cli" is the Toolbox CLI, it implements same operations as "maven-plugin", but in a form of a CLI application (similarly to MIMA CLI).
 
 Project Goals:
 * classpath

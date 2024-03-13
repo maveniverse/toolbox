@@ -35,6 +35,8 @@ public final class JavaLanguage implements Language {
                 true,
                 true,
                 false,
+                false,
+                false,
                 new BuildScopeMatrix(
                         Collections.singletonList(CommonBuilds.PROJECT_PATH_MAIN),
                         Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME),
@@ -43,6 +45,8 @@ public final class JavaLanguage implements Language {
                 true,
                 false,
                 true,
+                false,
+                false,
                 false,
                 new BuildScopeMatrix(
                         Collections.singletonList(CommonBuilds.PROJECT_PATH_MAIN),
@@ -53,6 +57,8 @@ public final class JavaLanguage implements Language {
                 false,
                 false,
                 true,
+                false,
+                false,
                 new BuildScopeMatrix(
                         Arrays.asList(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.PROJECT_PATH_TEST),
                         Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME))),
@@ -61,6 +67,8 @@ public final class JavaLanguage implements Language {
                 false,
                 false,
                 true,
+                false,
+                false,
                 new BuildScopeMatrix(
                         Arrays.asList(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.PROJECT_PATH_TEST),
                         Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME))),
@@ -68,6 +76,8 @@ public final class JavaLanguage implements Language {
                 true,
                 false,
                 false,
+                true,
+                true,
                 true,
                 new BuildScopeMatrix(
                         Arrays.asList(
@@ -80,13 +90,11 @@ public final class JavaLanguage implements Language {
                                 CommonBuilds.BUILD_PATH_RUNTIME)));
 
         private final boolean systemScope;
-
         private final boolean systemScopeTransitive;
-
         private final boolean brokenRuntimeResolution;
-
         private final boolean newDependencyScopes;
-
+        private final boolean strictDependencyScopes;
+        private final boolean strictResolutionScopes;
         private final BuildScopeMatrix buildScopeMatrix;
 
         MavenLevel(
@@ -94,11 +102,15 @@ public final class JavaLanguage implements Language {
                 boolean systemScopeTransitive,
                 boolean brokenRuntimeResolution,
                 boolean newDependencyScopes,
+                boolean strictDependencyScopes,
+                boolean strictResolutionScopes,
                 BuildScopeMatrix buildScopeMatrix) {
             this.systemScope = systemScope;
             this.systemScopeTransitive = systemScopeTransitive;
             this.brokenRuntimeResolution = brokenRuntimeResolution;
             this.newDependencyScopes = newDependencyScopes;
+            this.strictDependencyScopes = strictDependencyScopes;
+            this.strictResolutionScopes = strictResolutionScopes;
             this.buildScopeMatrix = buildScopeMatrix;
         }
 
@@ -306,7 +318,11 @@ public final class JavaLanguage implements Language {
 
     @Override
     public Optional<DependencyScope> getDependencyScope(String id) {
-        return Optional.ofNullable(dependencyScopes.get(id));
+        DependencyScope dependencyScope = dependencyScopes.get(id);
+        if (mavenLevel.strictDependencyScopes && dependencyScope == null) {
+            throw new IllegalArgumentException("unknown dependency scope");
+        }
+        return Optional.ofNullable(dependencyScope);
     }
 
     @Override
@@ -316,7 +332,11 @@ public final class JavaLanguage implements Language {
 
     @Override
     public Optional<ResolutionScope> getResolutionScope(String id) {
-        return Optional.ofNullable(resolutionScopes.get(id));
+        ResolutionScope resolutionScope = resolutionScopes.get(id);
+        if (mavenLevel.strictResolutionScopes && resolutionScope == null) {
+            throw new IllegalArgumentException("unknown resolution scope");
+        }
+        return Optional.ofNullable(resolutionScope);
     }
 
     @Override

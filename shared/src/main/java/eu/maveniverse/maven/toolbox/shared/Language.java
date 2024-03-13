@@ -35,6 +35,8 @@ public interface Language {
 
     /**
      * Returns a language specific dependency scope by label.
+     * <p>
+     * Note: despite returns optional, this method may throw as well, if language set in "strict" mode.
      */
     Optional<DependencyScope> getDependencyScope(String id);
 
@@ -45,6 +47,8 @@ public interface Language {
 
     /**
      * Returns a language specific resolution scope by label.
+     * <p>
+     * Note: despite returns optional, this method may throw as well, if language set in "strict" mode.
      */
     Optional<ResolutionScope> getResolutionScope(String id);
 

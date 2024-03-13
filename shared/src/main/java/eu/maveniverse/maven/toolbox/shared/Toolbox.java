@@ -15,9 +15,10 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.eclipse.aether.resolution.DependencyResult;
 
 public interface Toolbox {
-
     /**
      * Collects given, maybe even non-existent, {@link Artifact} with all the specified dependencies, managed
      * dependencies for given resolution scope.
@@ -37,9 +38,34 @@ public interface Toolbox {
     CollectResult collect(
             ResolutionScope resolutionScope,
             Dependency root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
             List<RemoteRepository> remoteRepositories,
             boolean verbose)
             throws DependencyCollectionException;
+
+    /**
+     * Resolves given, maybe even non-existent, {@link Artifact} with all the specified dependencies, managed
+     * dependencies for given resolution scope.
+     */
+    DependencyResult resolve(
+            ResolutionScope resolutionScope,
+            Artifact root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            List<RemoteRepository> remoteRepositories)
+            throws DependencyResolutionException;
+
+    /**
+     * Resolves given existing {@link Dependency} by reusing POM information for given resolution scope.
+     */
+    DependencyResult resolve(
+            ResolutionScope resolutionScope,
+            Dependency root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            List<RemoteRepository> remoteRepositories)
+            throws DependencyResolutionException;
 
     /**
      * Resolves given artifacts from given remote repositories.

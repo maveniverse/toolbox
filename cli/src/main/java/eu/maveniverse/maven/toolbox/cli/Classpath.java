@@ -8,15 +8,13 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.Toolbox;
+import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
 import java.io.File;
 import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResult;
-import org.eclipse.aether.util.artifact.JavaScopes;
-import org.eclipse.aether.util.filter.DependencyFilterUtils;
 import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import picocli.CommandLine;
 
@@ -25,18 +23,20 @@ import picocli.CommandLine;
  */
 @CommandLine.Command(name = "classpath", description = "Resolves Maven Artifact and prints out the classpath")
 public final class Classpath extends ResolverCommandSupport {
-
-    enum ClasspathScope {
-        runtime,
-        compile,
-        test;
-    }
-
     @CommandLine.Parameters(index = "0", description = "The GAV to print classpath for")
     private String gav;
 
-    @CommandLine.Option(names = "--scope", defaultValue = "runtime")
-    private ClasspathScope scope;
+    @CommandLine.Option(
+            names = {"--resolutionScope"},
+            defaultValue = "main-runtime",
+            description = "Resolution scope to resolve (default main-runtime)")
+    private String resolutionScope;
+
+    @CommandLine.Option(
+            names = {"--mavenLevel"},
+            defaultValue = "Maven3",
+            description = "The Maven level to use (default Maven3)")
+    private String mavenLevel;
 
     @CommandLine.Option(
             names = {"--boms"},
@@ -48,18 +48,14 @@ public final class Classpath extends ResolverCommandSupport {
     @Override
     protected Integer doCall(Context context) throws Exception {
         java.util.List<Dependency> managedDependencies = importBoms(context, boms);
-        Artifact artifact = parseGav(gav, managedDependencies);
-
-        CollectRequest collectRequest = new CollectRequest();
-        collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
-        collectRequest.setRepositories(context.remoteRepositories());
-        collectRequest.setManagedDependencies(managedDependencies);
-        DependencyRequest dependencyRequest =
-                new DependencyRequest(collectRequest, DependencyFilterUtils.classpathFilter(scope.name()));
-
-        verbose("Resolving {}", dependencyRequest);
-        DependencyResult dependencyResult =
-                context.repositorySystem().resolveDependencies(getRepositorySystemSession(), dependencyRequest);
+        Artifact gav = parseGav(this.gav, managedDependencies);
+        Toolbox toolbox = new ToolboxImpl(context);
+        DependencyResult dependencyResult = toolbox.resolve(
+                toLanguageResolutionScope(mavenLevel, resolutionScope),
+                new Dependency(gav, ""),
+                null,
+                managedDependencies,
+                context.remoteRepositories());
 
         PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
         dependencyResult.getRoot().accept(nlg);

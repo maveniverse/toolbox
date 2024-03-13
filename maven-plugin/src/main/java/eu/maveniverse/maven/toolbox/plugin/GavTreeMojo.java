@@ -63,6 +63,8 @@ public class GavTreeMojo extends AbstractMojo {
             CollectResult collectResult = toolbox.collect(
                     toLanguageResolutionScope(mavenLevel, scope),
                     new Dependency(new DefaultArtifact(gav), ""),
+                    null,
+                    null,
                     context.remoteRepositories(),
                     verbose);
             collectResult.getRoot().accept(new DependencyGraphDumper(getLog()::info));

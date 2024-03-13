@@ -8,11 +8,9 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
-import eu.maveniverse.maven.toolbox.shared.internal.JavaLanguage;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
-import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.util.graph.visitor.DependencyGraphDumper;
@@ -52,19 +50,16 @@ public final class Tree extends ResolverCommandSupport {
             description = "Comma separated list of BOMs to apply")
     private String[] boms;
 
-    private ResolutionScope toLanguageResolutionScope(String mavenLevel, String resolutionScope) {
-        JavaLanguage javaLanguage = new JavaLanguage(JavaLanguage.MavenLevel.valueOf(mavenLevel));
-        return javaLanguage
-                .getResolutionScope(resolutionScope)
-                .orElseThrow(() -> new IllegalArgumentException("unknown resolution scope"));
-    }
-
     @Override
     protected Integer doCall(Context context) throws Exception {
+        java.util.List<Dependency> managedDependencies = importBoms(context, boms);
+        Artifact gav = parseGav(this.gav, managedDependencies);
         Toolbox toolbox = new ToolboxImpl(context);
         CollectResult collectResult = toolbox.collect(
                 toLanguageResolutionScope(mavenLevel, resolutionScope),
-                new Dependency(new DefaultArtifact(gav), ""),
+                new Dependency(gav, ""),
+                null,
+                managedDependencies,
                 context.remoteRepositories(),
                 verboseTree);
         collectResult.getRoot().accept(new DependencyGraphDumper(this::info));

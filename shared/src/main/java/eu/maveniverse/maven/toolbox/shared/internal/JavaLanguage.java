@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyGraphTransformer;
 import org.eclipse.aether.collection.DependencySelector;
+import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.util.filter.ScopeDependencyFilter;
 import org.eclipse.aether.util.graph.selector.AndDependencySelector;
 import org.eclipse.aether.util.graph.selector.ExclusionDependencySelector;
@@ -407,22 +408,7 @@ public final class JavaLanguage implements Language {
                 .collect(Collectors.toSet());
     }
 
-    private JavaDependencyScope validateAndCast(DependencyScope dependencyScope) {
-        if (!(dependencyScope instanceof JavaDependencyScope) || dependencyScope.getLanguage() != this) {
-            throw new IllegalArgumentException("unsupported resolution scope");
-        }
-        return (JavaDependencyScope) dependencyScope;
-    }
-
-    private JavaResolutionScope validateAndCast(ResolutionScope resolutionScope) {
-        if (!(resolutionScope instanceof JavaResolutionScope) || resolutionScope.getLanguage() != this) {
-            throw new IllegalArgumentException("unsupported resolution scope");
-        }
-        return (JavaResolutionScope) resolutionScope;
-    }
-
-    private DependencySelector getDependencySelector(ResolutionScope resolutionScope) {
-        JavaResolutionScope javaResolutionScope = validateAndCast(resolutionScope);
+    private DependencySelector getDependencySelector(JavaResolutionScope javaResolutionScope) {
         Set<String> directlyExcludedLabels = getDirectlyExcludedLabels(javaResolutionScope);
         Set<String> transitivelyExcludedLabels = getTransitivelyExcludedLabels(javaResolutionScope);
 
@@ -435,8 +421,7 @@ public final class JavaLanguage implements Language {
                 new ExclusionDependencySelector());
     }
 
-    private DependencyGraphTransformer getDependencyGraphTransformer(ResolutionScope resolutionScope) {
-        validateAndCast(resolutionScope);
+    private DependencyGraphTransformer getDependencyGraphTransformer(JavaResolutionScope javaResolutionScope) {
         return new ChainedDependencyGraphTransformer(
                 new ConflictResolver(
                         new NearestVersionSelector(), new LanguageScopeSelector(this),
@@ -444,8 +429,7 @@ public final class JavaLanguage implements Language {
                 new LanguageDependencyContextRefiner(this));
     }
 
-    private CollectResult postProcess(ResolutionScope resolutionScope, CollectResult collectResult) {
-        JavaResolutionScope javaResolutionScope = validateAndCast(resolutionScope);
+    private CollectResult postProcess(JavaResolutionScope javaResolutionScope, CollectResult collectResult) {
         if (javaResolutionScope.getMode() == ResolutionScope.Mode.ELIMINATE) {
             CloningDependencyVisitor cloning = new CloningDependencyVisitor();
             FilteringDependencyVisitor filter = new FilteringDependencyVisitor(
@@ -454,6 +438,10 @@ public final class JavaLanguage implements Language {
             collectResult.setRoot(cloning.getRootNode());
         }
         return collectResult;
+    }
+
+    private DependencyFilter getDependencyFilter(JavaResolutionScope javaResolutionScope) {
+        return new ScopeDependencyFilter(null, getDirectlyExcludedLabels(javaResolutionScope));
     }
 
     private static int calculateWidth(JavaDependencyScope dependencyScope) {
@@ -615,6 +603,11 @@ public final class JavaLanguage implements Language {
         @Override
         public CollectResult postProcess(CollectResult collectResult) {
             return javaLanguage.postProcess(this, collectResult);
+        }
+
+        @Override
+        public DependencyFilter getDependencyFilter() {
+            return javaLanguage.getDependencyFilter(this);
         }
 
         public Set<JavaDependencyScope> getDirectlyIncluded() {

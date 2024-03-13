@@ -8,6 +8,8 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.internal.JavaLanguage;
 import java.util.ArrayList;
 import java.util.HashSet;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -80,6 +82,13 @@ public abstract class ResolverCommandSupport extends CommandSupport {
                     .findFirst()
                     .orElseThrow(() -> e);
         }
+    }
+
+    protected ResolutionScope toLanguageResolutionScope(String mavenLevel, String resolutionScope) {
+        JavaLanguage javaLanguage = new JavaLanguage(JavaLanguage.MavenLevel.valueOf(mavenLevel));
+        return javaLanguage
+                .getResolutionScope(resolutionScope)
+                .orElseThrow(() -> new IllegalArgumentException("unknown resolution scope"));
     }
 
     @Override

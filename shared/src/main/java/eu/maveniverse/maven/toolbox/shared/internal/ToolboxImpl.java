@@ -25,6 +25,9 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyRequest;
+import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.graph.manager.DependencyManagerUtils;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
 import org.slf4j.Logger;
@@ -54,10 +57,34 @@ public class ToolboxImpl implements Toolbox {
     public CollectResult collect(
             ResolutionScope resolutionScope,
             Dependency root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
             List<RemoteRepository> remoteRepositories,
             boolean verbose)
             throws DependencyCollectionException {
-        return doCollect(resolutionScope, root, null, null, null, remoteRepositories, verbose);
+        return doCollect(resolutionScope, root, null, dependencies, managedDependencies, remoteRepositories, verbose);
+    }
+
+    @Override
+    public DependencyResult resolve(
+            ResolutionScope resolutionScope,
+            Artifact root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            List<RemoteRepository> remoteRepositories)
+            throws DependencyResolutionException {
+        return doResolve(resolutionScope, null, root, dependencies, managedDependencies, remoteRepositories);
+    }
+
+    @Override
+    public DependencyResult resolve(
+            ResolutionScope resolutionScope,
+            Dependency root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            List<RemoteRepository> remoteRepositories)
+            throws DependencyResolutionException {
+        return doResolve(resolutionScope, root, null, dependencies, managedDependencies, remoteRepositories);
     }
 
     private CollectResult doCollect(
@@ -89,9 +116,10 @@ public class ToolboxImpl implements Toolbox {
             collectRequest.setRoot(rootDependency);
         } else {
             collectRequest.setRootArtifact(root);
-            collectRequest.setDependencies(dependencies);
-            collectRequest.setManagedDependencies(managedDependencies);
         }
+        collectRequest.setDependencies(dependencies);
+        collectRequest.setManagedDependencies(managedDependencies);
+
         collectRequest.setRepositories(remoteRepositories);
         collectRequest.setRequestContext("project");
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
@@ -99,6 +127,43 @@ public class ToolboxImpl implements Toolbox {
         logger.debug("Collecting {}", collectRequest);
         CollectResult result = context.repositorySystem().collectDependencies(session, collectRequest);
         return resolutionScope.postProcess(result);
+    }
+
+    private DependencyResult doResolve(
+            ResolutionScope resolutionScope,
+            Dependency rootDependency,
+            Artifact root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            List<RemoteRepository> remoteRepositories)
+            throws DependencyResolutionException {
+        requireNonNull(resolutionScope);
+        if (rootDependency == null && root == null) {
+            throw new NullPointerException("one of rootDependency or root must be non-null");
+        }
+
+        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
+        session.setDependencySelector(resolutionScope.getDependencySelector());
+        session.setDependencyGraphTransformer(resolutionScope.getDependencyGraphTransformer());
+        logger.info("Resolving scope: {}", resolutionScope.getId());
+        logger.info("       language: {}", resolutionScope.getLanguage().getDescription());
+
+        CollectRequest collectRequest = new CollectRequest();
+        if (rootDependency != null) {
+            collectRequest.setRoot(rootDependency);
+        } else {
+            collectRequest.setRootArtifact(root);
+            collectRequest.setDependencies(dependencies);
+            collectRequest.setManagedDependencies(managedDependencies);
+        }
+        collectRequest.setRepositories(remoteRepositories);
+        collectRequest.setRequestContext("project");
+        collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
+        DependencyRequest dependencyRequest =
+                new DependencyRequest(collectRequest, resolutionScope.getDependencyFilter());
+
+        logger.debug("Resolving {}", dependencyRequest);
+        return context.repositorySystem().resolveDependencies(session, dependencyRequest);
     }
 
     @Override

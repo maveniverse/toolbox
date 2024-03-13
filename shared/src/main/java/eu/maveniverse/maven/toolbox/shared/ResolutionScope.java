@@ -11,6 +11,7 @@ import java.util.Set;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyGraphTransformer;
 import org.eclipse.aether.collection.DependencySelector;
+import org.eclipse.aether.graph.DependencyFilter;
 
 /**
  * Generic resolution scope.
@@ -71,4 +72,10 @@ public interface ResolutionScope {
      * and resolution scopes).
      */
     CollectResult postProcess(CollectResult collectResult);
+
+    /**
+     * Resolver specific: dependency filter to be used to support this scope (with its dependency
+     * and resolution scopes).
+     */
+    DependencyFilter getDependencyFilter();
 }

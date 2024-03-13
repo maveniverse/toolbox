@@ -14,6 +14,7 @@ import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
+import eu.maveniverse.maven.toolbox.shared.internal.JavaLanguage;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -49,7 +50,7 @@ public class GavTreeMojo extends AbstractMojo {
     private boolean verbose;
 
     /**
-     * Set it for wanted {@link eu.maveniverse.maven.toolbox.shared.java.JavaLanguage.MavenLevel} way of working.
+     * Set it for wanted {@link JavaLanguage.MavenLevel} way of working.
      */
     @Parameter(property = "mavenLevel", defaultValue = "Maven4WithSystem", required = true)
     private String mavenLevel;

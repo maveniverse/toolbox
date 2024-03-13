@@ -17,10 +17,13 @@ public interface BuildPath {
     String getId();
 
     /**
-     * A flag denoting that this build path "reverses" the expected order.
+     * A flag denoting that this build path "reverses" the expected order of project paths.
      * <p>
-     * For example: "compile" step expects "main" then "test" to be compiled. On the other
-     * hand, "runtime" expects "test" to have run first. In this sense, "runtime" is reverse.
+     * For example: "compile" step expects "main" then "test" order (compile them in this order).
+     * On the other hand, "runtime" expects "test" to have run first. In this sense, "runtime" is reverse.
+     * <p>
+     * If {@code false}, then {@link ProjectPath#order()} is used to sort project paths, otherwise the
+     * {@link ProjectPath#reverseOrder()} is used to sort them.
      */
     boolean isReverse();
 

@@ -31,6 +31,11 @@ public final class CommonBuilds {
         public int order() {
             return 1;
         }
+
+        @Override
+        public int reverseOrder() {
+            return 3;
+        }
     };
 
     /**
@@ -46,6 +51,11 @@ public final class CommonBuilds {
         public int order() {
             return 2;
         }
+
+        @Override
+        public int reverseOrder() {
+            return 1;
+        }
     };
 
     /**
@@ -60,6 +70,11 @@ public final class CommonBuilds {
         @Override
         public int order() {
             return 3;
+        }
+
+        @Override
+        public int reverseOrder() {
+            return 2;
         }
     };
 
@@ -119,7 +134,7 @@ public final class CommonBuilds {
 
         @Override
         public int order() {
-            return 2;
+            return 3;
         }
     };
 

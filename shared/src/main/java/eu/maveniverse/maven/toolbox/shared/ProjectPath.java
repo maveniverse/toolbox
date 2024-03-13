@@ -21,4 +21,10 @@ public interface ProjectPath {
      * Expected natural order is "main", "test"... (basically like the processing order).
      */
     int order();
+
+    /**
+     * Returns the "reverse order" of this path, usable to sort against other instances.
+     * Expected natural order is "test", "main"... (basically like the processing order).
+     */
+    int reverseOrder();
 }

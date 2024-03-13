@@ -14,7 +14,7 @@ import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
-import eu.maveniverse.maven.toolbox.shared.java.JavaLanguage;
+import eu.maveniverse.maven.toolbox.shared.internal.JavaLanguage;
 import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.plugin.AbstractMojo;
@@ -45,7 +45,7 @@ public class TreeMojo extends AbstractMojo {
     private boolean verbose;
 
     /**
-     * Set it for wanted {@link eu.maveniverse.maven.toolbox.shared.java.JavaLanguage.MavenLevel} way of working.
+     * Set it for wanted {@link JavaLanguage.MavenLevel} way of working.
      */
     @Parameter(property = "mavenLevel", defaultValue = "Maven4WithSystem", required = true)
     private String mavenLevel;

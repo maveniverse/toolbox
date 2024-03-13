@@ -5,12 +5,12 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared.java;
+package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.*;
-import eu.maveniverse.maven.toolbox.shared.internal.*;
+
 import java.util.*;
 import java.util.stream.Collectors;
 import org.eclipse.aether.collection.CollectResult;
@@ -630,7 +630,7 @@ public final class JavaLanguage implements Language {
     }
 
     public static void main(String... args) {
-        JavaLanguage javaLanguage = new JavaLanguage(MavenLevel.Maven3);
+        JavaLanguage javaLanguage = new JavaLanguage(MavenLevel.Maven4Full);
         System.out.println();
         javaLanguage.dumpBuildScopes();
         System.out.println();

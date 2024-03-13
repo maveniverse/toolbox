@@ -9,12 +9,16 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.Objects;
 import org.eclipse.aether.collection.DependencyCollectionContext;
 import org.eclipse.aether.collection.DependencySelector;
 import org.eclipse.aether.graph.Dependency;
 
 /**
  * A dependency selector that excludes optional dependencies which occur beyond given level.
+ * <p>
+ * <em>Important note:</em> equals/hashCode must factor in starting state, as instances of this class
+ * (potentially differentially configured) are used now in session, but are kept in a set.
  *
  * @see Dependency#isOptional()
  */
@@ -40,14 +44,15 @@ public final class OptionalDependencySelector implements DependencySelector {
         if (applyFrom < 1) {
             throw new IllegalArgumentException("applyFrom must be non-zero and positive");
         }
-        return new OptionalDependencySelector(0, applyFrom);
+        return new OptionalDependencySelector(Objects.hash(applyFrom), 0, applyFrom);
     }
 
+    private final int seed;
     private final int depth;
-
     private final int applyFrom;
 
-    private OptionalDependencySelector(int depth, int applyFrom) {
+    private OptionalDependencySelector(int seed, int depth, int applyFrom) {
+        this.seed = seed;
         this.depth = depth;
         this.applyFrom = applyFrom;
     }
@@ -61,7 +66,7 @@ public final class OptionalDependencySelector implements DependencySelector {
     @Override
     public DependencySelector deriveChildSelector(DependencyCollectionContext context) {
         requireNonNull(context, "context cannot be null");
-        return new OptionalDependencySelector(depth + 1, applyFrom);
+        return new OptionalDependencySelector(seed, depth + 1, applyFrom);
     }
 
     @Override
@@ -73,12 +78,13 @@ public final class OptionalDependencySelector implements DependencySelector {
         }
 
         OptionalDependencySelector that = (OptionalDependencySelector) obj;
-        return depth == that.depth && applyFrom == that.applyFrom;
+        return seed == that.seed && depth == that.depth && applyFrom == that.applyFrom;
     }
 
     @Override
     public int hashCode() {
         int hash = getClass().hashCode();
+        hash = hash * 31 + seed;
         hash = hash * 31 + depth;
         hash = hash * 31 + applyFrom;
         return hash;
@@ -86,6 +92,6 @@ public final class OptionalDependencySelector implements DependencySelector {
 
     @Override
     public String toString() {
-        return String.format("%s(applies: %s)", this.getClass().getSimpleName(), depth >= applyFrom);
+        return String.format("%s(applied: %s)", this.getClass().getSimpleName(), depth >= applyFrom);
     }
 }

@@ -21,6 +21,10 @@
 
   <name>${project.groupId}:${project.artifactId}</name>
 
+  <properties>
+    <mainClass>eu.maveniverse.maven.toolbox.cli.Main</mainClass>
+  </properties>
+
   <dependencies>
     <!-- CLI -->
     <dependency>
@@ -42,6 +46,43 @@
       <artifactId>shared</artifactId>
     </dependency>
 
+    <!-- Search -->
+    <dependency>
+      <groupId>org.apache.maven.indexer</groupId>
+      <artifactId>search-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.indexer</groupId>
+      <artifactId>search-backend-remoterepository</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.indexer</groupId>
+      <artifactId>search-backend-smo</artifactId>
+    </dependency>
+
+    <!-- MIMA Context -->
+    <dependency>
+      <groupId>eu.maveniverse.maven.mima</groupId>
+      <artifactId>context</artifactId>
+    </dependency>
+
+    <!-- Runtime -->
+    <dependency>
+      <groupId>eu.maveniverse.maven.mima.runtime</groupId>
+      <artifactId>standalone-static-uber</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
     <!-- Provided (by runtime) -->
     <dependency>
       <groupId>org.apache.maven</groupId>
@@ -60,23 +101,6 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- Runtime -->
-    <dependency>
-      <groupId>eu.maveniverse.maven.mima.runtime</groupId>
-      <artifactId>standalone-static</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
     <!-- Test -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -88,8 +112,88 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.sisu</groupId>
-        <artifactId>sisu-maven-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-proc</id>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>info.picocli</groupId>
+                  <artifactId>picocli-codegen</artifactId>
+                  <version>${version.picocli}</version>
+                </path>
+              </annotationProcessorPaths>
+              <compilerArgs>
+                <arg>-Aproject=${project.groupId}/${project.artifactId}</arg>
+              </compilerArgs>
+              <proc>only</proc>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>${mainClass}</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>cli</id>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>uber</shadedClassifierName>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <Main-Class>${mainClass}</Main-Class>
+                    <Specification-Title>${project.artifactId}</Specification-Title>
+                    <Specification-Version>${project.version}</Specification-Version>
+                    <Implementation-Title>${project.artifactId}</Implementation-Title>
+                    <Implementation-Version>${project.version}</Implementation-Version>
+                    <Implementation-Vendor-Id>${project.groupId}</Implementation-Vendor-Id>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
+                    <exclude>META-INF/LICENSE</exclude>
+                    <exclude>META-INF/DEPENDENCIES</exclude>
+                    <exclude>META-INF/NOTICE</exclude>
+                    <exclude>**/module-info.class</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <entryPoints>
+                <entryPoint>${mainClass}</entryPoint>
+              </entryPoints>
+              <minimizeJar>true</minimizeJar>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

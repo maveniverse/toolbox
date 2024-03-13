@@ -7,8 +7,16 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-public class Cli {
-    public static void main(String[] args) {
-        System.out.println("booo");
+import picocli.CommandLine;
+
+/**
+ * Dumps MIMA environment.
+ */
+@CommandLine.Command(name = "dump", description = "Dump MIMA environment")
+public final class Dump extends CommandSupport {
+    @Override
+    public Integer call() {
+        mayDumpEnv(getRuntime(), getContext(), true);
+        return 0;
     }
 }

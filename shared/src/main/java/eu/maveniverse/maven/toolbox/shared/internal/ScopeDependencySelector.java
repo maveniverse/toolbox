@@ -19,6 +19,9 @@ import org.eclipse.aether.graph.Dependency;
  * A dependency selector that filters transitive dependencies based on their scope. It is configurable from which level
  * applies, as it depend on "as project" and "as dependency" use cases.
  * <p>
+ * <em>Important note:</em> equals/hashCode must factor in starting state, as instances of this class
+ * (potentially differentially configured) are used now in session, but are kept in a set.
+ * <p>
  * <em>Note:</em> This filter does not assume any relationships between the scopes.
  * In particular, the filter is not aware of scopes that logically include other scopes.
  *
@@ -44,10 +47,7 @@ public final class ScopeDependencySelector implements DependencySelector {
      */
     public static ScopeDependencySelector from(
             int applyFrom, Collection<String> included, Collection<String> excluded) {
-        if (applyFrom < 1) {
-            throw new IllegalArgumentException("applyFrom must be non-zero and positive");
-        }
-        return new ScopeDependencySelector(0, applyFrom, Integer.MAX_VALUE, included, excluded);
+        return fromTo(applyFrom, Integer.MAX_VALUE, included, excluded);
     }
 
     /**
@@ -62,21 +62,20 @@ public final class ScopeDependencySelector implements DependencySelector {
         if (applyFrom > applyTo) {
             throw new IllegalArgumentException("applyTo must be greater or equal than applyFrom");
         }
-        return new ScopeDependencySelector(0, applyFrom, applyTo, included, excluded);
+        return new ScopeDependencySelector(
+                Objects.hash(0, applyFrom, applyTo, included, excluded), 0, applyFrom, applyTo, included, excluded);
     }
 
+    private final int seed;
     private final int depth;
-
     private final int applyFrom;
-
     private final int applyTo;
-
     private final Collection<String> included;
-
     private final Collection<String> excluded;
 
     private ScopeDependencySelector(
-            int depth, int applyFrom, int applyTo, Collection<String> included, Collection<String> excluded) {
+            int seed, int depth, int applyFrom, int applyTo, Collection<String> included, Collection<String> excluded) {
+        this.seed = seed;
         this.depth = depth;
         this.applyFrom = applyFrom;
         this.applyTo = applyTo;
@@ -98,7 +97,7 @@ public final class ScopeDependencySelector implements DependencySelector {
     @Override
     public DependencySelector deriveChildSelector(DependencyCollectionContext context) {
         requireNonNull(context, "context cannot be null");
-        return new ScopeDependencySelector(depth + 1, applyFrom, applyTo, included, excluded);
+        return new ScopeDependencySelector(seed, depth + 1, applyFrom, applyTo, included, excluded);
     }
 
     @Override
@@ -110,7 +109,8 @@ public final class ScopeDependencySelector implements DependencySelector {
         }
 
         ScopeDependencySelector that = (ScopeDependencySelector) obj;
-        return depth == that.depth
+        return seed == that.seed
+                && depth == that.depth
                 && applyFrom == that.applyFrom
                 && Objects.equals(included, that.included)
                 && Objects.equals(excluded, that.excluded);
@@ -119,6 +119,7 @@ public final class ScopeDependencySelector implements DependencySelector {
     @Override
     public int hashCode() {
         int hash = 17;
+        hash = hash * 31 + seed;
         hash = hash * 31 + depth;
         hash = hash * 31 + applyFrom;
         hash = hash * 31 + (included != null ? included.hashCode() : 0);

@@ -12,7 +12,6 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.toolbox.shared.BuildScope;
 import eu.maveniverse.maven.toolbox.shared.DependencyScope;
 import eu.maveniverse.maven.toolbox.shared.Language;
-import org.eclipse.aether.RepositoryException;
 import org.eclipse.aether.collection.DependencyGraphTransformationContext;
 import org.eclipse.aether.collection.DependencyGraphTransformer;
 import org.eclipse.aether.graph.Dependency;
@@ -22,7 +21,6 @@ import org.eclipse.aether.graph.DependencyNode;
  * A dependency graph transformer that refines the request context for nodes that belong to the "project" context by
  * appending the buildpath type to which the node belongs. For instance, a compile-time project dependency will be
  * assigned the request context "project/compile".
- *
  * <p>
  * This class also "bridges" between {@link DependencyScope} and Resolver that uses plain string labels for scopes.
  *
@@ -36,8 +34,7 @@ public final class LanguageDependencyContextRefiner implements DependencyGraphTr
     }
 
     @Override
-    public DependencyNode transformGraph(DependencyNode node, DependencyGraphTransformationContext context)
-            throws RepositoryException {
+    public DependencyNode transformGraph(DependencyNode node, DependencyGraphTransformationContext context) {
         requireNonNull(node, "node cannot be null");
         requireNonNull(context, "context cannot be null");
         String ctx = node.getRequestContext();

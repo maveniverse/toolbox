@@ -9,8 +9,24 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.toolbox.shared.*;
-import java.util.*;
+import eu.maveniverse.maven.toolbox.shared.BuildPath;
+import eu.maveniverse.maven.toolbox.shared.BuildScope;
+import eu.maveniverse.maven.toolbox.shared.BuildScopeMatrix;
+import eu.maveniverse.maven.toolbox.shared.CommonBuilds;
+import eu.maveniverse.maven.toolbox.shared.DependencyScope;
+import eu.maveniverse.maven.toolbox.shared.Language;
+import eu.maveniverse.maven.toolbox.shared.ProjectPath;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyGraphTransformer;

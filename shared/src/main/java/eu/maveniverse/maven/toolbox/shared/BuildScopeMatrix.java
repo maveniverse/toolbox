@@ -34,8 +34,7 @@ public final class BuildScopeMatrix {
         buildPaths.stream().sorted(Comparator.comparing(BuildPath::order)).forEach(buildPath -> {
             Stream<ProjectPath> projectPathStream;
             if (buildPath.isReverse()) {
-                projectPathStream = projectPaths.stream()
-                        .sorted(Comparator.comparing(ProjectPath::reverseOrder));
+                projectPathStream = projectPaths.stream().sorted(Comparator.comparing(ProjectPath::reverseOrder));
             } else {
                 projectPathStream = projectPaths.stream().sorted(Comparator.comparing(ProjectPath::order));
             }

@@ -18,6 +18,9 @@ import java.util.Set;
 public final class CommonBuilds {
     private CommonBuilds() {}
 
+    /**
+     * A common "main" project path.
+     */
     public static final ProjectPath PROJECT_PATH_MAIN = new ProjectPath() {
         @Override
         public String getId() {
@@ -30,6 +33,9 @@ public final class CommonBuilds {
         }
     };
 
+    /**
+     * A common "test" project path.
+     */
     public static final ProjectPath PROJECT_PATH_TEST = new ProjectPath() {
         @Override
         public String getId() {
@@ -42,6 +48,9 @@ public final class CommonBuilds {
         }
     };
 
+    /**
+     * A common "it" project path.
+     */
     public static final ProjectPath PROJECT_PATH_IT = new ProjectPath() {
         @Override
         public String getId() {
@@ -54,10 +63,18 @@ public final class CommonBuilds {
         }
     };
 
-    public static final BuildPath BUILD_PATH_COMPILE = new BuildPath() {
+    /**
+     * A common "preprocess" build path.
+     */
+    public static final BuildPath BUILD_PATH_PREPROCESS = new BuildPath() {
         @Override
         public String getId() {
-            return "compile";
+            return "preprocess";
+        }
+
+        @Override
+        public boolean isReverse() {
+            return false;
         }
 
         @Override
@@ -66,10 +83,38 @@ public final class CommonBuilds {
         }
     };
 
+    /**
+     * A common "compile" build path.
+     */
+    public static final BuildPath BUILD_PATH_COMPILE = new BuildPath() {
+        @Override
+        public String getId() {
+            return "compile";
+        }
+
+        @Override
+        public boolean isReverse() {
+            return false;
+        }
+
+        @Override
+        public int order() {
+            return 2;
+        }
+    };
+
+    /**
+     * A common "runtime" build path.
+     */
     public static final BuildPath BUILD_PATH_RUNTIME = new BuildPath() {
         @Override
         public String getId() {
             return "runtime";
+        }
+
+        @Override
+        public boolean isReverse() {
+            return true;
         }
 
         @Override
@@ -96,6 +141,11 @@ public final class CommonBuilds {
         @Override
         public Set<BuildPath> getBuildPaths() {
             return new HashSet<>(Arrays.asList(BUILD_PATH_COMPILE, BUILD_PATH_RUNTIME));
+        }
+
+        @Override
+        public int order() {
+            return 10;
         }
     };
 }

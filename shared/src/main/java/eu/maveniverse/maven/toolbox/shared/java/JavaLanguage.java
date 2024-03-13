@@ -431,12 +431,10 @@ public final class JavaLanguage implements Language {
             result += 1000;
         }
         for (BuildScope buildScope : dependencyScope.getPresence()) {
-            int weight = 0;
-            weight += buildScope.getBuildPaths().stream().map(BuildPath::order).reduce(0, Integer::sum);
-            weight += buildScope.getProjectPaths().stream()
-                    .map(ProjectPath::order)
-                    .reduce(0, Integer::sum);
-            result += 1000 / weight;
+            result += 1000
+                    / buildScope.getProjectPaths().stream()
+                            .map(ProjectPath::order)
+                            .reduce(0, Integer::sum);
         }
         return result;
     }
@@ -621,7 +619,7 @@ public final class JavaLanguage implements Language {
     }
 
     public static void main(String... args) {
-        JavaLanguage javaLanguage = new JavaLanguage(MavenLevel.Maven3);
+        JavaLanguage javaLanguage = new JavaLanguage(MavenLevel.Maven4WithSystem);
         System.out.println();
         javaLanguage.dumpBuildScopes();
         System.out.println();
@@ -634,9 +632,11 @@ public final class JavaLanguage implements Language {
 
     private void dumpBuildScopes() {
         System.out.println(getDescription() + " defined build scopes:");
-        buildScopeMatrix.all().stream().forEach(s -> {
-            System.out.println(s.getId());
-        });
+        buildScopeMatrix.all().stream()
+                .sorted(Comparator.comparing(BuildScope::order))
+                .forEach(s -> {
+                    System.out.println(s.getId() + " (order=" + s.order() + ")");
+                });
     }
 
     private void dumpDependencyScopes() {

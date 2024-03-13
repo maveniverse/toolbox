@@ -27,4 +27,13 @@ public interface BuildScope {
      * The build paths this scope belongs to.
      */
     Set<BuildPath> getBuildPaths();
+
+    /**
+     * Returns the "order" of this scope, usable to sort against other instances.
+     * Expected natural order is "main-compile", "test-compile"... (basically like the processing order).
+     * <p>
+     * Note: this order is unrelated to {@link ProjectPath#order()} and {@link BuildPath#order()} and
+     * should be used only to sort build scope instances.
+     */
+    int order();
 }

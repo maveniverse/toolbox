@@ -17,6 +17,14 @@ public interface BuildPath {
     String getId();
 
     /**
+     * A flag denoting that this build path "reverses" the expected order.
+     * <p>
+     * For example: "compile" step expects "main" then "test" to be compiled. On the other
+     * hand, "runtime" expects "test" to have run first. In this sense, "runtime" is reverse.
+     */
+    boolean isReverse();
+
+    /**
      * Returns the "order" of this path, usable to sort against other instances.
      * Expected natural order is "compile", "runtime"... (basically like the processing order).
      */

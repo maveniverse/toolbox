@@ -10,7 +10,9 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Generic matrix generator for {@link ProjectPath} and {@link BuildPath} combinations (all of them).
@@ -28,27 +30,26 @@ public final class BuildScopeMatrix {
             throw new IllegalArgumentException("empty matrix");
         }
         HashMap<String, BuildScope> buildScopes = new HashMap<>();
-        for (ProjectPath projectPath : projectPaths) {
-            for (BuildPath buildPath : buildPaths) {
-                String id = createId(projectPath, buildPath);
-                buildScopes.put(id, new BuildScope() {
-                    @Override
-                    public String getId() {
-                        return id;
-                    }
-
-                    @Override
-                    public Set<ProjectPath> getProjectPaths() {
-                        return Collections.singleton(projectPath);
-                    }
-
-                    @Override
-                    public Set<BuildPath> getBuildPaths() {
-                        return Collections.singleton(buildPath);
-                    }
-                });
+        AtomicInteger counter = new AtomicInteger(0);
+        buildPaths.stream().sorted(Comparator.comparing(BuildPath::order)).forEach(buildPath -> {
+            Stream<ProjectPath> projectPathStream;
+            if (buildPath.isReverse()) {
+                projectPathStream = projectPaths.stream()
+                        .sorted(Comparator.comparing(ProjectPath::order).reversed());
+            } else {
+                projectPathStream = projectPaths.stream().sorted(Comparator.comparing(ProjectPath::order));
             }
-        }
+            projectPathStream.forEach(projectPath -> {
+                String id = createId(projectPath, buildPath);
+                buildScopes.put(
+                        id,
+                        new BuildScopeImpl(
+                                id,
+                                Collections.singleton(projectPath),
+                                Collections.singleton(buildPath),
+                                counter.incrementAndGet()));
+            });
+        });
         for (BuildScope extra : extras) {
             buildScopes.put(extra.getId(), extra);
         }
@@ -113,5 +114,39 @@ public final class BuildScopeMatrix {
         result.addAll(bs1);
         result.addAll(bs2);
         return result;
+    }
+
+    private static final class BuildScopeImpl implements BuildScope {
+        private final String id;
+        private final Set<ProjectPath> projectPaths;
+        private final Set<BuildPath> buildPaths;
+        private final int order;
+
+        private BuildScopeImpl(String id, Set<ProjectPath> projectPaths, Set<BuildPath> buildPaths, int order) {
+            this.id = id;
+            this.projectPaths = projectPaths;
+            this.buildPaths = buildPaths;
+            this.order = order;
+        }
+
+        @Override
+        public String getId() {
+            return id;
+        }
+
+        @Override
+        public Set<ProjectPath> getProjectPaths() {
+            return projectPaths;
+        }
+
+        @Override
+        public Set<BuildPath> getBuildPaths() {
+            return buildPaths;
+        }
+
+        @Override
+        public int order() {
+            return order;
+        }
     }
 }

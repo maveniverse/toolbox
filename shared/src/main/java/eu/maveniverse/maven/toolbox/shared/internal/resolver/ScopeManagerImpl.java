@@ -347,38 +347,12 @@ public final class ScopeManagerImpl implements InternalScopeManager {
 
     @Override
     public int getDependencyScopeWidth(DependencyScope dependencyScope) {
-        int result = 0;
-        if (dependencyScope.isTransitive()) {
-            result += 1000;
-        }
-        for (BuildScope buildScope :
-                buildScopeSource.query(translate(dependencyScope).getPresence())) {
-            result += 1000
-                    / buildScope.getProjectPaths().stream()
-                            .map(ProjectPath::order)
-                            .reduce(0, Integer::sum);
-        }
-        return result;
+        return translate(dependencyScope).getWidth();
     }
 
     @Override
     public Optional<BuildScope> getDependencyScopeMainProjectBuildScope(DependencyScope dependencyScope) {
-        for (ProjectPath projectPath : buildScopeSource.allProjectPaths().stream()
-                .sorted(Comparator.comparing(ProjectPath::order))
-                .toList()) {
-            for (BuildPath buildPath : buildScopeSource.allBuildPaths().stream()
-                    .sorted(Comparator.comparing(BuildPath::order))
-                    .toList()) {
-                for (BuildScope buildScope :
-                        buildScopeSource.query(translate(dependencyScope).getPresence())) {
-                    if (buildScope.getProjectPaths().contains(projectPath)
-                            && buildScope.getBuildPaths().contains(buildPath)) {
-                        return Optional.of(buildScope);
-                    }
-                }
-            }
-        }
-        return Optional.empty();
+        return translate(dependencyScope).getMainBuildScope();
     }
 
     @Override
@@ -434,6 +408,40 @@ public final class ScopeManagerImpl implements InternalScopeManager {
         return result;
     }
 
+    private int calculateDependencyScopeWidth(DependencyScopeImpl dependencyScope) {
+        int result = 0;
+        if (dependencyScope.isTransitive()) {
+            result += 1000;
+        }
+        for (BuildScope buildScope :
+                buildScopeSource.query(dependencyScope.getPresence())) {
+            result += 1000
+                    / buildScope.getProjectPaths().stream()
+                    .map(ProjectPath::order)
+                    .reduce(0, Integer::sum);
+        }
+        return result;
+    }
+
+    private Optional<BuildScope> calculateMainProjectBuildScope(DependencyScopeImpl dependencyScope) {
+        for (ProjectPath projectPath : buildScopeSource.allProjectPaths().stream()
+                .sorted(Comparator.comparing(ProjectPath::order))
+                .toList()) {
+            for (BuildPath buildPath : buildScopeSource.allBuildPaths().stream()
+                    .sorted(Comparator.comparing(BuildPath::order))
+                    .toList()) {
+                for (BuildScope buildScope :
+                        buildScopeSource.query(dependencyScope.getPresence())) {
+                    if (buildScope.getProjectPaths().contains(projectPath)
+                            && buildScope.getBuildPaths().contains(buildPath)) {
+                        return Optional.of(buildScope);
+                    }
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
     private Set<String> getDirectlyIncludedLabels(ResolutionScopeImpl resolutionScope) {
         return resolutionScope.getDirectlyIncluded().stream()
                 .map(DependencyScope::getId)
@@ -479,15 +487,20 @@ public final class ScopeManagerImpl implements InternalScopeManager {
         return id;
     }
 
-    private static final class DependencyScopeImpl implements DependencyScope {
+    private final class DependencyScopeImpl implements DependencyScope {
         private final String id;
         private final boolean transitive;
         private final Set<BuildScopeQuery> presence;
+        private final Optional<BuildScope> mainBuildScope;
+        private final int width;
+
 
         private DependencyScopeImpl(String id, boolean transitive, Collection<BuildScopeQuery> presence) {
             this.id = requireNonNull(id, "id");
             this.transitive = transitive;
             this.presence = Set.copyOf(presence);
+            this.mainBuildScope = calculateMainProjectBuildScope(this);
+            this.width = calculateDependencyScopeWidth(this);
         }
 
         @Override
@@ -502,6 +515,14 @@ public final class ScopeManagerImpl implements InternalScopeManager {
 
         public Set<BuildScopeQuery> getPresence() {
             return presence;
+        }
+
+        public Optional<BuildScope> getMainBuildScope() {
+            return mainBuildScope;
+        }
+
+        public int getWidth() {
+            return width;
         }
 
         @Override
@@ -547,7 +568,6 @@ public final class ScopeManagerImpl implements InternalScopeManager {
         private final Set<BuildScopeQuery> wantedPresence;
         private final Set<DependencyScope> directlyIncluded;
         private final Set<DependencyScope> transitivelyExcluded;
-
         private ResolutionScopeImpl(
                 String id,
                 Mode mode,

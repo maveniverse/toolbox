@@ -240,16 +240,12 @@ public final class ScopeManagerImpl implements InternalScopeManager {
         result.put(
                 RS_NONE,
                 new ResolutionScopeImpl(
-                        RS_NONE,
-                        ResolutionScopeImpl.Mode.REMOVE,
-                        Collections.emptySet(),
-                        Collections.emptySet(),
-                        allDependencyScopes));
+                        RS_NONE, Mode.REMOVE, Collections.emptySet(), Collections.emptySet(), allDependencyScopes));
         result.put(
                 RS_MAIN_COMPILE,
                 new ResolutionScopeImpl(
                         RS_MAIN_COMPILE,
-                        ResolutionScopeImpl.Mode.ELIMINATE,
+                        Mode.ELIMINATE,
                         singleton(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.BUILD_PATH_COMPILE),
                         Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
                         nonTransitiveDependencyScopes));
@@ -257,7 +253,7 @@ public final class ScopeManagerImpl implements InternalScopeManager {
                 RS_MAIN_COMPILE_PLUS_RUNTIME,
                 new ResolutionScopeImpl(
                         RS_MAIN_COMPILE_PLUS_RUNTIME,
-                        ResolutionScopeImpl.Mode.ELIMINATE,
+                        Mode.ELIMINATE,
                         byProjectPath(CommonBuilds.PROJECT_PATH_MAIN),
                         Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
                         nonTransitiveDependencyScopes));
@@ -265,9 +261,7 @@ public final class ScopeManagerImpl implements InternalScopeManager {
                 RS_MAIN_RUNTIME,
                 new ResolutionScopeImpl(
                         RS_MAIN_RUNTIME,
-                        mavenLevel.isBrokenRuntimeResolution()
-                                ? ResolutionScopeImpl.Mode.ELIMINATE
-                                : ResolutionScopeImpl.Mode.REMOVE,
+                        mavenLevel.isBrokenRuntimeResolution() ? Mode.ELIMINATE : Mode.REMOVE,
                         singleton(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.BUILD_PATH_RUNTIME),
                         Collections.emptySet(),
                         nonTransitiveDependencyScopes));
@@ -276,9 +270,7 @@ public final class ScopeManagerImpl implements InternalScopeManager {
                     RS_MAIN_RUNTIME_PLUS_SYSTEM,
                     new ResolutionScopeImpl(
                             RS_MAIN_RUNTIME_PLUS_SYSTEM,
-                            mavenLevel.isBrokenRuntimeResolution()
-                                    ? ResolutionScopeImpl.Mode.ELIMINATE
-                                    : ResolutionScopeImpl.Mode.REMOVE,
+                            mavenLevel.isBrokenRuntimeResolution() ? Mode.ELIMINATE : Mode.REMOVE,
                             singleton(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.BUILD_PATH_RUNTIME),
                             Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
                             nonTransitiveDependencyScopes));
@@ -287,7 +279,7 @@ public final class ScopeManagerImpl implements InternalScopeManager {
                 RS_TEST_COMPILE,
                 new ResolutionScopeImpl(
                         RS_TEST_COMPILE,
-                        ResolutionScopeImpl.Mode.ELIMINATE,
+                        Mode.ELIMINATE,
                         select(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_COMPILE),
                         Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
                         nonTransitiveDependencyScopes));
@@ -295,7 +287,7 @@ public final class ScopeManagerImpl implements InternalScopeManager {
                 RS_TEST_RUNTIME,
                 new ResolutionScopeImpl(
                         RS_TEST_RUNTIME,
-                        ResolutionScopeImpl.Mode.ELIMINATE,
+                        Mode.ELIMINATE,
                         select(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_RUNTIME),
                         Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
                         nonTransitiveDependencyScopes));
@@ -362,7 +354,7 @@ public final class ScopeManagerImpl implements InternalScopeManager {
         Set<String> transitivelyExcludedLabels = getTransitivelyExcludedLabels(rs);
 
         return new AndDependencySelector(
-                rs.getMode() == ResolutionScopeImpl.Mode.ELIMINATE
+                rs.getMode() == Mode.ELIMINATE
                         ? ScopeDependencySelector.fromTo(2, 2, null, directlyExcludedLabels)
                         : ScopeDependencySelector.fromTo(1, 2, null, directlyExcludedLabels),
                 ScopeDependencySelector.from(2, null, transitivelyExcludedLabels),
@@ -382,7 +374,7 @@ public final class ScopeManagerImpl implements InternalScopeManager {
     @Override
     public CollectResult postProcess(ResolutionScope resolutionScope, CollectResult collectResult) {
         ResolutionScopeImpl rs = translate(resolutionScope);
-        if (rs.getMode() == ResolutionScopeImpl.Mode.ELIMINATE) {
+        if (rs.getMode() == Mode.ELIMINATE) {
             CloningDependencyVisitor cloning = new CloningDependencyVisitor();
             FilteringDependencyVisitor filter = new FilteringDependencyVisitor(
                     cloning, new ScopeDependencyFilter(null, getDirectlyExcludedLabels(rs)));
@@ -425,10 +417,10 @@ public final class ScopeManagerImpl implements InternalScopeManager {
     private Optional<BuildScope> calculateMainProjectBuildScope(DependencyScopeImpl dependencyScope) {
         for (ProjectPath projectPath : buildScopeSource.allProjectPaths().stream()
                 .sorted(Comparator.comparing(ProjectPath::order))
-                .toList()) {
+                .collect(Collectors.toList())) {
             for (BuildPath buildPath : buildScopeSource.allBuildPaths().stream()
                     .sorted(Comparator.comparing(BuildPath::order))
-                    .toList()) {
+                    .collect(Collectors.toList())) {
                 for (BuildScope buildScope : buildScopeSource.query(dependencyScope.getPresence())) {
                     if (buildScope.getProjectPaths().contains(projectPath)
                             && buildScope.getBuildPaths().contains(buildPath)) {
@@ -495,7 +487,7 @@ public final class ScopeManagerImpl implements InternalScopeManager {
         private DependencyScopeImpl(String id, boolean transitive, Collection<BuildScopeQuery> presence) {
             this.id = requireNonNull(id, "id");
             this.transitive = transitive;
-            this.presence = Set.copyOf(presence);
+            this.presence = Collections.unmodifiableSet(new HashSet<>(presence));
             this.mainBuildScope = calculateMainProjectBuildScope(this);
             this.width = calculateDependencyScopeWidth(this);
         }
@@ -541,24 +533,25 @@ public final class ScopeManagerImpl implements InternalScopeManager {
         }
     }
 
-    private final class ResolutionScopeImpl implements ResolutionScope {
+    /**
+     * The mode of resolution scope: eliminate (remove all occurrences) or just remove.
+     */
+    enum Mode {
         /**
-         * The mode of resolution scope: eliminate (remove all occurrences) or just remove.
+         * Mode where artifacts in non-wanted scopes are completely eliminated. In other words, this mode ensures
+         * that if a dependency was removed due unwanted scope, it is guaranteed that no such dependency will appear
+         * anywhere else in the resulting graph either.
          */
-        enum Mode {
-            /**
-             * Mode where artifacts in non-wanted scopes are completely eliminated. In other words, this mode ensures
-             * that if a dependency was removed due unwanted scope, it is guaranteed that no such dependency will appear
-             * anywhere else in the resulting graph either.
-             */
-            ELIMINATE,
+        ELIMINATE,
 
-            /**
-             * Mode where artifacts in non-wanted scopes are removed only. In other words, they will NOT prevent (as in
-             * they will not "dominate") other possibly appearing occurrences of same artifact in the graph.
-             */
-            REMOVE
-        }
+        /**
+         * Mode where artifacts in non-wanted scopes are removed only. In other words, they will NOT prevent (as in
+         * they will not "dominate") other possibly appearing occurrences of same artifact in the graph.
+         */
+        REMOVE
+    }
+
+    private final class ResolutionScopeImpl implements ResolutionScope {
 
         private final String id;
         private final Mode mode;
@@ -581,8 +574,8 @@ public final class ScopeManagerImpl implements InternalScopeManager {
                 explicitlyIncluded.stream().filter(Objects::nonNull).forEach(included::add);
             }
             this.directlyIncluded = Collections.unmodifiableSet(included);
-            this.transitivelyExcluded =
-                    transitivelyExcluded.stream().filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
+            this.transitivelyExcluded = Collections.unmodifiableSet(
+                    transitivelyExcluded.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
         }
 
         @Override

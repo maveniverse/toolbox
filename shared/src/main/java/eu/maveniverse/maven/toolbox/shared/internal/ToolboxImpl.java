@@ -36,9 +36,11 @@ import org.slf4j.LoggerFactory;
 public class ToolboxImpl implements Toolbox {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Context context;
+    private final InternalScopeManager internalScopeManager;
 
-    public ToolboxImpl(Context context) {
+    public ToolboxImpl(Context context, InternalScopeManager internalScopeManager) {
         this.context = requireNonNull(context);
+        this.internalScopeManager = requireNonNull(internalScopeManager);
     }
 
     @Override
@@ -106,10 +108,10 @@ public class ToolboxImpl implements Toolbox {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
             session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         }
-        session.setDependencySelector(resolutionScope.getDependencySelector());
-        session.setDependencyGraphTransformer(resolutionScope.getDependencyGraphTransformer());
-        logger.info("Collecting scope: {}", resolutionScope.getId());
-        logger.info("   scope manager: {}", resolutionScope.getScopeManager().getDescription());
+        session.setDependencySelector(internalScopeManager.getDependencySelector(resolutionScope));
+        session.setDependencyGraphTransformer(internalScopeManager.getDependencyGraphTransformer(resolutionScope));
+        logger.debug("Resolving scope: {}", resolutionScope.getId());
+        logger.debug("  scope manager: {}", internalScopeManager.getDescription());
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
@@ -126,7 +128,7 @@ public class ToolboxImpl implements Toolbox {
 
         logger.debug("Collecting {}", collectRequest);
         CollectResult result = context.repositorySystem().collectDependencies(session, collectRequest);
-        return resolutionScope.postProcess(result);
+        return internalScopeManager.postProcess(resolutionScope, result);
     }
 
     private DependencyResult doResolve(
@@ -143,10 +145,10 @@ public class ToolboxImpl implements Toolbox {
         }
 
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
-        session.setDependencySelector(resolutionScope.getDependencySelector());
-        session.setDependencyGraphTransformer(resolutionScope.getDependencyGraphTransformer());
-        logger.info("Resolving scope: {}", resolutionScope.getId());
-        logger.info("  scope manager: {}", resolutionScope.getScopeManager().getDescription());
+        session.setDependencySelector(internalScopeManager.getDependencySelector(resolutionScope));
+        session.setDependencyGraphTransformer(internalScopeManager.getDependencyGraphTransformer(resolutionScope));
+        logger.debug("Resolving scope: {}", resolutionScope.getId());
+        logger.debug("  scope manager: {}", internalScopeManager.getDescription());
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
@@ -160,7 +162,7 @@ public class ToolboxImpl implements Toolbox {
         collectRequest.setRequestContext("project");
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
         DependencyRequest dependencyRequest =
-                new DependencyRequest(collectRequest, resolutionScope.getDependencyFilter());
+                new DependencyRequest(collectRequest, internalScopeManager.getDependencyFilter(resolutionScope));
 
         logger.debug("Resolving {}", dependencyRequest);
         return context.repositorySystem().resolveDependencies(session, dependencyRequest);

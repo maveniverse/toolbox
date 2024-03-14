@@ -5,8 +5,10 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared;
+package eu.maveniverse.maven.toolbox.shared.internal;
 
+import eu.maveniverse.maven.toolbox.shared.BuildPath;
+import eu.maveniverse.maven.toolbox.shared.ProjectPath;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;

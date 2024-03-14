@@ -8,8 +8,10 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
+import eu.maveniverse.maven.toolbox.shared.internal.resolver.ScopeManagerImpl;
 import java.io.File;
 import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
@@ -49,13 +51,12 @@ public final class Classpath extends ResolverCommandSupport {
     protected Integer doCall(Context context) throws Exception {
         java.util.List<Dependency> managedDependencies = importBoms(context, boms);
         Artifact gav = parseGav(this.gav, managedDependencies);
-        Toolbox toolbox = new ToolboxImpl(context);
+
+        ScopeManagerImpl scopeManager = createScopeManager(mavenLevel);
+        ResolutionScope resolutionScope = toResolutionScope(scopeManager, this.resolutionScope);
+        Toolbox toolbox = new ToolboxImpl(context, scopeManager);
         DependencyResult dependencyResult = toolbox.resolve(
-                toResolutionScope(mavenLevel, resolutionScope),
-                new Dependency(gav, ""),
-                null,
-                managedDependencies,
-                context.remoteRepositories());
+                resolutionScope, new Dependency(gav, ""), null, managedDependencies, context.remoteRepositories());
 
         PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
         dependencyResult.getRoot().accept(nlg);

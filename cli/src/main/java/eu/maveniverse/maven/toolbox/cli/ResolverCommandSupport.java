@@ -9,7 +9,7 @@ package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
-import eu.maveniverse.maven.toolbox.shared.internal.ScopeManagerImpl;
+import eu.maveniverse.maven.toolbox.shared.internal.resolver.ScopeManagerImpl;
 import java.util.ArrayList;
 import java.util.HashSet;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -84,8 +84,11 @@ public abstract class ResolverCommandSupport extends CommandSupport {
         }
     }
 
-    protected ResolutionScope toResolutionScope(String mavenLevel, String resolutionScope) {
-        ScopeManagerImpl scopeManager = new ScopeManagerImpl(ScopeManagerImpl.MavenLevel.valueOf(mavenLevel));
+    protected ScopeManagerImpl createScopeManager(String mavenLevel) {
+        return new ScopeManagerImpl(ScopeManagerImpl.MavenLevel.valueOf(mavenLevel));
+    }
+
+    protected ResolutionScope toResolutionScope(ScopeManagerImpl scopeManager, String resolutionScope) {
         return scopeManager
                 .getResolutionScope(resolutionScope)
                 .orElseThrow(() -> new IllegalArgumentException("unknown resolution scope"));

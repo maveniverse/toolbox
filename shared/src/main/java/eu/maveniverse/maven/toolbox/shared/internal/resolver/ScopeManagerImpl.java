@@ -5,18 +5,26 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared.internal;
+package eu.maveniverse.maven.toolbox.shared.internal.resolver;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.BuildScopeQuery.all;
+import static eu.maveniverse.maven.toolbox.shared.internal.BuildScopeQuery.byBuildPath;
+import static eu.maveniverse.maven.toolbox.shared.internal.BuildScopeQuery.byProjectPath;
+import static eu.maveniverse.maven.toolbox.shared.internal.BuildScopeQuery.select;
+import static eu.maveniverse.maven.toolbox.shared.internal.BuildScopeQuery.singleton;
+import static eu.maveniverse.maven.toolbox.shared.internal.BuildScopeQuery.union;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.BuildPath;
-import eu.maveniverse.maven.toolbox.shared.BuildScope;
-import eu.maveniverse.maven.toolbox.shared.BuildScopeMatrix;
-import eu.maveniverse.maven.toolbox.shared.CommonBuilds;
 import eu.maveniverse.maven.toolbox.shared.DependencyScope;
 import eu.maveniverse.maven.toolbox.shared.ProjectPath;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
-import eu.maveniverse.maven.toolbox.shared.ScopeManager;
+import eu.maveniverse.maven.toolbox.shared.internal.BuildScope;
+import eu.maveniverse.maven.toolbox.shared.internal.BuildScopeMatrixSource;
+import eu.maveniverse.maven.toolbox.shared.internal.BuildScopeQuery;
+import eu.maveniverse.maven.toolbox.shared.internal.BuildScopeSource;
+import eu.maveniverse.maven.toolbox.shared.internal.CommonBuilds;
+import eu.maveniverse.maven.toolbox.shared.internal.InternalScopeManager;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,7 +50,7 @@ import org.eclipse.aether.util.graph.transformer.SimpleOptionalitySelector;
 import org.eclipse.aether.util.graph.visitor.CloningDependencyVisitor;
 import org.eclipse.aether.util.graph.visitor.FilteringDependencyVisitor;
 
-public final class ScopeManagerImpl implements ScopeManager {
+public final class ScopeManagerImpl implements InternalScopeManager {
     public static final String NAME = "java";
 
     public enum MavenLevel {
@@ -53,7 +61,7 @@ public final class ScopeManagerImpl implements ScopeManager {
                 false,
                 false,
                 false,
-                new BuildScopeMatrix(
+                new BuildScopeMatrixSource(
                         Collections.singletonList(CommonBuilds.PROJECT_PATH_MAIN),
                         Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME),
                         CommonBuilds.MAVEN_TEST_BUILD_SCOPE)),
@@ -64,7 +72,7 @@ public final class ScopeManagerImpl implements ScopeManager {
                 false,
                 false,
                 false,
-                new BuildScopeMatrix(
+                new BuildScopeMatrixSource(
                         Collections.singletonList(CommonBuilds.PROJECT_PATH_MAIN),
                         Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME),
                         CommonBuilds.MAVEN_TEST_BUILD_SCOPE)),
@@ -75,7 +83,7 @@ public final class ScopeManagerImpl implements ScopeManager {
                 true,
                 false,
                 false,
-                new BuildScopeMatrix(
+                new BuildScopeMatrixSource(
                         Arrays.asList(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.PROJECT_PATH_TEST),
                         Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME))),
         Maven4WithSystem(
@@ -85,7 +93,7 @@ public final class ScopeManagerImpl implements ScopeManager {
                 true,
                 false,
                 false,
-                new BuildScopeMatrix(
+                new BuildScopeMatrixSource(
                         Arrays.asList(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.PROJECT_PATH_TEST),
                         Arrays.asList(CommonBuilds.BUILD_PATH_COMPILE, CommonBuilds.BUILD_PATH_RUNTIME))),
         Maven4Full(
@@ -95,7 +103,7 @@ public final class ScopeManagerImpl implements ScopeManager {
                 true,
                 true,
                 true,
-                new BuildScopeMatrix(
+                new BuildScopeMatrixSource(
                         Arrays.asList(
                                 CommonBuilds.PROJECT_PATH_MAIN,
                                 CommonBuilds.PROJECT_PATH_TEST,
@@ -111,7 +119,7 @@ public final class ScopeManagerImpl implements ScopeManager {
         private final boolean newDependencyScopes;
         private final boolean strictDependencyScopes;
         private final boolean strictResolutionScopes;
-        private final BuildScopeMatrix buildScopeMatrix;
+        private final BuildScopeSource buildScopeSource;
 
         MavenLevel(
                 boolean systemScope,
@@ -120,14 +128,14 @@ public final class ScopeManagerImpl implements ScopeManager {
                 boolean newDependencyScopes,
                 boolean strictDependencyScopes,
                 boolean strictResolutionScopes,
-                BuildScopeMatrix buildScopeMatrix) {
+                BuildScopeSource buildScopeSource) {
             this.systemScope = systemScope;
             this.systemScopeTransitive = systemScopeTransitive;
             this.brokenRuntimeResolution = brokenRuntimeResolution;
             this.newDependencyScopes = newDependencyScopes;
             this.strictDependencyScopes = strictDependencyScopes;
             this.strictResolutionScopes = strictResolutionScopes;
-            this.buildScopeMatrix = buildScopeMatrix;
+            this.buildScopeSource = buildScopeSource;
         }
 
         public boolean isSystemScope() {
@@ -146,8 +154,8 @@ public final class ScopeManagerImpl implements ScopeManager {
             return newDependencyScopes;
         }
 
-        public BuildScopeMatrix getBuildScopeMatrix() {
-            return buildScopeMatrix;
+        public BuildScopeSource getBuildScopeSource() {
+            return buildScopeSource;
         }
     }
 
@@ -170,150 +178,127 @@ public final class ScopeManagerImpl implements ScopeManager {
 
     private final String id;
     private final MavenLevel mavenLevel;
-    private final BuildScopeMatrix buildScopeMatrix;
-    private final Map<String, JavaDependencyScope> dependencyScopes;
-    private final Map<String, JavaResolutionScope> resolutionScopes;
+    private final BuildScopeSource buildScopeSource;
+    private final Map<String, DependencyScopeImpl> dependencyScopes;
+    private final Map<String, ResolutionScopeImpl> resolutionScopes;
 
     public ScopeManagerImpl(MavenLevel mavenLevel) {
         this.id = NAME;
         this.mavenLevel = requireNonNull(mavenLevel, "mavenLevel");
-        this.buildScopeMatrix = mavenLevel.getBuildScopeMatrix();
+        this.buildScopeSource = mavenLevel.getBuildScopeSource();
         this.dependencyScopes = Collections.unmodifiableMap(buildDependencyScopes());
         this.resolutionScopes = Collections.unmodifiableMap(buildResolutionScopes());
     }
 
-    private Map<String, JavaDependencyScope> buildDependencyScopes() {
-        HashMap<String, JavaDependencyScope> result = new HashMap<>();
-        result.put(DS_COMPILE, new JavaDependencyScope(DS_COMPILE, this, true, buildScopeMatrix.all()));
-        result.put(
-                DS_RUNTIME,
-                new JavaDependencyScope(
-                        DS_RUNTIME, this, true, buildScopeMatrix.byBuildPath(CommonBuilds.BUILD_PATH_RUNTIME)));
+    private Map<String, DependencyScopeImpl> buildDependencyScopes() {
+        HashMap<String, DependencyScopeImpl> result = new HashMap<>();
+        result.put(DS_COMPILE, new DependencyScopeImpl(DS_COMPILE, true, all()));
+        result.put(DS_RUNTIME, new DependencyScopeImpl(DS_RUNTIME, true, byBuildPath(CommonBuilds.BUILD_PATH_RUNTIME)));
         result.put(
                 DS_PROVIDED,
-                new JavaDependencyScope(
+                new DependencyScopeImpl(
                         DS_PROVIDED,
-                        this,
                         false,
-                        buildScopeMatrix.union(
-                                buildScopeMatrix.byBuildPath(CommonBuilds.BUILD_PATH_COMPILE),
-                                buildScopeMatrix.select(
-                                        CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_RUNTIME))));
-        result.put(
-                DS_TEST,
-                new JavaDependencyScope(
-                        DS_TEST, this, false, buildScopeMatrix.byProjectPath(CommonBuilds.PROJECT_PATH_TEST)));
+                        union(
+                                byBuildPath(CommonBuilds.BUILD_PATH_COMPILE),
+                                select(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_RUNTIME))));
+        result.put(DS_TEST, new DependencyScopeImpl(DS_TEST, false, byProjectPath(CommonBuilds.PROJECT_PATH_TEST)));
         if (mavenLevel.isSystemScope()) {
-            result.put(
-                    DS_SYSTEM,
-                    new JavaDependencyScope(
-                            DS_SYSTEM, this, mavenLevel.isSystemScopeTransitive(), buildScopeMatrix.all()));
+            result.put(DS_SYSTEM, new DependencyScopeImpl(DS_SYSTEM, mavenLevel.isSystemScopeTransitive(), all()));
         }
         if (mavenLevel.isNewDependencyScopes()) {
-            result.put(DS_NONE, new JavaDependencyScope(DS_NONE, this, false, Collections.emptySet()));
+            result.put(DS_NONE, new DependencyScopeImpl(DS_NONE, false, Collections.emptySet()));
             result.put(
                     DS_COMPILE_ONLY,
-                    new JavaDependencyScope(
+                    new DependencyScopeImpl(
                             DS_COMPILE_ONLY,
-                            this,
                             false,
-                            buildScopeMatrix.singleton(
-                                    CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.BUILD_PATH_COMPILE)));
+                            singleton(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.BUILD_PATH_COMPILE)));
             result.put(
                     DS_TEST_RUNTIME,
-                    new JavaDependencyScope(
+                    new DependencyScopeImpl(
                             DS_TEST_RUNTIME,
-                            this,
                             false,
-                            buildScopeMatrix.singleton(
-                                    CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_RUNTIME)));
+                            singleton(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_RUNTIME)));
             result.put(
                     DS_TEST_ONLY,
-                    new JavaDependencyScope(
+                    new DependencyScopeImpl(
                             DS_TEST_ONLY,
-                            this,
                             false,
-                            buildScopeMatrix.singleton(
-                                    CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_COMPILE)));
+                            singleton(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_COMPILE)));
         }
         return result;
     }
 
-    private Map<String, JavaResolutionScope> buildResolutionScopes() {
-        Collection<JavaDependencyScope> nonTransitiveScopes = dependencyScopes.values().stream()
+    private Map<String, ResolutionScopeImpl> buildResolutionScopes() {
+        Collection<DependencyScope> allDependencyScopes = new HashSet<>(dependencyScopes.values());
+        Collection<DependencyScope> nonTransitiveDependencyScopes = dependencyScopes.values().stream()
                 .filter(s -> !s.isTransitive())
                 .collect(Collectors.toSet());
 
-        HashMap<String, JavaResolutionScope> result = new HashMap<>();
+        HashMap<String, ResolutionScopeImpl> result = new HashMap<>();
         result.put(
                 RS_NONE,
-                new JavaResolutionScope(
+                new ResolutionScopeImpl(
                         RS_NONE,
-                        this,
-                        ResolutionScope.Mode.REMOVE,
+                        ResolutionScopeImpl.Mode.REMOVE,
                         Collections.emptySet(),
                         Collections.emptySet(),
-                        dependencyScopes.values()));
+                        allDependencyScopes));
         result.put(
                 RS_MAIN_COMPILE,
-                new JavaResolutionScope(
+                new ResolutionScopeImpl(
                         RS_MAIN_COMPILE,
-                        this,
-                        ResolutionScope.Mode.ELIMINATE,
-                        buildScopeMatrix.singleton(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.BUILD_PATH_COMPILE),
+                        ResolutionScopeImpl.Mode.ELIMINATE,
+                        singleton(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.BUILD_PATH_COMPILE),
                         Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
-                        nonTransitiveScopes));
+                        nonTransitiveDependencyScopes));
         result.put(
                 RS_MAIN_COMPILE_PLUS_RUNTIME,
-                new JavaResolutionScope(
+                new ResolutionScopeImpl(
                         RS_MAIN_COMPILE_PLUS_RUNTIME,
-                        this,
-                        ResolutionScope.Mode.ELIMINATE,
-                        buildScopeMatrix.byProjectPath(CommonBuilds.PROJECT_PATH_MAIN),
+                        ResolutionScopeImpl.Mode.ELIMINATE,
+                        byProjectPath(CommonBuilds.PROJECT_PATH_MAIN),
                         Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
-                        nonTransitiveScopes));
+                        nonTransitiveDependencyScopes));
         result.put(
                 RS_MAIN_RUNTIME,
-                new JavaResolutionScope(
+                new ResolutionScopeImpl(
                         RS_MAIN_RUNTIME,
-                        this,
                         mavenLevel.isBrokenRuntimeResolution()
-                                ? ResolutionScope.Mode.ELIMINATE
-                                : ResolutionScope.Mode.REMOVE,
-                        buildScopeMatrix.singleton(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.BUILD_PATH_RUNTIME),
+                                ? ResolutionScopeImpl.Mode.ELIMINATE
+                                : ResolutionScopeImpl.Mode.REMOVE,
+                        singleton(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.BUILD_PATH_RUNTIME),
                         Collections.emptySet(),
-                        nonTransitiveScopes));
+                        nonTransitiveDependencyScopes));
         if (mavenLevel.isSystemScope()) {
             result.put(
                     RS_MAIN_RUNTIME_PLUS_SYSTEM,
-                    new JavaResolutionScope(
+                    new ResolutionScopeImpl(
                             RS_MAIN_RUNTIME_PLUS_SYSTEM,
-                            this,
                             mavenLevel.isBrokenRuntimeResolution()
-                                    ? ResolutionScope.Mode.ELIMINATE
-                                    : ResolutionScope.Mode.REMOVE,
-                            buildScopeMatrix.singleton(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.BUILD_PATH_RUNTIME),
+                                    ? ResolutionScopeImpl.Mode.ELIMINATE
+                                    : ResolutionScopeImpl.Mode.REMOVE,
+                            singleton(CommonBuilds.PROJECT_PATH_MAIN, CommonBuilds.BUILD_PATH_RUNTIME),
                             Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
-                            nonTransitiveScopes));
+                            nonTransitiveDependencyScopes));
         }
         result.put(
                 RS_TEST_COMPILE,
-                new JavaResolutionScope(
+                new ResolutionScopeImpl(
                         RS_TEST_COMPILE,
-                        this,
-                        ResolutionScope.Mode.ELIMINATE,
-                        buildScopeMatrix.select(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_COMPILE),
+                        ResolutionScopeImpl.Mode.ELIMINATE,
+                        select(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_COMPILE),
                         Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
-                        nonTransitiveScopes));
+                        nonTransitiveDependencyScopes));
         result.put(
                 RS_TEST_RUNTIME,
-                new JavaResolutionScope(
+                new ResolutionScopeImpl(
                         RS_TEST_RUNTIME,
-                        this,
-                        ResolutionScope.Mode.ELIMINATE,
-                        buildScopeMatrix.select(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_RUNTIME),
+                        ResolutionScopeImpl.Mode.ELIMINATE,
+                        select(CommonBuilds.PROJECT_PATH_TEST, CommonBuilds.BUILD_PATH_RUNTIME),
                         Collections.singletonList(dependencyScopes.get(DS_SYSTEM)),
-                        nonTransitiveScopes));
+                        nonTransitiveDependencyScopes));
         return result;
     }
 
@@ -360,25 +345,32 @@ public final class ScopeManagerImpl implements ScopeManager {
         return new HashSet<>(resolutionScopes.values());
     }
 
-    private Set<JavaDependencyScope> collectScopes(Collection<BuildScope> buildScopes) {
-        HashSet<JavaDependencyScope> result = new HashSet<>();
-        for (BuildScope buildScope : buildScopes) {
-            dependencyScopes.values().stream()
-                    .filter(s -> s.getPresence().contains(buildScope))
-                    .filter(s -> !s.getId().equals(DS_SYSTEM)) // system scope must be always explicitly added
-                    .forEach(result::add);
+    @Override
+    public int getDependencyScopeWidth(DependencyScope dependencyScope) {
+        int result = 0;
+        if (dependencyScope.isTransitive()) {
+            result += 1000;
+        }
+        for (BuildScope buildScope :
+                buildScopeSource.query(translate(dependencyScope).getPresence())) {
+            result += 1000
+                    / buildScope.getProjectPaths().stream()
+                            .map(ProjectPath::order)
+                            .reduce(0, Integer::sum);
         }
         return result;
     }
 
-    private Optional<BuildScope> getMainProjectBuildScope(JavaDependencyScope javaDependencyScope) {
-        for (ProjectPath projectPath : buildScopeMatrix.allProjectPaths().stream()
+    @Override
+    public Optional<BuildScope> getDependencyScopeMainProjectBuildScope(DependencyScope dependencyScope) {
+        for (ProjectPath projectPath : buildScopeSource.allProjectPaths().stream()
                 .sorted(Comparator.comparing(ProjectPath::order))
-                .collect(Collectors.toList())) {
-            for (BuildPath buildPath : buildScopeMatrix.allBuildPaths().stream()
+                .toList()) {
+            for (BuildPath buildPath : buildScopeSource.allBuildPaths().stream()
                     .sorted(Comparator.comparing(BuildPath::order))
-                    .collect(Collectors.toList())) {
-                for (BuildScope buildScope : javaDependencyScope.getPresence()) {
+                    .toList()) {
+                for (BuildScope buildScope :
+                        buildScopeSource.query(translate(dependencyScope).getPresence())) {
                     if (buildScope.getProjectPaths().contains(projectPath)
                             && buildScope.getBuildPaths().contains(buildPath)) {
                         return Optional.of(buildScope);
@@ -389,31 +381,14 @@ public final class ScopeManagerImpl implements ScopeManager {
         return Optional.empty();
     }
 
-    private Set<String> getDirectlyIncludedLabels(JavaResolutionScope javaResolutionScope) {
-        return javaResolutionScope.getDirectlyIncluded().stream()
-                .map(DependencyScope::getId)
-                .collect(Collectors.toSet());
-    }
-
-    private Set<String> getDirectlyExcludedLabels(JavaResolutionScope javaResolutionScope) {
-        return dependencyScopes.values().stream()
-                .filter(s -> !javaResolutionScope.getDirectlyIncluded().contains(s))
-                .map(DependencyScope::getId)
-                .collect(Collectors.toSet());
-    }
-
-    private Set<String> getTransitivelyExcludedLabels(JavaResolutionScope javaResolutionScope) {
-        return javaResolutionScope.getTransitivelyExcluded().stream()
-                .map(DependencyScope::getId)
-                .collect(Collectors.toSet());
-    }
-
-    private DependencySelector getDependencySelector(JavaResolutionScope javaResolutionScope) {
-        Set<String> directlyExcludedLabels = getDirectlyExcludedLabels(javaResolutionScope);
-        Set<String> transitivelyExcludedLabels = getTransitivelyExcludedLabels(javaResolutionScope);
+    @Override
+    public DependencySelector getDependencySelector(ResolutionScope resolutionScope) {
+        ResolutionScopeImpl rs = translate(resolutionScope);
+        Set<String> directlyExcludedLabels = getDirectlyExcludedLabels(rs);
+        Set<String> transitivelyExcludedLabels = getTransitivelyExcludedLabels(rs);
 
         return new AndDependencySelector(
-                javaResolutionScope.getMode() == ResolutionScope.Mode.ELIMINATE
+                rs.getMode() == ResolutionScopeImpl.Mode.ELIMINATE
                         ? ScopeDependencySelector.fromTo(2, 2, null, directlyExcludedLabels)
                         : ScopeDependencySelector.fromTo(1, 2, null, directlyExcludedLabels),
                 ScopeDependencySelector.from(2, null, transitivelyExcludedLabels),
@@ -421,7 +396,8 @@ public final class ScopeManagerImpl implements ScopeManager {
                 new ExclusionDependencySelector());
     }
 
-    private DependencyGraphTransformer getDependencyGraphTransformer(JavaResolutionScope javaResolutionScope) {
+    @Override
+    public DependencyGraphTransformer getDependencyGraphTransformer(ResolutionScope resolutionScope) {
         return new ChainedDependencyGraphTransformer(
                 new ConflictResolver(
                         new NearestVersionSelector(), new ManagedScopeSelector(this),
@@ -429,33 +405,60 @@ public final class ScopeManagerImpl implements ScopeManager {
                 new ManagedDependencyContextRefiner(this));
     }
 
-    private CollectResult postProcess(JavaResolutionScope javaResolutionScope, CollectResult collectResult) {
-        if (javaResolutionScope.getMode() == ResolutionScope.Mode.ELIMINATE) {
+    @Override
+    public CollectResult postProcess(ResolutionScope resolutionScope, CollectResult collectResult) {
+        ResolutionScopeImpl rs = translate(resolutionScope);
+        if (rs.getMode() == ResolutionScopeImpl.Mode.ELIMINATE) {
             CloningDependencyVisitor cloning = new CloningDependencyVisitor();
             FilteringDependencyVisitor filter = new FilteringDependencyVisitor(
-                    cloning, new ScopeDependencyFilter(null, getDirectlyExcludedLabels(javaResolutionScope)));
+                    cloning, new ScopeDependencyFilter(null, getDirectlyExcludedLabels(rs)));
             collectResult.getRoot().accept(filter);
             collectResult.setRoot(cloning.getRootNode());
         }
         return collectResult;
     }
 
-    private DependencyFilter getDependencyFilter(JavaResolutionScope javaResolutionScope) {
-        return new ScopeDependencyFilter(null, getDirectlyExcludedLabels(javaResolutionScope));
+    @Override
+    public DependencyFilter getDependencyFilter(ResolutionScope resolutionScope) {
+        return new ScopeDependencyFilter(null, getDirectlyExcludedLabels(translate(resolutionScope)));
     }
 
-    private static int calculateWidth(JavaDependencyScope dependencyScope) {
-        int result = 0;
-        if (dependencyScope.isTransitive()) {
-            result += 1000;
-        }
-        for (BuildScope buildScope : dependencyScope.getPresence()) {
-            result += 1000
-                    / buildScope.getProjectPaths().stream()
-                            .map(ProjectPath::order)
-                            .reduce(0, Integer::sum);
+    private Set<DependencyScope> collectScopes(Collection<BuildScopeQuery> wantedPresence) {
+        HashSet<DependencyScope> result = new HashSet<>();
+        for (BuildScope buildScope : buildScopeSource.query(wantedPresence)) {
+            dependencyScopes.values().stream()
+                    .filter(s -> buildScopeSource.query(s.getPresence()).contains(buildScope))
+                    .filter(s -> !s.getId().equals(DS_SYSTEM)) // system scope must be always explicitly added
+                    .forEach(result::add);
         }
         return result;
+    }
+
+    private Set<String> getDirectlyIncludedLabels(ResolutionScopeImpl resolutionScope) {
+        return resolutionScope.getDirectlyIncluded().stream()
+                .map(DependencyScope::getId)
+                .collect(Collectors.toSet());
+    }
+
+    private Set<String> getDirectlyExcludedLabels(ResolutionScopeImpl resolutionScope) {
+        return dependencyScopes.values().stream()
+                .filter(s -> !resolutionScope.getDirectlyIncluded().contains(s))
+                .map(DependencyScope::getId)
+                .collect(Collectors.toSet());
+    }
+
+    private Set<String> getTransitivelyExcludedLabels(ResolutionScopeImpl resolutionScope) {
+        return resolutionScope.getTransitivelyExcluded().stream()
+                .map(DependencyScope::getId)
+                .collect(Collectors.toSet());
+    }
+
+    private DependencyScopeImpl translate(DependencyScope dependencyScope) {
+        return requireNonNull(dependencyScopes.get(dependencyScope.getId()), "unknown dependency scope");
+    }
+
+    private ResolutionScopeImpl translate(ResolutionScope resolutionScope) {
+        return requireNonNull(resolutionScopes.get(resolutionScope.getId()), "unknown resolution scope");
     }
 
     @Override
@@ -476,30 +479,20 @@ public final class ScopeManagerImpl implements ScopeManager {
         return id;
     }
 
-    public static final class JavaDependencyScope implements DependencyScope {
+    private static final class DependencyScopeImpl implements DependencyScope {
         private final String id;
-        private final ScopeManagerImpl scopeManager;
         private final boolean transitive;
-        private final Set<BuildScope> presence;
-        private final int width;
+        private final Set<BuildScopeQuery> presence;
 
-        public JavaDependencyScope(
-                String id, ScopeManagerImpl scopeManager, boolean transitive, Collection<BuildScope> presence) {
+        private DependencyScopeImpl(String id, boolean transitive, Collection<BuildScopeQuery> presence) {
             this.id = requireNonNull(id, "id");
-            this.scopeManager = requireNonNull(scopeManager, "scopeManager");
             this.transitive = transitive;
-            this.presence = Collections.unmodifiableSet(new HashSet<>(presence));
-            this.width = calculateWidth(this);
+            this.presence = Set.copyOf(presence);
         }
 
         @Override
         public String getId() {
             return id;
-        }
-
-        @Override
-        public ScopeManagerImpl getScopeManager() {
-            return scopeManager;
         }
 
         @Override
@@ -507,8 +500,7 @@ public final class ScopeManagerImpl implements ScopeManager {
             return transitive;
         }
 
-        @Override
-        public Set<BuildScope> getPresence() {
+        public Set<BuildScopeQuery> getPresence() {
             return presence;
         }
 
@@ -516,58 +508,63 @@ public final class ScopeManagerImpl implements ScopeManager {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            JavaDependencyScope that = (JavaDependencyScope) o;
-            return Objects.equals(id, that.id) && Objects.equals(scopeManager, that.scopeManager);
-        }
-
-        @Override
-        public int width() {
-            return width;
-        }
-
-        @Override
-        public Optional<BuildScope> getMainProjectBuildScope() {
-            return scopeManager.getMainProjectBuildScope(this);
+            DependencyScopeImpl that = (DependencyScopeImpl) o;
+            return Objects.equals(id, that.id);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(id, scopeManager);
+            return Objects.hash(id);
         }
 
         @Override
         public String toString() {
-            return getScopeManager().getId() + ":" + id;
+            return id;
         }
     }
 
-    public final class JavaResolutionScope implements ResolutionScope {
-        private final String id;
-        private final ScopeManagerImpl scopeManager;
-        private final Mode mode;
-        private final Set<BuildScope> wantedPresence;
-        private final Set<JavaDependencyScope> directlyIncluded;
-        private final Set<JavaDependencyScope> transitivelyExcluded;
+    private final class ResolutionScopeImpl implements ResolutionScope {
+        /**
+         * The mode of resolution scope: eliminate (remove all occurrences) or just remove.
+         */
+        enum Mode {
+            /**
+             * Mode where artifacts in non-wanted scopes are completely eliminated. In other words, this mode ensures
+             * that if a dependency was removed due unwanted scope, it is guaranteed that no such dependency will appear
+             * anywhere else in the resulting graph either.
+             */
+            ELIMINATE,
 
-        private JavaResolutionScope(
+            /**
+             * Mode where artifacts in non-wanted scopes are removed only. In other words, they will NOT prevent (as in
+             * they will not "dominate") other possibly appearing occurrences of same artifact in the graph.
+             */
+            REMOVE
+        }
+
+        private final String id;
+        private final Mode mode;
+        private final Set<BuildScopeQuery> wantedPresence;
+        private final Set<DependencyScope> directlyIncluded;
+        private final Set<DependencyScope> transitivelyExcluded;
+
+        private ResolutionScopeImpl(
                 String id,
-                ScopeManagerImpl scopeManager,
                 Mode mode,
-                Collection<BuildScope> wantedPresence,
-                Collection<JavaDependencyScope> explicitlyIncluded,
-                Collection<JavaDependencyScope> transitivelyExcluded) {
+                Collection<BuildScopeQuery> wantedPresence,
+                Collection<DependencyScope> explicitlyIncluded,
+                Collection<DependencyScope> transitivelyExcluded) {
             this.id = requireNonNull(id, "id");
-            this.scopeManager = requireNonNull(scopeManager, "scopeManager");
             this.mode = requireNonNull(mode, "mode");
             this.wantedPresence = Collections.unmodifiableSet(new HashSet<>(wantedPresence));
-            Set<JavaDependencyScope> included = collectScopes(wantedPresence);
+            Set<DependencyScope> included = collectScopes(wantedPresence);
             // here we may have null elements, based on existence of system scope
             if (explicitlyIncluded != null && !explicitlyIncluded.isEmpty()) {
                 explicitlyIncluded.stream().filter(Objects::nonNull).forEach(included::add);
             }
             this.directlyIncluded = Collections.unmodifiableSet(included);
-            this.transitivelyExcluded = Collections.unmodifiableSet(
-                    transitivelyExcluded.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
+            this.transitivelyExcluded =
+                    transitivelyExcluded.stream().filter(Objects::nonNull).collect(Collectors.toUnmodifiableSet());
         }
 
         @Override
@@ -575,46 +572,19 @@ public final class ScopeManagerImpl implements ScopeManager {
             return id;
         }
 
-        @Override
-        public ScopeManagerImpl getScopeManager() {
-            return scopeManager;
-        }
-
-        @Override
         public Mode getMode() {
             return mode;
         }
 
-        @Override
-        public Set<BuildScope> getWantedPresence() {
+        public Set<BuildScopeQuery> getWantedPresence() {
             return wantedPresence;
         }
 
-        @Override
-        public DependencySelector getDependencySelector() {
-            return scopeManager.getDependencySelector(this);
-        }
-
-        @Override
-        public DependencyGraphTransformer getDependencyGraphTransformer() {
-            return scopeManager.getDependencyGraphTransformer(this);
-        }
-
-        @Override
-        public CollectResult postProcess(CollectResult collectResult) {
-            return scopeManager.postProcess(this, collectResult);
-        }
-
-        @Override
-        public DependencyFilter getDependencyFilter() {
-            return scopeManager.getDependencyFilter(this);
-        }
-
-        public Set<JavaDependencyScope> getDirectlyIncluded() {
+        public Set<DependencyScope> getDirectlyIncluded() {
             return directlyIncluded;
         }
 
-        public Set<JavaDependencyScope> getTransitivelyExcluded() {
+        public Set<DependencyScope> getTransitivelyExcluded() {
             return transitivelyExcluded;
         }
 
@@ -622,67 +592,74 @@ public final class ScopeManagerImpl implements ScopeManager {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            JavaResolutionScope that = (JavaResolutionScope) o;
-            return Objects.equals(id, that.id) && Objects.equals(scopeManager, that.scopeManager);
+            ResolutionScopeImpl that = (ResolutionScopeImpl) o;
+            return Objects.equals(id, that.id);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(id, scopeManager);
+            return Objects.hash(id);
         }
 
         @Override
         public String toString() {
-            return getScopeManager().getId() + ":" + id;
+            return id;
         }
     }
 
     public static void main(String... args) {
         ScopeManagerImpl scopeManager = new ScopeManagerImpl(MavenLevel.Maven4Full);
         System.out.println();
-        scopeManager.dumpBuildScopes();
+        scopeManager.dumpBuildScopes(scopeManager);
         System.out.println();
-        scopeManager.dumpDependencyScopes();
+        scopeManager.dumpDependencyScopes(scopeManager);
         System.out.println();
-        scopeManager.dumpDependencyScopeDerives();
+        scopeManager.dumpDependencyScopeDerives(scopeManager);
         System.out.println();
-        scopeManager.dumpResolutionScopes();
+        scopeManager.dumpResolutionScopes(scopeManager);
     }
 
-    private void dumpBuildScopes() {
+    private void dumpBuildScopes(ScopeManagerImpl scopeManager) {
         System.out.println(getDescription() + " defined build scopes:");
-        buildScopeMatrix.all().stream()
+        buildScopeSource.query(all()).stream()
                 .sorted(Comparator.comparing(BuildScope::order))
                 .forEach(s -> System.out.println(s.getId() + " (order=" + s.order() + ")"));
     }
 
-    private void dumpDependencyScopes() {
+    private void dumpDependencyScopes(ScopeManagerImpl scopeManager) {
         System.out.println(getDescription() + " defined dependency scopes:");
         dependencyScopes.values().stream()
-                .sorted(Comparator.comparing(DependencyScope::width).reversed())
+                .sorted(Comparator.comparing(scopeManager::getDependencyScopeWidth)
+                        .reversed())
                 .forEach(s -> {
-                    System.out.println(s + " (width=" + s.width() + ")");
+                    System.out.println(s + " (width=" + scopeManager.getDependencyScopeWidth(s) + ")");
+                    System.out.println("  Query : " + s.getPresence());
                     System.out.println("  Presence: "
-                            + s.getPresence().stream().map(BuildScope::getId).collect(Collectors.toSet()));
+                            + buildScopeSource.query(s.getPresence()).stream()
+                                    .map(BuildScope::getId)
+                                    .collect(Collectors.toSet()));
                     System.out.println("  Main project scope: "
-                            + s.getMainProjectBuildScope()
+                            + scopeManager
+                                    .getDependencyScopeMainProjectBuildScope(s)
                                     .map(BuildScope::getId)
                                     .orElse("null"));
                 });
     }
 
-    private void dumpDependencyScopeDerives() {
+    private void dumpDependencyScopeDerives(ScopeManagerImpl scopeManager) {
         System.out.println(getDescription() + " defined dependency derive matrix:");
         ManagedScopeDeriver deriver = new ManagedScopeDeriver(this);
         dependencyScopes.values().stream()
-                .sorted(Comparator.comparing(DependencyScope::width).reversed())
+                .sorted(Comparator.comparing(scopeManager::getDependencyScopeWidth)
+                        .reversed())
                 .forEach(parent -> dependencyScopes.values().stream()
-                        .sorted(Comparator.comparing(DependencyScope::width).reversed())
+                        .sorted(Comparator.comparing(scopeManager::getDependencyScopeWidth)
+                                .reversed())
                         .forEach(child -> System.out.println(parent.getId() + " w/ child " + child.getId() + " -> "
                                 + deriver.getDerivedScope(parent.getId(), child.getId()))));
     }
 
-    private void dumpResolutionScopes() {
+    private void dumpResolutionScopes(ScopeManagerImpl scopeManager) {
         System.out.println(getDescription() + " defined resolution scopes:");
         resolutionScopes.values().stream()
                 .sorted(Comparator.comparing(ResolutionScope::getId))

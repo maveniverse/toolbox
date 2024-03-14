@@ -5,12 +5,13 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared.internal;
+package eu.maveniverse.maven.toolbox.shared.internal.resolver;
 
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.DependencyScope;
 import eu.maveniverse.maven.toolbox.shared.ScopeManager;
+import eu.maveniverse.maven.toolbox.shared.internal.InternalScopeManager;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -34,12 +35,13 @@ public final class ManagedScopeSelector extends ScopeSelector {
     private final DependencyScope systemScope;
     private final List<DependencyScope> dependencyScopesByWidthDescending;
 
-    public ManagedScopeSelector(ScopeManager scopeManager) {
+    public ManagedScopeSelector(InternalScopeManager scopeManager) {
         requireNonNull(scopeManager, "scopeManager");
         this.systemScope = scopeManager.getSystemScope().orElse(null);
         this.dependencyScopesByWidthDescending =
                 Collections.unmodifiableList(scopeManager.getDependencyScopeUniverse().stream()
-                        .sorted(Comparator.comparing(DependencyScope::width).reversed())
+                        .sorted(Comparator.comparing(scopeManager::getDependencyScopeWidth)
+                                .reversed())
                         .collect(Collectors.toList()));
     }
 

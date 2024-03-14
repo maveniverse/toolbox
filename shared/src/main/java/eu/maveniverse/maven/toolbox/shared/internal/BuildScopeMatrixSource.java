@@ -5,10 +5,12 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared;
+package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.toolbox.shared.BuildPath;
+import eu.maveniverse.maven.toolbox.shared.ProjectPath;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -23,12 +25,12 @@ import java.util.stream.Stream;
 /**
  * Generic matrix generator for {@link ProjectPath} and {@link BuildPath} combinations (all of them).
  */
-public final class BuildScopeMatrix {
+public final class BuildScopeMatrixSource implements BuildScopeSource {
     private final Set<ProjectPath> projectPaths;
     private final Set<BuildPath> buildPaths;
     private final Map<String, BuildScope> buildScopes;
 
-    public BuildScopeMatrix(
+    public BuildScopeMatrixSource(
             Collection<ProjectPath> projectPaths, Collection<BuildPath> buildPaths, BuildScope... extras) {
         requireNonNull(projectPaths, "projectPath");
         requireNonNull(buildPaths, "buildPaths");
@@ -75,29 +77,58 @@ public final class BuildScopeMatrix {
         return projectPath.getId() + "-" + buildPath.getId();
     }
 
-    public Collection<BuildScope> all() {
-        return buildScopes.values();
+    @Override
+    public Collection<BuildScope> query(Collection<BuildScopeQuery> queries) {
+        HashSet<BuildScope> result = new HashSet<>();
+        for (BuildScopeQuery query : queries) {
+            switch (query.getMode()) {
+                case ALL:
+                    result.addAll(all());
+                    break; // we added all, whatever is after this, is unimportant
+                case BY_PROJECT_PATH:
+                    result.addAll(byProjectPath(query.getProjectPath()));
+                    continue;
+                case BY_BUILD_PATH:
+                    result.addAll(byBuildPath(query.getBuildPath()));
+                    continue;
+                case SELECT:
+                    result.addAll(select(query.getProjectPath(), query.getBuildPath()));
+                    continue;
+                case SINGLETON:
+                    result.addAll(singleton(query.getProjectPath(), query.getBuildPath()));
+                    continue;
+                default:
+                    throw new IllegalArgumentException("Unsupported query");
+            }
+        }
+        return result;
     }
 
+    @Override
     public Collection<ProjectPath> allProjectPaths() {
         return projectPaths;
     }
 
+    @Override
     public Collection<BuildPath> allBuildPaths() {
         return buildPaths;
     }
 
-    public Collection<BuildScope> byProjectPath(ProjectPath projectPath) {
+    private Collection<BuildScope> all() {
+        return buildScopes.values();
+    }
+
+    private Collection<BuildScope> byProjectPath(ProjectPath projectPath) {
         return all().stream()
                 .filter(s -> s.getProjectPaths().contains(projectPath))
                 .collect(Collectors.toSet());
     }
 
-    public Collection<BuildScope> byBuildPath(BuildPath buildPath) {
+    private Collection<BuildScope> byBuildPath(BuildPath buildPath) {
         return all().stream().filter(s -> s.getBuildPaths().contains(buildPath)).collect(Collectors.toSet());
     }
 
-    public Collection<BuildScope> singleton(ProjectPath projectPath, BuildPath buildPath) {
+    private Collection<BuildScope> singleton(ProjectPath projectPath, BuildPath buildPath) {
         BuildScope result = buildScopes.get(createId(projectPath, buildPath));
         if (result == null) {
             throw new IllegalArgumentException("no such build scope");
@@ -105,19 +136,12 @@ public final class BuildScopeMatrix {
         return Collections.singleton(result);
     }
 
-    public Collection<BuildScope> select(ProjectPath projectPath, BuildPath buildPath) {
+    private Collection<BuildScope> select(ProjectPath projectPath, BuildPath buildPath) {
         HashSet<BuildScope> result = new HashSet<>();
         buildScopes.values().stream()
                 .filter(s -> s.getProjectPaths().contains(projectPath)
                         && s.getBuildPaths().contains(buildPath))
                 .forEach(result::add);
-        return result;
-    }
-
-    public Collection<BuildScope> union(Collection<BuildScope> bs1, Collection<BuildScope> bs2) {
-        HashSet<BuildScope> result = new HashSet<>();
-        result.addAll(bs1);
-        result.addAll(bs2);
         return result;
     }
 

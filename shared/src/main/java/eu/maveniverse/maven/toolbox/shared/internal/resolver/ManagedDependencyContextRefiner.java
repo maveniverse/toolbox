@@ -5,13 +5,13 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared.internal;
+package eu.maveniverse.maven.toolbox.shared.internal.resolver;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.toolbox.shared.BuildScope;
 import eu.maveniverse.maven.toolbox.shared.DependencyScope;
-import eu.maveniverse.maven.toolbox.shared.ScopeManager;
+import eu.maveniverse.maven.toolbox.shared.internal.BuildScope;
+import eu.maveniverse.maven.toolbox.shared.internal.InternalScopeManager;
 import org.eclipse.aether.collection.DependencyGraphTransformationContext;
 import org.eclipse.aether.collection.DependencyGraphTransformer;
 import org.eclipse.aether.graph.Dependency;
@@ -27,9 +27,9 @@ import org.eclipse.aether.graph.DependencyNode;
  * @see DependencyNode#getRequestContext()
  */
 public final class ManagedDependencyContextRefiner implements DependencyGraphTransformer {
-    private final ScopeManager scopeManager;
+    private final InternalScopeManager scopeManager;
 
-    public ManagedDependencyContextRefiner(ScopeManager scopeManager) {
+    public ManagedDependencyContextRefiner(InternalScopeManager scopeManager) {
         this.scopeManager = requireNonNull(scopeManager, "scopeManager");
     }
 
@@ -62,7 +62,8 @@ public final class ManagedDependencyContextRefiner implements DependencyGraphTra
 
         return scopeManager
                 .getDependencyScope(dependency.getScope())
-                .flatMap(s -> s.getMainProjectBuildScope().map(BuildScope::getId))
+                .flatMap(s ->
+                        scopeManager.getDependencyScopeMainProjectBuildScope(s).map(BuildScope::getId))
                 .orElse(null);
     }
 }

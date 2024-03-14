@@ -13,8 +13,8 @@ import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
-import eu.maveniverse.maven.toolbox.shared.internal.ScopeManagerImpl;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
+import eu.maveniverse.maven.toolbox.shared.internal.resolver.ScopeManagerImpl;
 import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.plugin.AbstractMojo;
@@ -53,22 +53,20 @@ public class TreeMojo extends AbstractMojo {
     @Component
     private MavenProject mavenProject;
 
-    static ResolutionScope toResolutionScope(String mavenLevel, String value) {
-        ScopeManagerImpl scopeManager = new ScopeManagerImpl(ScopeManagerImpl.MavenLevel.valueOf(mavenLevel));
-        return scopeManager
-                .getResolutionScope(value)
-                .orElseThrow(() -> new IllegalArgumentException("unknown resolution scope"));
-    }
-
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
+            ScopeManagerImpl scopeManager = new ScopeManagerImpl(ScopeManagerImpl.MavenLevel.valueOf(mavenLevel));
+            Toolbox toolbox = new ToolboxImpl(context, scopeManager);
+            ResolutionScope resolutionScope = scopeManager
+                    .getResolutionScope(scope)
+                    .orElseThrow(() -> new IllegalArgumentException("unknown resolution scope"));
+
             ArtifactTypeRegistry artifactTypeRegistry =
                     context.repositorySystemSession().getArtifactTypeRegistry();
-            Toolbox toolbox = new ToolboxImpl(context);
             CollectResult collectResult = toolbox.collect(
-                    toResolutionScope(mavenLevel, scope),
+                    resolutionScope,
                     RepositoryUtils.toArtifact(mavenProject.getArtifact()),
                     mavenProject.getDependencies().stream()
                             .map(d -> RepositoryUtils.toDependency(d, artifactTypeRegistry))

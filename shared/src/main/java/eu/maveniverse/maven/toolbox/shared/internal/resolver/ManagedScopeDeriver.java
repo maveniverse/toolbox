@@ -5,12 +5,13 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared.internal;
+package eu.maveniverse.maven.toolbox.shared.internal.resolver;
 
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.DependencyScope;
 import eu.maveniverse.maven.toolbox.shared.ScopeManager;
+import eu.maveniverse.maven.toolbox.shared.internal.InternalScopeManager;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver.ScopeContext;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver.ScopeDeriver;
@@ -24,10 +25,10 @@ import org.eclipse.aether.util.graph.transformer.ConflictResolver.ScopeDeriver;
  * @since 4.0.0
  */
 public final class ManagedScopeDeriver extends ScopeDeriver {
-    private final ScopeManager scopeManager;
+    private final InternalScopeManager scopeManager;
     private final DependencyScope systemScope;
 
-    public ManagedScopeDeriver(ScopeManager scopeManager) {
+    public ManagedScopeDeriver(InternalScopeManager scopeManager) {
         this.scopeManager = requireNonNull(scopeManager, "scopeManager");
         this.systemScope = scopeManager.getSystemScope().orElse(null);
     }
@@ -60,7 +61,9 @@ public final class ManagedScopeDeriver extends ScopeDeriver {
             return parent.getId();
         }
         // otherwise the narrowest out of parent or child
-        if (parent.width() < child.width()) {
+        int parentWidth = scopeManager.getDependencyScopeWidth(parent);
+        int childWidth = scopeManager.getDependencyScopeWidth(child);
+        if (parentWidth < childWidth) {
             return parent.getId();
         } else {
             return child.getId();

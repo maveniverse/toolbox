@@ -7,15 +7,14 @@
  */
 package eu.maveniverse.maven.toolbox.plugin;
 
-import static eu.maveniverse.maven.toolbox.plugin.TreeMojo.toResolutionScope;
-
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
-import eu.maveniverse.maven.toolbox.shared.internal.ScopeManagerImpl;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
+import eu.maveniverse.maven.toolbox.shared.internal.resolver.ScopeManagerImpl;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -59,9 +58,14 @@ public class GavTreeMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            Toolbox toolbox = new ToolboxImpl(context);
+            ScopeManagerImpl scopeManager = new ScopeManagerImpl(ScopeManagerImpl.MavenLevel.valueOf(mavenLevel));
+            Toolbox toolbox = new ToolboxImpl(context, scopeManager);
+            ResolutionScope resolutionScope = scopeManager
+                    .getResolutionScope(scope)
+                    .orElseThrow(() -> new IllegalArgumentException("unknown resolution scope"));
+
             CollectResult collectResult = toolbox.collect(
-                    toResolutionScope(mavenLevel, scope),
+                    resolutionScope,
                     new Dependency(new DefaultArtifact(gav), ""),
                     null,
                     null,

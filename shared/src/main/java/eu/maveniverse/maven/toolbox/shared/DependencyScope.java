@@ -20,9 +20,9 @@ public interface DependencyScope {
     String getId();
 
     /**
-     * The language this scope belongs to.
+     * The scope manager this scope belongs to.
      */
-    Language getLanguage();
+    ScopeManager getScopeManager();
 
     /**
      * Is it transitive scope?

@@ -10,7 +10,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.DependencyScope;
-import eu.maveniverse.maven.toolbox.shared.Language;
+import eu.maveniverse.maven.toolbox.shared.ScopeManager;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -24,21 +24,21 @@ import org.eclipse.aether.util.graph.transformer.ConflictResolver.ConflictItem;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver.ScopeSelector;
 
 /**
- * A scope selector for use with {@link ConflictResolver} that supports the scopes from {@link Language}.
+ * A scope selector for use with {@link ConflictResolver} that supports the scopes from {@link ScopeManager}.
  * In general, this selector picks the widest scope present among conflicting dependencies where e.g. "compile" is
  * wider than "runtime" which is wider than "test". If however a direct dependency is involved, its scope is selected.
  * <p>
  * This class also "bridges" between {@link DependencyScope} and Resolver that uses plain string labels for scopes.
  */
-public final class LanguageScopeSelector extends ScopeSelector {
+public final class ManagedScopeSelector extends ScopeSelector {
     private final DependencyScope systemScope;
     private final List<DependencyScope> dependencyScopesByWidthDescending;
 
-    public LanguageScopeSelector(Language language) {
-        requireNonNull(language, "language");
-        this.systemScope = language.getSystemScope().orElse(null);
+    public ManagedScopeSelector(ScopeManager scopeManager) {
+        requireNonNull(scopeManager, "scopeManager");
+        this.systemScope = scopeManager.getSystemScope().orElse(null);
         this.dependencyScopesByWidthDescending =
-                Collections.unmodifiableList(language.getDependencyScopeUniverse().stream()
+                Collections.unmodifiableList(scopeManager.getDependencyScopeUniverse().stream()
                         .sorted(Comparator.comparing(DependencyScope::width).reversed())
                         .collect(Collectors.toList()));
     }

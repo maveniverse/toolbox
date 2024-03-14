@@ -11,9 +11,9 @@ import java.util.Collection;
 import java.util.Optional;
 
 /**
- * Language definition.
+ * Scope manager.
  */
-public interface Language {
+public interface ScopeManager {
     /**
      * The label.
      */
@@ -25,7 +25,7 @@ public interface Language {
     String getDescription();
 
     /**
-     * Returns the "system" scope, if language has it.
+     * Returns the "system" scope, if exists.
      * <p>
      * This is a special scope. In this scope case, Resolver should handle it specially, as it has no POM (so is
      * always a leaf on graph), is not in any repository, but is actually hosted on host OS file system. On resolution
@@ -34,26 +34,26 @@ public interface Language {
     Optional<DependencyScope> getSystemScope();
 
     /**
-     * Returns a language specific dependency scope by label.
+     * Returns a specific dependency scope by label.
      * <p>
-     * Note: despite returns optional, this method may throw as well, if language set in "strict" mode.
+     * Note: despite returns optional, this method may throw as well, if manager set in "strict" mode.
      */
     Optional<DependencyScope> getDependencyScope(String id);
 
     /**
-     * Returns the "universe" (all) of language specific dependency scopes.
+     * Returns the "universe" (all) of dependency scopes.
      */
     Collection<DependencyScope> getDependencyScopeUniverse();
 
     /**
-     * Returns a language specific resolution scope by label.
+     * Returns a specific resolution scope by label.
      * <p>
-     * Note: despite returns optional, this method may throw as well, if language set in "strict" mode.
+     * Note: despite returns optional, this method may throw as well, if manager set in "strict" mode.
      */
     Optional<ResolutionScope> getResolutionScope(String id);
 
     /**
-     * Returns the "universe" (all) of language specific resolution scopes.
+     * Returns the "universe" (all) of resolution scopes.
      */
     Collection<ResolutionScope> getResolutionScopeUniverse();
 }

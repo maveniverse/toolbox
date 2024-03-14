@@ -7,14 +7,14 @@
  */
 package eu.maveniverse.maven.toolbox.plugin;
 
-import static eu.maveniverse.maven.toolbox.plugin.TreeMojo.toLanguageResolutionScope;
+import static eu.maveniverse.maven.toolbox.plugin.TreeMojo.toResolutionScope;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
-import eu.maveniverse.maven.toolbox.shared.internal.JavaLanguage;
+import eu.maveniverse.maven.toolbox.shared.internal.ScopeManagerImpl;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -50,7 +50,7 @@ public class GavTreeMojo extends AbstractMojo {
     private boolean verbose;
 
     /**
-     * Set it for wanted {@link JavaLanguage.MavenLevel} way of working.
+     * Set it for wanted {@link ScopeManagerImpl.MavenLevel} way of working.
      */
     @Parameter(property = "mavenLevel", defaultValue = "Maven4WithSystem", required = true)
     private String mavenLevel;
@@ -61,7 +61,7 @@ public class GavTreeMojo extends AbstractMojo {
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             Toolbox toolbox = new ToolboxImpl(context);
             CollectResult collectResult = toolbox.collect(
-                    toLanguageResolutionScope(mavenLevel, scope),
+                    toResolutionScope(mavenLevel, scope),
                     new Dependency(new DefaultArtifact(gav), ""),
                     null,
                     null,

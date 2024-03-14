@@ -41,9 +41,9 @@ public interface ResolutionScope {
     String getId();
 
     /**
-     * The language this scope belongs to.
+     * The scope manager this scope belongs to.
      */
-    Language getLanguage();
+    ScopeManager getScopeManager();
 
     /**
      * The operation mode of this scope.

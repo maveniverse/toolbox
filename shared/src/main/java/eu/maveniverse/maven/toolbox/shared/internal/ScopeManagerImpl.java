@@ -14,9 +14,9 @@ import eu.maveniverse.maven.toolbox.shared.BuildScope;
 import eu.maveniverse.maven.toolbox.shared.BuildScopeMatrix;
 import eu.maveniverse.maven.toolbox.shared.CommonBuilds;
 import eu.maveniverse.maven.toolbox.shared.DependencyScope;
-import eu.maveniverse.maven.toolbox.shared.Language;
 import eu.maveniverse.maven.toolbox.shared.ProjectPath;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.ScopeManager;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,7 +42,7 @@ import org.eclipse.aether.util.graph.transformer.SimpleOptionalitySelector;
 import org.eclipse.aether.util.graph.visitor.CloningDependencyVisitor;
 import org.eclipse.aether.util.graph.visitor.FilteringDependencyVisitor;
 
-public final class JavaLanguage implements Language {
+public final class ScopeManagerImpl implements ScopeManager {
     public static final String NAME = "java";
 
     public enum MavenLevel {
@@ -174,7 +174,7 @@ public final class JavaLanguage implements Language {
     private final Map<String, JavaDependencyScope> dependencyScopes;
     private final Map<String, JavaResolutionScope> resolutionScopes;
 
-    public JavaLanguage(MavenLevel mavenLevel) {
+    public ScopeManagerImpl(MavenLevel mavenLevel) {
         this.id = NAME;
         this.mavenLevel = requireNonNull(mavenLevel, "mavenLevel");
         this.buildScopeMatrix = mavenLevel.getBuildScopeMatrix();
@@ -424,9 +424,9 @@ public final class JavaLanguage implements Language {
     private DependencyGraphTransformer getDependencyGraphTransformer(JavaResolutionScope javaResolutionScope) {
         return new ChainedDependencyGraphTransformer(
                 new ConflictResolver(
-                        new NearestVersionSelector(), new LanguageScopeSelector(this),
-                        new SimpleOptionalitySelector(), new LanguageScopeDeriver(this)),
-                new LanguageDependencyContextRefiner(this));
+                        new NearestVersionSelector(), new ManagedScopeSelector(this),
+                        new SimpleOptionalitySelector(), new ManagedScopeDeriver(this)),
+                new ManagedDependencyContextRefiner(this));
     }
 
     private CollectResult postProcess(JavaResolutionScope javaResolutionScope, CollectResult collectResult) {
@@ -462,7 +462,7 @@ public final class JavaLanguage implements Language {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        JavaLanguage that = (JavaLanguage) o;
+        ScopeManagerImpl that = (ScopeManagerImpl) o;
         return Objects.equals(id, that.id);
     }
 
@@ -478,15 +478,15 @@ public final class JavaLanguage implements Language {
 
     public static final class JavaDependencyScope implements DependencyScope {
         private final String id;
-        private final JavaLanguage javaLanguage;
+        private final ScopeManagerImpl scopeManager;
         private final boolean transitive;
         private final Set<BuildScope> presence;
         private final int width;
 
         public JavaDependencyScope(
-                String id, JavaLanguage javaLanguage, boolean transitive, Collection<BuildScope> presence) {
+                String id, ScopeManagerImpl scopeManager, boolean transitive, Collection<BuildScope> presence) {
             this.id = requireNonNull(id, "id");
-            this.javaLanguage = requireNonNull(javaLanguage, "javaLanguage");
+            this.scopeManager = requireNonNull(scopeManager, "scopeManager");
             this.transitive = transitive;
             this.presence = Collections.unmodifiableSet(new HashSet<>(presence));
             this.width = calculateWidth(this);
@@ -498,8 +498,8 @@ public final class JavaLanguage implements Language {
         }
 
         @Override
-        public JavaLanguage getLanguage() {
-            return javaLanguage;
+        public ScopeManagerImpl getScopeManager() {
+            return scopeManager;
         }
 
         @Override
@@ -517,7 +517,7 @@ public final class JavaLanguage implements Language {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             JavaDependencyScope that = (JavaDependencyScope) o;
-            return Objects.equals(id, that.id) && Objects.equals(javaLanguage, that.javaLanguage);
+            return Objects.equals(id, that.id) && Objects.equals(scopeManager, that.scopeManager);
         }
 
         @Override
@@ -527,23 +527,23 @@ public final class JavaLanguage implements Language {
 
         @Override
         public Optional<BuildScope> getMainProjectBuildScope() {
-            return javaLanguage.getMainProjectBuildScope(this);
+            return scopeManager.getMainProjectBuildScope(this);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(id, javaLanguage);
+            return Objects.hash(id, scopeManager);
         }
 
         @Override
         public String toString() {
-            return getLanguage().getId() + ":" + id;
+            return getScopeManager().getId() + ":" + id;
         }
     }
 
     public final class JavaResolutionScope implements ResolutionScope {
         private final String id;
-        private final JavaLanguage javaLanguage;
+        private final ScopeManagerImpl scopeManager;
         private final Mode mode;
         private final Set<BuildScope> wantedPresence;
         private final Set<JavaDependencyScope> directlyIncluded;
@@ -551,13 +551,13 @@ public final class JavaLanguage implements Language {
 
         private JavaResolutionScope(
                 String id,
-                JavaLanguage javaLanguage,
+                ScopeManagerImpl scopeManager,
                 Mode mode,
                 Collection<BuildScope> wantedPresence,
                 Collection<JavaDependencyScope> explicitlyIncluded,
                 Collection<JavaDependencyScope> transitivelyExcluded) {
             this.id = requireNonNull(id, "id");
-            this.javaLanguage = requireNonNull(javaLanguage, "javaLanguage");
+            this.scopeManager = requireNonNull(scopeManager, "scopeManager");
             this.mode = requireNonNull(mode, "mode");
             this.wantedPresence = Collections.unmodifiableSet(new HashSet<>(wantedPresence));
             Set<JavaDependencyScope> included = collectScopes(wantedPresence);
@@ -576,8 +576,8 @@ public final class JavaLanguage implements Language {
         }
 
         @Override
-        public JavaLanguage getLanguage() {
-            return javaLanguage;
+        public ScopeManagerImpl getScopeManager() {
+            return scopeManager;
         }
 
         @Override
@@ -592,22 +592,22 @@ public final class JavaLanguage implements Language {
 
         @Override
         public DependencySelector getDependencySelector() {
-            return javaLanguage.getDependencySelector(this);
+            return scopeManager.getDependencySelector(this);
         }
 
         @Override
         public DependencyGraphTransformer getDependencyGraphTransformer() {
-            return javaLanguage.getDependencyGraphTransformer(this);
+            return scopeManager.getDependencyGraphTransformer(this);
         }
 
         @Override
         public CollectResult postProcess(CollectResult collectResult) {
-            return javaLanguage.postProcess(this, collectResult);
+            return scopeManager.postProcess(this, collectResult);
         }
 
         @Override
         public DependencyFilter getDependencyFilter() {
-            return javaLanguage.getDependencyFilter(this);
+            return scopeManager.getDependencyFilter(this);
         }
 
         public Set<JavaDependencyScope> getDirectlyIncluded() {
@@ -623,30 +623,30 @@ public final class JavaLanguage implements Language {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             JavaResolutionScope that = (JavaResolutionScope) o;
-            return Objects.equals(id, that.id) && Objects.equals(javaLanguage, that.javaLanguage);
+            return Objects.equals(id, that.id) && Objects.equals(scopeManager, that.scopeManager);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(id, javaLanguage);
+            return Objects.hash(id, scopeManager);
         }
 
         @Override
         public String toString() {
-            return getLanguage().getId() + ":" + id;
+            return getScopeManager().getId() + ":" + id;
         }
     }
 
     public static void main(String... args) {
-        JavaLanguage javaLanguage = new JavaLanguage(MavenLevel.Maven4Full);
+        ScopeManagerImpl scopeManager = new ScopeManagerImpl(MavenLevel.Maven4Full);
         System.out.println();
-        javaLanguage.dumpBuildScopes();
+        scopeManager.dumpBuildScopes();
         System.out.println();
-        javaLanguage.dumpDependencyScopes();
+        scopeManager.dumpDependencyScopes();
         System.out.println();
-        javaLanguage.dumpDependencyScopeDerives();
+        scopeManager.dumpDependencyScopeDerives();
         System.out.println();
-        javaLanguage.dumpResolutionScopes();
+        scopeManager.dumpResolutionScopes();
     }
 
     private void dumpBuildScopes() {
@@ -673,7 +673,7 @@ public final class JavaLanguage implements Language {
 
     private void dumpDependencyScopeDerives() {
         System.out.println(getDescription() + " defined dependency derive matrix:");
-        LanguageScopeDeriver deriver = new LanguageScopeDeriver(this);
+        ManagedScopeDeriver deriver = new ManagedScopeDeriver(this);
         dependencyScopes.values().stream()
                 .sorted(Comparator.comparing(DependencyScope::width).reversed())
                 .forEach(parent -> dependencyScopes.values().stream()

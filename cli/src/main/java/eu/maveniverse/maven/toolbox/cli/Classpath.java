@@ -51,7 +51,7 @@ public final class Classpath extends ResolverCommandSupport {
         Artifact gav = parseGav(this.gav, managedDependencies);
         Toolbox toolbox = new ToolboxImpl(context);
         DependencyResult dependencyResult = toolbox.resolve(
-                toLanguageResolutionScope(mavenLevel, resolutionScope),
+                toResolutionScope(mavenLevel, resolutionScope),
                 new Dependency(gav, ""),
                 null,
                 managedDependencies,

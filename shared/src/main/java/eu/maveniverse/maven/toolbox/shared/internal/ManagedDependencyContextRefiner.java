@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.BuildScope;
 import eu.maveniverse.maven.toolbox.shared.DependencyScope;
-import eu.maveniverse.maven.toolbox.shared.Language;
+import eu.maveniverse.maven.toolbox.shared.ScopeManager;
 import org.eclipse.aether.collection.DependencyGraphTransformationContext;
 import org.eclipse.aether.collection.DependencyGraphTransformer;
 import org.eclipse.aether.graph.Dependency;
@@ -26,11 +26,11 @@ import org.eclipse.aether.graph.DependencyNode;
  *
  * @see DependencyNode#getRequestContext()
  */
-public final class LanguageDependencyContextRefiner implements DependencyGraphTransformer {
-    private final Language language;
+public final class ManagedDependencyContextRefiner implements DependencyGraphTransformer {
+    private final ScopeManager scopeManager;
 
-    public LanguageDependencyContextRefiner(Language language) {
-        this.language = requireNonNull(language, "language");
+    public ManagedDependencyContextRefiner(ScopeManager scopeManager) {
+        this.scopeManager = requireNonNull(scopeManager, "scopeManager");
     }
 
     @Override
@@ -60,7 +60,8 @@ public final class LanguageDependencyContextRefiner implements DependencyGraphTr
             return null;
         }
 
-        return language.getDependencyScope(dependency.getScope())
+        return scopeManager
+                .getDependencyScope(dependency.getScope())
                 .flatMap(s -> s.getMainProjectBuildScope().map(BuildScope::getId))
                 .orElse(null);
     }

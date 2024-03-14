@@ -56,7 +56,7 @@ public final class Tree extends ResolverCommandSupport {
         Artifact gav = parseGav(this.gav, managedDependencies);
         Toolbox toolbox = new ToolboxImpl(context);
         CollectResult collectResult = toolbox.collect(
-                toLanguageResolutionScope(mavenLevel, resolutionScope),
+                toResolutionScope(mavenLevel, resolutionScope),
                 new Dependency(gav, ""),
                 null,
                 managedDependencies,

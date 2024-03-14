@@ -13,7 +13,7 @@ import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
-import eu.maveniverse.maven.toolbox.shared.internal.JavaLanguage;
+import eu.maveniverse.maven.toolbox.shared.internal.ScopeManagerImpl;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
 import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
@@ -45,7 +45,7 @@ public class TreeMojo extends AbstractMojo {
     private boolean verbose;
 
     /**
-     * Set it for wanted {@link JavaLanguage.MavenLevel} way of working.
+     * Set it for wanted {@link ScopeManagerImpl.MavenLevel} way of working.
      */
     @Parameter(property = "mavenLevel", defaultValue = "Maven4WithSystem", required = true)
     private String mavenLevel;
@@ -53,9 +53,9 @@ public class TreeMojo extends AbstractMojo {
     @Component
     private MavenProject mavenProject;
 
-    static ResolutionScope toLanguageResolutionScope(String mavenLevel, String value) {
-        JavaLanguage javaLanguage = new JavaLanguage(JavaLanguage.MavenLevel.valueOf(mavenLevel));
-        return javaLanguage
+    static ResolutionScope toResolutionScope(String mavenLevel, String value) {
+        ScopeManagerImpl scopeManager = new ScopeManagerImpl(ScopeManagerImpl.MavenLevel.valueOf(mavenLevel));
+        return scopeManager
                 .getResolutionScope(value)
                 .orElseThrow(() -> new IllegalArgumentException("unknown resolution scope"));
     }
@@ -68,7 +68,7 @@ public class TreeMojo extends AbstractMojo {
                     context.repositorySystemSession().getArtifactTypeRegistry();
             Toolbox toolbox = new ToolboxImpl(context);
             CollectResult collectResult = toolbox.collect(
-                    toLanguageResolutionScope(mavenLevel, scope),
+                    toResolutionScope(mavenLevel, scope),
                     RepositoryUtils.toArtifact(mavenProject.getArtifact()),
                     mavenProject.getDependencies().stream()
                             .map(d -> RepositoryUtils.toDependency(d, artifactTypeRegistry))

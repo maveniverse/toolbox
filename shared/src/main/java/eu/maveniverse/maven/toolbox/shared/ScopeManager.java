@@ -20,11 +20,6 @@ public interface ScopeManager {
     String getId();
 
     /**
-     * Description (meant for human consumption).
-     */
-    String getDescription();
-
-    /**
      * Returns the "system" scope, if exists.
      * <p>
      * This is a special scope. In this scope case, Resolver should handle it specially, as it has no POM (so is

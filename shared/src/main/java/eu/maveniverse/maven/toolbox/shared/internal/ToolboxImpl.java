@@ -111,7 +111,7 @@ public class ToolboxImpl implements Toolbox {
         session.setDependencySelector(internalScopeManager.getDependencySelector(resolutionScope));
         session.setDependencyGraphTransformer(internalScopeManager.getDependencyGraphTransformer(resolutionScope));
         logger.debug("Resolving scope: {}", resolutionScope.getId());
-        logger.debug("  scope manager: {}", internalScopeManager.getDescription());
+        logger.debug("  scope manager: {}", internalScopeManager.getId());
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
@@ -148,7 +148,7 @@ public class ToolboxImpl implements Toolbox {
         session.setDependencySelector(internalScopeManager.getDependencySelector(resolutionScope));
         session.setDependencyGraphTransformer(internalScopeManager.getDependencyGraphTransformer(resolutionScope));
         logger.debug("Resolving scope: {}", resolutionScope.getId());
-        logger.debug("  scope manager: {}", internalScopeManager.getDescription());
+        logger.debug("  scope manager: {}", internalScopeManager.getId());
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {

@@ -12,6 +12,7 @@ import eu.maveniverse.maven.toolbox.shared.DependencyScope;
 import eu.maveniverse.maven.toolbox.shared.ProjectPath;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ScopeManager;
+import java.util.Collection;
 import java.util.Optional;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyGraphTransformer;
@@ -63,4 +64,37 @@ public interface InternalScopeManager extends ScopeManager {
      * and resolution scopes).
      */
     DependencyFilter getDependencyFilter(ResolutionScope resolutionScope);
+
+    /**
+     * The mode of resolution scope: eliminate (remove all occurrences) or just remove.
+     */
+    enum Mode {
+        /**
+         * Mode where artifacts in non-wanted scopes are completely eliminated. In other words, this mode ensures
+         * that if a dependency was removed due unwanted scope, it is guaranteed that no such dependency will appear
+         * anywhere else in the resulting graph either.
+         */
+        ELIMINATE,
+
+        /**
+         * Mode where artifacts in non-wanted scopes are removed only. In other words, they will NOT prevent (as in
+         * they will not "dominate") other possibly appearing occurrences of same artifact in the graph.
+         */
+        REMOVE
+    }
+
+    /**
+     * Creates dependency scope instance.
+     */
+    DependencyScope createDependencyScope(String id, boolean transitive, Collection<BuildScopeQuery> presence);
+
+    /**
+     * Creates resolution scope instance.
+     */
+    ResolutionScope createResolutionScope(
+            String id,
+            Mode mode,
+            Collection<BuildScopeQuery> wantedPresence,
+            Collection<DependencyScope> explicitlyIncluded,
+            Collection<DependencyScope> transitivelyExcluded);
 }

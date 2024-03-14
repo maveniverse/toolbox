@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.internal.MavenConfiguration;
 import eu.maveniverse.maven.toolbox.shared.internal.resolver.ScopeManagerImpl;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -85,7 +86,8 @@ public abstract class ResolverCommandSupport extends CommandSupport {
     }
 
     protected ScopeManagerImpl createScopeManager(String mavenLevel) {
-        return new ScopeManagerImpl(ScopeManagerImpl.MavenLevel.valueOf(mavenLevel));
+        return new ScopeManagerImpl(
+                mavenLevel.equalsIgnoreCase("maven3") ? MavenConfiguration.MAVEN3 : MavenConfiguration.MAVEN4);
     }
 
     protected ResolutionScope toResolutionScope(ScopeManagerImpl scopeManager, String resolutionScope) {

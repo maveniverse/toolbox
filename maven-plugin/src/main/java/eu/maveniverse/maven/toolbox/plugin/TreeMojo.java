@@ -13,6 +13,7 @@ import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
+import eu.maveniverse.maven.toolbox.shared.internal.MavenConfiguration;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
 import eu.maveniverse.maven.toolbox.shared.internal.resolver.ScopeManagerImpl;
 import java.util.stream.Collectors;
@@ -45,9 +46,9 @@ public class TreeMojo extends AbstractMojo {
     private boolean verbose;
 
     /**
-     * Set it for wanted {@link ScopeManagerImpl.MavenLevel} way of working.
+     * Set it for wanted way of working ("Maven3" or "Maven4").
      */
-    @Parameter(property = "mavenLevel", defaultValue = "Maven4WithSystem", required = true)
+    @Parameter(property = "mavenLevel", defaultValue = "Maven3", required = true)
     private String mavenLevel;
 
     @Component
@@ -57,7 +58,8 @@ public class TreeMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            ScopeManagerImpl scopeManager = new ScopeManagerImpl(ScopeManagerImpl.MavenLevel.valueOf(mavenLevel));
+            ScopeManagerImpl scopeManager = new ScopeManagerImpl(
+                    mavenLevel.equalsIgnoreCase("maven3") ? MavenConfiguration.MAVEN3 : MavenConfiguration.MAVEN4);
             Toolbox toolbox = new ToolboxImpl(context, scopeManager);
             ResolutionScope resolutionScope = scopeManager
                     .getResolutionScope(scope)

@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 /**
- * Internal scope manager.
+ * Scope manager configuration.
  */
 public interface ScopeManagerConfiguration {
     String getId();

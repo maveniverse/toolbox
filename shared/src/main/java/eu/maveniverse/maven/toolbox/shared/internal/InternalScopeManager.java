@@ -85,11 +85,15 @@ public interface InternalScopeManager extends ScopeManager {
 
     /**
      * Creates dependency scope instance.
+     * <p>
+     * Should be invoked only via {@link ScopeManagerConfiguration#buildDependencyScopes(InternalScopeManager)}.
      */
     DependencyScope createDependencyScope(String id, boolean transitive, Collection<BuildScopeQuery> presence);
 
     /**
      * Creates resolution scope instance.
+     * <p>
+     * Should be invoked only via {@link ScopeManagerConfiguration#buildResolutionScopes(InternalScopeManager)}.
      */
     ResolutionScope createResolutionScope(
             String id,

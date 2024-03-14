@@ -85,7 +85,9 @@ public final class ScopeManagerImpl implements InternalScopeManager {
     @Override
     public Optional<DependencyScope> getSystemScope() {
         if (systemLabel != null) {
-            return Optional.of(dependencyScopes.get(systemLabel));
+            return Optional.of(requireNonNull(
+                    dependencyScopes.get(systemLabel),
+                    "config specified label for system dependency scope but did not create it"));
         }
         return Optional.empty();
     }

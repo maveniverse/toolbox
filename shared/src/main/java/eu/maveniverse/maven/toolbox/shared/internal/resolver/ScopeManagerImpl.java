@@ -413,12 +413,11 @@ public final class ScopeManagerImpl implements InternalScopeManager {
         if (dependencyScope.isTransitive()) {
             result += 1000;
         }
-        for (BuildScope buildScope :
-                buildScopeSource.query(dependencyScope.getPresence())) {
+        for (BuildScope buildScope : buildScopeSource.query(dependencyScope.getPresence())) {
             result += 1000
                     / buildScope.getProjectPaths().stream()
-                    .map(ProjectPath::order)
-                    .reduce(0, Integer::sum);
+                            .map(ProjectPath::order)
+                            .reduce(0, Integer::sum);
         }
         return result;
     }
@@ -430,8 +429,7 @@ public final class ScopeManagerImpl implements InternalScopeManager {
             for (BuildPath buildPath : buildScopeSource.allBuildPaths().stream()
                     .sorted(Comparator.comparing(BuildPath::order))
                     .toList()) {
-                for (BuildScope buildScope :
-                        buildScopeSource.query(dependencyScope.getPresence())) {
+                for (BuildScope buildScope : buildScopeSource.query(dependencyScope.getPresence())) {
                     if (buildScope.getProjectPaths().contains(projectPath)
                             && buildScope.getBuildPaths().contains(buildPath)) {
                         return Optional.of(buildScope);
@@ -493,7 +491,6 @@ public final class ScopeManagerImpl implements InternalScopeManager {
         private final Set<BuildScopeQuery> presence;
         private final Optional<BuildScope> mainBuildScope;
         private final int width;
-
 
         private DependencyScopeImpl(String id, boolean transitive, Collection<BuildScopeQuery> presence) {
             this.id = requireNonNull(id, "id");
@@ -568,6 +565,7 @@ public final class ScopeManagerImpl implements InternalScopeManager {
         private final Set<BuildScopeQuery> wantedPresence;
         private final Set<DependencyScope> directlyIncluded;
         private final Set<DependencyScope> transitivelyExcluded;
+
         private ResolutionScopeImpl(
                 String id,
                 Mode mode,

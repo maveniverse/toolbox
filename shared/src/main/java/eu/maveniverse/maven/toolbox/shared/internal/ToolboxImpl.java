@@ -20,7 +20,9 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
+import org.eclipse.aether.collection.DependencySelector;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
@@ -36,11 +38,9 @@ import org.slf4j.LoggerFactory;
 public class ToolboxImpl implements Toolbox {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Context context;
-    private final InternalScopeManager internalScopeManager;
 
-    public ToolboxImpl(Context context, InternalScopeManager internalScopeManager) {
-        this.context = requireNonNull(context);
-        this.internalScopeManager = requireNonNull(internalScopeManager);
+    public ToolboxImpl(Context context) {
+        this.context = requireNonNull(context, "context");
     }
 
     @Override
@@ -108,10 +108,8 @@ public class ToolboxImpl implements Toolbox {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
             session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         }
-        session.setDependencySelector(internalScopeManager.getDependencySelector(resolutionScope));
-        session.setDependencyGraphTransformer(internalScopeManager.getDependencyGraphTransformer(resolutionScope));
-        logger.debug("Resolving scope: {}", resolutionScope.getId());
-        logger.debug("  scope manager: {}", internalScopeManager.getId());
+        session.setDependencySelector(getDependencySelector(resolutionScope));
+        logger.debug("Resolving scope: {}", resolutionScope.name());
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
@@ -127,8 +125,7 @@ public class ToolboxImpl implements Toolbox {
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
 
         logger.debug("Collecting {}", collectRequest);
-        CollectResult result = context.repositorySystem().collectDependencies(session, collectRequest);
-        return internalScopeManager.postProcess(resolutionScope, result);
+        return context.repositorySystem().collectDependencies(session, collectRequest);
     }
 
     private DependencyResult doResolve(
@@ -145,10 +142,8 @@ public class ToolboxImpl implements Toolbox {
         }
 
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
-        session.setDependencySelector(internalScopeManager.getDependencySelector(resolutionScope));
-        session.setDependencyGraphTransformer(internalScopeManager.getDependencyGraphTransformer(resolutionScope));
-        logger.debug("Resolving scope: {}", resolutionScope.getId());
-        logger.debug("  scope manager: {}", internalScopeManager.getId());
+        session.setDependencySelector(getDependencySelector(resolutionScope));
+        logger.debug("Resolving scope: {}", resolutionScope.name());
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
@@ -162,10 +157,18 @@ public class ToolboxImpl implements Toolbox {
         collectRequest.setRequestContext("project");
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
         DependencyRequest dependencyRequest =
-                new DependencyRequest(collectRequest, internalScopeManager.getDependencyFilter(resolutionScope));
+                new DependencyRequest(collectRequest, getDependencyFilter(resolutionScope));
 
         logger.debug("Resolving {}", dependencyRequest);
         return context.repositorySystem().resolveDependencies(session, dependencyRequest);
+    }
+
+    private DependencySelector getDependencySelector(ResolutionScope resolutionScope) {
+        return null;
+    }
+
+    private DependencyFilter getDependencyFilter(ResolutionScope resolutionScope) {
+        return null;
     }
 
     @Override

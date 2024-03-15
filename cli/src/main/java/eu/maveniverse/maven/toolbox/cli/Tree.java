@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
-import eu.maveniverse.maven.toolbox.shared.internal.resolver.ScopeManagerImpl;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.graph.Dependency;
@@ -57,9 +56,8 @@ public final class Tree extends ResolverCommandSupport {
         java.util.List<Dependency> managedDependencies = importBoms(context, boms);
         Artifact gav = parseGav(this.gav, managedDependencies);
 
-        ScopeManagerImpl scopeManager = createScopeManager(mavenLevel);
-        ResolutionScope resolutionScope = toResolutionScope(scopeManager, this.resolutionScope);
-        Toolbox toolbox = new ToolboxImpl(context, scopeManager);
+        ResolutionScope resolutionScope = toResolutionScope(this.resolutionScope);
+        Toolbox toolbox = new ToolboxImpl(context);
         CollectResult collectResult = toolbox.collect(
                 resolutionScope,
                 new Dependency(gav, ""),

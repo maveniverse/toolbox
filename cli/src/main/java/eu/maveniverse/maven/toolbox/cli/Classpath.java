@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
-import eu.maveniverse.maven.toolbox.shared.internal.resolver.ScopeManagerImpl;
 import java.io.File;
 import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
@@ -52,9 +51,8 @@ public final class Classpath extends ResolverCommandSupport {
         java.util.List<Dependency> managedDependencies = importBoms(context, boms);
         Artifact gav = parseGav(this.gav, managedDependencies);
 
-        ScopeManagerImpl scopeManager = createScopeManager(mavenLevel);
-        ResolutionScope resolutionScope = toResolutionScope(scopeManager, this.resolutionScope);
-        Toolbox toolbox = new ToolboxImpl(context, scopeManager);
+        ResolutionScope resolutionScope = toResolutionScope(this.resolutionScope);
+        Toolbox toolbox = new ToolboxImpl(context);
         DependencyResult dependencyResult = toolbox.resolve(
                 resolutionScope, new Dependency(gav, ""), null, managedDependencies, context.remoteRepositories());
 

@@ -13,9 +13,8 @@ import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Toolbox;
-import eu.maveniverse.maven.toolbox.shared.internal.MavenConfiguration;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
-import eu.maveniverse.maven.toolbox.shared.internal.resolver.ScopeManagerImpl;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.plugin.AbstractMojo;
@@ -58,12 +57,8 @@ public class TreeMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            ScopeManagerImpl scopeManager = new ScopeManagerImpl(
-                    mavenLevel.equalsIgnoreCase("maven3") ? MavenConfiguration.MAVEN3 : MavenConfiguration.MAVEN4);
-            Toolbox toolbox = new ToolboxImpl(context, scopeManager);
-            ResolutionScope resolutionScope = scopeManager
-                    .getResolutionScope(scope)
-                    .orElseThrow(() -> new IllegalArgumentException("unknown resolution scope"));
+            Toolbox toolbox = new ToolboxImpl(context);
+            ResolutionScope resolutionScope = ResolutionScope.valueOf(scope.toUpperCase(Locale.ROOT));
 
             ArtifactTypeRegistry artifactTypeRegistry =
                     context.repositorySystemSession().getArtifactTypeRegistry();

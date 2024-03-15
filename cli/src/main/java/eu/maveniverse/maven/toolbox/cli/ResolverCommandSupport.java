@@ -9,10 +9,9 @@ package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
-import eu.maveniverse.maven.toolbox.shared.internal.MavenConfiguration;
-import eu.maveniverse.maven.toolbox.shared.internal.resolver.ScopeManagerImpl;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Locale;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -85,15 +84,8 @@ public abstract class ResolverCommandSupport extends CommandSupport {
         }
     }
 
-    protected ScopeManagerImpl createScopeManager(String mavenLevel) {
-        return new ScopeManagerImpl(
-                mavenLevel.equalsIgnoreCase("maven3") ? MavenConfiguration.MAVEN3 : MavenConfiguration.MAVEN4);
-    }
-
-    protected ResolutionScope toResolutionScope(ScopeManagerImpl scopeManager, String resolutionScope) {
-        return scopeManager
-                .getResolutionScope(resolutionScope)
-                .orElseThrow(() -> new IllegalArgumentException("unknown resolution scope"));
+    protected ResolutionScope toResolutionScope(String resolutionScope) {
+        return ResolutionScope.valueOf(resolutionScope.toUpperCase(Locale.ROOT));
     }
 
     @Override

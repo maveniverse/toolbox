@@ -8,11 +8,15 @@
 package eu.maveniverse.maven.toolbox.shared;
 
 /**
- * Generic resolution scope.
+ * Generic resolution scope abstraction.
+ * <p>
+ * Uses Maven3 mojo resolution scopes as template.
  */
-public interface ResolutionScope {
-    /**
-     * The label.
-     */
-    String getId();
+public enum ResolutionScope {
+    NONE,
+    COMPILE,
+    COMPILE_PLUS_RUNTIME,
+    RUNTIME,
+    RUNTIME_PLUS_SYSTEM,
+    TEST;
 }

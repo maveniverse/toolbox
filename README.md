@@ -18,7 +18,10 @@ Project Goals:
 * copy
 * get
 * list-repositories
+* list-plugins
 * properties
 * repocopy
 * tree
 * unpack
+
+plus what MIMA CLI already supports.

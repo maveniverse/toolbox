@@ -98,7 +98,7 @@ public final class Graph extends ResolverCommandSupport {
         repositorySystem
                 .collectDependencies(session, collectRequest)
                 .getRoot()
-                .accept(new DependencyGraphDumper(this::info));
+                .accept(new DependencyGraphDumper(this::normal));
         return 0;
     }
 

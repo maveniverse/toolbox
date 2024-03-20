@@ -39,7 +39,7 @@ public final class Classpath extends ResolverCommandSupport {
         return toolboxCommando.classpath(
                         ResolutionScope.parse(resolutionScope),
                         toolboxCommando.toolboxResolver().loadGav(gav, boms),
-                        logger)
+                        output)
                 ? 0
                 : 1;
     }

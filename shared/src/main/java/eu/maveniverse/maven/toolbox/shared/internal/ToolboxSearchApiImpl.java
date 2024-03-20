@@ -11,6 +11,7 @@ import static org.apache.maven.search.api.request.BooleanQuery.and;
 import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 
 import eu.maveniverse.maven.mima.context.ContextOverrides;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import java.io.IOException;
 import java.time.Instant;
@@ -127,7 +128,7 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
     }
 
     @Override
-    public void renderPage(List<Record> page, Predicate<String> versionPredicate, Logger output) {
+    public void renderPage(List<Record> page, Predicate<String> versionPredicate, Output output) {
         for (Record record : page) {
             final String version = record.getValue(MAVEN.VERSION);
             if (version != null && versionPredicate != null && !versionPredicate.test(version)) {
@@ -167,9 +168,9 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
                 remarks.add("hasJavadoc=" + record.getValue(MAVEN.HAS_JAVADOC));
             }
 
-            output.info(sb.toString());
-            if (output.isDebugEnabled() && !remarks.isEmpty()) {
-                output.info("   " + remarks);
+            output.normal(sb.toString());
+            if (output.isVerbose() && !remarks.isEmpty()) {
+                output.verbose("   " + remarks);
             }
         }
     }

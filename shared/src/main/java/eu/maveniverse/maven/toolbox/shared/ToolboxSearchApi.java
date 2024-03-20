@@ -16,7 +16,6 @@ import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.request.Query;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.slf4j.Logger;
 
 /**
  * The Toolbox Search API implements "lower level" Search API related operations.
@@ -40,7 +39,7 @@ public interface ToolboxSearchApi {
     /**
      * Renders page.
      */
-    void renderPage(List<Record> page, Predicate<String> versionPredicate, Logger output);
+    void renderPage(List<Record> page, Predicate<String> versionPredicate, Output output);
 
     /**
      * Existence check.

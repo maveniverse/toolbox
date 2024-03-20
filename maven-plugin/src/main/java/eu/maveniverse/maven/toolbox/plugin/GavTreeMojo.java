@@ -13,6 +13,7 @@ import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.Slf4jOutput;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -59,7 +60,8 @@ public class GavTreeMojo extends AbstractMojo {
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             ResolutionRoot root =
                     ResolutionRoot.ofLoaded(new DefaultArtifact(gav)).build();
-            ToolboxCommando.getOrCreate(context).tree(ResolutionScope.parse(scope), root, false, logger);
+            ToolboxCommando.getOrCreate(context)
+                    .tree(ResolutionScope.parse(scope), root, false, new Slf4jOutput(logger));
         } catch (RuntimeException e) {
             throw new MojoExecutionException(e);
         }

@@ -14,6 +14,7 @@ import eu.maveniverse.maven.mima.context.MavenSystemHome;
 import eu.maveniverse.maven.mima.context.MavenUserHome;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -27,10 +28,6 @@ import java.util.function.Supplier;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.util.version.GenericVersionScheme;
-import org.eclipse.aether.version.VersionScheme;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 import picocli.CommandLine;
 
@@ -74,7 +71,27 @@ public abstract class CommandSupport implements Callable<Integer> {
             description = "Define a HTTP proxy (host:port)")
     protected String proxy;
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Output output = new Output() {
+        @Override
+        public boolean isVerbose() {
+            return verbose;
+        }
+
+        @Override
+        public void verbose(String msg, Object... params) {
+            CommandSupport.this.verbose(msg, params);
+        }
+
+        @Override
+        public void normal(String msg, Object... params) {
+            CommandSupport.this.normal(msg, params);
+        }
+
+        @Override
+        public void error(String msg, Object... params) {
+            CommandSupport.this.error(msg, params);
+        }
+    };
 
     private static final ConcurrentHashMap<String, ArrayDeque<Object>> EXECUTION_CONTEXT = new ConcurrentHashMap<>();
 
@@ -108,70 +125,70 @@ public abstract class CommandSupport implements Callable<Integer> {
     }
 
     protected void mayDumpEnv(Runtime runtime, Context context, boolean verbose) {
-        info("MIMA (Runtime '{}' version {})", runtime.name(), runtime.version());
-        info("====");
-        info("          Maven version {}", runtime.mavenVersion());
-        info("                Managed {}", runtime.managedRepositorySystem());
-        info("                Basedir {}", context.basedir());
-        info("                Offline {}", context.repositorySystemSession().isOffline());
+        normal("MIMA (Runtime '{}' version {})", runtime.name(), runtime.version());
+        normal("====");
+        normal("          Maven version {}", runtime.mavenVersion());
+        normal("                Managed {}", runtime.managedRepositorySystem());
+        normal("                Basedir {}", context.basedir());
+        normal("                Offline {}", context.repositorySystemSession().isOffline());
 
         MavenSystemHome mavenSystemHome = context.mavenSystemHome();
-        info("");
-        info("             MAVEN_HOME {}", mavenSystemHome == null ? "undefined" : mavenSystemHome.basedir());
+        normal("");
+        normal("             MAVEN_HOME {}", mavenSystemHome == null ? "undefined" : mavenSystemHome.basedir());
         if (mavenSystemHome != null) {
-            info("           settings.xml {}", mavenSystemHome.settingsXml());
-            info("         toolchains.xml {}", mavenSystemHome.toolchainsXml());
+            normal("           settings.xml {}", mavenSystemHome.settingsXml());
+            normal("         toolchains.xml {}", mavenSystemHome.toolchainsXml());
         }
 
         MavenUserHome mavenUserHome = context.mavenUserHome();
-        info("");
-        info("              USER_HOME {}", mavenUserHome.basedir());
-        info("           settings.xml {}", mavenUserHome.settingsXml());
-        info("  settings-security.xml {}", mavenUserHome.settingsSecurityXml());
-        info("       local repository {}", mavenUserHome.localRepository());
+        normal("");
+        normal("              USER_HOME {}", mavenUserHome.basedir());
+        normal("           settings.xml {}", mavenUserHome.settingsXml());
+        normal("  settings-security.xml {}", mavenUserHome.settingsSecurityXml());
+        normal("       local repository {}", mavenUserHome.localRepository());
 
-        info("");
-        info("               PROFILES");
-        info("                 Active {}", context.contextOverrides().getActiveProfileIds());
-        info("               Inactive {}", context.contextOverrides().getInactiveProfileIds());
+        normal("");
+        normal("               PROFILES");
+        normal("                 Active {}", context.contextOverrides().getActiveProfileIds());
+        normal("               Inactive {}", context.contextOverrides().getInactiveProfileIds());
 
-        info("");
-        info("    REMOTE REPOSITORIES");
+        normal("");
+        normal("    REMOTE REPOSITORIES");
         for (RemoteRepository repository : context.remoteRepositories()) {
             if (repository.getMirroredRepositories().isEmpty()) {
-                info("                        {}", repository);
+                normal("                        {}", repository);
             } else {
-                info("                        {}, mirror of", repository);
+                normal("                        {}, mirror of", repository);
                 for (RemoteRepository mirrored : repository.getMirroredRepositories()) {
-                    info("                          {}", mirrored);
+                    normal("                          {}", mirrored);
                 }
             }
         }
 
         if (context.httpProxy() != null) {
             HTTPProxy proxy = context.httpProxy();
-            info("");
-            info("             HTTP PROXY");
-            info("                    url {}://{}:{}", proxy.getProtocol(), proxy.getHost(), proxy.getPort());
-            info("          nonProxyHosts {}", proxy.getNonProxyHosts());
+            normal("");
+            normal("             HTTP PROXY");
+            normal("                    url {}://{}:{}", proxy.getProtocol(), proxy.getHost(), proxy.getPort());
+            normal("          nonProxyHosts {}", proxy.getNonProxyHosts());
         }
 
         if (verbose) {
-            info("");
-            info("        USER PROPERTIES");
+            verbose("");
+            verbose("        USER PROPERTIES");
             context.contextOverrides().getUserProperties().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> info("                         {}={}", e.getKey(), e.getValue()));
-            info("      SYSTEM PROPERTIES");
+                    .forEach(e -> verbose("                         {}={}", e.getKey(), e.getValue()));
+            verbose("      SYSTEM PROPERTIES");
             context.contextOverrides().getSystemProperties().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> info("                         {}={}", e.getKey(), e.getValue()));
-            info("      CONFIG PROPERTIES");
+                    .forEach(e -> verbose("                         {}={}", e.getKey(), e.getValue()));
+            verbose("      CONFIG PROPERTIES");
             context.contextOverrides().getConfigProperties().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> info("                         {}={}", e.getKey(), e.getValue()));
+                    .forEach(e -> verbose("                         {}={}", e.getKey(), e.getValue()));
         }
-        info("");
+        verbose("");
     }
 
     protected Runtime getRuntime() {
@@ -245,58 +262,22 @@ public abstract class CommandSupport implements Callable<Integer> {
         return (Context) getOrCreate(Context.class.getName(), () -> getRuntime().create(getContextOverrides()));
     }
 
-    protected VersionScheme getVersionScheme() {
-        return new GenericVersionScheme();
-    }
-
-    protected void verbose(String message) {
-        log(true, System.out, message);
-    }
-
-    protected void verbose(String format, Object arg1) {
-        log(true, System.out, MessageFormatter.format(format, arg1).getMessage());
-    }
-
-    protected void verbose(String format, Object arg1, Object arg2) {
-        log(true, System.out, MessageFormatter.format(format, arg1, arg2).getMessage());
-    }
-
-    protected void verbose(String format, Object arg1, Object arg2, Object arg3) {
-        log(
-                true,
-                System.out,
-                MessageFormatter.arrayFormat(format, new Object[] {arg1, arg2, arg3})
-                        .getMessage());
-    }
-
-    protected void info(String message) {
-        log(false, System.out, message);
-    }
-
-    protected void info(String format, Object arg1) {
-        log(false, System.out, MessageFormatter.format(format, arg1).getMessage());
-    }
-
-    protected void info(String format, Object arg1, Object arg2) {
-        log(false, System.out, MessageFormatter.format(format, arg1, arg2).getMessage());
-    }
-
-    protected void info(String format, Object arg1, Object arg2, Object arg3) {
-        log(
-                false,
-                System.out,
-                MessageFormatter.arrayFormat(format, new Object[] {arg1, arg2, arg3})
-                        .getMessage());
-    }
-
-    protected void error(String message, Throwable throwable) {
-        log(System.err, failure(message), throwable);
-    }
-
-    private void log(boolean verbose, PrintStream ps, String message) {
-        if (verbose && !this.verbose) {
+    protected void verbose(String format, Object... args) {
+        if (!verbose) {
             return;
         }
+        log(System.out, MessageFormatter.arrayFormat(format, args).getMessage());
+    }
+
+    protected void normal(String format, Object... args) {
+        log(System.out, MessageFormatter.arrayFormat(format, args).getMessage());
+    }
+
+    protected void error(String format, Object... args) {
+        log(System.err, MessageFormatter.arrayFormat(format, args).getMessage());
+    }
+
+    private void log(PrintStream ps, String message) {
         log(ps, message, null);
     }
 

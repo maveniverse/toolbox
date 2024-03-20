@@ -47,7 +47,7 @@ public final class Tree extends ResolverCommandSupport {
                         ResolutionScope.parse(resolutionScope),
                         toolboxCommando.toolboxResolver().loadGav(gav, boms),
                         verboseTree,
-                        logger)
+                        output)
                 ? 0
                 : 1;
     }

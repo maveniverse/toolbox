@@ -22,6 +22,6 @@ public final class Identify extends SearchCommandSupport {
 
     @Override
     protected Integer doCall() throws IOException {
-        return ToolboxCommando.getOrCreate(getContext()).identify(getRemoteRepository(), target, logger) ? 0 : 1;
+        return ToolboxCommando.getOrCreate(getContext()).identify(getRemoteRepository(), target, output) ? 0 : 1;
     }
 }

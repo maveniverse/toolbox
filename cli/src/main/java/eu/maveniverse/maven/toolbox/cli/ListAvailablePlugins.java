@@ -23,6 +23,6 @@ public final class ListAvailablePlugins extends ResolverCommandSupport {
 
     @Override
     protected Integer doCall(Context context) throws Exception {
-        return ToolboxCommando.getOrCreate(context).listAvailablePlugins(Collections.singletonList(g), logger) ? 0 : 1;
+        return ToolboxCommando.getOrCreate(context).listAvailablePlugins(Collections.singletonList(g), output) ? 0 : 1;
     }
 }

@@ -64,7 +64,7 @@ public abstract class ResolverCommandSupport extends CommandSupport {
                 if (keys.add(ArtifactIdUtils.toVersionlessId(d.getArtifact()))) {
                     managedDependencies.add(d);
                 } else {
-                    info("W: BOM {} introduced an already managed dependency {}", bom, d);
+                    normal("W: BOM {} introduced an already managed dependency {}", bom, d);
                 }
             });
         }

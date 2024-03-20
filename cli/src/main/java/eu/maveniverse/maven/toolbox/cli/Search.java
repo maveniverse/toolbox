@@ -22,6 +22,6 @@ public final class Search extends SearchCommandSupport {
 
     @Override
     protected Integer doCall() throws IOException {
-        return ToolboxCommando.getOrCreate(getContext()).search(getRemoteRepository(), expression, logger) ? 0 : 1;
+        return ToolboxCommando.getOrCreate(getContext()).search(getRemoteRepository(), expression, output) ? 0 : 1;
     }
 }

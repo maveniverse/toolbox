@@ -49,7 +49,7 @@ public final class Exists extends SearchCommandSupport {
     @Override
     protected Integer doCall() throws IOException {
         return ToolboxCommando.getOrCreate(getContext())
-                        .exists(getRemoteRepository(), gav, pom, sources, javadoc, signature, allRequired, logger)
+                        .exists(getRemoteRepository(), gav, pom, sources, javadoc, signature, allRequired, output)
                 ? 0
                 : 1;
     }

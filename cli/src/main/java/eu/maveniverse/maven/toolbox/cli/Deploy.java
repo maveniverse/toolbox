@@ -54,7 +54,7 @@ public final class Deploy extends ResolverCommandSupport {
         verbose("Deploying {}", deployRequest);
         context.repositorySystem().deploy(getRepositorySystemSession(), deployRequest);
 
-        info("Deployed {}", gav);
+        normal("Deployed {}", gav);
         return 0;
     }
 }

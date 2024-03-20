@@ -31,7 +31,7 @@ public final class Record extends ResolverCommandSupport {
         push(ArtifactRecorder.class.getName(), recorder);
         push(RepositorySystemSession.class.getName(), session);
 
-        info("Recording...");
+        normal("Recording...");
         return 0;
     }
 }

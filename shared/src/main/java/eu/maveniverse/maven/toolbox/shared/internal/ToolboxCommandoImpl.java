@@ -14,6 +14,7 @@ import static org.apache.maven.search.api.request.Query.query;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -26,8 +27,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.search.api.MAVEN;
@@ -39,6 +43,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.ChecksumUtils;
 import org.eclipse.aether.util.artifact.SubArtifact;
@@ -86,7 +91,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Logger output) {
+    public boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) {
         try {
             DependencyResult dependencyResult = toolboxResolver()
                     .resolve(
@@ -98,7 +103,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
             dependencyResult.getRoot().accept(nlg);
             // TODO: Do not use PreorderNodeListGenerator#getClassPath() until MRESOLVER-483 is fixed/released
-            output.info(
+            output.normal(
                     "{}",
                     nlg.getFiles().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
             return true;
@@ -108,14 +113,81 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean listAvailablePlugins(List<String> groupIds, Logger output) {
-        toolboxResolver.listAvailablePlugins(groupIds).forEach(p -> output.info(p.toString()));
+    public boolean listAvailablePlugins(List<String> groupIds, Output output) {
+        toolboxResolver.listAvailablePlugins(groupIds).forEach(p -> output.normal(p.toString()));
         return true;
     }
 
     @Override
+    public boolean resolve(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean sources,
+            boolean javadoc,
+            boolean signatures,
+            Output output) {
+        try {
+            DependencyResult dependencyResult = toolboxResolver()
+                    .resolve(
+                            resolutionScope,
+                            resolutionRoot.getArtifact(),
+                            resolutionRoot.getDependencies(),
+                            resolutionRoot.getManagedDependencies());
+
+            output.normal("");
+            if (output.isVerbose()) {
+                for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
+                    output.verbose(
+                            "{} -> {}",
+                            artifactResult.getArtifact(),
+                            artifactResult.getArtifact().getFile());
+                }
+            }
+            output.normal("Resolved: {}", resolutionRoot.getArtifact());
+            if (output.isVerbose()) {
+                output.normal(
+                        "  Transitive hull count: {}",
+                        dependencyResult.getArtifactResults().size());
+                output.normal(
+                        "  Transitive hull size: {}",
+                        humanReadableByteCountBin(dependencyResult.getArtifactResults().stream()
+                                .map(ArtifactResult::getArtifact)
+                                .map(Artifact::getFile)
+                                .filter(Objects::nonNull)
+                                .map(f -> {
+                                    try {
+                                        return Files.size(f.toPath());
+                                    } catch (IOException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                })
+                                .collect(Collectors.summarizingLong(Long::longValue))
+                                .getSum()));
+            }
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String humanReadableByteCountBin(long bytes) {
+        long absB = bytes == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(bytes);
+        if (absB < 1024) {
+            return bytes + " B";
+        }
+        long value = absB;
+        CharacterIterator ci = new StringCharacterIterator("KMGTPE");
+        for (int i = 40; i >= 0 && absB > 0xfffccccccccccccL >> i; i -= 10) {
+            value >>= 10;
+            ci.next();
+        }
+        value *= Long.signum(bytes);
+        return String.format("%.1f %ciB", value / 1024.0, ci.current());
+    }
+
+    @Override
     public boolean tree(
-            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Logger output) {
+            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output) {
         try {
             ResolutionRoot root = toolboxResolver().loadRoot(resolutionRoot);
             CollectResult collectResult = toolboxResolver()
@@ -125,7 +197,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                             root.getDependencies(),
                             root.getManagedDependencies(),
                             verbose);
-            collectResult.getRoot().accept(new DependencyGraphDumper(output::info));
+            collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
             return true;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -141,7 +213,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean javadoc,
             boolean signature,
             boolean allRequired,
-            Logger output)
+            Output output)
             throws IOException {
         ArrayList<Artifact> missingOnes = new ArrayList<>();
         ArrayList<Artifact> existingOnes = new ArrayList<>();
@@ -153,7 +225,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             } else {
                 existingOnes.add(artifact);
             }
-            output.info("Artifact {} {}", artifact, exists ? "EXISTS" : "NOT EXISTS");
+            output.normal("Artifact {} {}", artifact, exists ? "EXISTS" : "NOT EXISTS");
             if (pom && !"pom".equals(artifact.getExtension())) {
                 Artifact poma = new SubArtifact(artifact, null, "pom");
                 exists = toolboxSearchApi.exists(backend, poma);
@@ -162,7 +234,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 } else if (allRequired) {
                     existingOnes.add(poma);
                 }
-                output.info("    {} {}", poma, exists ? "EXISTS" : "NOT EXISTS");
+                output.normal("    {} {}", poma, exists ? "EXISTS" : "NOT EXISTS");
             }
             if (sources) {
                 Artifact sourcesa = new SubArtifact(artifact, "sources", "jar");
@@ -172,7 +244,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 } else if (allRequired) {
                     existingOnes.add(sourcesa);
                 }
-                output.info("    {} {}", sourcesa, exists ? "EXISTS" : "NOT EXISTS");
+                output.normal("    {} {}", sourcesa, exists ? "EXISTS" : "NOT EXISTS");
             }
             if (javadoc) {
                 Artifact javadoca = new SubArtifact(artifact, "javadoc", "jar");
@@ -182,7 +254,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 } else if (allRequired) {
                     existingOnes.add(javadoca);
                 }
-                output.info("    {} {}", javadoca, exists ? "EXISTS" : "NOT EXISTS");
+                output.normal("    {} {}", javadoca, exists ? "EXISTS" : "NOT EXISTS");
             }
             if (signature) {
                 Artifact signaturea = new SubArtifact(artifact, null, artifact.getExtension() + ".asc");
@@ -192,11 +264,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 } else if (allRequired) {
                     existingOnes.add(signaturea);
                 }
-                output.info("    {} {}", signaturea, exists ? "EXISTS" : "NOT EXISTS");
+                output.normal("    {} {}", signaturea, exists ? "EXISTS" : "NOT EXISTS");
             }
         }
-        output.info("");
-        output.info(
+        output.normal("");
+        output.normal(
                 "Checked TOTAL of {} (existing: {} not existing: {})",
                 existingOnes.size() + missingOnes.size(),
                 existingOnes.size(),
@@ -205,11 +277,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean identify(RemoteRepository remoteRepository, String target, Logger output) throws IOException {
+    public boolean identify(RemoteRepository remoteRepository, String target, Output output) throws IOException {
         String sha1;
         if (Files.exists(Paths.get(target))) {
             try {
-                output.debug("Calculating SHA1 of file {}", target);
+                output.verbose("Calculating SHA1 of file {}", target);
                 MessageDigest sha1md = MessageDigest.getInstance("SHA-1");
                 byte[] buf = new byte[8192];
                 int read;
@@ -227,7 +299,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         } else {
             sha1 = target;
         }
-        output.debug("Identifying artifact with SHA1={}", sha1);
+        output.verbose("Identifying artifact with SHA1={}", sha1);
         try (SearchBackend backend = toolboxSearchApi.getSmoBackend(remoteRepository)) {
             SearchRequest searchRequest = new SearchRequest(fieldQuery(MAVEN.SHA1, sha1));
             SearchResponse searchResponse = backend.search(searchRequest);
@@ -243,7 +315,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean list(RemoteRepository remoteRepository, String gavoid, Logger output) throws IOException {
+    public boolean list(RemoteRepository remoteRepository, String gavoid, Output output) throws IOException {
         try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository)) {
             String[] elements = gavoid.split(":");
             if (elements.length < 1 || elements.length > 3) {
@@ -285,7 +357,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean search(RemoteRepository remoteRepository, String expression, Logger output) throws IOException {
+    public boolean search(RemoteRepository remoteRepository, String expression, Output output) throws IOException {
         try (SearchBackend backend = toolboxSearchApi.getSmoBackend(remoteRepository)) {
             Query query;
             try {
@@ -307,12 +379,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean verify(RemoteRepository remoteRepository, String gav, String sha1, Logger output)
+    public boolean verify(RemoteRepository remoteRepository, String gav, String sha1, Output output)
             throws IOException {
         try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository)) {
             Artifact artifact = new DefaultArtifact(gav);
             boolean verified = toolboxSearchApi.verify(backend, new DefaultArtifact(gav), sha1);
-            output.info("Artifact SHA1({})={}: {}", artifact, sha1, verified ? "MATCHED" : "NOT MATCHED");
+            output.normal("Artifact SHA1({})={}: {}", artifact, sha1, verified ? "MATCHED" : "NOT MATCHED");
             return verified;
         }
     }

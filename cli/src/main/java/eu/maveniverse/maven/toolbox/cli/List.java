@@ -22,6 +22,6 @@ public final class List extends SearchCommandSupport {
 
     @Override
     protected Integer doCall() throws IOException {
-        return ToolboxCommando.getOrCreate(getContext()).list(getRemoteRepository(), gavoid, logger) ? 0 : 1;
+        return ToolboxCommando.getOrCreate(getContext()).list(getRemoteRepository(), gavoid, output) ? 0 : 1;
     }
 }

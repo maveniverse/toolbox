@@ -16,7 +16,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.slf4j.Logger;
 
 /**
  * The Toolbox Commando, that implements all the commands that are exposed via Mojos or CLI.
@@ -66,11 +65,19 @@ public interface ToolboxCommando extends Closeable {
 
     // Resolver related commands: they target current context contained RemoteRepository
 
-    boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Logger output);
+    boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output);
 
-    boolean listAvailablePlugins(List<String> groupIds, Logger output);
+    boolean listAvailablePlugins(List<String> groupIds, Output output);
 
-    boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Logger output);
+    boolean resolve(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean sources,
+            boolean javadoc,
+            boolean signatures,
+            Output output);
+
+    boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output);
 
     // Search API related commands: they target one single RemoteRepository
 
@@ -82,14 +89,14 @@ public interface ToolboxCommando extends Closeable {
             boolean javadoc,
             boolean signature,
             boolean allRequired,
-            Logger output)
+            Output output)
             throws IOException;
 
-    boolean identify(RemoteRepository remoteRepository, String target, Logger output) throws IOException;
+    boolean identify(RemoteRepository remoteRepository, String target, Output output) throws IOException;
 
-    boolean list(RemoteRepository remoteRepository, String gavoid, Logger output) throws IOException;
+    boolean list(RemoteRepository remoteRepository, String gavoid, Output output) throws IOException;
 
-    boolean search(RemoteRepository remoteRepository, String expression, Logger output) throws IOException;
+    boolean search(RemoteRepository remoteRepository, String expression, Output output) throws IOException;
 
-    boolean verify(RemoteRepository remoteRepository, String gav, String sha1, Logger output) throws IOException;
+    boolean verify(RemoteRepository remoteRepository, String gav, String sha1, Output output) throws IOException;
 }

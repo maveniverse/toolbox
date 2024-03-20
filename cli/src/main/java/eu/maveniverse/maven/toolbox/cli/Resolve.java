@@ -8,28 +8,8 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.text.CharacterIterator;
-import java.text.StringCharacterIterator;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.collection.CollectRequest;
-import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactRequest;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
-import org.eclipse.aether.resolution.DependencyRequest;
-import org.eclipse.aether.util.artifact.JavaScopes;
-import org.eclipse.aether.util.artifact.SubArtifact;
-import org.eclipse.aether.util.filter.DependencyFilterUtils;
-import org.eclipse.aether.util.listener.ChainedRepositoryListener;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import picocli.CommandLine;
 
 /**
@@ -38,8 +18,21 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "resolve", description = "Resolves Maven Artifacts")
 public final class Resolve extends ResolverCommandSupport {
 
-    @CommandLine.Parameters(index = "0", description = "The GAV to resolve")
+    @CommandLine.Parameters(index = "0", description = "The GAV to graph")
     private String gav;
+
+    @CommandLine.Option(
+            names = {"--resolutionScope"},
+            defaultValue = "runtime",
+            description = "Resolution scope to resolve (default main-runtime)")
+    private String resolutionScope;
+
+    @CommandLine.Option(
+            names = {"--boms"},
+            defaultValue = "",
+            split = ",",
+            description = "Comma separated list of BOMs to apply")
+    private java.util.List<String> boms;
 
     @CommandLine.Option(
             names = {"--sources"},
@@ -52,103 +45,21 @@ public final class Resolve extends ResolverCommandSupport {
     private boolean javadoc;
 
     @CommandLine.Option(
-            names = {"--scope"},
-            defaultValue = JavaScopes.COMPILE,
-            description = "Scope to resolve")
-    private String scope;
-
-    @CommandLine.Option(
-            names = {"--boms"},
-            defaultValue = "",
-            split = ",",
-            description = "Comma separated list of BOMs to apply")
-    private String[] boms;
+            names = {"--signature"},
+            description = "Download signatures as well (best effort)")
+    private boolean signature;
 
     @Override
     protected Integer doCall(Context context) throws Exception {
-        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(getRepositorySystemSession());
-        ArtifactRecorder recorder = new ArtifactRecorder();
-        session.setRepositoryListener(
-                session.getRepositoryListener() != null
-                        ? ChainedRepositoryListener.newInstance(session.getRepositoryListener(), recorder)
-                        : recorder);
-
-        java.util.List<Dependency> managedDependencies = importBoms(context, boms);
-        Artifact resolvedArtifact = parseGav(gav, managedDependencies);
-
-        CollectRequest collectRequest = new CollectRequest();
-        collectRequest.setRoot(new Dependency(resolvedArtifact, JavaScopes.COMPILE));
-        collectRequest.setRepositories(context.remoteRepositories());
-        collectRequest.setManagedDependencies(managedDependencies);
-        DependencyRequest dependencyRequest =
-                new DependencyRequest(collectRequest, DependencyFilterUtils.classpathFilter(scope));
-
-        info("Resolving {}", collectRequest.getRoot().getArtifact());
-        context.repositorySystem().resolveDependencies(session, dependencyRequest);
-
-        ArrayList<ArtifactRequest> artifactRequests = new ArrayList<>();
-        for (Map.Entry<RemoteRepository, ArrayList<Artifact>> entry :
-                recorder.getArtifactsMap().entrySet()) {
-            List<RemoteRepository> repositories =
-                    entry.getKey() == recorder.getSentinel() ? null : Collections.singletonList(entry.getKey());
-            for (Artifact artifact : entry.getValue()) {
-                if ("jar".equals(artifact.getExtension()) && "".equals(artifact.getClassifier())) {
-                    if (sources) {
-                        artifactRequests.add(
-                                new ArtifactRequest(new SubArtifact(artifact, "sources", "jar"), repositories, null));
-                    }
-                    if (javadoc) {
-                        artifactRequests.add(
-                                new ArtifactRequest(new SubArtifact(artifact, "javadoc", "jar"), repositories, null));
-                    }
-                }
-            }
-        }
-        try {
-            verbose("Resolving {}", artifactRequests);
-            context.repositorySystem().resolveArtifacts(session, artifactRequests);
-        } catch (ArtifactResolutionException e) {
-            // log
-        }
-
-        info("");
-        if (verbose) {
-            for (Artifact artifact : recorder.getAllArtifacts()) {
-                info("{} -> {}", artifact, artifact.getFile());
-            }
-        } else {
-            info("Resolved: {}", resolvedArtifact);
-            info("  Transitive hull count: {}", recorder.getAllArtifacts().size());
-            info(
-                    "  Transitive hull size: {}",
-                    humanReadableByteCountBin(recorder.getAllArtifacts().stream()
-                            .map(Artifact::getFile)
-                            .filter(Objects::nonNull)
-                            .map(f -> {
-                                try {
-                                    return Files.size(f.toPath());
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            })
-                            .collect(Collectors.summarizingLong(Long::longValue))
-                            .getSum()));
-        }
-        return 0;
-    }
-
-    public static String humanReadableByteCountBin(long bytes) {
-        long absB = bytes == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(bytes);
-        if (absB < 1024) {
-            return bytes + " B";
-        }
-        long value = absB;
-        CharacterIterator ci = new StringCharacterIterator("KMGTPE");
-        for (int i = 40; i >= 0 && absB > 0xfffccccccccccccL >> i; i -= 10) {
-            value >>= 10;
-            ci.next();
-        }
-        value *= Long.signum(bytes);
-        return String.format("%.1f %ciB", value / 1024.0, ci.current());
+        ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(context);
+        return toolboxCommando.resolve(
+                        ResolutionScope.parse(resolutionScope),
+                        toolboxCommando.toolboxResolver().loadGav(gav, boms),
+                        sources,
+                        javadoc,
+                        signature,
+                        output)
+                ? 0
+                : 1;
     }
 }

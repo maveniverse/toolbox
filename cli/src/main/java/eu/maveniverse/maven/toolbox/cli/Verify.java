@@ -25,6 +25,6 @@ public final class Verify extends SearchCommandSupport {
 
     @Override
     protected Integer doCall() throws IOException {
-        return ToolboxCommando.getOrCreate(getContext()).verify(getRemoteRepository(), gav, sha1, logger) ? 0 : 1;
+        return ToolboxCommando.getOrCreate(getContext()).verify(getRemoteRepository(), gav, sha1, output) ? 0 : 1;
     }
 }

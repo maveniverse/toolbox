@@ -8,7 +8,10 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import static org.jline.jansi.Ansi.Attribute.INTENSITY_BOLD;
+import static org.jline.jansi.Ansi.Attribute.INTENSITY_BOLD_OFF;
 import static org.jline.jansi.Ansi.Attribute.INTENSITY_FAINT;
+import static org.jline.jansi.Ansi.Attribute.ITALIC;
+import static org.jline.jansi.Ansi.Attribute.ITALIC_OFF;
 import static org.jline.jansi.Ansi.Color.RED;
 import static org.jline.jansi.Ansi.Color.WHITE;
 import static org.jline.jansi.Ansi.Color.YELLOW;
@@ -276,13 +279,14 @@ public abstract class CommandSupport implements Callable<Integer> {
         if (!verbose) {
             return;
         }
-        if (args[args.length - 1] instanceof Throwable) {
+        if (args.length > 0 && args[args.length - 1] instanceof Throwable) {
             log(
                     System.err,
                     ansi().a(INTENSITY_FAINT)
                             .fg(WHITE)
                             .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
                                     .getMessage())
+                            .reset()
                             .toString(),
                     (Throwable) args[args.length - 1]);
         } else {
@@ -297,20 +301,19 @@ public abstract class CommandSupport implements Callable<Integer> {
     }
 
     protected void normal(String format, Object... args) {
-        if (args[args.length - 1] instanceof Throwable) {
+        if (args.length > 0 && args[args.length - 1] instanceof Throwable) {
             log(
                     System.err,
-                    ansi().a(INTENSITY_BOLD)
-                            .fg(WHITE)
+                    ansi().fg(WHITE)
                             .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
                                     .getMessage())
+                            .reset()
                             .toString(),
                     (Throwable) args[args.length - 1]);
         } else {
             log(
                     System.err,
-                    ansi().a(INTENSITY_BOLD)
-                            .fg(WHITE)
+                    ansi().fg(WHITE)
                             .a(MessageFormatter.arrayFormat(format, args).getMessage())
                             .reset()
                             .toString());
@@ -318,20 +321,19 @@ public abstract class CommandSupport implements Callable<Integer> {
     }
 
     protected void warn(String format, Object... args) {
-        if (args[args.length - 1] instanceof Throwable) {
+        if (args.length > 0 && args[args.length - 1] instanceof Throwable) {
             log(
                     System.err,
-                    ansi().a(INTENSITY_BOLD)
-                            .fg(YELLOW)
+                    ansi().fg(YELLOW)
                             .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
                                     .getMessage())
+                            .reset()
                             .toString(),
                     (Throwable) args[args.length - 1]);
         } else {
             log(
                     System.err,
-                    ansi().a(INTENSITY_BOLD)
-                            .fg(YELLOW)
+                    ansi().fg(YELLOW)
                             .a(MessageFormatter.arrayFormat(format, args).getMessage())
                             .reset()
                             .toString());
@@ -339,13 +341,14 @@ public abstract class CommandSupport implements Callable<Integer> {
     }
 
     protected void error(String format, Object... args) {
-        if (args[args.length - 1] instanceof Throwable) {
+        if (args.length > 0 && args[args.length - 1] instanceof Throwable) {
             log(
                     System.err,
                     ansi().a(INTENSITY_BOLD)
                             .fg(RED)
                             .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
                                     .getMessage())
+                            .reset()
                             .toString(),
                     (Throwable) args[args.length - 1]);
         } else {
@@ -366,15 +369,14 @@ public abstract class CommandSupport implements Callable<Integer> {
     private void log(PrintStream ps, String message, Throwable throwable) {
         ps.println(message);
         writeThrowable(throwable, ps);
-        ps.println(ansi().reset());
     }
 
     private static String failure(String format) {
-        return ansi().a(INTENSITY_BOLD).a(format).reset().toString();
+        return ansi().a(ITALIC).a(format).a(ITALIC_OFF).toString();
     }
 
     private static String strong(String format) {
-        return ansi().a(INTENSITY_BOLD).a(format).reset().toString();
+        return ansi().a(INTENSITY_BOLD).a(format).a(INTENSITY_BOLD_OFF).toString();
     }
 
     private void writeThrowable(Throwable t, PrintStream stream) {
@@ -390,6 +392,7 @@ public abstract class CommandSupport implements Callable<Integer> {
         if (errors) {
             printStackTrace(t, stream, "");
         }
+        stream.println(ansi().reset());
     }
 
     private void printStackTrace(Throwable t, PrintStream stream, String prefix) {

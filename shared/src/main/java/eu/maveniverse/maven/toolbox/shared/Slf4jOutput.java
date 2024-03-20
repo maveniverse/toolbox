@@ -37,6 +37,11 @@ public final class Slf4jOutput implements Output {
     }
 
     @Override
+    public void warn(String msg, Object... params) {
+        logger.warn(msg, params);
+    }
+
+    @Override
     public void error(String msg, Object... params) {
         logger.error(msg, params);
     }

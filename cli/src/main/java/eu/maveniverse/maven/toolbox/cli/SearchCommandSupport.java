@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
+import eu.maveniverse.maven.mima.context.Context;
 import org.eclipse.aether.repository.RemoteRepository;
 import picocli.CommandLine;
 
@@ -37,16 +38,7 @@ public abstract class SearchCommandSupport extends CommandSupport {
     }
 
     @Override
-    public final Integer call() {
-        try {
-            return doCall();
-        } catch (Exception e) {
-            error("Error", e);
-            return 1;
-        }
-    }
-
-    protected Integer doCall() throws Exception {
+    protected Integer doCall(Context context) throws Exception {
         throw new RuntimeException("Not implemented; you should override this method in subcommand");
     }
 }

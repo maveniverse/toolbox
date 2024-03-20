@@ -24,5 +24,7 @@ public interface Output extends Consumer<String> {
 
     void normal(String msg, Object... params);
 
+    void warn(String msg, Object... params);
+
     void error(String msg, Object... params);
 }

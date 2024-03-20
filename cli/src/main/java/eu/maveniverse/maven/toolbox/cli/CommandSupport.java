@@ -7,6 +7,13 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
+import static org.jline.jansi.Ansi.Attribute.INTENSITY_BOLD;
+import static org.jline.jansi.Ansi.Attribute.INTENSITY_FAINT;
+import static org.jline.jansi.Ansi.Color.RED;
+import static org.jline.jansi.Ansi.Color.WHITE;
+import static org.jline.jansi.Ansi.Color.YELLOW;
+import static org.jline.jansi.Ansi.ansi;
+
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.HTTPProxy;
@@ -28,6 +35,7 @@ import java.util.function.Supplier;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.jline.jansi.Ansi;
 import org.slf4j.helpers.MessageFormatter;
 import picocli.CommandLine;
 
@@ -71,6 +79,12 @@ public abstract class CommandSupport implements Callable<Integer> {
             description = "Define a HTTP proxy (host:port)")
     protected String proxy;
 
+    @CommandLine.Option(
+            names = {"-c", "--color"},
+            defaultValue = "true",
+            description = "Use ANSI colors")
+    protected boolean color;
+
     protected final Output output = new Output() {
         @Override
         public boolean isVerbose() {
@@ -85,6 +99,11 @@ public abstract class CommandSupport implements Callable<Integer> {
         @Override
         public void normal(String msg, Object... params) {
             CommandSupport.this.normal(msg, params);
+        }
+
+        @Override
+        public void warn(String msg, Object... params) {
+            CommandSupport.this.warn(msg, params);
         }
 
         @Override
@@ -250,15 +269,43 @@ public abstract class CommandSupport implements Callable<Integer> {
         if (!verbose) {
             return;
         }
-        log(System.out, MessageFormatter.arrayFormat(format, args).getMessage());
+        log(
+                System.out,
+                ansi().a(INTENSITY_FAINT)
+                        .fg(WHITE)
+                        .a(MessageFormatter.arrayFormat(format, args).getMessage())
+                        .reset()
+                        .toString());
     }
 
     protected void normal(String format, Object... args) {
-        log(System.out, MessageFormatter.arrayFormat(format, args).getMessage());
+        log(
+                System.out,
+                ansi().a(INTENSITY_BOLD)
+                        .fg(WHITE)
+                        .a(MessageFormatter.arrayFormat(format, args).getMessage())
+                        .reset()
+                        .toString());
+    }
+
+    protected void warn(String format, Object... args) {
+        log(
+                System.err,
+                ansi().a(INTENSITY_BOLD)
+                        .fg(YELLOW)
+                        .a(MessageFormatter.arrayFormat(format, args).getMessage())
+                        .reset()
+                        .toString());
     }
 
     protected void error(String format, Object... args) {
-        log(System.err, MessageFormatter.arrayFormat(format, args).getMessage());
+        log(
+                System.err,
+                ansi().a(INTENSITY_BOLD)
+                        .fg(RED)
+                        .a(MessageFormatter.arrayFormat(format, args).getMessage())
+                        .reset()
+                        .toString());
     }
 
     private void log(PrintStream ps, String message) {
@@ -343,4 +390,17 @@ public abstract class CommandSupport implements Callable<Integer> {
             return e.getFileName();
         }
     }
+
+    @Override
+    public final Integer call() {
+        Ansi.setEnabled(color);
+        try (Context context = getContext()) {
+            return doCall(context);
+        } catch (Exception e) {
+            error("Error", e);
+            return 1;
+        }
+    }
+
+    protected abstract Integer doCall(Context context) throws Exception;
 }

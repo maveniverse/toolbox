@@ -20,6 +20,6 @@ public final class Record extends ResolverCommandSupport {
 
     @Override
     protected Integer doCall(Context context) throws DependencyResolutionException {
-        return ToolboxCommando.getOrCreate(getContext()).artifactRecorder().setActive(true) ? 0 : 1;
+        return ToolboxCommando.getOrCreate(context).artifactRecorder().setActive(true) ? 0 : 1;
     }
 }

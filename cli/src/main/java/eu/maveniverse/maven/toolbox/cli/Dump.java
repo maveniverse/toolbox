@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
+import eu.maveniverse.maven.mima.context.Context;
 import picocli.CommandLine;
 
 /**
@@ -15,8 +16,8 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "dump", description = "Dump MIMA environment")
 public final class Dump extends CommandSupport {
     @Override
-    public Integer call() {
-        mayDumpEnv(getRuntime(), getContext(), true);
+    protected Integer doCall(Context context) {
+        mayDumpEnv(getRuntime(), context, true);
         return 0;
     }
 }

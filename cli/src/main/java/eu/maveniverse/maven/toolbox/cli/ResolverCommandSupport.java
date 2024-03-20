@@ -14,16 +14,6 @@ import eu.maveniverse.maven.mima.context.Context;
  */
 public abstract class ResolverCommandSupport extends CommandSupport {
 
-    @Override
-    public final Integer call() {
-        try (Context context = getContext()) {
-            return doCall(context);
-        } catch (Exception e) {
-            error("Error", e);
-            return 1;
-        }
-    }
-
     protected Integer doCall(Context context) throws Exception {
         throw new RuntimeException("Not implemented; you should override this method in subcommand");
     }

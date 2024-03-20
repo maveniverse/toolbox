@@ -42,12 +42,9 @@ public class Main extends CommandSupport implements CommandLine.IVersionProvider
     }
 
     @Override
-    public Integer call() {
-        try (Context context = getContext()) {
-            mayDumpEnv(getRuntime(), context, false);
-            new Repl().call();
-        }
-        return 0;
+    protected Integer doCall(Context context) {
+        mayDumpEnv(getRuntime(), context, false);
+        return new Repl().doCall(context);
     }
 
     public static void main(String... args) {

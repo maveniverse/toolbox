@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>10-SNAPSHOT</version>
+    <version>10</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
@@ -76,7 +76,7 @@
     <version.mavenPluginTools>3.11.0</version.mavenPluginTools>
     <version.slf4j>1.7.36</version.slf4j>
     <version.picocli>4.7.5</version.picocli>
-    <version.mase>7.1.2</version.mase>
+    <version.jline>3.25.1</version.jline>
   </properties>
 
   <dependencyManagement>
@@ -247,7 +247,7 @@
       <dependency>
         <groupId>org.jline</groupId>
         <artifactId>jline</artifactId>
-        <version>3.25.1</version>
+        <version>${version.jline}</version>
       </dependency>
       <dependency>
         <groupId>org.fusesource.jansi</groupId>

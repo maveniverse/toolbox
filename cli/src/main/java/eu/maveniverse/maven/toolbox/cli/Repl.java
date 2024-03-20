@@ -34,11 +34,9 @@ import picocli.shell.jline3.PicocliCommands;
 @CommandLine.Command(name = "repl", description = "REPL console")
 public class Repl extends CommandSupport {
     @Override
-    public Integer call() {
+    public Integer doCall(Context context) {
         Class<?> tp = JansiTerminalProvider.class;
-        Context context = getContext();
-        Context derivedContext = context.customize(context.contextOverrides());
-        push(Context.class.getName(), derivedContext);
+        push(Context.class.getName(), context);
 
         // set up JLine built-in commands
         ConfigurationPath configPath = new ConfigurationPath(context.basedir(), context.basedir());

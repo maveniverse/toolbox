@@ -10,7 +10,11 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.util.artifact.JavaScopes;
@@ -22,42 +26,29 @@ import org.eclipse.aether.util.filter.DependencyFilterUtils;
  * Uses Maven3 mojo resolution scopes as template.
  */
 public enum ResolutionScope {
-    NONE(s -> false, DependencyFilterUtils.classpathFilter()),
-    COMPILE(
-            s -> JavaScopes.PROVIDED.equals(s) || JavaScopes.COMPILE.equals(s) || JavaScopes.SYSTEM.equals(s),
-            DependencyFilterUtils.classpathFilter(JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM)),
-    COMPILE_PLUS_RUNTIME(
-            s -> JavaScopes.PROVIDED.equals(s)
-                    || JavaScopes.COMPILE.equals(s)
-                    || JavaScopes.SYSTEM.equals(s)
-                    || JavaScopes.RUNTIME.equals(s),
-            DependencyFilterUtils.classpathFilter(
-                    JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME)),
-    RUNTIME(
-            s -> JavaScopes.COMPILE.equals(s) || JavaScopes.RUNTIME.equals(s),
-            DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE, JavaScopes.RUNTIME)),
-    RUNTIME_PLUS_SYSTEM(
-            s -> JavaScopes.COMPILE.equals(s) || JavaScopes.RUNTIME.equals(s) || JavaScopes.SYSTEM.equals(s),
-            DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE, JavaScopes.RUNTIME, JavaScopes.SYSTEM)),
-    TEST(
-            s -> true,
-            DependencyFilterUtils.classpathFilter(
-                    JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME, JavaScopes.TEST));
+    NONE(Collections.emptySet()),
+    COMPILE(Arrays.asList(JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM)),
+    COMPILE_PLUS_RUNTIME(Arrays.asList(JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME)),
+    RUNTIME(Arrays.asList(JavaScopes.COMPILE, JavaScopes.RUNTIME)),
+    RUNTIME_PLUS_SYSTEM(Arrays.asList(JavaScopes.COMPILE, JavaScopes.RUNTIME, JavaScopes.SYSTEM)),
+    TEST(Arrays.asList(
+            JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME, JavaScopes.PROVIDED, JavaScopes.TEST));
 
-    private final Predicate<String> directInclude;
-    private final DependencyFilter dependencyFilter;
+    private final Set<String> directInclude;
 
-    ResolutionScope(Predicate<String> directInclude, DependencyFilter dependencyFilter) {
-        this.directInclude = directInclude;
-        this.dependencyFilter = dependencyFilter;
+    ResolutionScope(Collection<String> directInclude) {
+        this.directInclude = new HashSet<>(directInclude);
     }
 
-    public Predicate<String> getDirectInclude() {
-        return directInclude;
+    public Predicate<String> getDirectExclude() {
+        HashSet<String> directExclude = new HashSet<>(Arrays.asList(
+                JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME, JavaScopes.PROVIDED, JavaScopes.TEST));
+        directExclude.removeAll(directInclude);
+        return directExclude::contains;
     }
 
     public DependencyFilter getDependencyFilter() {
-        return dependencyFilter;
+        return DependencyFilterUtils.classpathFilter(directInclude);
     }
 
     public static ResolutionScope parse(String value) throws IllegalArgumentException {

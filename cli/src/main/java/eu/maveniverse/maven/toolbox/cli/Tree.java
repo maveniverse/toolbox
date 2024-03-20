@@ -23,7 +23,7 @@ public final class Tree extends ResolverCommandSupport {
 
     @CommandLine.Option(
             names = {"--resolutionScope"},
-            defaultValue = "RUNTIME",
+            defaultValue = "runtime",
             description = "Resolution scope to resolve (default main-runtime)")
     private String resolutionScope;
 
@@ -32,12 +32,6 @@ public final class Tree extends ResolverCommandSupport {
             defaultValue = "false",
             description = "Whether the displayed tree needs to be verbose or not (default false)")
     private boolean verboseTree;
-
-    @CommandLine.Option(
-            names = {"--mavenLevel"},
-            defaultValue = "Maven3",
-            description = "The Maven level to use (default Maven3)")
-    private String mavenLevel;
 
     @CommandLine.Option(
             names = {"--boms"},
@@ -52,7 +46,7 @@ public final class Tree extends ResolverCommandSupport {
         return toolboxCommando.tree(
                         ResolutionScope.parse(resolutionScope),
                         toolboxCommando.toolboxResolver().loadGav(gav, boms),
-                        false,
+                        verboseTree,
                         logger)
                 ? 0
                 : 1;

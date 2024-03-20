@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
+import org.eclipse.aether.graph.DefaultDependencyNode;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.metadata.DefaultMetadata;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -254,26 +256,11 @@ public class ToolboxResolverImpl implements ToolboxResolver {
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
-            try {
-                root = rootDependency.getArtifact();
-                ArtifactDescriptorResult artifactDescriptorResult =
-                        readArtifactDescriptor(rootDependency.getArtifact());
-                root = artifactDescriptorResult.getArtifact();
-                if (dependencies == null) {
-                    dependencies = new ArrayList<>();
-                }
-                dependencies.addAll(artifactDescriptorResult.getDependencies());
-                if (managedDependencies == null) {
-                    managedDependencies = new ArrayList<>();
-                }
-                managedDependencies.addAll(artifactDescriptorResult.getManagedDependencies());
-            } catch (ArtifactDescriptorException e) {
-                // skip
-            }
+            root = rootDependency.getArtifact();
         }
         collectRequest.setRootArtifact(root);
         collectRequest.setDependencies(dependencies.stream()
-                .filter(d -> resolutionScope.getDirectInclude().test(d.getScope()))
+                .filter(d -> !resolutionScope.getDirectExclude().test(d.getScope()))
                 .collect(Collectors.toList()));
         collectRequest.setManagedDependencies(managedDependencies);
         collectRequest.setRepositories(remoteRepositories);
@@ -302,26 +289,11 @@ public class ToolboxResolverImpl implements ToolboxResolver {
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
-            try {
-                root = rootDependency.getArtifact();
-                ArtifactDescriptorResult artifactDescriptorResult =
-                        readArtifactDescriptor(rootDependency.getArtifact());
-                root = artifactDescriptorResult.getArtifact();
-                if (dependencies == null) {
-                    dependencies = new ArrayList<>();
-                }
-                dependencies.addAll(artifactDescriptorResult.getDependencies());
-                if (managedDependencies == null) {
-                    managedDependencies = new ArrayList<>();
-                }
-                managedDependencies.addAll(artifactDescriptorResult.getManagedDependencies());
-            } catch (ArtifactDescriptorException e) {
-                // skip
-            }
+            root = rootDependency.getArtifact();
         }
         collectRequest.setRootArtifact(root);
         collectRequest.setDependencies(dependencies.stream()
-                .filter(d -> resolutionScope.getDirectInclude().test(d.getScope()))
+                .filter(d -> !resolutionScope.getDirectExclude().test(d.getScope()))
                 .collect(Collectors.toList()));
         collectRequest.setManagedDependencies(managedDependencies);
         collectRequest.setRepositories(remoteRepositories);
@@ -331,7 +303,19 @@ public class ToolboxResolverImpl implements ToolboxResolver {
                 new DependencyRequest(collectRequest, resolutionScope.getDependencyFilter());
 
         logger.debug("Resolving {}", dependencyRequest);
-        return repositorySystem.resolveDependencies(session, dependencyRequest);
+        DependencyResult result = repositorySystem.resolveDependencies(session, dependencyRequest);
+        try {
+            ArtifactResult rootResult =
+                    resolveArtifacts(Collections.singletonList(root)).get(0);
+
+            DefaultDependencyNode newRoot = new DefaultDependencyNode(new Dependency(rootResult.getArtifact(), ""));
+            newRoot.setChildren(result.getRoot().getChildren());
+            result.setRoot(newRoot);
+            result.getArtifactResults().add(0, rootResult);
+            return result;
+        } catch (ArtifactResolutionException e) {
+            throw new DependencyResolutionException(result, e);
+        }
     }
 
     @Override

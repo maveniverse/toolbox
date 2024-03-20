@@ -12,7 +12,6 @@ import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
-import java.io.Closeable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -20,9 +19,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.Record;
 import org.apache.maven.search.api.SearchBackend;
@@ -40,14 +37,11 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ToolboxSearchApiImpl implements ToolboxSearchApi, Closeable {
+public class ToolboxSearchApiImpl implements ToolboxSearchApi {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final ConcurrentHashMap<String, SearchBackend> searchBackends;
     private final Map<String, RemoteRepository> knownRemoteRepositories;
 
     public ToolboxSearchApiImpl() {
-        this.searchBackends = new ConcurrentHashMap<>();
-
         Map<String, RemoteRepository> rr = new HashMap<>();
         rr.put(ContextOverrides.CENTRAL.getId(), ContextOverrides.CENTRAL);
         rr.put(
@@ -99,43 +93,25 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi, Closeable {
     }
 
     @Override
-    public void close() {
-        searchBackends.forEach((key, value) -> {
-            try {
-                value.close();
-            } catch (IOException ex) {
-                // log+ignore
-                logger.warn("Could not close search backend: {}", key, ex);
-            }
-        });
-    }
-
-    private SearchBackend getOrCreate(String key, Supplier<SearchBackend> supplier) {
-        return searchBackends.computeIfAbsent(key, k -> supplier.get());
-    }
-
-    @Override
     public Map<String, RemoteRepository> getKnownRemoteRepositories() {
         return knownRemoteRepositories;
     }
 
     @Override
     public SearchBackend getRemoteRepositoryBackend(RemoteRepository remoteRepository) {
-        return getOrCreate(SearchBackend.class.getName() + "-" + remoteRepository.getId(), () -> {
-            final ResponseExtractor extractor;
-            // TODO: this needs more
-            if (ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())) {
-                extractor = new MavenCentralResponseExtractor();
-            } else {
-                extractor = new Nx2ResponseExtractor();
-            }
-            return RemoteRepositorySearchBackendFactory.create(
-                    remoteRepository.getId() + "-rr",
-                    remoteRepository.getId(),
-                    remoteRepository.getUrl(),
-                    new Java11HttpClientTransport(),
-                    extractor);
-        });
+        final ResponseExtractor extractor;
+        // TODO: this needs more
+        if (ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())) {
+            extractor = new MavenCentralResponseExtractor();
+        } else {
+            extractor = new Nx2ResponseExtractor();
+        }
+        return RemoteRepositorySearchBackendFactory.create(
+                remoteRepository.getId() + "-rr",
+                remoteRepository.getId(),
+                remoteRepository.getUrl(),
+                new Java11HttpClientTransport(),
+                extractor);
     }
 
     @Override
@@ -143,13 +119,11 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi, Closeable {
         if (!ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())) {
             throw new IllegalArgumentException("The SMO service is offered for Central only");
         }
-        return getOrCreate(
+        return SmoSearchBackendFactory.create(
                 remoteRepository.getId() + "-smo",
-                () -> SmoSearchBackendFactory.create(
-                        remoteRepository.getId() + "-smo",
-                        remoteRepository.getId(),
-                        "https://search.maven.org/solrsearch/select",
-                        new Java11HttpClientTransport()));
+                remoteRepository.getId(),
+                "https://search.maven.org/solrsearch/select",
+                new Java11HttpClientTransport());
     }
 
     @Override

@@ -30,9 +30,12 @@ public interface ToolboxCommando extends Closeable {
      */
     static ToolboxCommando getOrCreate(Context context) {
         requireNonNull(context, "context");
-        return (ToolboxCommando) context.repositorySystemSession()
-                .getData()
-                .computeIfAbsent(ToolboxCommando.class, () -> new ToolboxCommandoImpl(context));
+        return (ToolboxCommando)
+                context.repositorySystemSession().getData().computeIfAbsent(ToolboxCommando.class, () -> {
+                    ToolboxCommandoImpl result = new ToolboxCommandoImpl(context);
+                    context.repositorySystem().addOnSystemEndedHandler(result::close);
+                    return result;
+                });
     }
 
     /**
@@ -59,6 +62,10 @@ public interface ToolboxCommando extends Closeable {
     ToolboxResolver toolboxResolver();
 
     ToolboxSearchApi toolboxSearchApi();
+
+    // Resolver related commands: they target current context contained RemoteRepository
+
+    boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Logger output);
 
     boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Logger output);
 

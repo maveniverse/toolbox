@@ -8,6 +8,8 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import picocli.CommandLine;
 
 /**
@@ -20,39 +22,25 @@ public final class Classpath extends ResolverCommandSupport {
 
     @CommandLine.Option(
             names = {"--resolutionScope"},
-            defaultValue = "main-runtime",
+            defaultValue = "runtime",
             description = "Resolution scope to resolve (default main-runtime)")
     private String resolutionScope;
-
-    @CommandLine.Option(
-            names = {"--mavenLevel"},
-            defaultValue = "Maven3",
-            description = "The Maven level to use (default Maven3)")
-    private String mavenLevel;
 
     @CommandLine.Option(
             names = {"--boms"},
             defaultValue = "",
             split = ",",
             description = "Comma separated list of BOMs to apply")
-    private String[] boms;
+    private java.util.List<String> boms;
 
     @Override
     protected Integer doCall(Context context) throws Exception {
-        //        java.util.List<Dependency> managedDependencies = importBoms(context, boms);
-        //        Artifact gav = parseGav(this.gav, managedDependencies);
-        //
-        //        ResolutionScope resolutionScope = toResolutionScope(this.resolutionScope);
-        //        Toolbox toolbox = Toolbox.getOrCreate(context);
-        //        DependencyResult dependencyResult = toolbox.resolve(
-        //                resolutionScope, new Dependency(gav, ""), null, managedDependencies,
-        // context.remoteRepositories());
-        //
-        //        PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
-        //        dependencyResult.getRoot().accept(nlg);
-        //        // TODO: Do not use PreorderNodeListGenerator#getClassPath() until MRESOLVER-483 is fixed/released
-        //        info("{}",
-        // nlg.getFiles().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
-        return 0;
+        ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(context);
+        return toolboxCommando.classpath(
+                        ResolutionScope.parse(resolutionScope),
+                        toolboxCommando.toolboxResolver().loadGav(gav, boms),
+                        logger)
+                ? 0
+                : 1;
     }
 }

@@ -22,16 +22,34 @@ import org.slf4j.Logger;
  * The Toolbox Search API implements "lower level" Search API related operations.
  */
 public interface ToolboxSearchApi {
+    /**
+     * Shorthand for some "well known" repositories.
+     */
     Map<String, RemoteRepository> getKnownRemoteRepositories();
 
+    /**
+     * Returns new instance of RR backend.
+     */
     SearchBackend getRemoteRepositoryBackend(RemoteRepository remoteRepository);
 
+    /**
+     * Returns new instance of SMO backend.
+     */
     SearchBackend getSmoBackend(RemoteRepository remoteRepository);
 
+    /**
+     * Renders page.
+     */
     void renderPage(List<Record> page, Predicate<String> versionPredicate, Logger output);
 
+    /**
+     * Existence check.
+     */
     boolean exists(SearchBackend backend, Artifact artifact) throws IOException;
 
+    /**
+     * Verification check.
+     */
     boolean verify(SearchBackend backend, Artifact artifact, String sha1) throws IOException;
 
     /**

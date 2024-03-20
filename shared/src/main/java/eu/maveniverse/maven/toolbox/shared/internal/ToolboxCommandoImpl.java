@@ -19,6 +19,7 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,6 +28,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
@@ -36,9 +38,11 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.ChecksumUtils;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.graph.visitor.DependencyGraphDumper;
+import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.VersionConstraint;
@@ -67,11 +71,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public void close() {
-        try {
-            toolboxSearchApi.close();
-        } finally {
-            context.close();
-        }
+        context.close();
     }
 
     @Override
@@ -82,6 +82,28 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public ToolboxSearchApi toolboxSearchApi() {
         return toolboxSearchApi;
+    }
+
+    @Override
+    public boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Logger output) {
+        try {
+            DependencyResult dependencyResult = toolboxResolver()
+                    .resolve(
+                            resolutionScope,
+                            resolutionRoot.getArtifact(),
+                            resolutionRoot.getDependencies(),
+                            resolutionRoot.getManagedDependencies());
+
+            PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
+            dependencyResult.getRoot().accept(nlg);
+            // TODO: Do not use PreorderNodeListGenerator#getClassPath() until MRESOLVER-483 is fixed/released
+            output.info(
+                    "{}",
+                    nlg.getFiles().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

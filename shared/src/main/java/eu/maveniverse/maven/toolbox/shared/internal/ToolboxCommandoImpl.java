@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.search.api.MAVEN;
@@ -104,6 +105,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public boolean listAvailablePlugins(List<String> groupIds, Logger output) {
+        toolboxResolver.listAvailablePlugins(groupIds).forEach(p -> output.info(p.toString()));
+        return true;
     }
 
     @Override

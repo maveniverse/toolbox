@@ -14,6 +14,7 @@ import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.slf4j.Logger;
 
@@ -66,6 +67,8 @@ public interface ToolboxCommando extends Closeable {
     // Resolver related commands: they target current context contained RemoteRepository
 
     boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Logger output);
+
+    boolean listAvailablePlugins(List<String> groupIds, Logger output);
 
     boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Logger output);
 

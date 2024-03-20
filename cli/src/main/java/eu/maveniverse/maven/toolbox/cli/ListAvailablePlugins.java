@@ -8,24 +8,21 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.util.Collections;
 import picocli.CommandLine;
 
 /**
  * List plugins.
  */
-@CommandLine.Command(name = "listPlugins", description = "List plugins")
-public final class ListPlugins extends ResolverCommandSupport {
+@CommandLine.Command(name = "listAvailablePlugins", description = "List available plugins")
+public final class ListAvailablePlugins extends ResolverCommandSupport {
 
     @CommandLine.Parameters(index = "0", description = "The G to list")
     private String g;
 
     @Override
     protected Integer doCall(Context context) throws Exception {
-        //        Toolbox toolbox = Toolbox.getOrCreate(context);
-        //
-        //        toolbox.listAvailablePlugins(Collections.singletonList(g), context.remoteRepositories()).stream()
-        //                .sorted(Comparator.comparing(ArtifactIdUtils::toId))
-        //                .forEach(p -> info(p.toString()));
-        return 0;
+        return ToolboxCommando.getOrCreate(context).listAvailablePlugins(Collections.singletonList(g), logger) ? 0 : 1;
     }
 }

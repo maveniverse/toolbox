@@ -118,9 +118,9 @@ public interface ToolboxResolver {
     /**
      * Resolves given artifacts from given remote repositories.
      */
-    List<ArtifactResult> resolveArtifacts(List<Artifact> artifacts) throws ArtifactResolutionException;
+    List<ArtifactResult> resolveArtifacts(Collection<Artifact> artifacts) throws ArtifactResolutionException;
 
     Version findNewestVersion(Artifact artifact, boolean allowSnapshots) throws VersionRangeResolutionException;
 
-    List<Artifact> listAvailablePlugins(List<String> groupIds);
+    List<Artifact> listAvailablePlugins(Collection<String> groupIds);
 }

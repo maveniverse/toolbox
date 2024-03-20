@@ -21,7 +21,6 @@ import picocli.CommandLine;
             DeployRecorded.class,
             Dump.class,
             Exists.class,
-            Graph.class,
             Identify.class,
             Install.class,
             List.class,

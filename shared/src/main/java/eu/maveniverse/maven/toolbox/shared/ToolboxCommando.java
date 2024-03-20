@@ -14,7 +14,8 @@ import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 
 /**
@@ -63,11 +64,17 @@ public interface ToolboxCommando extends Closeable {
 
     ToolboxSearchApi toolboxSearchApi();
 
+    ArtifactRecorder artifactRecorder();
+
     // Resolver related commands: they target current context contained RemoteRepository
 
     boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output);
 
-    boolean listAvailablePlugins(List<String> groupIds, Output output);
+    boolean deploy(String remoteRepositorySpec, Collection<Artifact> artifacts, Output output);
+
+    boolean install(Collection<Artifact> artifacts, Output output);
+
+    boolean listAvailablePlugins(Collection<String> groupIds, Output output);
 
     boolean resolve(
             ResolutionScope resolutionScope,

@@ -8,10 +8,11 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import picocli.CommandLine;
@@ -33,16 +34,9 @@ public final class Install extends ResolverCommandSupport {
 
     @Override
     protected Integer doCall(Context context) throws InstallationException {
-        Artifact jarArtifact = new DefaultArtifact(gav);
-        jarArtifact = jarArtifact.setFile(jar.toFile());
-
-        Artifact pomArtifact = new SubArtifact(jarArtifact, "", "pom");
-        pomArtifact = pomArtifact.setFile(pom.toFile());
-
-        InstallRequest installRequest = new InstallRequest();
-        installRequest.addArtifact(jarArtifact).addArtifact(pomArtifact);
-
-        context.repositorySystem().install(getRepositorySystemSession(), installRequest);
-        return 0;
+        ArrayList<Artifact> artifacts = new ArrayList<>();
+        artifacts.add(new DefaultArtifact(gav).setFile(jar.toFile()));
+        artifacts.add(new SubArtifact(artifacts.get(0), "", "pom").setFile(pom.toFile()));
+        return ToolboxCommando.getOrCreate(getContext()).install(artifacts, output) ? 0 : 1;
     }
 }

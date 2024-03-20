@@ -108,22 +108,6 @@ public abstract class CommandSupport implements Callable<Integer> {
         deque.push(object);
     }
 
-    protected Object pop(String key) {
-        ArrayDeque<Object> deque = EXECUTION_CONTEXT.get(key);
-        if (deque == null || deque.isEmpty()) {
-            throw new IllegalStateException("No element to pop");
-        }
-        return deque.pop();
-    }
-
-    protected Object peek(String key) {
-        ArrayDeque<Object> deque = EXECUTION_CONTEXT.get(key);
-        if (deque == null || deque.isEmpty()) {
-            throw new IllegalStateException("No element to peek");
-        }
-        return deque.peek();
-    }
-
     protected void mayDumpEnv(Runtime runtime, Context context, boolean verbose) {
         normal("MIMA (Runtime '{}' version {})", runtime.name(), runtime.version());
         normal("====");

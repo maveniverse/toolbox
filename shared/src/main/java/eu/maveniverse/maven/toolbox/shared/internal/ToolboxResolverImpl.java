@@ -319,7 +319,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     }
 
     @Override
-    public List<ArtifactResult> resolveArtifacts(List<Artifact> artifacts) throws ArtifactResolutionException {
+    public List<ArtifactResult> resolveArtifacts(Collection<Artifact> artifacts) throws ArtifactResolutionException {
         requireNonNull(artifacts);
 
         List<ArtifactRequest> artifactRequests = new ArrayList<>();
@@ -353,7 +353,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     }
 
     @Override
-    public List<Artifact> listAvailablePlugins(List<String> groupIds) {
+    public List<Artifact> listAvailablePlugins(Collection<String> groupIds) {
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
         session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_ALWAYS);
 

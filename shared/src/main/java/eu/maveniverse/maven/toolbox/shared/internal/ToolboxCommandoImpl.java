@@ -14,6 +14,7 @@ import static org.apache.maven.search.api.request.Query.query;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
+import eu.maveniverse.maven.toolbox.shared.ArtifactRecorder;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
@@ -30,7 +31,7 @@ import java.security.NoSuchAlgorithmException;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -42,6 +43,10 @@ import org.apache.maven.search.api.request.Query;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
+import org.eclipse.aether.deployment.DeployRequest;
+import org.eclipse.aether.deployment.DeploymentException;
+import org.eclipse.aether.installation.InstallRequest;
+import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyResult;
@@ -61,6 +66,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Context context;
     private final ToolboxResolverImpl toolboxResolver;
     private final ToolboxSearchApiImpl toolboxSearchApi;
+    private final ArtifactRecorderImpl artifactRecorder;
 
     public ToolboxCommandoImpl(Context context) {
         requireNonNull(context, "context");
@@ -68,6 +74,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         this.toolboxResolver = new ToolboxResolverImpl(
                 context.repositorySystem(), context.repositorySystemSession(), context.remoteRepositories());
         this.toolboxSearchApi = new ToolboxSearchApiImpl();
+        this.artifactRecorder = new ArtifactRecorderImpl();
     }
 
     @Override
@@ -91,14 +98,18 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public ArtifactRecorder artifactRecorder() {
+        return artifactRecorder;
+    }
+
+    @Override
     public boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) {
         try {
-            DependencyResult dependencyResult = toolboxResolver()
-                    .resolve(
-                            resolutionScope,
-                            resolutionRoot.getArtifact(),
-                            resolutionRoot.getDependencies(),
-                            resolutionRoot.getManagedDependencies());
+            DependencyResult dependencyResult = toolboxResolver.resolve(
+                    resolutionScope,
+                    resolutionRoot.getArtifact(),
+                    resolutionRoot.getDependencies(),
+                    resolutionRoot.getManagedDependencies());
 
             PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
             dependencyResult.getRoot().accept(nlg);
@@ -113,7 +124,37 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean listAvailablePlugins(List<String> groupIds, Output output) {
+    public boolean deploy(String remoteRepositorySpec, Collection<Artifact> artifacts, Output output) {
+        try {
+            RemoteRepository remoteRepository = toolboxResolver.parseDeploymentRemoteRepository(remoteRepositorySpec);
+            DeployRequest deployRequest = new DeployRequest();
+            deployRequest.setRepository(remoteRepository);
+            artifacts.forEach(deployRequest::addArtifact);
+            context.repositorySystem().deploy(context.repositorySystemSession(), deployRequest);
+            output.normal("");
+            output.normal("Deployed {} artifacts to {}", artifacts.size(), remoteRepository);
+            return !artifacts.isEmpty();
+        } catch (DeploymentException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean install(Collection<Artifact> artifacts, Output output) {
+        try {
+            InstallRequest installRequest = new InstallRequest();
+            artifacts.forEach(installRequest::addArtifact);
+            context.repositorySystem().install(context.repositorySystemSession(), installRequest);
+            output.normal("");
+            output.normal("Install {} artifacts to local repository", artifacts.size());
+            return !artifacts.isEmpty();
+        } catch (InstallationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean listAvailablePlugins(Collection<String> groupIds, Output output) {
         toolboxResolver.listAvailablePlugins(groupIds).forEach(p -> output.normal(p.toString()));
         return true;
     }
@@ -127,12 +168,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean signatures,
             Output output) {
         try {
-            DependencyResult dependencyResult = toolboxResolver()
-                    .resolve(
-                            resolutionScope,
-                            resolutionRoot.getArtifact(),
-                            resolutionRoot.getDependencies(),
-                            resolutionRoot.getManagedDependencies());
+            DependencyResult dependencyResult = toolboxResolver.resolve(
+                    resolutionScope,
+                    resolutionRoot.getArtifact(),
+                    resolutionRoot.getDependencies(),
+                    resolutionRoot.getManagedDependencies());
 
             output.normal("");
             if (output.isVerbose()) {
@@ -189,14 +229,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public boolean tree(
             ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output) {
         try {
-            ResolutionRoot root = toolboxResolver().loadRoot(resolutionRoot);
-            CollectResult collectResult = toolboxResolver()
-                    .collect(
-                            resolutionScope,
-                            root.getArtifact(),
-                            root.getDependencies(),
-                            root.getManagedDependencies(),
-                            verbose);
+            ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+            CollectResult collectResult = toolboxResolver.collect(
+                    resolutionScope,
+                    root.getArtifact(),
+                    root.getDependencies(),
+                    root.getManagedDependencies(),
+                    verbose);
             collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
             return true;
         } catch (Exception e) {

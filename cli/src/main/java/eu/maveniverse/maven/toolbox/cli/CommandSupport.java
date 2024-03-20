@@ -26,6 +26,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,10 +81,16 @@ public abstract class CommandSupport implements Callable<Integer> {
     protected String proxy;
 
     @CommandLine.Option(
-            names = {"-c", "--color"},
-            defaultValue = "true",
+            names = {"-B", "--batch-mode"},
+            defaultValue = "false",
             description = "Use ANSI colors")
-    protected boolean color;
+    protected boolean batch;
+
+    @CommandLine.Option(
+            names = {"-e", "--errors"},
+            defaultValue = "false",
+            description = "Show errors")
+    protected boolean errors;
 
     protected final Output output = new Output() {
         @Override
@@ -269,43 +276,87 @@ public abstract class CommandSupport implements Callable<Integer> {
         if (!verbose) {
             return;
         }
-        log(
-                System.out,
-                ansi().a(INTENSITY_FAINT)
-                        .fg(WHITE)
-                        .a(MessageFormatter.arrayFormat(format, args).getMessage())
-                        .reset()
-                        .toString());
+        if (args[args.length - 1] instanceof Throwable) {
+            log(
+                    System.err,
+                    ansi().a(INTENSITY_FAINT)
+                            .fg(WHITE)
+                            .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
+                                    .getMessage())
+                            .toString(),
+                    (Throwable) args[args.length - 1]);
+        } else {
+            log(
+                    System.err,
+                    ansi().a(INTENSITY_FAINT)
+                            .fg(WHITE)
+                            .a(MessageFormatter.arrayFormat(format, args).getMessage())
+                            .reset()
+                            .toString());
+        }
     }
 
     protected void normal(String format, Object... args) {
-        log(
-                System.out,
-                ansi().a(INTENSITY_BOLD)
-                        .fg(WHITE)
-                        .a(MessageFormatter.arrayFormat(format, args).getMessage())
-                        .reset()
-                        .toString());
+        if (args[args.length - 1] instanceof Throwable) {
+            log(
+                    System.err,
+                    ansi().a(INTENSITY_BOLD)
+                            .fg(WHITE)
+                            .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
+                                    .getMessage())
+                            .toString(),
+                    (Throwable) args[args.length - 1]);
+        } else {
+            log(
+                    System.err,
+                    ansi().a(INTENSITY_BOLD)
+                            .fg(WHITE)
+                            .a(MessageFormatter.arrayFormat(format, args).getMessage())
+                            .reset()
+                            .toString());
+        }
     }
 
     protected void warn(String format, Object... args) {
-        log(
-                System.err,
-                ansi().a(INTENSITY_BOLD)
-                        .fg(YELLOW)
-                        .a(MessageFormatter.arrayFormat(format, args).getMessage())
-                        .reset()
-                        .toString());
+        if (args[args.length - 1] instanceof Throwable) {
+            log(
+                    System.err,
+                    ansi().a(INTENSITY_BOLD)
+                            .fg(YELLOW)
+                            .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
+                                    .getMessage())
+                            .toString(),
+                    (Throwable) args[args.length - 1]);
+        } else {
+            log(
+                    System.err,
+                    ansi().a(INTENSITY_BOLD)
+                            .fg(YELLOW)
+                            .a(MessageFormatter.arrayFormat(format, args).getMessage())
+                            .reset()
+                            .toString());
+        }
     }
 
     protected void error(String format, Object... args) {
-        log(
-                System.err,
-                ansi().a(INTENSITY_BOLD)
-                        .fg(RED)
-                        .a(MessageFormatter.arrayFormat(format, args).getMessage())
-                        .reset()
-                        .toString());
+        if (args[args.length - 1] instanceof Throwable) {
+            log(
+                    System.err,
+                    ansi().a(INTENSITY_BOLD)
+                            .fg(RED)
+                            .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
+                                    .getMessage())
+                            .toString(),
+                    (Throwable) args[args.length - 1]);
+        } else {
+            log(
+                    System.err,
+                    ansi().a(INTENSITY_BOLD)
+                            .fg(RED)
+                            .a(MessageFormatter.arrayFormat(format, args).getMessage())
+                            .reset()
+                            .toString());
+        }
     }
 
     private void log(PrintStream ps, String message) {
@@ -315,14 +366,15 @@ public abstract class CommandSupport implements Callable<Integer> {
     private void log(PrintStream ps, String message, Throwable throwable) {
         ps.println(message);
         writeThrowable(throwable, ps);
+        ps.println(ansi().reset());
     }
 
     private static String failure(String format) {
-        return "\u001b[1;31m" + format + "\u001b[m";
+        return ansi().a(INTENSITY_BOLD).a(format).reset().toString();
     }
 
     private static String strong(String format) {
-        return "\u001b[1m" + format + "\u001b[m";
+        return ansi().a(INTENSITY_BOLD).a(format).reset().toString();
     }
 
     private void writeThrowable(Throwable t, PrintStream stream) {
@@ -335,7 +387,9 @@ public abstract class CommandSupport implements Callable<Integer> {
         }
         stream.println(builder);
 
-        printStackTrace(t, stream, "");
+        if (errors) {
+            printStackTrace(t, stream, "");
+        }
     }
 
     private void printStackTrace(Throwable t, PrintStream stream, String prefix) {
@@ -393,7 +447,7 @@ public abstract class CommandSupport implements Callable<Integer> {
 
     @Override
     public final Integer call() {
-        Ansi.setEnabled(color);
+        Ansi.setEnabled(!batch);
         try (Context context = getContext()) {
             return doCall(context) ? 0 : 1;
         } catch (Exception e) {

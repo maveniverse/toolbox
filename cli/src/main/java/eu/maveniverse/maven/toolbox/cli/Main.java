@@ -30,6 +30,7 @@ import picocli.CommandLine;
             Repl.class,
             Resolve.class,
             Tree.class,
+            Test.class,
             Verify.class
         },
         versionProvider = Main.class,

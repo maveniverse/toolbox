@@ -22,7 +22,7 @@ public final class List extends SearchCommandSupport {
     private String gavoid;
 
     @Override
-    protected Integer doCall(Context context) throws IOException {
-        return ToolboxCommando.getOrCreate(context).list(getRemoteRepository(), gavoid, output) ? 0 : 1;
+    protected boolean doCall(Context context) throws IOException {
+        return ToolboxCommando.getOrCreate(context).list(getRemoteRepository(), gavoid, output);
     }
 }

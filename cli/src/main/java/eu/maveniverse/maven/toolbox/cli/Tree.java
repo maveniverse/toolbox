@@ -41,14 +41,12 @@ public final class Tree extends ResolverCommandSupport {
     private java.util.List<String> boms;
 
     @Override
-    protected Integer doCall(Context context) throws Exception {
+    protected boolean doCall(Context context) throws Exception {
         ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(context);
         return toolboxCommando.tree(
-                        ResolutionScope.parse(resolutionScope),
-                        toolboxCommando.toolboxResolver().loadGav(gav, boms),
-                        verboseTree,
-                        output)
-                ? 0
-                : 1;
+                ResolutionScope.parse(resolutionScope),
+                toolboxCommando.toolboxResolver().loadGav(gav, boms),
+                verboseTree,
+                output);
     }
 }

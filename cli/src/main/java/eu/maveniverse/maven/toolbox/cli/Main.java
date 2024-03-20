@@ -42,7 +42,7 @@ public class Main extends CommandSupport implements CommandLine.IVersionProvider
     }
 
     @Override
-    protected Integer doCall(Context context) {
+    protected boolean doCall(Context context) {
         mayDumpEnv(getRuntime(), context, false);
         return new Repl().doCall(context);
     }

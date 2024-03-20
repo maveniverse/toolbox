@@ -48,10 +48,8 @@ public final class Exists extends SearchCommandSupport {
     private boolean allRequired;
 
     @Override
-    protected Integer doCall(Context context) throws IOException {
+    protected boolean doCall(Context context) throws IOException {
         return ToolboxCommando.getOrCreate(context)
-                        .exists(getRemoteRepository(), gav, pom, sources, javadoc, signature, allRequired, output)
-                ? 0
-                : 1;
+                .exists(getRemoteRepository(), gav, pom, sources, javadoc, signature, allRequired, output);
     }
 }

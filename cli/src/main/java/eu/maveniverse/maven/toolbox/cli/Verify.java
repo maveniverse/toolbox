@@ -25,7 +25,7 @@ public final class Verify extends SearchCommandSupport {
     private String sha1;
 
     @Override
-    protected Integer doCall(Context context) throws IOException {
-        return ToolboxCommando.getOrCreate(context).verify(getRemoteRepository(), gav, sha1, output) ? 0 : 1;
+    protected boolean doCall(Context context) throws IOException {
+        return ToolboxCommando.getOrCreate(context).verify(getRemoteRepository(), gav, sha1, output);
     }
 }

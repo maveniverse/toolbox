@@ -34,13 +34,11 @@ public final class Classpath extends ResolverCommandSupport {
     private java.util.List<String> boms;
 
     @Override
-    protected Integer doCall(Context context) throws Exception {
+    protected boolean doCall(Context context) throws Exception {
         ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(context);
         return toolboxCommando.classpath(
-                        ResolutionScope.parse(resolutionScope),
-                        toolboxCommando.toolboxResolver().loadGav(gav, boms),
-                        output)
-                ? 0
-                : 1;
+                ResolutionScope.parse(resolutionScope),
+                toolboxCommando.toolboxResolver().loadGav(gav, boms),
+                output);
     }
 }

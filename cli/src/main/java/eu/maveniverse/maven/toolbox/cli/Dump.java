@@ -16,8 +16,8 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "dump", description = "Dump MIMA environment")
 public final class Dump extends CommandSupport {
     @Override
-    protected Integer doCall(Context context) {
+    protected boolean doCall(Context context) {
         mayDumpEnv(getRuntime(), context, true);
-        return 0;
+        return true;
     }
 }

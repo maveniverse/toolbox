@@ -22,7 +22,7 @@ public final class ListAvailablePlugins extends ResolverCommandSupport {
     private String g;
 
     @Override
-    protected Integer doCall(Context context) throws Exception {
-        return ToolboxCommando.getOrCreate(context).listAvailablePlugins(Collections.singletonList(g), output) ? 0 : 1;
+    protected boolean doCall(Context context) throws Exception {
+        return ToolboxCommando.getOrCreate(context).listAvailablePlugins(Collections.singletonList(g), output);
     }
 }

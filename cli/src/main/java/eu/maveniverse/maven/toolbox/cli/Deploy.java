@@ -36,10 +36,10 @@ public final class Deploy extends ResolverCommandSupport {
     private String remoteRepositorySpec;
 
     @Override
-    protected Integer doCall(Context context) throws DeploymentException {
+    protected boolean doCall(Context context) throws DeploymentException {
         ArrayList<Artifact> artifacts = new ArrayList<>();
         artifacts.add(new DefaultArtifact(gav).setFile(jar.toFile()));
         artifacts.add(new SubArtifact(artifacts.get(0), "", "pom").setFile(pom.toFile()));
-        return ToolboxCommando.getOrCreate(getContext()).deploy(remoteRepositorySpec, artifacts, output) ? 0 : 1;
+        return ToolboxCommando.getOrCreate(getContext()).deploy(remoteRepositorySpec, artifacts, output);
     }
 }

@@ -50,16 +50,14 @@ public final class Resolve extends ResolverCommandSupport {
     private boolean signature;
 
     @Override
-    protected Integer doCall(Context context) throws Exception {
+    protected boolean doCall(Context context) throws Exception {
         ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(context);
         return toolboxCommando.resolve(
-                        ResolutionScope.parse(resolutionScope),
-                        toolboxCommando.toolboxResolver().loadGav(gav, boms),
-                        sources,
-                        javadoc,
-                        signature,
-                        output)
-                ? 0
-                : 1;
+                ResolutionScope.parse(resolutionScope),
+                toolboxCommando.toolboxResolver().loadGav(gav, boms),
+                sources,
+                javadoc,
+                signature,
+                output);
     }
 }

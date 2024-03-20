@@ -34,7 +34,7 @@ import picocli.shell.jline3.PicocliCommands;
 @CommandLine.Command(name = "repl", description = "REPL console")
 public class Repl extends CommandSupport {
     @Override
-    public Integer doCall(Context context) {
+    public boolean doCall(Context context) {
         Class<?> tp = JansiTerminalProvider.class;
         push(Context.class.getName(), context);
 
@@ -81,15 +81,15 @@ public class Repl extends CommandSupport {
                 } catch (UserInterruptException e) {
                     // Ignore
                 } catch (EndOfFileException e) {
-                    return 0;
+                    return true;
                 } catch (Exception e) {
                     systemRegistry.trace(e);
-                    return 2;
+                    return false;
                 }
             }
         } catch (Exception e) {
             error("REPL Failure: ", e);
-            return 1;
+            return false;
         } finally {
             context.close();
         }

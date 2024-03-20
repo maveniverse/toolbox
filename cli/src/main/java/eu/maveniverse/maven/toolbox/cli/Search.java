@@ -22,7 +22,7 @@ public final class Search extends SearchCommandSupport {
     private String expression;
 
     @Override
-    protected Integer doCall(Context context) throws IOException {
-        return ToolboxCommando.getOrCreate(context).search(getRemoteRepository(), expression, output) ? 0 : 1;
+    protected boolean doCall(Context context) throws IOException {
+        return ToolboxCommando.getOrCreate(context).search(getRemoteRepository(), expression, output);
     }
 }

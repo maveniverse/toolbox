@@ -22,7 +22,7 @@ public final class Identify extends SearchCommandSupport {
     private String target;
 
     @Override
-    protected Integer doCall(Context context) throws IOException {
-        return ToolboxCommando.getOrCreate(context).identify(getRemoteRepository(), target, output) ? 0 : 1;
+    protected boolean doCall(Context context) throws IOException {
+        return ToolboxCommando.getOrCreate(context).identify(getRemoteRepository(), target, output);
     }
 }

@@ -22,16 +22,14 @@ public final class DeployRecorded extends ResolverCommandSupport {
     private String remoteRepositorySpec;
 
     @Override
-    protected Integer doCall(Context context) throws DeploymentException {
+    protected boolean doCall(Context context) throws DeploymentException {
         normal("Deploying recorded");
 
         ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(getContext());
         toolboxCommando.artifactRecorder().setActive(false);
         return toolboxCommando.deploy(
-                        remoteRepositorySpec,
-                        new HashSet<>(toolboxCommando.artifactRecorder().getAllArtifacts()),
-                        output)
-                ? 0
-                : 1;
+                remoteRepositorySpec,
+                new HashSet<>(toolboxCommando.artifactRecorder().getAllArtifacts()),
+                output);
     }
 }

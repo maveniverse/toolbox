@@ -33,10 +33,10 @@ public final class Install extends ResolverCommandSupport {
     private Path pom;
 
     @Override
-    protected Integer doCall(Context context) throws InstallationException {
+    protected boolean doCall(Context context) throws InstallationException {
         ArrayList<Artifact> artifacts = new ArrayList<>();
         artifacts.add(new DefaultArtifact(gav).setFile(jar.toFile()));
         artifacts.add(new SubArtifact(artifacts.get(0), "", "pom").setFile(pom.toFile()));
-        return ToolboxCommando.getOrCreate(getContext()).install(artifacts, output) ? 0 : 1;
+        return ToolboxCommando.getOrCreate(getContext()).install(artifacts, output);
     }
 }

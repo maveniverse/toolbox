@@ -19,7 +19,7 @@ import picocli.CommandLine;
 public final class Record extends ResolverCommandSupport {
 
     @Override
-    protected Integer doCall(Context context) throws DependencyResolutionException {
-        return ToolboxCommando.getOrCreate(context).artifactRecorder().setActive(true) ? 0 : 1;
+    protected boolean doCall(Context context) throws DependencyResolutionException {
+        return ToolboxCommando.getOrCreate(context).artifactRecorder().setActive(true);
     }
 }

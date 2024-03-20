@@ -9,12 +9,7 @@ package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
-import eu.maveniverse.maven.toolbox.shared.Toolbox;
-import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.collection.CollectResult;
-import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.util.graph.visitor.DependencyGraphDumper;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import picocli.CommandLine;
 
 /**
@@ -28,7 +23,7 @@ public final class Tree extends ResolverCommandSupport {
 
     @CommandLine.Option(
             names = {"--resolutionScope"},
-            defaultValue = "main-runtime",
+            defaultValue = "RUNTIME",
             description = "Resolution scope to resolve (default main-runtime)")
     private String resolutionScope;
 
@@ -49,23 +44,17 @@ public final class Tree extends ResolverCommandSupport {
             defaultValue = "",
             split = ",",
             description = "Comma separated list of BOMs to apply")
-    private String[] boms;
+    private java.util.List<String> boms;
 
     @Override
     protected Integer doCall(Context context) throws Exception {
-        java.util.List<Dependency> managedDependencies = importBoms(context, boms);
-        Artifact gav = parseGav(this.gav, managedDependencies);
-
-        ResolutionScope resolutionScope = toResolutionScope(this.resolutionScope);
-        Toolbox toolbox = new ToolboxImpl(context);
-        CollectResult collectResult = toolbox.collect(
-                resolutionScope,
-                new Dependency(gav, ""),
-                null,
-                managedDependencies,
-                context.remoteRepositories(),
-                verboseTree);
-        collectResult.getRoot().accept(new DependencyGraphDumper(this::info));
-        return 0;
+        ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(context);
+        return toolboxCommando.tree(
+                        ResolutionScope.parse(resolutionScope),
+                        toolboxCommando.toolboxResolver().loadGav(gav, boms),
+                        false,
+                        logger)
+                ? 0
+                : 1;
     }
 }

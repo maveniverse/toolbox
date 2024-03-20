@@ -11,12 +11,10 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
+import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
-import eu.maveniverse.maven.toolbox.shared.Toolbox;
-import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
-import java.util.Locale;
-import java.util.stream.Collectors;
-import org.apache.maven.RepositoryUtils;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -24,13 +22,13 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.eclipse.aether.artifact.ArtifactTypeRegistry;
-import org.eclipse.aether.collection.CollectResult;
-import org.eclipse.aether.collection.DependencyCollectionException;
-import org.eclipse.aether.util.graph.visitor.DependencyGraphDumper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Mojo(name = "tree", threadSafe = true)
 public class TreeMojo extends AbstractMojo {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     /**
      * The resolution scope to display, accepted values are "main-runtime", "main-compile", "test-runtime" or
      * "test-compile".
@@ -53,31 +51,20 @@ public class TreeMojo extends AbstractMojo {
     @Component
     private MavenProject mavenProject;
 
+    @Component
+    private ArtifactHandlerManager artifactHandlerManager;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            Toolbox toolbox = new ToolboxImpl(context);
-            ResolutionScope resolutionScope = ResolutionScope.valueOf(scope.toUpperCase(Locale.ROOT));
-
-            ArtifactTypeRegistry artifactTypeRegistry =
-                    context.repositorySystemSession().getArtifactTypeRegistry();
-            CollectResult collectResult = toolbox.collect(
-                    resolutionScope,
-                    RepositoryUtils.toArtifact(mavenProject.getArtifact()),
-                    mavenProject.getDependencies().stream()
-                            .map(d -> RepositoryUtils.toDependency(d, artifactTypeRegistry))
-                            .collect(Collectors.toList()),
-                    mavenProject.getDependencyManagement().getDependencies().stream()
-                            .map(d -> RepositoryUtils.toDependency(d, artifactTypeRegistry))
-                            .collect(Collectors.toList()),
-                    context.remoteRepositories(),
-                    verbose);
-            collectResult.getRoot().accept(new DependencyGraphDumper(getLog()::info));
-        } catch (DependencyCollectionException e) {
-            throw new MojoExecutionException(e);
-        } catch (IllegalArgumentException e) {
-            throw new MojoFailureException(e);
+            ResolutionRoot root = MavenProjectHelper.toRoot(
+                    mavenProject,
+                    artifactHandlerManager,
+                    context.repositorySystemSession().getArtifactTypeRegistry());
+            ToolboxCommando.getOrCreate(context).tree(ResolutionScope.parse(scope), root, false, logger);
+        } catch (RuntimeException e) {
+            throw new MojoExecutionException(e.getCause());
         }
     }
 }

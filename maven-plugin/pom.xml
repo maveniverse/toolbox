@@ -24,18 +24,15 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.apache.maven.plugin-tools</groupId>
+      <artifactId>maven-plugin-annotations</artifactId>
+      <version>${version.mavenPluginTools}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
       <groupId>eu.maveniverse.maven.toolbox</groupId>
       <artifactId>shared</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-util</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -54,9 +51,25 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- MIMA + Logging -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mima</groupId>
+      <artifactId>context</artifactId>
+    </dependency>
+
+    <!-- Maven -->
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-artifact</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -66,13 +79,44 @@
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
+      <artifactId>maven-model</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
       <artifactId>maven-settings</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven.plugin-tools</groupId>
-      <artifactId>maven-plugin-annotations</artifactId>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-repository-metadata</artifactId>
       <scope>provided</scope>
+    </dependency>
+
+    <!-- Resolver -->
+    <dependency>
+      <groupId>org.apache.maven.resolver</groupId>
+      <artifactId>maven-resolver-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.resolver</groupId>
+      <artifactId>maven-resolver-util</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Search -->
+    <dependency>
+      <groupId>org.apache.maven.indexer</groupId>
+      <artifactId>search-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.indexer</groupId>
+      <artifactId>search-backend-remoterepository</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.indexer</groupId>
+      <artifactId>search-backend-smo</artifactId>
     </dependency>
 
     <dependency>

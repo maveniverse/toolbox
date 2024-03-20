@@ -11,23 +11,22 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
+import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
-import eu.maveniverse.maven.toolbox.shared.Toolbox;
-import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
-import java.util.Locale;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.collection.CollectResult;
-import org.eclipse.aether.collection.DependencyCollectionException;
-import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.util.graph.visitor.DependencyGraphDumper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Mojo(name = "gav-tree", requiresProject = false, threadSafe = true)
 public class GavTreeMojo extends AbstractMojo {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     /**
      * The artifact coordinates in the format {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}
      * to display tree for.
@@ -58,21 +57,11 @@ public class GavTreeMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            Toolbox toolbox = new ToolboxImpl(context);
-            ResolutionScope resolutionScope = ResolutionScope.valueOf(scope.toUpperCase(Locale.ROOT));
-
-            CollectResult collectResult = toolbox.collect(
-                    resolutionScope,
-                    new Dependency(new DefaultArtifact(gav), ""),
-                    null,
-                    null,
-                    context.remoteRepositories(),
-                    verbose);
-            collectResult.getRoot().accept(new DependencyGraphDumper(getLog()::info));
-        } catch (DependencyCollectionException e) {
+            ResolutionRoot root =
+                    ResolutionRoot.ofLoaded(new DefaultArtifact(gav)).build();
+            ToolboxCommando.getOrCreate(context).tree(ResolutionScope.parse(scope), root, false, logger);
+        } catch (RuntimeException e) {
             throw new MojoExecutionException(e);
-        } catch (IllegalArgumentException e) {
-            throw new MojoFailureException(e);
         }
     }
 }

@@ -1,10 +1,9 @@
 # Toolbox
 
-The Maveniverse Toolbox started as manifold project. It aims to:
-* replace `MIMA CLI` (basically continue along its goals)
-* replace `maven-dependency-plugin`, providing similar (sub)set of Mojos
+The Toolbox project started with manifold aims:
+* replace `MIMA CLI`, provide drop-in replacement, but also continue improving it.
+* provide replacement for `maven-dependency-plugin`, offering similar (sub)set of Mojos
 * showcase how MIMA helps to write reusable Resolver code that runs in Maven (as Mojos) but also outside of Maven as well
-* ~~and as a side effect, it codifies dependency scopes and resolution scopes (they are not only String labels anymore)~~ this was moved out from here as MRESOLVER-512
 
 Structure of the project:
 * Module "shared" is a library module, that depends on MIMA `Context` only, and implements all the logic. This module is then reused in modules below.
@@ -18,10 +17,13 @@ Project Goals:
 * copy
 * get
 * list-repositories
-* list-plugins
 * properties
 * repocopy
 * tree
 * unpack
+* measure (dep count, size, repo count?)
+* list-available-plugins (G given or settings one, A and latest V), groupIds from settings or explicitly given
+* sources (P or GAV w/wo transitive deps)
+* javadoc (P or GAV w/wo transitive deps)
 
 plus what MIMA CLI already supports.

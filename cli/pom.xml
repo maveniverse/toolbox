@@ -22,7 +22,6 @@
   <name>${project.groupId}:${project.artifactId}</name>
 
   <properties>
-    <maven.compiler.release>11</maven.compiler.release>
     <mainClass>eu.maveniverse.maven.toolbox.cli.Main</mainClass>
   </properties>
 
@@ -35,6 +34,10 @@
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli-shell-jline3</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jline</groupId>
+      <artifactId>jline</artifactId>
     </dependency>
     <dependency>
       <groupId>org.fusesource.jansi</groupId>
@@ -61,7 +64,11 @@
       <artifactId>search-backend-smo</artifactId>
     </dependency>
 
-    <!-- MIMA Context -->
+    <!-- MIMA + Logging -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mima</groupId>
       <artifactId>context</artifactId>
@@ -88,7 +95,6 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-settings</artifactId>
-      <version>${version.maven}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -99,6 +105,11 @@
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-util</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
       <scope>provided</scope>
     </dependency>
 

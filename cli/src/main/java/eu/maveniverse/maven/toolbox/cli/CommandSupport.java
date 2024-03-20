@@ -29,6 +29,8 @@ import org.apache.maven.settings.Settings;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.VersionScheme;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 import picocli.CommandLine;
 
@@ -71,6 +73,8 @@ public abstract class CommandSupport implements Callable<Integer> {
             names = {"--proxy"},
             description = "Define a HTTP proxy (host:port)")
     protected String proxy;
+
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final ConcurrentHashMap<String, ArrayDeque<Object>> EXECUTION_CONTEXT = new ConcurrentHashMap<>();
 

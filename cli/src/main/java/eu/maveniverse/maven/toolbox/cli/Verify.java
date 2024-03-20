@@ -7,17 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import static org.apache.maven.search.api.request.BooleanQuery.and;
-import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
-
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
-import org.apache.maven.search.api.MAVEN;
-import org.apache.maven.search.api.SearchBackend;
-import org.apache.maven.search.api.SearchRequest;
-import org.apache.maven.search.api.SearchResponse;
-import org.apache.maven.search.api.request.Query;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import picocli.CommandLine;
 
 /**
@@ -34,20 +25,6 @@ public final class Verify extends SearchCommandSupport {
 
     @Override
     protected Integer doCall() throws IOException {
-        try (SearchBackend backend = getRemoteRepositoryBackend(repositoryId, repositoryBaseUri, repositoryVendor)) {
-            Artifact artifact = new DefaultArtifact(gav);
-            boolean verified = verify(backend, new DefaultArtifact(gav), sha1);
-
-            info("Artifact SHA1({})={}: {}", artifact, sha1, verified ? "MATCHED" : "NOT MATCHED");
-            return verified ? 0 : 1;
-        }
-    }
-
-    private boolean verify(SearchBackend backend, Artifact artifact, String sha1) throws IOException {
-        Query query = toRrQuery(artifact);
-        query = and(query, fieldQuery(MAVEN.SHA1, sha1));
-        SearchRequest searchRequest = new SearchRequest(query);
-        SearchResponse searchResponse = backend.search(searchRequest);
-        return searchResponse.getTotalHits() == 1;
+        return ToolboxCommando.getOrCreate(getContext()).verify(getRemoteRepository(), gav, sha1, logger) ? 0 : 1;
     }
 }

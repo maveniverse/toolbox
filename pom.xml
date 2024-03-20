@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>9</version>
+    <version>10-SNAPSHOT</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
@@ -59,7 +59,8 @@
   <properties>
     <project.build.outputTimestamp>2024-03-08T16:26:15Z</project.build.outputTimestamp>
 
-    <maven.compiler.release>8</maven.compiler.release>
+    <!-- Maven Indexer needs 11+ -->
+    <maven.compiler.release>11</maven.compiler.release>
 
     <!--
     Build time: latest Maven and LTS Java.
@@ -70,6 +71,7 @@
     <!-- Dependency versions -->
     <version.mima>2.4.8</version.mima>
     <version.maven>3.9.6</version.maven>
+    <version.mavenIndexer>7.1.2</version.mavenIndexer>
     <version.resolver>1.9.18</version.resolver>
     <version.mavenPluginTools>3.11.0</version.mavenPluginTools>
     <version.slf4j>1.7.36</version.slf4j>
@@ -138,6 +140,11 @@
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
+        <artifactId>maven-artifact</artifactId>
+        <version>${version.maven}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
         <artifactId>maven-core</artifactId>
         <version>${version.maven}</version>
       </dependency>
@@ -153,6 +160,11 @@
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
+        <artifactId>maven-model</artifactId>
+        <version>${version.maven}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
         <artifactId>maven-model-builder</artifactId>
         <version>${version.maven}</version>
       </dependency>
@@ -162,9 +174,36 @@
         <version>${version.maven}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-repository-metadata</artifactId>
+        <version>${version.maven}</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.maven.plugin-tools</groupId>
         <artifactId>maven-plugin-annotations</artifactId>
         <version>${version.mavenPluginTools}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-utils</artifactId>
+        <version>3.5.1</version>
+      </dependency>
+
+      <!-- Maven Indexer -->
+      <dependency>
+        <groupId>org.apache.maven.indexer</groupId>
+        <artifactId>search-api</artifactId>
+        <version>${version.mavenIndexer}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.indexer</groupId>
+        <artifactId>search-backend-remoterepository</artifactId>
+        <version>${version.mavenIndexer}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.indexer</groupId>
+        <artifactId>search-backend-smo</artifactId>
+        <version>${version.mavenIndexer}</version>
       </dependency>
 
       <!-- DI -->
@@ -187,23 +226,6 @@
         <groupId>org.eclipse.sisu</groupId>
         <artifactId>org.eclipse.sisu.inject</artifactId>
         <version>${version.sisu}</version>
-      </dependency>
-
-      <!-- Maven Indexer -->
-      <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
-        <artifactId>search-api</artifactId>
-        <version>${version.mase}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
-        <artifactId>search-backend-remoterepository</artifactId>
-        <version>${version.mase}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
-        <artifactId>search-backend-smo</artifactId>
-        <version>${version.mase}</version>
       </dependency>
 
       <!-- CLI -->

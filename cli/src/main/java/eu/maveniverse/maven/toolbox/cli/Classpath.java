@@ -8,15 +8,6 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
-import eu.maveniverse.maven.toolbox.shared.Toolbox;
-import eu.maveniverse.maven.toolbox.shared.internal.ToolboxImpl;
-import java.io.File;
-import java.util.stream.Collectors;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.resolution.DependencyResult;
-import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import picocli.CommandLine;
 
 /**
@@ -48,18 +39,20 @@ public final class Classpath extends ResolverCommandSupport {
 
     @Override
     protected Integer doCall(Context context) throws Exception {
-        java.util.List<Dependency> managedDependencies = importBoms(context, boms);
-        Artifact gav = parseGav(this.gav, managedDependencies);
-
-        ResolutionScope resolutionScope = toResolutionScope(this.resolutionScope);
-        Toolbox toolbox = new ToolboxImpl(context);
-        DependencyResult dependencyResult = toolbox.resolve(
-                resolutionScope, new Dependency(gav, ""), null, managedDependencies, context.remoteRepositories());
-
-        PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
-        dependencyResult.getRoot().accept(nlg);
-        // TODO: Do not use PreorderNodeListGenerator#getClassPath() until MRESOLVER-483 is fixed/released
-        info("{}", nlg.getFiles().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
+        //        java.util.List<Dependency> managedDependencies = importBoms(context, boms);
+        //        Artifact gav = parseGav(this.gav, managedDependencies);
+        //
+        //        ResolutionScope resolutionScope = toResolutionScope(this.resolutionScope);
+        //        Toolbox toolbox = Toolbox.getOrCreate(context);
+        //        DependencyResult dependencyResult = toolbox.resolve(
+        //                resolutionScope, new Dependency(gav, ""), null, managedDependencies,
+        // context.remoteRepositories());
+        //
+        //        PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
+        //        dependencyResult.getRoot().accept(nlg);
+        //        // TODO: Do not use PreorderNodeListGenerator#getClassPath() until MRESOLVER-483 is fixed/released
+        //        info("{}",
+        // nlg.getFiles().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
         return 0;
     }
 }

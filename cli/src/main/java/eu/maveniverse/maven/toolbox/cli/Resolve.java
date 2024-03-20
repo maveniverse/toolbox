@@ -8,10 +8,16 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectRequest;
@@ -111,8 +117,38 @@ public final class Resolve extends ResolverCommandSupport {
                 info("{} -> {}", artifact, artifact.getFile());
             }
         } else {
-            info("Resolved {} artifacts", recorder.getAllArtifacts().size());
+            info("Resolved: {}", resolvedArtifact);
+            info("  Transitive hull count: {}", recorder.getAllArtifacts().size());
+            info(
+                    "  Transitive hull size: {}",
+                    humanReadableByteCountBin(recorder.getAllArtifacts().stream()
+                            .map(Artifact::getFile)
+                            .filter(Objects::nonNull)
+                            .map(f -> {
+                                try {
+                                    return Files.size(f.toPath());
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .collect(Collectors.summarizingLong(Long::longValue))
+                            .getSum()));
         }
         return 0;
+    }
+
+    public static String humanReadableByteCountBin(long bytes) {
+        long absB = bytes == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(bytes);
+        if (absB < 1024) {
+            return bytes + " B";
+        }
+        long value = absB;
+        CharacterIterator ci = new StringCharacterIterator("KMGTPE");
+        for (int i = 40; i >= 0 && absB > 0xfffccccccccccccL >> i; i -= 10) {
+            value >>= 10;
+            ci.next();
+        }
+        value *= Long.signum(bytes);
+        return String.format("%.1f %ciB", value / 1024.0, ci.current());
     }
 }

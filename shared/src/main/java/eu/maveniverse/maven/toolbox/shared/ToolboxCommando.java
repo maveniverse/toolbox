@@ -99,7 +99,7 @@ public interface ToolboxCommando extends Closeable {
 
     boolean resolve(
             ResolutionScope resolutionScope,
-            ResolutionRoot resolutionRoot,
+            Collection<ResolutionRoot> resolutionRoots,
             boolean sources,
             boolean javadoc,
             boolean signatures,

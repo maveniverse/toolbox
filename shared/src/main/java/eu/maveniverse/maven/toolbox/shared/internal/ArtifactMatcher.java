@@ -81,12 +81,17 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
     }
 
     static ArtifactMatcher any() {
-        return a -> true;
+        return artifact("*");
     }
 
     static ArtifactMatcher unique() {
         HashSet<Artifact> artifacts = new HashSet<>();
-        return artifacts::add;
+        return new ArtifactMatcher() {
+            @Override
+            public boolean test(Artifact artifact) {
+                return artifacts.add(artifact);
+            }
+        };
     }
 
     private static boolean isAny(String str) {

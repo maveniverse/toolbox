@@ -353,47 +353,49 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public boolean resolve(
             ResolutionScope resolutionScope,
-            ResolutionRoot resolutionRoot,
+            Collection<ResolutionRoot> resolutionRoots,
             boolean sources,
             boolean javadoc,
             boolean signatures,
             Output output) {
         try {
-            DependencyResult dependencyResult = toolboxResolver.resolve(
-                    resolutionScope,
-                    resolutionRoot.getArtifact(),
-                    resolutionRoot.getDependencies(),
-                    resolutionRoot.getManagedDependencies());
+            for (ResolutionRoot resolutionRoot : resolutionRoots) {
+                DependencyResult dependencyResult = toolboxResolver.resolve(
+                        resolutionScope,
+                        resolutionRoot.getArtifact(),
+                        resolutionRoot.getDependencies(),
+                        resolutionRoot.getManagedDependencies());
 
-            output.normal("");
-            if (output.isVerbose()) {
-                for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
-                    output.verbose(
-                            "{} -> {}",
-                            artifactResult.getArtifact(),
-                            artifactResult.getArtifact().getFile());
+                output.normal("");
+                if (output.isVerbose()) {
+                    for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
+                        output.verbose(
+                                "{} -> {}",
+                                artifactResult.getArtifact(),
+                                artifactResult.getArtifact().getFile());
+                    }
                 }
-            }
-            output.normal("Resolved: {}", resolutionRoot.getArtifact());
-            if (output.isVerbose()) {
-                output.verbose(
-                        "  Transitive hull count: {}",
-                        dependencyResult.getArtifactResults().size());
-                output.verbose(
-                        "  Transitive hull size: {}",
-                        humanReadableByteCountBin(dependencyResult.getArtifactResults().stream()
-                                .map(ArtifactResult::getArtifact)
-                                .map(Artifact::getFile)
-                                .filter(Objects::nonNull)
-                                .map(f -> {
-                                    try {
-                                        return Files.size(f.toPath());
-                                    } catch (IOException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                })
-                                .collect(Collectors.summarizingLong(Long::longValue))
-                                .getSum()));
+                output.normal("Resolved: {}", resolutionRoot.getArtifact());
+                if (output.isVerbose()) {
+                    output.verbose(
+                            "  Transitive hull count: {}",
+                            dependencyResult.getArtifactResults().size());
+                    output.verbose(
+                            "  Transitive hull size: {}",
+                            humanReadableByteCountBin(dependencyResult.getArtifactResults().stream()
+                                    .map(ArtifactResult::getArtifact)
+                                    .map(Artifact::getFile)
+                                    .filter(Objects::nonNull)
+                                    .map(f -> {
+                                        try {
+                                            return Files.size(f.toPath());
+                                        } catch (IOException e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                    })
+                                    .collect(Collectors.summarizingLong(Long::longValue))
+                                    .getSum()));
+                }
             }
             return true;
         } catch (Exception e) {

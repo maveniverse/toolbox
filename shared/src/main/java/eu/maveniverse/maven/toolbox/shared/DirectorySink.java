@@ -35,7 +35,7 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
      */
     public static DirectorySink flat(Output output, Path path) throws IOException {
         return new DirectorySink(
-                output, path, ArtifactMatcher.any(), ArtifactMapper.identity(), ArtifactNameMapper.ACVE(), false);
+                output, path, ArtifactMatcher.unique(), ArtifactMapper.identity(), ArtifactNameMapper.ACVE(), false);
     }
 
     private final Output output;
@@ -96,7 +96,7 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
     }
 
     private void accept(Artifact artifact) throws IOException {
-        output.verbose("Artifact {} processed", artifact);
+        output.verbose("Accept artifact {}", artifact);
         if (artifactMatcher.test(artifact)) {
             output.verbose("  matched");
             String name = artifactNameMapper.map(artifactMapper.map(artifact));
@@ -111,6 +111,8 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
                     target,
                     StandardCopyOption.REPLACE_EXISTING,
                     StandardCopyOption.COPY_ATTRIBUTES);
+        } else {
+            output.verbose("  not matched");
         }
     }
 

@@ -10,6 +10,9 @@ package eu.maveniverse.maven.toolbox.cli;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
+import java.util.stream.Collectors;
+import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import picocli.CommandLine;
 
 /**
@@ -18,8 +21,8 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "resolve", description = "Resolves Maven Artifacts")
 public final class Resolve extends ResolverCommandSupport {
 
-    @CommandLine.Parameters(index = "0", description = "The GAV to graph")
-    private String gav;
+    @CommandLine.Parameters(index = "0..*", description = "The GAV to graph", arity = "1")
+    private java.util.List<String> gav;
 
     @CommandLine.Option(
             names = {"--resolutionScope"},
@@ -52,9 +55,18 @@ public final class Resolve extends ResolverCommandSupport {
     @Override
     protected boolean doCall(Context context) throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando(context);
+        ToolboxResolver toolboxResolver = toolboxCommando.toolboxResolver();
         return toolboxCommando.resolve(
                 ResolutionScope.parse(resolutionScope),
-                toolboxCommando.toolboxResolver().loadGav(gav, boms),
+                gav.stream()
+                        .map(g -> {
+                            try {
+                                return toolboxResolver.loadGav(g, boms);
+                            } catch (ArtifactDescriptorException e) {
+                                throw new RuntimeException(e);
+                            }
+                        })
+                        .collect(Collectors.toList()),
                 sources,
                 javadoc,
                 signature,

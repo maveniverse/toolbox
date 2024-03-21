@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
-import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Slf4jOutput;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -31,10 +30,9 @@ public class TreeMojo extends AbstractMojo {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
-     * The resolution scope to display, accepted values are "main-runtime", "main-compile", "test-runtime" or
-     * "test-compile".
+     * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
      */
-    @Parameter(property = "scope", defaultValue = "main-runtime", required = true)
+    @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
 
     /**
@@ -53,12 +51,15 @@ public class TreeMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            ResolutionRoot root = MavenProjectHelper.toRoot(
-                    mavenProject,
-                    artifactHandlerManager,
-                    context.repositorySystemSession().getArtifactTypeRegistry());
             ToolboxCommando.getOrCreate(runtime, context)
-                    .tree(ResolutionScope.parse(scope), root, false, new Slf4jOutput(logger));
+                    .tree(
+                            ResolutionScope.parse(scope),
+                            MavenProjectHelper.toRoot(
+                                    mavenProject,
+                                    artifactHandlerManager,
+                                    context.repositorySystemSession().getArtifactTypeRegistry()),
+                            verbose,
+                            new Slf4jOutput(logger));
         } catch (RuntimeException e) {
             throw new MojoExecutionException(e.getCause());
         }

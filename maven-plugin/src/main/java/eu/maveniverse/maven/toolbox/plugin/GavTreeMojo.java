@@ -35,10 +35,9 @@ public class GavTreeMojo extends AbstractMojo {
     private String gav;
 
     /**
-     * The resolution scope to display, accepted values are "main-runtime", "main-compile", "test-runtime" or
-     * "test-compile".
+     * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
      */
-    @Parameter(property = "scope", defaultValue = "main-runtime", required = true)
+    @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
 
     /**
@@ -59,7 +58,7 @@ public class GavTreeMojo extends AbstractMojo {
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(runtime, context);
             toolboxCommando.tree(
-                    ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, boms), false, new Slf4jOutput(logger));
+                    ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, boms), verbose, new Slf4jOutput(logger));
         } catch (RuntimeException e) {
             throw new MojoExecutionException(e);
         } catch (ArtifactDescriptorException e) {

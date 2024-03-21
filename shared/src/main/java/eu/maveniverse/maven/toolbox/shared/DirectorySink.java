@@ -101,7 +101,10 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
             output.verbose("  matched");
             String name = artifactNameMapper.map(artifactMapper.map(artifact));
             output.verbose("  mapped to name {}", name);
-            Path target = directory.resolve(name);
+            Path target = directory.resolve(name).toAbsolutePath();
+            if (!target.startsWith(directory)) {
+                throw new IOException("Path escape prevented; check mappings");
+            }
             if (!writtenPaths.add(target) && !allowOverwrite) {
                 throw new IOException("Overwrite prevented; check mappings");
             }

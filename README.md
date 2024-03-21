@@ -27,3 +27,8 @@ Project Goals:
 * javadoc (P or GAV w/wo transitive deps)
 
 plus what MIMA CLI already supports.
+
+## TODOs
+
+* sort out proper error handling
+* unpack?

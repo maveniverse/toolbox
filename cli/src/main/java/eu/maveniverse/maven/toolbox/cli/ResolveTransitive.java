@@ -20,7 +20,7 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "resolveTransitive", description = "Resolves Maven Artifacts Transitively")
 public final class ResolveTransitive extends ResolverCommandSupport {
 
-    @CommandLine.Parameters(index = "0..*", description = "The GAV to graph", arity = "1")
+    @CommandLine.Parameters(index = "0..*", description = "The GAV to resolve", arity = "1")
     private java.util.List<String> gav;
 
     @CommandLine.Option(

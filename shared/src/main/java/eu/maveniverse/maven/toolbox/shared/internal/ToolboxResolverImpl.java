@@ -145,7 +145,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         List<Dependency> managedDependency = importBOMs(boms);
         Artifact artifact = parseGav(gav, managedDependency);
         return loadRoot(ResolutionRoot.ofLoaded(artifact)
-                .withDependencies(managedDependency)
+                .withManagedDependencies(managedDependency)
                 .build());
     }
 

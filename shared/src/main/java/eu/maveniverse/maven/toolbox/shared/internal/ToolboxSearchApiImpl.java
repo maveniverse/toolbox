@@ -44,50 +44,52 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
 
     public ToolboxSearchApiImpl() {
         Map<String, RemoteRepository> rr = new HashMap<>();
-        rr.put(ContextOverrides.CENTRAL.getId(), ContextOverrides.CENTRAL);
+        rr.put(
+                ContextOverrides.CENTRAL.getId(),
+                new RemoteRepository.Builder(
+                                ContextOverrides.CENTRAL.getId(), "central", ContextOverrides.CENTRAL.getUrl())
+                        .build());
         rr.put(
                 "sonatype-oss-releases",
                 new RemoteRepository.Builder(
                                 "sonatype-oss-releases",
-                                "default",
+                                "nx2",
                                 "https://oss.sonatype.org/content/repositories/releases/")
                         .build());
         rr.put(
                 "sonatype-oss-staging",
                 new RemoteRepository.Builder(
-                                "sonatype-oss-staging", "default", "https://oss.sonatype.org/content/groups/staging//")
+                                "sonatype-oss-staging", "nx2", "https://oss.sonatype.org/content/groups/staging//")
                         .build());
         rr.put(
                 "sonatype-s01-releases",
                 new RemoteRepository.Builder(
                                 "sonatype-s01-releases",
-                                "default",
+                                "nx2",
                                 "https://s01.oss.sonatype.org/content/repositories/releases/")
                         .build());
         rr.put(
                 "sonatype-s01-staging",
                 new RemoteRepository.Builder(
-                                "sonatype-s01-staging",
-                                "default",
-                                "https://s01.oss.sonatype.org/content/groups/staging//")
+                                "sonatype-s01-staging", "nx2", "https://s01.oss.sonatype.org/content/groups/staging//")
                         .build());
         rr.put(
                 "apache-releases",
                 new RemoteRepository.Builder(
                                 "apache-releases",
-                                "default",
+                                "nx2",
                                 "https://repository.apache.org/content/repositories/releases/")
                         .build());
         rr.put(
                 "apache-staging",
                 new RemoteRepository.Builder(
-                                "apache-staging", "default", "https://repository.apache.org/content/groups/staging/")
+                                "apache-staging", "nx2", "https://repository.apache.org/content/groups/staging/")
                         .build());
         rr.put(
                 "apache-maven-staging",
                 new RemoteRepository.Builder(
                                 "apache-maven-staging",
-                                "default",
+                                "nx2",
                                 "https://repository.apache.org/content/groups/maven-staging-group/")
                         .build());
         this.knownRemoteRepositories = Collections.unmodifiableMap(rr);
@@ -101,11 +103,12 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
     @Override
     public SearchBackend getRemoteRepositoryBackend(RemoteRepository remoteRepository) {
         final ResponseExtractor extractor;
-        // TODO: this needs more
-        if (ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())) {
+        if ("central".equals(remoteRepository.getContentType())) {
             extractor = new MavenCentralResponseExtractor();
-        } else {
+        } else if ("nx2".equals(remoteRepository.getContentType())) {
             extractor = new Nx2ResponseExtractor();
+        } else {
+            throw new IllegalArgumentException("Unsupported extractor");
         }
         return RemoteRepositorySearchBackendFactory.create(
                 remoteRepository.getId() + "-rr",

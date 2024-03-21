@@ -22,17 +22,23 @@ public abstract class SearchCommandSupport extends CommandSupport {
 
     @CommandLine.Option(
             names = {"--repositoryBaseUri"},
-            defaultValue = "https://repo.maven.apache.org/maven2/",
             description = "The targeted repository base Uri")
     protected String repositoryBaseUri;
 
     @CommandLine.Option(
             names = {"--repositoryVendor"},
-            defaultValue = "central",
             description = "The targeted repository vendor")
     protected String repositoryVendor;
 
     protected RemoteRepository getRemoteRepository() {
-        return new RemoteRepository.Builder(repositoryId, "default", repositoryBaseUri).build();
+        RemoteRepository remoteRepository =
+                getToolboxCommando(getContext()).getKnownRemoteRepositories().get(repositoryId);
+        if (remoteRepository != null) {
+            return remoteRepository;
+        }
+        if (repositoryBaseUri == null && repositoryVendor == null) {
+            throw new IllegalArgumentException("for new remote repository one must specify all information");
+        }
+        return new RemoteRepository.Builder(repositoryId, repositoryVendor, repositoryBaseUri).build();
     }
 }

@@ -16,6 +16,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
@@ -44,6 +45,12 @@ public interface ToolboxCommando extends Closeable {
      */
     void close();
 
+    String getVersion();
+
+    boolean dump(boolean verbose, Output output);
+
+    // Resolver related commands: they target current context contained RemoteRepository
+
     /**
      * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact.
      */
@@ -55,12 +62,6 @@ public interface ToolboxCommando extends Closeable {
      * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact and BOMs.
      */
     ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException;
-
-    String getVersion();
-
-    boolean dump(boolean verbose, Output output);
-
-    // Resolver related commands: they target current context contained RemoteRepository
 
     boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output);
 
@@ -99,6 +100,8 @@ public interface ToolboxCommando extends Closeable {
     boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output);
 
     // Search API related commands: they target one single RemoteRepository
+
+    Map<String, RemoteRepository> getKnownRemoteRepositories();
 
     boolean exists(
             RemoteRepository remoteRepository,

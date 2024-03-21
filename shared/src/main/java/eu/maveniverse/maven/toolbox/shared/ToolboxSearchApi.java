@@ -23,6 +23,9 @@ import org.eclipse.aether.repository.RemoteRepository;
 public interface ToolboxSearchApi {
     /**
      * Shorthand for some "well known" repositories.
+     * <p>
+     * Important note: while these ARE {@link RemoteRepository} instances, they are NOT usable with Resolver, only
+     * with Search API.
      */
     Map<String, RemoteRepository> getKnownRemoteRepositories();
 

@@ -454,6 +454,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public Map<String, RemoteRepository> getKnownRemoteRepositories() {
+        return toolboxSearchApi.getKnownRemoteRepositories();
+    }
+
+    @Override
     public boolean exists(
             RemoteRepository remoteRepository,
             String gav,

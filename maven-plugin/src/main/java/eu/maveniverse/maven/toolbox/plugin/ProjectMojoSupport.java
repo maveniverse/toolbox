@@ -73,7 +73,7 @@ public abstract class ProjectMojoSupport extends AbstractMojo {
     public final void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            doExecute(ToolboxCommando.getOrCreate(runtime, context));
+            doExecute(ToolboxCommando.create(runtime, context));
         }
     }
 

@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import java.io.Closeable;
@@ -34,31 +33,14 @@ public interface ToolboxCommando extends Closeable {
      * Gets or creates context. This method should be used to get {@link ToolboxResolver} instance that may be shared
      * across context (session).
      */
-    static ToolboxCommando getOrCreate(Runtime runtime, Context context) {
+    static ToolboxCommando create(Runtime runtime, Context context) {
+        requireNonNull(runtime, "runtime");
         requireNonNull(context, "context");
-        return (ToolboxCommando)
-                context.repositorySystemSession().getData().computeIfAbsent(ToolboxCommando.class, () -> {
-                    ToolboxCommandoImpl result = new ToolboxCommandoImpl(runtime, context);
-                    context.repositorySystem().addOnSystemEndedHandler(result::close);
-                    return result;
-                });
+        return new ToolboxCommandoImpl(runtime, context);
     }
 
     /**
-     * Removes toolbox from context (session).
-     */
-    static void unset(Context context) {
-        requireNonNull(context, "context");
-        context.repositorySystemSession().getData().set(ToolboxCommando.class, null);
-    }
-
-    /**
-     * Derives new customized commando instance.
-     */
-    ToolboxCommando derive(ContextOverrides contextOverrides);
-
-    /**
-     * Closes this instance. Closed instance should be used anymore.
+     * Closes this instance. Closed instance should be used anymore. Also closes underlying Context.
      */
     void close();
 

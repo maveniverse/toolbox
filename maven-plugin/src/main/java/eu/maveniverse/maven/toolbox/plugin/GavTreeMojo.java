@@ -56,7 +56,7 @@ public class GavTreeMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(runtime, context);
+            ToolboxCommando toolboxCommando = ToolboxCommando.create(runtime, context);
             toolboxCommando.tree(
                     ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, boms), verbose, new Slf4jOutput(logger));
         } catch (RuntimeException e) {

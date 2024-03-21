@@ -14,7 +14,6 @@ import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 import static org.apache.maven.search.api.request.Query.query;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.HTTPProxy;
 import eu.maveniverse.maven.mima.context.MavenSystemHome;
 import eu.maveniverse.maven.mima.context.MavenUserHome;
@@ -97,11 +96,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 ChainedRepositoryListener.newInstance(session.getRepositoryListener(), artifactRecorder));
         this.toolboxResolver =
                 new ToolboxResolverImpl(context.repositorySystem(), session, context.remoteRepositories());
-    }
-
-    @Override
-    public ToolboxCommando derive(ContextOverrides contextOverrides) {
-        return new ToolboxCommandoImpl(runtime, context.customize(contextOverrides));
     }
 
     @Override

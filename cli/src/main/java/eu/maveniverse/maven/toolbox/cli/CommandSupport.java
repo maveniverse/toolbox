@@ -133,6 +133,11 @@ public abstract class CommandSupport implements Callable<Integer>, CommandLine.I
         deque.push(object);
     }
 
+    protected Object pop(String key) {
+        ArrayDeque<Object> deque = EXECUTION_CONTEXT.computeIfAbsent(key, k -> new ArrayDeque<>());
+        return deque.pop();
+    }
+
     @Override
     public String[] getVersion() {
         return new String[] {
@@ -210,6 +215,11 @@ public abstract class CommandSupport implements Callable<Integer>, CommandLine.I
 
     protected Context getContext() {
         return (Context) getOrCreate(Context.class.getName(), () -> getRuntime().create(getContextOverrides()));
+    }
+
+    protected ToolboxCommando getToolboxCommando(Context context) {
+        return (ToolboxCommando)
+                getOrCreate(ToolboxCommando.class.getName(), () -> ToolboxCommando.create(getRuntime(), context));
     }
 
     protected void verbose(String format, Object... args) {
@@ -371,7 +381,7 @@ public abstract class CommandSupport implements Callable<Integer>, CommandLine.I
         printStackTrace(t, stream, prefix);
     }
 
-    protected String getLocation(final StackTraceElement e) {
+    private String getLocation(final StackTraceElement e) {
         assert e != null;
 
         if (e.isNativeMethod()) {
@@ -383,10 +393,6 @@ public abstract class CommandSupport implements Callable<Integer>, CommandLine.I
         } else {
             return e.getFileName();
         }
-    }
-
-    protected ToolboxCommando getToolboxCommando(Context context) {
-        return ToolboxCommando.getOrCreate(getRuntime(), context);
     }
 
     @Override

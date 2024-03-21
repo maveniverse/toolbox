@@ -17,6 +17,7 @@ import picocli.CommandLine;
         name = "toolbox",
         subcommands = {
             Classpath.class,
+            Copy.class,
             CopyAll.class,
             Deploy.class,
             DeployRecorded.class,

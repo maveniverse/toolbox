@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
@@ -81,6 +82,11 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
 
     static ArtifactMatcher any() {
         return a -> true;
+    }
+
+    static ArtifactMatcher unique() {
+        HashSet<Artifact> artifacts = new HashSet<>();
+        return artifacts::add;
     }
 
     private static boolean isAny(String str) {

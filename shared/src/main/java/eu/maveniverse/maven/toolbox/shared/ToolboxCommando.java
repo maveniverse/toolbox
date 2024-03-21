@@ -75,9 +75,11 @@ public interface ToolboxCommando extends Closeable {
 
     boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output);
 
+    boolean copy(Collection<Artifact> artifacts, Consumer<Collection<Artifact>> consumer, Output output);
+
     boolean copyAll(
             ResolutionScope resolutionScope,
-            ResolutionRoot resolutionRoot,
+            Collection<ResolutionRoot> resolutionRoots,
             Consumer<Collection<Artifact>> consumer,
             Output output);
 

@@ -26,9 +26,16 @@ import org.eclipse.aether.artifact.Artifact;
  * Construction to accept collection of artifacts, for example like a filesystem directory.
  */
 public final class DirectorySink implements Consumer<Collection<Artifact>> {
-
+    /**
+     * Creates plain "flat" directory sink that accepts all artifacts and writes them out having filenames as
+     * "A[-C]-V.E" and prevents overwrite (what you usually want).
+     * <p>
+     * This means that if your set of artifacts have artifacts will different groupIDs but same artifactIDs, this sink
+     * will fail to prevent overwrite.
+     */
     public static DirectorySink flat(Output output, Path path) throws IOException {
-        return new DirectorySink(output, path);
+        return new DirectorySink(
+                output, path, ArtifactMatcher.unique(), ArtifactMapper.identity(), ArtifactNameMapper.ACVE(), false);
     }
 
     private final Output output;
@@ -39,20 +46,39 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
     private final boolean allowOverwrite;
     private final HashSet<Path> writtenPaths;
 
-    private DirectorySink(Output output, Path directory) throws IOException {
+    /**
+     * Creates a directory sink.
+     *
+     * @param output The output.
+     * @param directory The directory, if not existing, will be created.
+     * @param artifactMatcher The matcher, that decides is this sink accepting artifact or not.
+     * @param artifactMapper The artifact mapper, that may re-map artifact.
+     * @param artifactNameMapper The artifact name mapper, that decides what file name will be of the artifact.
+     * @param allowOverwrite Does sink allow overwrites. Tip: you usually do not want to allow, as that means you have
+     *                       some mismatch in name mapping or alike.
+     * @throws IOException In case of IO problem.
+     */
+    private DirectorySink(
+            Output output,
+            Path directory,
+            ArtifactMatcher artifactMatcher,
+            ArtifactMapper artifactMapper,
+            ArtifactNameMapper artifactNameMapper,
+            boolean allowOverwrite)
+            throws IOException {
         this.output = requireNonNull(output, "output");
-        this.directory = requireNonNull(directory, "directory");
+        this.directory = requireNonNull(directory, "directory").toAbsolutePath();
         if (Files.exists(directory) && !Files.isDirectory(directory)) {
-            throw new IllegalArgumentException("directory must not exists, or be a directory");
+            throw new IllegalArgumentException("directory must not exists, or must be a directory");
         }
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
         }
 
-        this.artifactMatcher = ArtifactMatcher.any();
-        this.artifactMapper = ArtifactMapper.identity();
-        this.artifactNameMapper = ArtifactNameMapper.ACVE();
-        this.allowOverwrite = false;
+        this.artifactMatcher = requireNonNull(artifactMatcher, "artifactMatcher");
+        this.artifactMapper = requireNonNull(artifactMapper, "artifactMapper");
+        this.artifactNameMapper = requireNonNull(artifactNameMapper, "artifactNameMapper");
+        this.allowOverwrite = allowOverwrite;
         this.writtenPaths = new HashSet<>();
     }
 
@@ -77,7 +103,7 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
             output.verbose("  mapped to name {}", name);
             Path target = directory.resolve(name);
             if (!writtenPaths.add(target) && !allowOverwrite) {
-                throw new IOException("Overwrite prevented: check mappings");
+                throw new IOException("Overwrite prevented; check mappings");
             }
             output.verbose("  copied to file {}", target);
             Files.copy(
@@ -89,7 +115,7 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
     }
 
     private void cleanup(Collection<Artifact> artifacts, IOException e) {
-        output.error("IO error happened, cleaning up", e);
+        output.error("IO error, cleaning up: {}", e.getMessage(), e);
         writtenPaths.forEach(p -> {
             try {
                 Files.deleteIfExists(p);

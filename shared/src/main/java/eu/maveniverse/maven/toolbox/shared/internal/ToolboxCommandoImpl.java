@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
@@ -202,6 +203,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) {
         try {
+            output.verbose("Resolving {}", resolutionRoot.getArtifact());
             DependencyResult dependencyResult = toolboxResolver.resolve(
                     resolutionScope,
                     resolutionRoot.getArtifact(),
@@ -221,21 +223,37 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public boolean copy(Collection<Artifact> artifacts, Consumer<Collection<Artifact>> consumer, Output output) {
+        try {
+            output.verbose("Resolving {}", artifacts);
+            List<ArtifactResult> resolveResult = toolboxResolver.resolveArtifacts(artifacts);
+            consumer.accept(
+                    resolveResult.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public boolean copyAll(
             ResolutionScope resolutionScope,
-            ResolutionRoot resolutionRoot,
+            Collection<ResolutionRoot> resolutionRoots,
             Consumer<Collection<Artifact>> consumer,
             Output output) {
         try {
-            DependencyResult dependencyResult = toolboxResolver.resolve(
-                    resolutionScope,
-                    resolutionRoot.getArtifact(),
-                    resolutionRoot.getDependencies(),
-                    resolutionRoot.getManagedDependencies());
-
-            consumer.accept(dependencyResult.getArtifactResults().stream()
-                    .map(ArtifactResult::getArtifact)
-                    .collect(Collectors.toList()));
+            ArrayList<ArtifactResult> artifactResults = new ArrayList<>();
+            for (ResolutionRoot resolutionRoot : resolutionRoots) {
+                output.verbose("Resolving {}", resolutionRoot.getArtifact());
+                DependencyResult dependencyResult = toolboxResolver.resolve(
+                        resolutionScope,
+                        resolutionRoot.getArtifact(),
+                        resolutionRoot.getDependencies(),
+                        resolutionRoot.getManagedDependencies());
+                artifactResults.addAll(dependencyResult.getArtifactResults());
+            }
+            consumer.accept(
+                    artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
             return true;
         } catch (Exception e) {
             throw new RuntimeException(e);

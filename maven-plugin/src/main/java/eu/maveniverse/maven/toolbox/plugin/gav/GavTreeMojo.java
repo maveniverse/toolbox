@@ -37,15 +37,16 @@ public class GavTreeMojo extends GavMojoSupport {
     private boolean verboseTree;
 
     /**
-     * Apply BOMs, if needed.
+     * Apply BOMs, if needed. Comma separated GAVs.
      */
     @Parameter(property = "boms", defaultValue = "")
-    private java.util.List<String> boms;
+    private String boms;
 
     @Override
     protected void doExecute(ToolboxCommando toolboxCommando) throws MojoExecutionException, MojoFailureException {
         try {
-            toolboxCommando.tree(ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, boms), verboseTree, output);
+            toolboxCommando.tree(
+                    ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, csv(boms)), verboseTree, output);
         } catch (RuntimeException e) {
             throw new MojoExecutionException(e);
         } catch (ArtifactDescriptorException e) {

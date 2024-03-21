@@ -31,15 +31,15 @@ public class GavClasspathMojo extends GavMojoSupport {
     private String scope;
 
     /**
-     * Apply BOMs, if needed.
+     * Apply BOMs, if needed. Comma separated GAVs.
      */
-    @Parameter(property = "boms", defaultValue = "")
-    private java.util.List<String> boms;
+    @Parameter(property = "boms")
+    private String boms;
 
     @Override
     protected void doExecute(ToolboxCommando toolboxCommando) throws MojoExecutionException, MojoFailureException {
         try {
-            toolboxCommando.classpath(ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, boms), output);
+            toolboxCommando.classpath(ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, csv(boms)), output);
         } catch (RuntimeException e) {
             throw new MojoExecutionException(e);
         } catch (ArtifactDescriptorException e) {

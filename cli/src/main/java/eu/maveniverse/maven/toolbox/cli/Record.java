@@ -18,8 +18,17 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "record", description = "Records resolved Maven Artifacts")
 public final class Record extends ResolverCommandSupport {
 
+    @CommandLine.Option(
+            names = {"--stop"},
+            description = "Stop recording (otherwise it starts it)")
+    private boolean stop;
+
     @Override
     protected boolean doCall(Context context) throws DependencyResolutionException {
-        return ToolboxCommando.getOrCreate(context).artifactRecorder().setActive(true);
+        if (stop) {
+            return ToolboxCommando.getOrCreate(context).recordStop(output);
+        } else {
+            return ToolboxCommando.getOrCreate(context).recordStart(output);
+        }
     }
 }

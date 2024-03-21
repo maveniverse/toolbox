@@ -25,6 +25,7 @@ import eu.maveniverse.maven.mima.context.MavenUserHome;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -46,7 +47,7 @@ import picocli.CommandLine;
 /**
  * Support class.
  */
-public abstract class CommandSupport implements Callable<Integer> {
+public abstract class CommandSupport implements Callable<Integer>, CommandLine.IVersionProvider {
     @CommandLine.Option(
             names = {"-v", "--verbose"},
             description = "Be verbose about things happening")
@@ -137,9 +138,21 @@ public abstract class CommandSupport implements Callable<Integer> {
         deque.push(object);
     }
 
+    @Override
+    public String[] getVersion() {
+        return new String[] {
+            "MIMA " + getRuntime().version(),
+            "Toolbox " + ToolboxCommando.getOrCreate(getContext()).getVersion()
+        };
+    }
+
     protected void mayDumpEnv(Runtime runtime, Context context, boolean verbose) {
-        normal("MIMA (Runtime '{}' version {})", runtime.name(), runtime.version());
-        normal("====");
+        warn(
+                "Toolbox {} (MIMA Runtime '{}' version {})",
+                ToolboxCommando.getOrCreate(getContext()).getVersion(),
+                runtime.name(),
+                runtime.version());
+        warn("=======");
         normal("          Maven version {}", runtime.mavenVersion());
         normal("                Managed {}", runtime.managedRepositorySystem());
         normal("                Basedir {}", context.basedir());

@@ -15,6 +15,7 @@ import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 
@@ -64,19 +65,25 @@ public interface ToolboxCommando extends Closeable {
 
     ToolboxSearchApi toolboxSearchApi();
 
-    ArtifactRecorder artifactRecorder();
+    String getVersion();
 
     // Resolver related commands: they target current context contained RemoteRepository
 
     boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output);
 
-    boolean deploy(String remoteRepositorySpec, Collection<Artifact> artifacts, Output output);
+    boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output);
 
-    boolean install(Collection<Artifact> artifacts, Output output);
+    boolean deployAllRecorded(String remoteRepositorySpec, boolean stopRecording, Output output);
+
+    boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output);
 
     boolean listRepositories(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output);
 
     boolean listAvailablePlugins(Collection<String> groupIds, Output output);
+
+    boolean recordStart(Output output);
+
+    boolean recordStop(Output output);
 
     boolean resolve(
             ResolutionScope resolutionScope,

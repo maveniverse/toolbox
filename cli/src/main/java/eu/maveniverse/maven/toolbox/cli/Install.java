@@ -8,13 +8,10 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.Artifacts;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.installation.InstallationException;
-import org.eclipse.aether.util.artifact.SubArtifact;
 import picocli.CommandLine;
 
 /**
@@ -23,20 +20,40 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "install", description = "Installs Maven Artifacts")
 public final class Install extends ResolverCommandSupport {
 
-    @CommandLine.Parameters(index = "0", description = "The GAV to install")
+    @CommandLine.Parameters(index = "0", description = "The GAV to install", arity = "1")
     private String gav;
 
-    @CommandLine.Parameters(index = "1", description = "The artifact JAR file")
+    @CommandLine.Parameters(index = "1", description = "The artifact JAR file", arity = "1")
     private Path jar;
 
-    @CommandLine.Parameters(index = "2", description = "The artifact POM file")
+    @CommandLine.Option(
+            names = {"--pom"},
+            description = "The POM to install")
     private Path pom;
+
+    @CommandLine.Option(
+            names = {"--sources"},
+            description = "The sources JAR to install")
+    private Path sources;
+
+    @CommandLine.Option(
+            names = {"--javadoc"},
+            description = "The javadoc JAR to install")
+    private Path javadoc;
 
     @Override
     protected boolean doCall(Context context) throws InstallationException {
-        ArrayList<Artifact> artifacts = new ArrayList<>();
-        artifacts.add(new DefaultArtifact(gav).setFile(jar.toFile()));
-        artifacts.add(new SubArtifact(artifacts.get(0), "", "pom").setFile(pom.toFile()));
+        Artifacts artifacts = new Artifacts(gav);
+        artifacts.addMain(jar);
+        if (pom != null) {
+            artifacts.addPom(pom);
+        }
+        if (sources != null) {
+            artifacts.addSources(sources);
+        }
+        if (javadoc != null) {
+            artifacts.addJavadoc(javadoc);
+        }
         return ToolboxCommando.getOrCreate(getContext()).install(artifacts, output);
     }
 }

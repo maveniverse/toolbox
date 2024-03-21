@@ -8,13 +8,10 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.Artifacts;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.deployment.DeploymentException;
-import org.eclipse.aether.util.artifact.SubArtifact;
 import picocli.CommandLine;
 
 /**
@@ -23,23 +20,43 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "deploy", description = "Deploys Maven Artifacts")
 public final class Deploy extends ResolverCommandSupport {
 
-    @CommandLine.Parameters(index = "0", description = "The GAV to deploy")
+    @CommandLine.Parameters(index = "0", description = "The RemoteRepository spec (id::url)", arity = "1")
+    private String remoteRepositorySpec;
+
+    @CommandLine.Parameters(index = "1", description = "The GAV to install", arity = "1")
     private String gav;
 
-    @CommandLine.Parameters(index = "1", description = "The artifact JAR file")
+    @CommandLine.Parameters(index = "2", description = "The artifact JAR file", arity = "1")
     private Path jar;
 
-    @CommandLine.Parameters(index = "2", description = "The artifact POM file")
+    @CommandLine.Option(
+            names = {"--pom"},
+            description = "The POM to deploy")
     private Path pom;
 
-    @CommandLine.Parameters(index = "3", description = "The RemoteRepository spec (id::url)")
-    private String remoteRepositorySpec;
+    @CommandLine.Option(
+            names = {"--sources"},
+            description = "The sources JAR to deploy")
+    private Path sources;
+
+    @CommandLine.Option(
+            names = {"--javadoc"},
+            description = "The javadoc JAR to deploy")
+    private Path javadoc;
 
     @Override
     protected boolean doCall(Context context) throws DeploymentException {
-        ArrayList<Artifact> artifacts = new ArrayList<>();
-        artifacts.add(new DefaultArtifact(gav).setFile(jar.toFile()));
-        artifacts.add(new SubArtifact(artifacts.get(0), "", "pom").setFile(pom.toFile()));
+        Artifacts artifacts = new Artifacts(gav);
+        artifacts.addMain(jar);
+        if (pom != null) {
+            artifacts.addPom(pom);
+        }
+        if (sources != null) {
+            artifacts.addSources(sources);
+        }
+        if (javadoc != null) {
+            artifacts.addJavadoc(javadoc);
+        }
         return ToolboxCommando.getOrCreate(getContext()).deploy(remoteRepositorySpec, artifacts, output);
     }
 }

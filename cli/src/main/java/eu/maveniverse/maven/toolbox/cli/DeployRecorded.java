@@ -9,7 +9,6 @@ package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.HashSet;
 import org.eclipse.aether.deployment.DeploymentException;
 import picocli.CommandLine;
 
@@ -23,13 +22,6 @@ public final class DeployRecorded extends ResolverCommandSupport {
 
     @Override
     protected boolean doCall(Context context) throws DeploymentException {
-        normal("Deploying recorded");
-
-        ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(getContext());
-        toolboxCommando.artifactRecorder().setActive(false);
-        return toolboxCommando.deploy(
-                remoteRepositorySpec,
-                new HashSet<>(toolboxCommando.artifactRecorder().getAllArtifacts()),
-                output);
+        return ToolboxCommando.getOrCreate(getContext()).deployAllRecorded(remoteRepositorySpec, true, output);
     }
 }

@@ -252,7 +252,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
             session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         }
-        logger.debug("Resolving scope: {}", resolutionScope.name());
+        logger.debug("Collecting scope: {}", resolutionScope.name());
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {

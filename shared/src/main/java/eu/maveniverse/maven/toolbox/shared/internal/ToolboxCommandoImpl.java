@@ -8,13 +8,14 @@
 package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.maven.search.api.request.BooleanQuery.and;
 import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 import static org.apache.maven.search.api.request.Query.query;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
-import eu.maveniverse.maven.toolbox.shared.ArtifactRecorder;
+import eu.maveniverse.maven.mima.context.internal.RuntimeSupport;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
@@ -24,6 +25,7 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -32,15 +34,20 @@ import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
 import org.apache.maven.search.api.SearchResponse;
 import org.apache.maven.search.api.request.Query;
+import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
@@ -58,6 +65,7 @@ import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.graph.visitor.DependencyGraphDumper;
 import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
+import org.eclipse.aether.util.listener.ChainedRepositoryListener;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.VersionConstraint;
@@ -68,17 +76,20 @@ import org.slf4j.LoggerFactory;
 public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Context context;
-    private final ToolboxResolverImpl toolboxResolver;
     private final ToolboxSearchApiImpl toolboxSearchApi;
     private final ArtifactRecorderImpl artifactRecorder;
+    private final ToolboxResolverImpl toolboxResolver;
 
     public ToolboxCommandoImpl(Context context) {
         requireNonNull(context, "context");
         this.context = context;
-        this.toolboxResolver = new ToolboxResolverImpl(
-                context.repositorySystem(), context.repositorySystemSession(), context.remoteRepositories());
         this.toolboxSearchApi = new ToolboxSearchApiImpl();
         this.artifactRecorder = new ArtifactRecorderImpl();
+        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
+        session.setRepositoryListener(
+                ChainedRepositoryListener.newInstance(session.getRepositoryListener(), artifactRecorder));
+        this.toolboxResolver =
+                new ToolboxResolverImpl(context.repositorySystem(), session, context.remoteRepositories());
     }
 
     @Override
@@ -102,8 +113,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public ArtifactRecorder artifactRecorder() {
-        return artifactRecorder;
+    public String getVersion() {
+        return discoverArtifactVersion("eu.maveniverse.maven.toolbox", "shared", "unknown");
     }
 
     @Override
@@ -128,8 +139,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean deploy(String remoteRepositorySpec, Collection<Artifact> artifacts, Output output) {
+    public boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output) {
         try {
+            Collection<Artifact> artifacts = artifactSupplier.get();
             RemoteRepository remoteRepository = toolboxResolver.parseDeploymentRemoteRepository(remoteRepositorySpec);
             DeployRequest deployRequest = new DeployRequest();
             deployRequest.setRepository(remoteRepository);
@@ -144,8 +156,15 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean install(Collection<Artifact> artifacts, Output output) {
+    public boolean deployAllRecorded(String remoteRepositorySpec, boolean stopRecording, Output output) {
+        artifactRecorder.setActive(!stopRecording);
+        return deploy(remoteRepositorySpec, () -> new HashSet<>(artifactRecorder.getAllArtifacts()), output);
+    }
+
+    @Override
+    public boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output) {
         try {
+            Collection<Artifact> artifacts = artifactSupplier.get();
             InstallRequest installRequest = new InstallRequest();
             artifacts.forEach(installRequest::addArtifact);
             context.repositorySystem().install(context.repositorySystemSession(), installRequest);
@@ -187,7 +206,25 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean listAvailablePlugins(Collection<String> groupIds, Output output) {
+        output.verbose("Listing plugins in groupIds: {}", groupIds);
         toolboxResolver.listAvailablePlugins(groupIds).forEach(p -> output.normal(p.toString()));
+        return true;
+    }
+
+    @Override
+    public boolean recordStart(Output output) {
+        output.verbose("Starting recorder...");
+        artifactRecorder.clear();
+        artifactRecorder.setActive(true);
+        return true;
+    }
+
+    @Override
+    public boolean recordStop(Output output) {
+        output.verbose("Stopping recorder...");
+        artifactRecorder.setActive(false);
+        output.verbose(
+                "Recorded {} artifacts", artifactRecorder.getAllArtifacts().size());
         return true;
     }
 
@@ -240,21 +277,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public static String humanReadableByteCountBin(long bytes) {
-        long absB = bytes == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(bytes);
-        if (absB < 1024) {
-            return bytes + " B";
-        }
-        long value = absB;
-        CharacterIterator ci = new StringCharacterIterator("KMGTPE");
-        for (int i = 40; i >= 0 && absB > 0xfffccccccccccccL >> i; i -= 10) {
-            value >>= 10;
-            ci.next();
-        }
-        value *= Long.signum(bytes);
-        return String.format("%.1f %ciB", value / 1024.0, ci.current());
     }
 
     @Override
@@ -460,5 +482,52 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             output.normal("Artifact SHA1({})={}: {}", artifact, sha1, verified ? "MATCHED" : "NOT MATCHED");
             return verified;
         }
+    }
+
+    // Utils
+
+    public static String humanReadableByteCountBin(long bytes) {
+        long absB = bytes == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(bytes);
+        if (absB < 1024) {
+            return bytes + " B";
+        }
+        long value = absB;
+        CharacterIterator ci = new StringCharacterIterator("KMGTPE");
+        for (int i = 40; i >= 0 && absB > 0xfffccccccccccccL >> i; i -= 10) {
+            value >>= 10;
+            ci.next();
+        }
+        value *= Long.signum(bytes);
+        return String.format("%.1f %ciB", value / 1024.0, ci.current());
+    }
+
+    public static String discoverArtifactVersion(String groupId, String artifactId, String defVal) {
+        Map<String, String> mavenPomProperties = loadPomProperties(groupId, artifactId);
+        String versionString = mavenPomProperties.getOrDefault("version", "").trim();
+        if (!versionString.startsWith("${")) {
+            return versionString;
+        }
+        return defVal;
+    }
+
+    protected static Map<String, String> loadPomProperties(String groupId, String artifactId) {
+        return loadClasspathProperties("/META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties");
+    }
+
+    protected static Map<String, String> loadClasspathProperties(String resource) {
+        final Properties props = new Properties();
+        try (InputStream is = RuntimeSupport.class.getResourceAsStream(resource)) {
+            if (is != null) {
+                props.load(is);
+            }
+        } catch (IOException e) {
+            // fall through
+        }
+        return props.entrySet().stream()
+                .collect(toMap(
+                        e -> String.valueOf(e.getKey()),
+                        e -> String.valueOf(e.getValue()),
+                        (prev, next) -> next,
+                        HashMap::new));
     }
 }

@@ -9,7 +9,6 @@ package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.Collections;
 import picocli.CommandLine;
 
 /**
@@ -18,11 +17,11 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "listAvailablePlugins", description = "List available plugins")
 public final class ListAvailablePlugins extends ResolverCommandSupport {
 
-    @CommandLine.Parameters(index = "0", description = "The G to list")
-    private String g;
+    @CommandLine.Parameters(index = "*", description = "The G to list", arity = "1")
+    private java.util.List<String> groupIds;
 
     @Override
     protected boolean doCall(Context context) throws Exception {
-        return ToolboxCommando.getOrCreate(context).listAvailablePlugins(Collections.singletonList(g), output);
+        return ToolboxCommando.getOrCreate(context).listAvailablePlugins(groupIds, output);
     }
 }

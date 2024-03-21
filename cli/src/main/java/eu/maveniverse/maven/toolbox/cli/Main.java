@@ -14,7 +14,7 @@ import picocli.CommandLine;
  * Main.
  */
 @CommandLine.Command(
-        name = "mima",
+        name = "toolbox",
         subcommands = {
             Classpath.class,
             Deploy.class,
@@ -35,14 +35,9 @@ import picocli.CommandLine;
             Verify.class
         },
         versionProvider = Main.class,
-        description = "MIMA CLI",
+        description = "Toolbox CLI",
         mixinStandardHelpOptions = true)
-public class Main extends CommandSupport implements CommandLine.IVersionProvider {
-    @Override
-    public String[] getVersion() {
-        return new String[] {"MIMA " + getRuntime().version()};
-    }
-
+public class Main extends CommandSupport {
     @Override
     protected boolean doCall(Context context) {
         mayDumpEnv(getRuntime(), context, false);

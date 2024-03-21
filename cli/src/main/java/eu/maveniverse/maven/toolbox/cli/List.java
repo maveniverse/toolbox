@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
 import picocli.CommandLine;
 
@@ -23,6 +22,6 @@ public final class List extends SearchCommandSupport {
 
     @Override
     protected boolean doCall(Context context) throws IOException {
-        return ToolboxCommando.getOrCreate(context).list(getRemoteRepository(), gavoid, output);
+        return getToolboxCommando(context).list(getRemoteRepository(), gavoid, output);
     }
 }

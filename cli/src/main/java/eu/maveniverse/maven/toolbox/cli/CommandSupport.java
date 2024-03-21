@@ -19,9 +19,6 @@ import static org.jline.jansi.Ansi.ansi;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
-import eu.maveniverse.maven.mima.context.HTTPProxy;
-import eu.maveniverse.maven.mima.context.MavenSystemHome;
-import eu.maveniverse.maven.mima.context.MavenUserHome;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.Output;
@@ -33,13 +30,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
-import org.eclipse.aether.repository.RemoteRepository;
 import org.jline.jansi.Ansi;
 import org.slf4j.helpers.MessageFormatter;
 import picocli.CommandLine;
@@ -142,79 +137,8 @@ public abstract class CommandSupport implements Callable<Integer>, CommandLine.I
     public String[] getVersion() {
         return new String[] {
             "MIMA " + getRuntime().version(),
-            "Toolbox " + ToolboxCommando.getOrCreate(getContext()).getVersion()
+            "Toolbox " + getToolboxCommando(getContext()).getVersion()
         };
-    }
-
-    protected void mayDumpEnv(Runtime runtime, Context context, boolean verbose) {
-        warn(
-                "Toolbox {} (MIMA Runtime '{}' version {})",
-                ToolboxCommando.getOrCreate(getContext()).getVersion(),
-                runtime.name(),
-                runtime.version());
-        warn("=======");
-        normal("          Maven version {}", runtime.mavenVersion());
-        normal("                Managed {}", runtime.managedRepositorySystem());
-        normal("                Basedir {}", context.basedir());
-        normal("                Offline {}", context.repositorySystemSession().isOffline());
-
-        MavenSystemHome mavenSystemHome = context.mavenSystemHome();
-        normal("");
-        normal("             MAVEN_HOME {}", mavenSystemHome == null ? "undefined" : mavenSystemHome.basedir());
-        if (mavenSystemHome != null) {
-            normal("           settings.xml {}", mavenSystemHome.settingsXml());
-            normal("         toolchains.xml {}", mavenSystemHome.toolchainsXml());
-        }
-
-        MavenUserHome mavenUserHome = context.mavenUserHome();
-        normal("");
-        normal("              USER_HOME {}", mavenUserHome.basedir());
-        normal("           settings.xml {}", mavenUserHome.settingsXml());
-        normal("  settings-security.xml {}", mavenUserHome.settingsSecurityXml());
-        normal("       local repository {}", mavenUserHome.localRepository());
-
-        normal("");
-        normal("               PROFILES");
-        normal("                 Active {}", context.contextOverrides().getActiveProfileIds());
-        normal("               Inactive {}", context.contextOverrides().getInactiveProfileIds());
-
-        normal("");
-        normal("    REMOTE REPOSITORIES");
-        for (RemoteRepository repository : context.remoteRepositories()) {
-            if (repository.getMirroredRepositories().isEmpty()) {
-                normal("                        {}", repository);
-            } else {
-                normal("                        {}, mirror of", repository);
-                for (RemoteRepository mirrored : repository.getMirroredRepositories()) {
-                    normal("                          {}", mirrored);
-                }
-            }
-        }
-
-        if (context.httpProxy() != null) {
-            HTTPProxy proxy = context.httpProxy();
-            normal("");
-            normal("             HTTP PROXY");
-            normal("                    url {}://{}:{}", proxy.getProtocol(), proxy.getHost(), proxy.getPort());
-            normal("          nonProxyHosts {}", proxy.getNonProxyHosts());
-        }
-
-        if (verbose) {
-            verbose("");
-            verbose("        USER PROPERTIES");
-            context.contextOverrides().getUserProperties().entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> verbose("                         {}={}", e.getKey(), e.getValue()));
-            verbose("      SYSTEM PROPERTIES");
-            context.contextOverrides().getSystemProperties().entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> verbose("                         {}={}", e.getKey(), e.getValue()));
-            verbose("      CONFIG PROPERTIES");
-            context.contextOverrides().getConfigProperties().entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> verbose("                         {}={}", e.getKey(), e.getValue()));
-        }
-        verbose("");
     }
 
     protected Runtime getRuntime() {
@@ -459,6 +383,10 @@ public abstract class CommandSupport implements Callable<Integer>, CommandLine.I
         } else {
             return e.getFileName();
         }
+    }
+
+    protected ToolboxCommando getToolboxCommando(Context context) {
+        return ToolboxCommando.getOrCreate(getRuntime(), context);
     }
 
     @Override

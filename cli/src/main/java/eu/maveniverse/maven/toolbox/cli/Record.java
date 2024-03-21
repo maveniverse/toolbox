@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.eclipse.aether.resolution.DependencyResolutionException;
 import picocli.CommandLine;
 
@@ -26,9 +25,9 @@ public final class Record extends ResolverCommandSupport {
     @Override
     protected boolean doCall(Context context) throws DependencyResolutionException {
         if (stop) {
-            return ToolboxCommando.getOrCreate(context).recordStop(output);
+            return getToolboxCommando(context).recordStop(output);
         } else {
-            return ToolboxCommando.getOrCreate(context).recordStart(output);
+            return getToolboxCommando(context).recordStart(output);
         }
     }
 }

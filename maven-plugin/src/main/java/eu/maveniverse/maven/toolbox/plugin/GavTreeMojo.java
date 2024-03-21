@@ -60,7 +60,7 @@ public class GavTreeMojo extends AbstractMojo {
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             ResolutionRoot root =
                     ResolutionRoot.ofLoaded(new DefaultArtifact(gav)).build();
-            ToolboxCommando.getOrCreate(context)
+            ToolboxCommando.getOrCreate(runtime, context)
                     .tree(ResolutionScope.parse(scope), root, false, new Slf4jOutput(logger));
         } catch (RuntimeException e) {
             throw new MojoExecutionException(e);

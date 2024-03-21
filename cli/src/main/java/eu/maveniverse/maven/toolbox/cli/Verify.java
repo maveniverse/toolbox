@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
 import picocli.CommandLine;
 
@@ -26,6 +25,6 @@ public final class Verify extends SearchCommandSupport {
 
     @Override
     protected boolean doCall(Context context) throws IOException {
-        return ToolboxCommando.getOrCreate(context).verify(getRemoteRepository(), gav, sha1, output);
+        return getToolboxCommando(context).verify(getRemoteRepository(), gav, sha1, output);
     }
 }

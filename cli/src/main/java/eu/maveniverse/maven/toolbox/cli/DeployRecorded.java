@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.eclipse.aether.deployment.DeploymentException;
 import picocli.CommandLine;
 
@@ -22,6 +21,6 @@ public final class DeployRecorded extends ResolverCommandSupport {
 
     @Override
     protected boolean doCall(Context context) throws DeploymentException {
-        return ToolboxCommando.getOrCreate(getContext()).deployAllRecorded(remoteRepositorySpec, true, output);
+        return getToolboxCommando(context).deployAllRecorded(remoteRepositorySpec, true, output);
     }
 }

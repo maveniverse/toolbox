@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
 import picocli.CommandLine;
 
@@ -49,7 +48,7 @@ public final class Exists extends SearchCommandSupport {
 
     @Override
     protected boolean doCall(Context context) throws IOException {
-        return ToolboxCommando.getOrCreate(context)
+        return getToolboxCommando(context)
                 .exists(getRemoteRepository(), gav, pom, sources, javadoc, signature, allRequired, output);
     }
 }

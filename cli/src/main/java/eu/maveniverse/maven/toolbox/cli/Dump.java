@@ -17,7 +17,6 @@ import picocli.CommandLine;
 public final class Dump extends CommandSupport {
     @Override
     protected boolean doCall(Context context) {
-        mayDumpEnv(getRuntime(), context, true);
-        return true;
+        return getToolboxCommando(context).dump(verbose, output);
     }
 }

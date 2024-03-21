@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
+import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import java.io.Closeable;
 import java.io.IOException;
@@ -31,11 +32,11 @@ public interface ToolboxCommando extends Closeable {
      * Gets or creates context. This method should be used to get {@link ToolboxResolver} instance that may be shared
      * across context (session).
      */
-    static ToolboxCommando getOrCreate(Context context) {
+    static ToolboxCommando getOrCreate(Runtime runtime, Context context) {
         requireNonNull(context, "context");
         return (ToolboxCommando)
                 context.repositorySystemSession().getData().computeIfAbsent(ToolboxCommando.class, () -> {
-                    ToolboxCommandoImpl result = new ToolboxCommandoImpl(context);
+                    ToolboxCommandoImpl result = new ToolboxCommandoImpl(runtime, context);
                     context.repositorySystem().addOnSystemEndedHandler(result::close);
                     return result;
                 });
@@ -67,6 +68,8 @@ public interface ToolboxCommando extends Closeable {
     ToolboxSearchApi toolboxSearchApi();
 
     String getVersion();
+
+    boolean dump(boolean verbose, Output output);
 
     // Resolver related commands: they target current context contained RemoteRepository
 

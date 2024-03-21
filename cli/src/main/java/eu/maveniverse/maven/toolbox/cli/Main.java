@@ -32,7 +32,6 @@ import picocli.CommandLine;
             Resolve.class,
             Search.class,
             Tree.class,
-            Test.class,
             Verify.class
         },
         versionProvider = Main.class,
@@ -41,7 +40,7 @@ import picocli.CommandLine;
 public class Main extends CommandSupport {
     @Override
     protected boolean doCall(Context context) {
-        mayDumpEnv(getRuntime(), context, false);
+        getToolboxCommando(context).dump(false, output);
         return new Repl().doCall(context);
     }
 

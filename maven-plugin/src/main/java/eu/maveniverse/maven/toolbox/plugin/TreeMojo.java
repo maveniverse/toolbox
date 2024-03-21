@@ -63,7 +63,7 @@ public class TreeMojo extends AbstractMojo {
                     mavenProject,
                     artifactHandlerManager,
                     context.repositorySystemSession().getArtifactTypeRegistry());
-            ToolboxCommando.getOrCreate(context)
+            ToolboxCommando.getOrCreate(runtime, context)
                     .tree(ResolutionScope.parse(scope), root, false, new Slf4jOutput(logger));
         } catch (RuntimeException e) {
             throw new MojoExecutionException(e.getCause());

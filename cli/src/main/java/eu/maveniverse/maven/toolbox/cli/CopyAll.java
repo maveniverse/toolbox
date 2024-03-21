@@ -41,7 +41,7 @@ public final class CopyAll extends ResolverCommandSupport {
     @Override
     protected boolean doCall(Context context) throws Exception {
         Path targetPath = target.toAbsolutePath();
-        ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(context);
+        ToolboxCommando toolboxCommando = getToolboxCommando(context);
         return toolboxCommando.copyAll(
                 ResolutionScope.parse(resolutionScope),
                 toolboxCommando.toolboxResolver().loadGav(gav, boms),

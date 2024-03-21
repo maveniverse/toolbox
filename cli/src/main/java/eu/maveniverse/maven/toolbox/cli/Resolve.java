@@ -51,7 +51,7 @@ public final class Resolve extends ResolverCommandSupport {
 
     @Override
     protected boolean doCall(Context context) throws Exception {
-        ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(context);
+        ToolboxCommando toolboxCommando = getToolboxCommando(context);
         return toolboxCommando.resolve(
                 ResolutionScope.parse(resolutionScope),
                 toolboxCommando.toolboxResolver().loadGav(gav, boms),

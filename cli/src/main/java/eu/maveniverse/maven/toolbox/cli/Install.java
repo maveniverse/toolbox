@@ -9,7 +9,6 @@ package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.Artifacts;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
 import org.eclipse.aether.installation.InstallationException;
 import picocli.CommandLine;
@@ -54,6 +53,6 @@ public final class Install extends ResolverCommandSupport {
         if (javadoc != null) {
             artifacts.addJavadoc(javadoc);
         }
-        return ToolboxCommando.getOrCreate(getContext()).install(artifacts, output);
+        return getToolboxCommando(context).install(artifacts, output);
     }
 }

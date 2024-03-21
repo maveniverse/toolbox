@@ -15,6 +15,10 @@ import static org.apache.maven.search.api.request.Query.query;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
+import eu.maveniverse.maven.mima.context.HTTPProxy;
+import eu.maveniverse.maven.mima.context.MavenSystemHome;
+import eu.maveniverse.maven.mima.context.MavenUserHome;
+import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.internal.RuntimeSupport;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
@@ -76,14 +80,15 @@ import org.slf4j.LoggerFactory;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Runtime runtime;
     private final Context context;
     private final ToolboxSearchApiImpl toolboxSearchApi;
     private final ArtifactRecorderImpl artifactRecorder;
     private final ToolboxResolverImpl toolboxResolver;
 
-    public ToolboxCommandoImpl(Context context) {
-        requireNonNull(context, "context");
-        this.context = context;
+    public ToolboxCommandoImpl(Runtime runtime, Context context) {
+        this.runtime = requireNonNull(runtime, "runtime");
+        this.context = requireNonNull(context, "context");
         this.toolboxSearchApi = new ToolboxSearchApiImpl();
         this.artifactRecorder = new ArtifactRecorderImpl();
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
@@ -95,7 +100,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public ToolboxCommando derive(ContextOverrides contextOverrides) {
-        return new ToolboxCommandoImpl(context.customize(contextOverrides));
+        return new ToolboxCommandoImpl(runtime, context.customize(contextOverrides));
     }
 
     @Override
@@ -116,6 +121,82 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public String getVersion() {
         return discoverArtifactVersion("eu.maveniverse.maven.toolbox", "shared", "unknown");
+    }
+
+    @Override
+    public boolean dump(boolean verbose, Output output) {
+        output.warn("Toolbox {} (MIMA Runtime '{}' version {})", getVersion(), runtime.name(), runtime.version());
+        output.warn("=======");
+        output.normal("          Maven version {}", runtime.mavenVersion());
+        output.normal("                Managed {}", runtime.managedRepositorySystem());
+        output.normal("                Basedir {}", context.basedir());
+        output.normal(
+                "                Offline {}", context.repositorySystemSession().isOffline());
+
+        MavenSystemHome mavenSystemHome = context.mavenSystemHome();
+        output.normal("");
+        output.normal("             MAVEN_HOME {}", mavenSystemHome == null ? "undefined" : mavenSystemHome.basedir());
+        if (mavenSystemHome != null) {
+            output.normal("           settings.xml {}", mavenSystemHome.settingsXml());
+            output.normal("         toolchains.xml {}", mavenSystemHome.toolchainsXml());
+        }
+
+        MavenUserHome mavenUserHome = context.mavenUserHome();
+        output.normal("");
+        output.normal("              USER_HOME {}", mavenUserHome.basedir());
+        output.normal("           settings.xml {}", mavenUserHome.settingsXml());
+        output.normal("  settings-security.xml {}", mavenUserHome.settingsSecurityXml());
+        output.normal("       local repository {}", mavenUserHome.localRepository());
+
+        output.normal("");
+        output.normal("               PROFILES");
+        output.normal("                 Active {}", context.contextOverrides().getActiveProfileIds());
+        output.normal("               Inactive {}", context.contextOverrides().getInactiveProfileIds());
+
+        output.normal("");
+        output.normal("    REMOTE REPOSITORIES");
+        for (RemoteRepository repository : context.remoteRepositories()) {
+            if (repository.getMirroredRepositories().isEmpty()) {
+                output.normal("                        {}", repository);
+            } else {
+                output.normal("                        {}, mirror of", repository);
+                for (RemoteRepository mirrored : repository.getMirroredRepositories()) {
+                    output.normal("                          {}", mirrored);
+                }
+            }
+        }
+
+        if (context.httpProxy() != null) {
+            HTTPProxy proxy = context.httpProxy();
+            output.normal("");
+            output.normal("             HTTP PROXY");
+            output.normal("                    url {}://{}:{}", proxy.getProtocol(), proxy.getHost(), proxy.getPort());
+            output.normal("          nonProxyHosts {}", proxy.getNonProxyHosts());
+        }
+
+        if (verbose) {
+            output.verbose("");
+            output.verbose("        USER PROPERTIES");
+            context.contextOverrides().getUserProperties().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(e -> output.verbose("                         {}={}", e.getKey(), e.getValue()));
+            output.verbose("      SYSTEM PROPERTIES");
+            context.contextOverrides().getSystemProperties().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(e -> output.verbose("                         {}={}", e.getKey(), e.getValue()));
+            output.verbose("      CONFIG PROPERTIES");
+            context.contextOverrides().getConfigProperties().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(e -> output.verbose("                         {}={}", e.getKey(), e.getValue()));
+            output.verbose("");
+
+            output.normal("OUTPUT TEST:");
+            output.verbose("Verbose: {}", "Message", new RuntimeException("runtime"));
+            output.normal("Normal: {}", "Message", new RuntimeException("runtime"));
+            output.warn("Warning: {}", "Message", new RuntimeException("runtime"));
+            output.error("Error: {}", "Message", new RuntimeException("runtime"));
+        }
+        return true;
     }
 
     @Override

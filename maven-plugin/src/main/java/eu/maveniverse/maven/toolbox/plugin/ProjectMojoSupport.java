@@ -23,7 +23,6 @@ import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.artifact.ArtifactTypeRegistry;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -35,11 +34,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class ProjectMojoSupport extends AbstractMojo {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
-
     protected final Output output = new Slf4jOutput(logger);
-
-    @Parameter(property = "verbose", defaultValue = "false", required = true)
-    protected boolean verbose;
 
     @Component
     private MavenProject mavenProject;

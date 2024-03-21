@@ -14,22 +14,16 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-@Mojo(name = "tree", threadSafe = true)
-public class TreeMojo extends ProjectMojoSupport {
+@Mojo(name = "classpath", threadSafe = true)
+public class ClasspathMojo extends ProjectMojoSupport {
     /**
      * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
      */
     @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
 
-    /**
-     * Set it {@code true} for verbose tree.
-     */
-    @Parameter(property = "verboseTree", defaultValue = "false", required = true)
-    private boolean verboseTree;
-
     @Override
     protected void doExecute(ToolboxCommando toolboxCommando) throws MojoExecutionException, MojoFailureException {
-        toolboxCommando.tree(ResolutionScope.parse(scope), projectAsResolutionRoot(), verboseTree, output);
+        toolboxCommando.classpath(ResolutionScope.parse(scope), projectAsResolutionRoot(), output);
     }
 }

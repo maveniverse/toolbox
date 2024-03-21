@@ -82,13 +82,13 @@ public abstract class CommandSupport implements Callable<Integer>, CommandLine.I
     @CommandLine.Option(
             names = {"-B", "--batch-mode"},
             defaultValue = "false",
-            description = "Use ANSI colors")
+            description = "Work in batch mode (do not use ANSI colors)")
     protected boolean batch;
 
     @CommandLine.Option(
             names = {"-e", "--errors"},
             defaultValue = "false",
-            description = "Show errors")
+            description = "Show error stack traces")
     protected boolean errors;
 
     protected final Output output = new Output() {

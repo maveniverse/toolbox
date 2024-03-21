@@ -31,7 +31,7 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
      * "A[-C]-V.E" and prevents overwrite (what you usually want).
      * <p>
      * This means that if your set of artifacts have artifacts with different groupIDs but same artifactIDs, this sink
-     * will fail while accepting them, to prevent overwrite.
+     * will fail while accepting them, to prevent overwrite. Duplicated artifacts are filtered out.
      */
     public static DirectorySink flat(Output output, Path path) throws IOException {
         return new DirectorySink(
@@ -40,6 +40,7 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
 
     private final Output output;
     private final Path directory;
+    private final boolean directoryCreated;
     private final ArtifactMatcher artifactMatcher;
     private final ArtifactMapper artifactMapper;
     private final ArtifactNameMapper artifactNameMapper;
@@ -73,6 +74,9 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
         }
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
+            this.directoryCreated = true;
+        } else {
+            this.directoryCreated = false;
         }
 
         this.artifactMatcher = requireNonNull(artifactMatcher, "artifactMatcher");
@@ -91,7 +95,8 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
                 accept(artifact);
             }
         } catch (IOException e) {
-            cleanup(artifacts, e);
+            cleanup();
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -119,8 +124,8 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
         }
     }
 
-    private void cleanup(Collection<Artifact> artifacts, IOException e) {
-        output.error("IO error, cleaning up: {}", e.getMessage(), e);
+    private void cleanup() {
+        output.error("Cleaning up: {}", directory);
         writtenPaths.forEach(p -> {
             try {
                 Files.deleteIfExists(p);
@@ -128,6 +133,12 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
                 // ignore
             }
         });
-        throw new UncheckedIOException(e);
+        if (directoryCreated) {
+            try {
+                Files.deleteIfExists(directory);
+            } catch (IOException e) {
+                // ignore
+            }
+        }
     }
 }

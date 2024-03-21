@@ -32,6 +32,7 @@ import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -45,6 +46,8 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.deployment.DeployRequest;
 import org.eclipse.aether.deployment.DeploymentException;
+import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -54,6 +57,7 @@ import org.eclipse.aether.util.ChecksumUtils;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.graph.visitor.DependencyGraphDumper;
 import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
+import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.VersionConstraint;
@@ -154,6 +158,34 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public boolean listRepositories(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) {
+        try {
+            output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
+            ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+            output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
+            CollectResult collectResult = toolboxResolver.collect(
+                    resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), false);
+            HashSet<RemoteRepository> repositories = new HashSet<>();
+            collectResult.getRoot().accept(new TreeDependencyVisitor(new DependencyVisitor() {
+                @Override
+                public boolean visitEnter(DependencyNode node) {
+                    repositories.addAll(node.getRepositories());
+                    return true;
+                }
+
+                @Override
+                public boolean visitLeave(DependencyNode node) {
+                    return true;
+                }
+            }));
+            repositories.forEach(r -> output.normal(r.toString()));
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public boolean listAvailablePlugins(Collection<String> groupIds, Output output) {
         toolboxResolver.listAvailablePlugins(groupIds).forEach(p -> output.normal(p.toString()));
         return true;
@@ -185,10 +217,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             }
             output.normal("Resolved: {}", resolutionRoot.getArtifact());
             if (output.isVerbose()) {
-                output.normal(
+                output.verbose(
                         "  Transitive hull count: {}",
                         dependencyResult.getArtifactResults().size());
-                output.normal(
+                output.verbose(
                         "  Transitive hull size: {}",
                         humanReadableByteCountBin(dependencyResult.getArtifactResults().stream()
                                 .map(ArtifactResult::getArtifact)

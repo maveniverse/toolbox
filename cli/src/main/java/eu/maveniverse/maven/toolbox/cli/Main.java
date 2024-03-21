@@ -24,6 +24,7 @@ import picocli.CommandLine;
             Identify.class,
             Install.class,
             List.class,
+            ListRepositories.class,
             ListAvailablePlugins.class,
             Search.class,
             Record.class,

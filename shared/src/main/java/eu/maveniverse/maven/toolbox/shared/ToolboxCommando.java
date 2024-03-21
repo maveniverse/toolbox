@@ -74,6 +74,8 @@ public interface ToolboxCommando extends Closeable {
 
     boolean install(Collection<Artifact> artifacts, Output output);
 
+    boolean listRepositories(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output);
+
     boolean listAvailablePlugins(Collection<String> groupIds, Output output);
 
     boolean resolve(

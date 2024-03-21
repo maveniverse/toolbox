@@ -30,12 +30,12 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
      * Creates plain "flat" directory sink that accepts all artifacts and writes them out having filenames as
      * "A[-C]-V.E" and prevents overwrite (what you usually want).
      * <p>
-     * This means that if your set of artifacts have artifacts will different groupIDs but same artifactIDs, this sink
-     * will fail to prevent overwrite.
+     * This means that if your set of artifacts have artifacts with different groupIDs but same artifactIDs, this sink
+     * will fail while accepting them, to prevent overwrite.
      */
     public static DirectorySink flat(Output output, Path path) throws IOException {
         return new DirectorySink(
-                output, path, ArtifactMatcher.unique(), ArtifactMapper.identity(), ArtifactNameMapper.ACVE(), false);
+                output, path, ArtifactMatcher.any(), ArtifactMapper.identity(), ArtifactNameMapper.ACVE(), false);
     }
 
     private final Output output;

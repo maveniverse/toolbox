@@ -391,8 +391,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         resolutionRoot.getArtifact(),
                         resolutionRoot.getDependencies(),
                         resolutionRoot.getManagedDependencies());
-
-                output.normal("");
                 if (output.isVerbose()) {
                     for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
                         output.verbose(

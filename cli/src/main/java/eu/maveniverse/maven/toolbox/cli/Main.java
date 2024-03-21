@@ -17,6 +17,7 @@ import picocli.CommandLine;
         name = "toolbox",
         subcommands = {
             Classpath.class,
+            CopyAll.class,
             Deploy.class,
             DeployRecorded.class,
             Dump.class,
@@ -24,12 +25,12 @@ import picocli.CommandLine;
             Identify.class,
             Install.class,
             List.class,
-            ListRepositories.class,
             ListAvailablePlugins.class,
-            Search.class,
+            ListRepositories.class,
             Record.class,
             Repl.class,
             Resolve.class,
+            Search.class,
             Tree.class,
             Test.class,
             Verify.class

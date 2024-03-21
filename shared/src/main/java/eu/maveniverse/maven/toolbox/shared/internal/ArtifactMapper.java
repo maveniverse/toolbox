@@ -31,7 +31,16 @@ public interface ArtifactMapper {
         };
     }
 
-    static ArtifactMapper bV() {
+    static ArtifactMapper identity() {
+        return new ArtifactMapper() {
+            @Override
+            public Artifact map(Artifact artifact) {
+                return artifact;
+            }
+        };
+    }
+
+    static ArtifactMapper baseVersion() {
         return new ArtifactMapper() {
             @Override
             public Artifact map(Artifact artifact) {
@@ -47,7 +56,7 @@ public interface ArtifactMapper {
         };
     }
 
-    static ArtifactMapper woC() {
+    static ArtifactMapper omitClassifier() {
         return new ArtifactMapper() {
             @Override
             public Artifact map(Artifact artifact) {

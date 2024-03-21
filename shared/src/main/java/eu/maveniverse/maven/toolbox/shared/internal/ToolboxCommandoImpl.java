@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -132,6 +133,28 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             output.normal(
                     "{}",
                     nlg.getFiles().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean copyAll(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            Consumer<Collection<Artifact>> consumer,
+            Output output) {
+        try {
+            DependencyResult dependencyResult = toolboxResolver.resolve(
+                    resolutionScope,
+                    resolutionRoot.getArtifact(),
+                    resolutionRoot.getDependencies(),
+                    resolutionRoot.getManagedDependencies());
+
+            consumer.accept(dependencyResult.getArtifactResults().stream()
+                    .map(ArtifactResult::getArtifact)
+                    .collect(Collectors.toList()));
             return true;
         } catch (Exception e) {
             throw new RuntimeException(e);

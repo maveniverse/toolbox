@@ -7,10 +7,39 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static java.util.Objects.requireNonNull;
+
+import java.util.Arrays;
+import java.util.Collection;
 import org.eclipse.aether.artifact.Artifact;
 
 public interface ArtifactNameMapper {
     String map(Artifact artifact);
+
+    static ArtifactNameMapper compose(ArtifactNameMapper... mappers) {
+        return compose(Arrays.asList(mappers));
+    }
+
+    static ArtifactNameMapper compose(Collection<ArtifactNameMapper> mappers) {
+        return new ArtifactNameMapper() {
+            @Override
+            public String map(Artifact artifact) {
+                String result = "";
+                for (ArtifactNameMapper mapper : mappers) {
+                    result += mapper.map(artifact);
+                }
+                return result;
+            }
+        };
+    }
+
+    static ArtifactNameMapper prefix(String prefix) {
+        requireNonNull(prefix, "prefix");
+        if (prefix.trim().isEmpty()) {
+            throw new IllegalArgumentException("invalid prefix");
+        }
+        return artifact -> prefix;
+    }
 
     static ArtifactNameMapper GACVE() {
         return artifact -> {

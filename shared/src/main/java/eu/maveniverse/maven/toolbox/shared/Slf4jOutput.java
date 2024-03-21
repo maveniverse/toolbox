@@ -12,7 +12,7 @@ import static java.util.Objects.requireNonNull;
 import org.slf4j.Logger;
 
 /**
- * Output.
+ * Slf4j Logger backed Output.
  */
 public final class Slf4jOutput implements Output {
     private final Logger logger;

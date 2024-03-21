@@ -66,6 +66,23 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         };
     }
 
+    static ArtifactMatcher withoutClassifier() {
+        return a -> a.getClassifier() == null || a.getClassifier().trim().isEmpty();
+    }
+
+    static ArtifactMatcher artifact(String coordinate) {
+        Artifact prototype = parsePrototype(coordinate);
+        return a -> matches(prototype.getGroupId(), a.getGroupId())
+                && matches(prototype.getArtifactId(), a.getArtifactId())
+                && matches(prototype.getVersion(), a.getVersion())
+                && matches(prototype.getExtension(), a.getExtension())
+                && matches(prototype.getClassifier(), a.getClassifier());
+    }
+
+    static ArtifactMatcher any() {
+        return a -> true;
+    }
+
     private static boolean isAny(String str) {
         return "*".equals(str);
     }
@@ -107,18 +124,5 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
                         + ", expected format is <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>");
         }
         return s;
-    }
-
-    static Predicate<Artifact> withoutClassifier() {
-        return a -> a.getClassifier() == null || a.getClassifier().trim().isEmpty();
-    }
-
-    static Predicate<Artifact> artifactPredicate(String coordinate) {
-        Artifact prototype = parsePrototype(coordinate);
-        return a -> matches(prototype.getGroupId(), a.getGroupId())
-                && matches(prototype.getArtifactId(), a.getArtifactId())
-                && matches(prototype.getVersion(), a.getVersion())
-                && matches(prototype.getExtension(), a.getExtension())
-                && matches(prototype.getClassifier(), a.getClassifier());
     }
 }

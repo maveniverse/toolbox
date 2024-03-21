@@ -44,9 +44,6 @@ public final class Tree extends ResolverCommandSupport {
     protected boolean doCall(Context context) throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando(context);
         return toolboxCommando.tree(
-                ResolutionScope.parse(resolutionScope),
-                toolboxCommando.toolboxResolver().loadGav(gav, boms),
-                verboseTree,
-                output);
+                ResolutionScope.parse(resolutionScope), toolboxCommando.loadGav(gav, boms), verboseTree, output);
     }
 }

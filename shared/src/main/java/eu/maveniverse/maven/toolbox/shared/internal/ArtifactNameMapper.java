@@ -13,6 +13,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.eclipse.aether.artifact.Artifact;
 
+/**
+ * Mapper that maps artifact onto a string (usually file system friendly).
+ */
 public interface ArtifactNameMapper {
     String map(Artifact artifact);
 

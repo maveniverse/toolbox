@@ -16,10 +16,12 @@ import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactDescriptorException;
 
 /**
  * The Toolbox Commando, that implements all the commands that are exposed via Mojos or CLI.
@@ -61,11 +63,16 @@ public interface ToolboxCommando extends Closeable {
     void close();
 
     /**
-     * The toolbox.
+     * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact.
      */
-    ToolboxResolver toolboxResolver();
+    default ResolutionRoot loadGav(String gav) throws ArtifactDescriptorException {
+        return loadGav(gav, Collections.emptyList());
+    }
 
-    ToolboxSearchApi toolboxSearchApi();
+    /**
+     * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact and BOMs.
+     */
+    ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException;
 
     String getVersion();
 

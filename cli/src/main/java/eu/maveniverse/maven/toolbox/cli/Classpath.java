@@ -37,8 +37,6 @@ public final class Classpath extends ResolverCommandSupport {
     protected boolean doCall(Context context) throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando(context);
         return toolboxCommando.classpath(
-                ResolutionScope.parse(resolutionScope),
-                toolboxCommando.toolboxResolver().loadGav(gav, boms),
-                output);
+                ResolutionScope.parse(resolutionScope), toolboxCommando.loadGav(gav, boms), output);
     }
 }

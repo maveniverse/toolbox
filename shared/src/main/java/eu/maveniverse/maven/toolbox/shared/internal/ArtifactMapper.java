@@ -12,6 +12,9 @@ import java.util.Collection;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
+/**
+ * Mapper that maps artifact to artifact.
+ */
 public interface ArtifactMapper {
     Artifact map(Artifact artifact);
 

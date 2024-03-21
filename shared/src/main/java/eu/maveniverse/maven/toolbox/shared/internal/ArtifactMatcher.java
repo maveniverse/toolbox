@@ -18,7 +18,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
 /**
- * Simple artifact matcher. Supports {@code "*"} pattern as "any", and {@code "xxx*"} as "starts with" and
+ * Artifact matcher. Supports {@code "*"} pattern as "any", and {@code "xxx*"} as "starts with" and
  * {@code "*xxx"} as "ends with".
  */
 public interface ArtifactMatcher extends Predicate<Artifact> {

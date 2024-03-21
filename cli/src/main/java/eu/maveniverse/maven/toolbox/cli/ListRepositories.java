@@ -37,8 +37,6 @@ public final class ListRepositories extends ResolverCommandSupport {
     protected boolean doCall(Context context) throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando(context);
         return toolboxCommando.listRepositories(
-                ResolutionScope.parse(resolutionScope),
-                toolboxCommando.toolboxResolver().loadGav(gav, boms),
-                output);
+                ResolutionScope.parse(resolutionScope), toolboxCommando.loadGav(gav, boms), output);
     }
 }

@@ -43,12 +43,6 @@ public class TreeMojo extends AbstractMojo {
     @Parameter(property = "verbose", defaultValue = "false", required = true)
     private boolean verbose;
 
-    /**
-     * Set it for wanted way of working ("Maven3" or "Maven4").
-     */
-    @Parameter(property = "mavenLevel", defaultValue = "Maven3", required = true)
-    private String mavenLevel;
-
     @Component
     private MavenProject mavenProject;
 

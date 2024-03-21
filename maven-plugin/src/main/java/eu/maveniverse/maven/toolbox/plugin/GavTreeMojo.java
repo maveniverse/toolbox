@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
-import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Slf4jOutput;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -20,7 +19,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,21 +48,22 @@ public class GavTreeMojo extends AbstractMojo {
     private boolean verbose;
 
     /**
-     * Set it for wanted way of working ("Maven3" or "Maven4").
+     * Apply BOMs, if needed.
      */
-    @Parameter(property = "mavenLevel", defaultValue = "Maven3", required = true)
-    private String mavenLevel;
+    @Parameter(property = "boms", defaultValue = "")
+    private java.util.List<String> boms;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            ResolutionRoot root =
-                    ResolutionRoot.ofLoaded(new DefaultArtifact(gav)).build();
-            ToolboxCommando.getOrCreate(runtime, context)
-                    .tree(ResolutionScope.parse(scope), root, false, new Slf4jOutput(logger));
+            ToolboxCommando toolboxCommando = ToolboxCommando.getOrCreate(runtime, context);
+            toolboxCommando.tree(
+                    ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, boms), false, new Slf4jOutput(logger));
         } catch (RuntimeException e) {
             throw new MojoExecutionException(e);
+        } catch (ArtifactDescriptorException e) {
+            throw new MojoFailureException(e);
         }
     }
 }

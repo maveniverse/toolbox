@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.DirectorySink;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
@@ -47,13 +46,12 @@ public final class CopyTransitive extends ResolverCommandSupport {
     protected boolean doCall(Context context) throws Exception {
         Path targetPath = target.toAbsolutePath();
         ToolboxCommando toolboxCommando = getToolboxCommando(context);
-        ToolboxResolver toolboxResolver = toolboxCommando.toolboxResolver();
         return toolboxCommando.copyTransitive(
                 ResolutionScope.parse(resolutionScope),
                 gav.stream()
                         .map(g -> {
                             try {
-                                return toolboxResolver.loadGav(g, boms);
+                                return toolboxCommando.loadGav(g, boms);
                             } catch (ArtifactDescriptorException e) {
                                 throw new RuntimeException(e);
                             }

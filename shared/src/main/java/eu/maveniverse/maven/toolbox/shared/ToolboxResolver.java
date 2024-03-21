@@ -66,6 +66,7 @@ public interface ToolboxResolver {
      * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact and BOMs.
      */
     ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException;
+
     /**
      * Processes the passed in instance, populates it if needed, etc.
      */

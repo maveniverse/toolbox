@@ -24,8 +24,6 @@ import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
-import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -64,6 +62,7 @@ import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyResult;
@@ -111,13 +110,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public ToolboxResolver toolboxResolver() {
-        return toolboxResolver;
-    }
-
-    @Override
-    public ToolboxSearchApi toolboxSearchApi() {
-        return toolboxSearchApi;
+    public ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException {
+        return toolboxResolver.loadGav(gav, boms);
     }
 
     @Override

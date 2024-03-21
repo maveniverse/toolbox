@@ -17,16 +17,12 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class GavMojoSupport extends AbstractMojo {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final Output output = new Slf4jOutput(logger);
-
-    @Parameter(property = "verbose", defaultValue = "false", required = true)
-    protected boolean verbose;
 
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {

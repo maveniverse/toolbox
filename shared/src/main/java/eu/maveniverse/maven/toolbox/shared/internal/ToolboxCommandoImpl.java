@@ -64,6 +64,7 @@ import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.ChecksumUtils;
@@ -236,7 +237,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean copyAll(
+    public boolean copyTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
             Consumer<Collection<Artifact>> consumer,
@@ -352,14 +353,51 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean resolve(
+            Collection<Artifact> artifacts, boolean sources, boolean javadoc, boolean signature, Output output) {
+        try {
+            output.verbose("Resolving {}", artifacts);
+            toolboxResolver.resolveArtifacts(artifacts);
+            if (sources || javadoc || signature) {
+                HashSet<Artifact> subartifacts = new HashSet<>();
+                artifacts.forEach(a -> {
+                    if (sources && a.getClassifier().isEmpty()) {
+                        subartifacts.add(new SubArtifact(a, "sources", "jar"));
+                    }
+                    if (javadoc && a.getClassifier().isEmpty()) {
+                        subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
+                    }
+                    if (signature && !a.getExtension().endsWith(".asc")) {
+                        subartifacts.add(new SubArtifact(a, "*", "*.asc"));
+                    }
+                });
+                if (!subartifacts.isEmpty()) {
+                    output.verbose("Resolving (best effort) {}", subartifacts);
+                    try {
+                        toolboxResolver.resolveArtifacts(subartifacts);
+                    } catch (ArtifactResolutionException e) {
+                        // ignore, this is "best effort"
+                    }
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean resolveTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
             boolean sources,
             boolean javadoc,
-            boolean signatures,
+            boolean signature,
             Output output) {
         try {
+            int totalArtifactCount = 0;
+            long totalArtifactSize = 0;
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
+                output.verbose("Resolving {}", resolutionRoot.getArtifact());
                 DependencyResult dependencyResult = toolboxResolver.resolve(
                         resolutionScope,
                         resolutionRoot.getArtifact(),
@@ -375,28 +413,34 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                                 artifactResult.getArtifact().getFile());
                     }
                 }
-                output.normal("Resolved: {}", resolutionRoot.getArtifact());
-                if (output.isVerbose()) {
-                    output.verbose(
-                            "  Transitive hull count: {}",
-                            dependencyResult.getArtifactResults().size());
-                    output.verbose(
-                            "  Transitive hull size: {}",
-                            humanReadableByteCountBin(dependencyResult.getArtifactResults().stream()
-                                    .map(ArtifactResult::getArtifact)
-                                    .map(Artifact::getFile)
-                                    .filter(Objects::nonNull)
-                                    .map(f -> {
-                                        try {
-                                            return Files.size(f.toPath());
-                                        } catch (IOException e) {
-                                            throw new RuntimeException(e);
-                                        }
-                                    })
-                                    .collect(Collectors.summarizingLong(Long::longValue))
-                                    .getSum()));
-                }
+                int artifactCount = dependencyResult.getArtifactResults().size();
+                long artifactSize = dependencyResult.getArtifactResults().stream()
+                        .map(ArtifactResult::getArtifact)
+                        .map(Artifact::getFile)
+                        .filter(Objects::nonNull)
+                        .map(f -> {
+                            try {
+                                return Files.size(f.toPath());
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        })
+                        .collect(Collectors.summarizingLong(Long::longValue))
+                        .getSum();
+                totalArtifactCount += artifactCount;
+                totalArtifactSize += artifactSize;
+
+                output.normal(
+                        "Resolved: {} (count: {}, size: {})",
+                        resolutionRoot.getArtifact(),
+                        artifactCount,
+                        humanReadableByteCountBin(artifactSize));
             }
+            output.normal(
+                    "Total resolved: {} (count: {}, size: {})",
+                    resolutionRoots.size(),
+                    totalArtifactCount,
+                    humanReadableByteCountBin(totalArtifactSize));
             return true;
         } catch (Exception e) {
             throw new RuntimeException(e);

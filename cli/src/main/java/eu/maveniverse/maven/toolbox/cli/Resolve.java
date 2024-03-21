@@ -8,27 +8,19 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import java.util.stream.Collectors;
-import org.eclipse.aether.resolution.ArtifactDescriptorException;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import picocli.CommandLine;
 
 /**
- * Resolves transitively given artifact.
+ * Resolves given artifact.
  */
 @CommandLine.Command(name = "resolve", description = "Resolves Maven Artifacts")
 public final class Resolve extends ResolverCommandSupport {
 
     @CommandLine.Parameters(index = "0..*", description = "The GAV to graph", arity = "1")
     private java.util.List<String> gav;
-
-    @CommandLine.Option(
-            names = {"--resolutionScope"},
-            defaultValue = "runtime",
-            description = "Resolution scope to resolve (default main-runtime)")
-    private String resolutionScope;
 
     @CommandLine.Option(
             names = {"--boms"},
@@ -39,7 +31,7 @@ public final class Resolve extends ResolverCommandSupport {
 
     @CommandLine.Option(
             names = {"--sources"},
-            description = "Download sources JARs as well (best effort)")
+            description = "Download source JARs as well (best effort)")
     private boolean sources;
 
     @CommandLine.Option(
@@ -55,18 +47,8 @@ public final class Resolve extends ResolverCommandSupport {
     @Override
     protected boolean doCall(Context context) throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando(context);
-        ToolboxResolver toolboxResolver = toolboxCommando.toolboxResolver();
         return toolboxCommando.resolve(
-                ResolutionScope.parse(resolutionScope),
-                gav.stream()
-                        .map(g -> {
-                            try {
-                                return toolboxResolver.loadGav(g, boms);
-                            } catch (ArtifactDescriptorException e) {
-                                throw new RuntimeException(e);
-                            }
-                        })
-                        .collect(Collectors.toList()),
+                gav.stream().map(DefaultArtifact::new).collect(Collectors.toList()),
                 sources,
                 javadoc,
                 signature,

@@ -77,7 +77,7 @@ public interface ToolboxCommando extends Closeable {
 
     boolean copy(Collection<Artifact> artifacts, Consumer<Collection<Artifact>> consumer, Output output);
 
-    boolean copyAll(
+    boolean copyTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
             Consumer<Collection<Artifact>> consumer,
@@ -97,12 +97,14 @@ public interface ToolboxCommando extends Closeable {
 
     boolean recordStop(Output output);
 
-    boolean resolve(
+    boolean resolve(Collection<Artifact> artifacts, boolean sources, boolean javadoc, boolean signature, Output output);
+
+    boolean resolveTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
             boolean sources,
             boolean javadoc,
-            boolean signatures,
+            boolean signature,
             Output output);
 
     boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output);

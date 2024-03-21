@@ -18,7 +18,7 @@ import picocli.CommandLine;
         subcommands = {
             Classpath.class,
             Copy.class,
-            CopyAll.class,
+            CopyTransitive.class,
             Deploy.class,
             DeployRecorded.class,
             Dump.class,
@@ -31,6 +31,7 @@ import picocli.CommandLine;
             Record.class,
             Repl.class,
             Resolve.class,
+            ResolveTransitive.class,
             Search.class,
             Tree.class,
             Verify.class

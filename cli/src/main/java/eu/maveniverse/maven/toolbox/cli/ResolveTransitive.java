@@ -8,26 +8,20 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.DirectorySink;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
-import java.nio.file.Path;
 import java.util.stream.Collectors;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import picocli.CommandLine;
 
 /**
- * Resolves transitively a given GAV and copies resulting artifacts to target.
+ * Resolves transitively given artifact.
  */
-@CommandLine.Command(
-        name = "copyAll",
-        description = "Resolves Maven Artifact transitively and copies all of them to target")
-public final class CopyAll extends ResolverCommandSupport {
-    @CommandLine.Parameters(index = "0", description = "The target", arity = "1")
-    private Path target;
+@CommandLine.Command(name = "resolveTransitive", description = "Resolves Maven Artifacts Transitively")
+public final class ResolveTransitive extends ResolverCommandSupport {
 
-    @CommandLine.Parameters(index = "1..*", description = "The GAVs to resolve", arity = "1")
+    @CommandLine.Parameters(index = "0..*", description = "The GAV to graph", arity = "1")
     private java.util.List<String> gav;
 
     @CommandLine.Option(
@@ -43,12 +37,26 @@ public final class CopyAll extends ResolverCommandSupport {
             description = "Comma separated list of BOMs to apply")
     private java.util.List<String> boms;
 
+    @CommandLine.Option(
+            names = {"--sources"},
+            description = "Download source JARs as well (best effort)")
+    private boolean sources;
+
+    @CommandLine.Option(
+            names = {"--javadoc"},
+            description = "Download javadoc JARs as well (best effort)")
+    private boolean javadoc;
+
+    @CommandLine.Option(
+            names = {"--signature"},
+            description = "Download signatures as well (best effort)")
+    private boolean signature;
+
     @Override
     protected boolean doCall(Context context) throws Exception {
-        Path targetPath = target.toAbsolutePath();
         ToolboxCommando toolboxCommando = getToolboxCommando(context);
         ToolboxResolver toolboxResolver = toolboxCommando.toolboxResolver();
-        return toolboxCommando.copyAll(
+        return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(resolutionScope),
                 gav.stream()
                         .map(g -> {
@@ -59,7 +67,9 @@ public final class CopyAll extends ResolverCommandSupport {
                             }
                         })
                         .collect(Collectors.toList()),
-                DirectorySink.flat(output, targetPath),
+                sources,
+                javadoc,
+                signature,
                 output);
     }
 }

@@ -24,10 +24,10 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
     private String groupIds;
 
     @Override
-    protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
         if (groupIds == null || groupIds.trim().isEmpty()) {
             groupIds = String.join(",", settings.getPluginGroups());
         }
-        toolboxCommando.listAvailablePlugins(csv(groupIds), output);
+        return toolboxCommando.listAvailablePlugins(csv(groupIds), output);
     }
 }

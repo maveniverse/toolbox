@@ -41,8 +41,8 @@ public class GavTreeMojo extends GavMojoSupport {
     private String boms;
 
     @Override
-    protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        toolboxCommando.tree(
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+        return toolboxCommando.tree(
                 ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, csv(boms)), verboseTree, output);
     }
 }

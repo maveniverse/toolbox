@@ -25,7 +25,7 @@ public final class ListRepositoriesMojo extends MPMojoSupport {
     private String scope;
 
     @Override
-    protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        toolboxCommando.listRepositories(ResolutionScope.parse(scope), projectAsResolutionRoot(), output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+        return toolboxCommando.listRepositories(ResolutionScope.parse(scope), projectAsResolutionRoot(), output);
     }
 }

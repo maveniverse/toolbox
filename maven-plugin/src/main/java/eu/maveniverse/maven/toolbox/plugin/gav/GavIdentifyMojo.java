@@ -9,19 +9,23 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.io.IOException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-@Mojo(name = "gav-list", requiresProject = false, threadSafe = true)
-public class GavListMojo extends GavSearchMojoSupport {
+/**
+ * Identify artifact, either by provided SHA-1 or calculated SHA-1 of a file pointed at.
+ */
+@Mojo(name = "gav-identify", requiresProject = false, threadSafe = true)
+public class GavIdentifyMojo extends GavSearchMojoSupport {
     /**
-     * The "gavoid" part to list.
+     * The "target" to identify: either SHA1 or a file.
      */
-    @Parameter(property = "gavoid", required = true)
-    private String gavoid;
+    @Parameter(property = "target", required = true)
+    private String target;
 
     @Override
-    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.list(getRemoteRepository(toolboxCommando), gavoid, output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws IOException {
+        return toolboxCommando.identify(getRemoteRepository(toolboxCommando), target, output);
     }
 }

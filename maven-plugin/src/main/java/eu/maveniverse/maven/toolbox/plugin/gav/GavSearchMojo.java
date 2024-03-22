@@ -9,19 +9,23 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.io.IOException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-@Mojo(name = "gav-list", requiresProject = false, threadSafe = true)
-public class GavListMojo extends GavSearchMojoSupport {
+/**
+ * Searches artifacts using SMO service.
+ */
+@Mojo(name = "gav-search", requiresProject = false, threadSafe = true)
+public class GavSearchMojo extends GavSearchMojoSupport {
     /**
-     * The "gavoid" part to list.
+     * The "expression" for search.
      */
-    @Parameter(property = "gavoid", required = true)
-    private String gavoid;
+    @Parameter(property = "expression", required = true)
+    private String expression;
 
     @Override
-    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.list(getRemoteRepository(toolboxCommando), gavoid, output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws IOException {
+        return toolboxCommando.search(getRemoteRepository(toolboxCommando), expression, output);
     }
 }

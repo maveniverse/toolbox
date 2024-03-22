@@ -22,7 +22,7 @@ public class ClasspathMojo extends MPMojoSupport {
     private String scope;
 
     @Override
-    protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        toolboxCommando.classpath(ResolutionScope.parse(scope), projectAsResolutionRoot(), output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+        return toolboxCommando.classpath(ResolutionScope.parse(scope), projectAsResolutionRoot(), output);
     }
 }

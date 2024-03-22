@@ -25,7 +25,8 @@ public final class PluginListRepositoriesMojo extends MPPluginMojoSupport {
     private String scope;
 
     @Override
-    protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        toolboxCommando.listRepositories(ResolutionScope.parse(scope), pluginAsResolutionRoot(toolboxCommando), output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+        return toolboxCommando.listRepositories(
+                ResolutionScope.parse(scope), pluginAsResolutionRoot(toolboxCommando), output);
     }
 }

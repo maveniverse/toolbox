@@ -28,7 +28,7 @@ public class TreeMojo extends MPMojoSupport {
     private boolean verboseTree;
 
     @Override
-    protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        toolboxCommando.tree(ResolutionScope.parse(scope), projectAsResolutionRoot(), verboseTree, output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+        return toolboxCommando.tree(ResolutionScope.parse(scope), projectAsResolutionRoot(), verboseTree, output);
     }
 }

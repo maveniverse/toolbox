@@ -47,8 +47,8 @@ public class GavResolveTransitiveMojo extends GavMojoSupport {
     private boolean signature;
 
     @Override
-    protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        toolboxCommando.resolveTransitive(
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+        return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(scope),
                 toolboxCommando.loadGavs(csv(gav), csv(boms)),
                 sources,

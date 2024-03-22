@@ -29,6 +29,9 @@ public abstract class MojoSupport extends AbstractMojo {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final Output output = new Slf4jOutput(logger);
 
+    @Parameter(property = "failOnLogicalFailure", defaultValue = "true")
+    protected boolean failOnLogicalFailure;
+
     @Parameter(defaultValue = "${settings}", readonly = true, required = true)
     protected Settings settings;
 
@@ -36,7 +39,10 @@ public abstract class MojoSupport extends AbstractMojo {
     public final void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            doExecute(ToolboxCommando.create(runtime, context));
+            boolean result = doExecute(ToolboxCommando.create(runtime, context));
+            if (!result && failOnLogicalFailure) {
+                throw new MojoFailureException("Operation failed");
+            }
         } catch (RuntimeException e) {
             throw new MojoExecutionException(e);
         } catch (Exception e) {
@@ -44,5 +50,5 @@ public abstract class MojoSupport extends AbstractMojo {
         }
     }
 
-    protected abstract void doExecute(ToolboxCommando toolboxCommando) throws Exception;
+    protected abstract boolean doExecute(ToolboxCommando toolboxCommando) throws Exception;
 }

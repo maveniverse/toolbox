@@ -7,30 +7,26 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
-import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.stream.Collectors;
+import java.io.IOException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.eclipse.aether.artifact.DefaultArtifact;
 
 /**
- * Resolves given artifact.
+ * Checks given GAV for existence in a remote repository.
  */
-@Mojo(name = "gav-resolve", requiresProject = false, threadSafe = true)
-public class GavResolveMojo extends GavMojoSupport {
+@Mojo(name = "gav-exists", requiresProject = false, threadSafe = true)
+public class GavExistsMojo extends GavSearchMojoSupport {
     /**
-     * The comma separated artifact coordinates in the format
-     * {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>} to resolve.
+     * The artifact coordinates in the format
+     * {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>} to check existence.
      */
     @Parameter(property = "gav", required = true)
     private String gav;
 
-    /**
-     * Apply BOMs, if needed. Comma separated GAVs.
-     */
-    @Parameter(property = "boms")
-    private String boms;
+    @Parameter(property = "pom", defaultValue = "false")
+    private boolean pom;
 
     @Parameter(property = "sources", defaultValue = "false")
     private boolean sources;
@@ -41,13 +37,12 @@ public class GavResolveMojo extends GavMojoSupport {
     @Parameter(property = "signature", defaultValue = "false")
     private boolean signature;
 
+    @Parameter(property = "allRequired", defaultValue = "false")
+    private boolean allRequired;
+
     @Override
-    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.resolve(
-                csv(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
-                sources,
-                javadoc,
-                signature,
-                output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws IOException {
+        return toolboxCommando.exists(
+                getRemoteRepository(toolboxCommando), gav, pom, sources, javadoc, signature, allRequired, output);
     }
 }

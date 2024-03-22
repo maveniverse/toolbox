@@ -38,7 +38,8 @@ public final class GavListRepositoriesMojo extends GavMojoSupport {
     private String boms;
 
     @Override
-    protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        toolboxCommando.listRepositories(ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, csv(boms)), output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+        return toolboxCommando.listRepositories(
+                ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, csv(boms)), output);
     }
 }

@@ -14,7 +14,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 @Mojo(name = "dump", threadSafe = true)
 public class DumpMojo extends MPMojoSupport {
     @Override
-    protected void doExecute(ToolboxCommando toolboxCommando) {
-        toolboxCommando.dump(logger.isDebugEnabled(), output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) {
+        return toolboxCommando.dump(logger.isDebugEnabled(), output);
     }
 }

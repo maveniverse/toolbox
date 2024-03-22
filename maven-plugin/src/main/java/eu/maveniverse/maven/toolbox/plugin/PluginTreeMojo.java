@@ -19,6 +19,7 @@ public class PluginTreeMojo extends ProjectMojoSupport {
     /**
      * The plugin key in the format {@code <groupId>:<artifactId>} to display tree for. If plugin is from "known"
      * groupId (as configured in settings.xml) it may be in format of {@code :<artifactId>} and this mojo will find it.
+     * Finally, if plugin key is plain string like {@code "clean"}, this mojo will apply some heuristics to find it.
      */
     @Parameter(property = "pluginKey", required = true)
     private String pluginKey;
@@ -38,6 +39,9 @@ public class PluginTreeMojo extends ProjectMojoSupport {
     @Override
     protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
         Plugin plugin = null;
+        if (pluginKey == null || pluginKey.trim().isEmpty()) {
+            throw new IllegalArgumentException("pluginKey must not be empty string");
+        }
         if (pluginKey.startsWith(":")) {
             for (String pluginGroup : settings.getPluginGroups()) {
                 plugin = mavenProject.getPlugin(pluginGroup + pluginKey);
@@ -47,6 +51,14 @@ public class PluginTreeMojo extends ProjectMojoSupport {
             }
         } else {
             plugin = mavenProject.getPlugin(pluginKey);
+            if (plugin == null) {
+                for (Plugin p : mavenProject.getBuildPlugins()) {
+                    if (p.getKey().contains(pluginKey)) {
+                        plugin = p;
+                        break;
+                    }
+                }
+            }
         }
         if (plugin == null) {
             throw new IllegalArgumentException("Plugin not found");

@@ -187,7 +187,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public ArtifactSink artifactSink(Output output, String spec) throws IOException {
-        String prefix = spec.contains(":") ? spec.substring(0, spec.indexOf(":")) : "flatImplied";
+        // This is to honor paths like "C:/..." (so we check for "prefix" longer than 3 chars)
+        String prefix = spec.indexOf(':') > 3 ? spec.substring(0, spec.indexOf(":")) : "flatImplied";
         switch (prefix) {
             case "flatImplied":
                 return DirectorySink.flat(output, context.basedir().resolve(spec));

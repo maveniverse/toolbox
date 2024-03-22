@@ -5,13 +5,14 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.plugin;
+package eu.maveniverse.maven.toolbox.plugin.mp;
 
+import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 
 @Mojo(name = "dump", threadSafe = true)
-public class DumpMojo extends ProjectMojoSupport {
+public class DumpMojo extends MPMojoSupport {
     @Override
     protected void doExecute(ToolboxCommando toolboxCommando) {
         toolboxCommando.dump(logger.isDebugEnabled(), output);

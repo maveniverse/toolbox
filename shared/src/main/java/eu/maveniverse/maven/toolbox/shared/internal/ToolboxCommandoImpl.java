@@ -97,11 +97,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public void close() {
-        context.close();
-    }
-
-    @Override
     public ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException {
         return toolboxResolver.loadGav(gav, boms);
     }

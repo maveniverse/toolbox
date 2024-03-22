@@ -7,23 +7,12 @@
  */
 package eu.maveniverse.maven.toolbox.plugin;
 
-import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.mima.context.ContextOverrides;
-import eu.maveniverse.maven.mima.context.Runtime;
-import eu.maveniverse.maven.mima.context.Runtimes;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
-import eu.maveniverse.maven.toolbox.shared.Slf4jOutput;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
@@ -31,16 +20,11 @@ import org.apache.maven.settings.Settings;
 import org.eclipse.aether.artifact.ArtifactTypeRegistry;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Support class for "project aware" Mojos.
  */
-public abstract class ProjectMojoSupport extends AbstractMojo {
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
-    protected final Output output = new Slf4jOutput(logger);
-
+public abstract class MPMojoSupport extends MojoSupport {
     @Parameter(defaultValue = "${settings}", readonly = true, required = true)
     protected Settings settings;
 
@@ -74,18 +58,4 @@ public abstract class ProjectMojoSupport extends AbstractMojo {
                         toDependencies(mavenProject.getDependencyManagement().getDependencies()))
                 .build();
     }
-
-    @Override
-    public final void execute() throws MojoExecutionException, MojoFailureException {
-        Runtime runtime = Runtimes.INSTANCE.getRuntime();
-        try (Context context = runtime.create(ContextOverrides.create().build())) {
-            doExecute(ToolboxCommando.create(runtime, context));
-        } catch (RuntimeException | IOException e) {
-            throw new MojoFailureException(e);
-        } catch (Exception e) {
-            throw new MojoExecutionException(e);
-        }
-    }
-
-    protected abstract void doExecute(ToolboxCommando toolboxCommando) throws Exception;
 }

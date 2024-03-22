@@ -12,7 +12,6 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,7 +35,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
  * mark "bad input", or configuration related errors. The checked exception instances on the other hand come from
  * corresponding subsystem like resolver is. Finally, {@link IOException} is thrown on fatal IO problems.
  */
-public interface ToolboxCommando extends Closeable {
+public interface ToolboxCommando {
     /**
      * Gets or creates context. This method should be used to get {@link ToolboxResolver} instance that may be shared
      * across context (session).
@@ -46,11 +45,6 @@ public interface ToolboxCommando extends Closeable {
         requireNonNull(context, "context");
         return new ToolboxCommandoImpl(runtime, context);
     }
-
-    /**
-     * Closes this instance. Closed instance should be used anymore. Also closes underlying Context.
-     */
-    void close();
 
     String getVersion();
 

@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.plugin.gav;
+package eu.maveniverse.maven.toolbox.plugin;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
@@ -14,17 +14,16 @@ import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Slf4jOutput;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class GavMojoSupport extends AbstractMojo {
+/**
+ * Support class for all Mojos.
+ */
+public abstract class MojoSupport extends AbstractMojo {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final Output output = new Slf4jOutput(logger);
 
@@ -33,19 +32,12 @@ public abstract class GavMojoSupport extends AbstractMojo {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             doExecute(ToolboxCommando.create(runtime, context));
-        } catch (RuntimeException | IOException e) {
-            throw new MojoFailureException(e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new MojoExecutionException(e);
+        } catch (Exception e) {
+            throw new MojoFailureException(e);
         }
     }
 
     protected abstract void doExecute(ToolboxCommando toolboxCommando) throws Exception;
-
-    protected Collection<String> csv(String csv) {
-        if (csv == null || csv.trim().isEmpty()) {
-            return Collections.emptyList();
-        }
-        return Arrays.asList(csv.split(","));
-    }
 }

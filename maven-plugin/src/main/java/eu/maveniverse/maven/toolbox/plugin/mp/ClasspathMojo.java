@@ -5,29 +5,24 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.plugin;
+package eu.maveniverse.maven.toolbox.plugin.mp;
 
+import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-@Mojo(name = "tree", threadSafe = true)
-public class TreeMojo extends ProjectMojoSupport {
+@Mojo(name = "classpath", threadSafe = true)
+public class ClasspathMojo extends MPMojoSupport {
     /**
      * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
      */
     @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
 
-    /**
-     * Set it {@code true} for verbose tree.
-     */
-    @Parameter(property = "verboseTree", defaultValue = "false", required = true)
-    private boolean verboseTree;
-
     @Override
     protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        toolboxCommando.tree(ResolutionScope.parse(scope), projectAsResolutionRoot(), verboseTree, output);
+        toolboxCommando.classpath(ResolutionScope.parse(scope), projectAsResolutionRoot(), output);
     }
 }

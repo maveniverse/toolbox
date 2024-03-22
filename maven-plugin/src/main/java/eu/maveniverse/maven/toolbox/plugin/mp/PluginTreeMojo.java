@@ -5,8 +5,9 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.plugin;
+package eu.maveniverse.maven.toolbox.plugin.mp;
 
+import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -15,7 +16,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 @Mojo(name = "plugin-tree", threadSafe = true)
-public class PluginTreeMojo extends ProjectMojoSupport {
+public class PluginTreeMojo extends MPMojoSupport {
     /**
      * The plugin key in the format {@code <groupId>:<artifactId>} to display tree for. If plugin is from "known"
      * groupId (as configured in settings.xml) it may be in format of {@code :<artifactId>} and this mojo will find it.

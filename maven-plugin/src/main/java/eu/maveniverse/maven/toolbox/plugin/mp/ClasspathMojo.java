@@ -13,6 +13,9 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
+/**
+ * Prints the classpath of current project.
+ */
 @Mojo(name = "classpath", threadSafe = true)
 public class ClasspathMojo extends MPMojoSupport {
     /**

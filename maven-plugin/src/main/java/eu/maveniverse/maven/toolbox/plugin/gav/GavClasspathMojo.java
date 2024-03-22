@@ -13,6 +13,9 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
+/**
+ * Resolves given GAV and emits its classpath.
+ */
 @Mojo(name = "gav-classpath", requiresProject = false, threadSafe = true)
 public class GavClasspathMojo extends GavMojoSupport {
     /**

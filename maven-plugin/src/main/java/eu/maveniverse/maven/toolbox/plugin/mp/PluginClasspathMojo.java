@@ -13,6 +13,9 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
+/**
+ * Resolves transitively a project given plugin and outputs its classpath.
+ */
 @Mojo(name = "plugin-classpath", threadSafe = true)
 public class PluginClasspathMojo extends MPPluginMojoSupport {
     /**

@@ -12,6 +12,9 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
+/**
+ * Lists the given "gavoid".
+ */
 @Mojo(name = "gav-list", requiresProject = false, threadSafe = true)
 public class GavListMojo extends GavSearchMojoSupport {
     /**

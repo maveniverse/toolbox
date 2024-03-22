@@ -11,6 +11,9 @@ import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 
+/**
+ * Dumps the MIMA environment.
+ */
 @Mojo(name = "dump", threadSafe = true)
 public class DumpMojo extends MPMojoSupport {
     @Override

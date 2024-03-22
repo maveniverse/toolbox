@@ -14,7 +14,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 /**
- * Resolves transitively given artifact.
+ * Resolves transitively given artifacts.
  */
 @Mojo(name = "gav-resolve-transitive", requiresProject = false, threadSafe = true)
 public class GavResolveTransitiveMojo extends GavMojoSupport {

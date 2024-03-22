@@ -11,6 +11,9 @@ import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 
+/**
+ * Dumps the MIMA environment.
+ */
 @Mojo(name = "gav-dump", requiresProject = false, threadSafe = true)
 public class GavDumpMojo extends GavMojoSupport {
     @Override

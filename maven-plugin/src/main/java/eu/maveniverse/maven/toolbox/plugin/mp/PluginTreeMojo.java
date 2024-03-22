@@ -13,6 +13,9 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
+/**
+ * Collects project given plugin and output its dependency tree.
+ */
 @Mojo(name = "plugin-tree", threadSafe = true)
 public class PluginTreeMojo extends MPPluginMojoSupport {
     /**

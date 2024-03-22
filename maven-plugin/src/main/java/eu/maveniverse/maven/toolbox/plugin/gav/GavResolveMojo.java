@@ -15,7 +15,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
 /**
- * Resolves given artifact.
+ * Resolves given artifacts.
  */
 @Mojo(name = "gav-resolve", requiresProject = false, threadSafe = true)
 public class GavResolveMojo extends GavMojoSupport {

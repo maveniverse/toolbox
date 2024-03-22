@@ -14,7 +14,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 /**
- * Resolves transitively a given GAV and outputs used repositories.
+ * Resolves transitively current project and outputs used repositories.
  */
 @Mojo(name = "list-repositories", threadSafe = true)
 public final class ListRepositoriesMojo extends MPMojoSupport {

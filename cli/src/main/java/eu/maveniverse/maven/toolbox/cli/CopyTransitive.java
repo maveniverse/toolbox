@@ -7,10 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.toolbox.shared.DirectorySink;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.nio.file.Path;
 import picocli.CommandLine;
 
 /**
@@ -20,8 +18,8 @@ import picocli.CommandLine;
         name = "copyTransitive",
         description = "Resolves Maven Artifact transitively and copies all of them to target")
 public final class CopyTransitive extends ResolverCommandSupport {
-    @CommandLine.Parameters(index = "0", description = "The target", arity = "1")
-    private Path target;
+    @CommandLine.Parameters(index = "0", description = "The target spec", arity = "1")
+    private String targetSpec;
 
     @CommandLine.Parameters(index = "1..*", description = "The GAVs to resolve", arity = "1")
     private java.util.List<String> gav;
@@ -41,11 +39,10 @@ public final class CopyTransitive extends ResolverCommandSupport {
 
     @Override
     protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        Path targetPath = target.toAbsolutePath();
         return toolboxCommando.copyTransitive(
                 ResolutionScope.parse(resolutionScope),
                 toolboxCommando.loadGavs(gav, boms),
-                DirectorySink.flat(output, targetPath),
+                toolboxCommando.artifactSink(output, targetSpec),
                 output);
     }
 }

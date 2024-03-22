@@ -7,9 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.toolbox.shared.DirectorySink;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.nio.file.Path;
 import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import picocli.CommandLine;
@@ -19,8 +17,8 @@ import picocli.CommandLine;
  */
 @CommandLine.Command(name = "copy", description = "Resolves Maven Artifact and copies it to target")
 public final class Copy extends ResolverCommandSupport {
-    @CommandLine.Parameters(index = "0", description = "The target", arity = "1")
-    private Path target;
+    @CommandLine.Parameters(index = "0", description = "The target spec", arity = "1")
+    private String targetSpec;
 
     @CommandLine.Parameters(index = "1..*", description = "The GAVs to resolve", arity = "1")
     private java.util.List<String> gav;
@@ -34,10 +32,9 @@ public final class Copy extends ResolverCommandSupport {
 
     @Override
     protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        Path targetPath = target.toAbsolutePath();
         return toolboxCommando.copy(
                 gav.stream().map(DefaultArtifact::new).collect(Collectors.toList()),
-                DirectorySink.flat(output, targetPath),
+                toolboxCommando.artifactSink(output, targetSpec),
                 output);
     }
 }

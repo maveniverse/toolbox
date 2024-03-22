@@ -20,6 +20,8 @@ import eu.maveniverse.maven.mima.context.MavenUserHome;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.internal.RuntimeSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
+import eu.maveniverse.maven.toolbox.shared.DeployingSink;
+import eu.maveniverse.maven.toolbox.shared.DirectorySink;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
@@ -103,11 +105,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException {
-        return toolboxResolver.loadGav(gav, boms);
-    }
-
-    @Override
     public String getVersion() {
         return discoverArtifactVersion("eu.maveniverse.maven.toolbox", "shared", "unknown");
     }
@@ -186,6 +183,33 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             output.error("Error: {}", "Message", new RuntimeException("runtime"));
         }
         return true;
+    }
+
+    @Override
+    public ArtifactSink artifactSink(Output output, String spec) throws IOException {
+        String prefix = spec.contains(":") ? spec.substring(0, spec.indexOf(":")) : "flatImplied";
+        switch (prefix) {
+            case "flatImplied":
+                return DirectorySink.flat(output, context.basedir().resolve(spec));
+            case "flat":
+                return DirectorySink.flat(output, context.basedir().resolve(spec.substring("flat:".length())));
+            case "repository":
+                return DirectorySink.repository(
+                        output, context.basedir().resolve(spec.substring("repository:".length())));
+            case "deploy":
+                return DeployingSink.deploying(
+                        output,
+                        context.repositorySystem(),
+                        context.repositorySystemSession(),
+                        toolboxResolver.parseDeploymentRemoteRepository(spec.substring("deploy:".length())));
+            default:
+                throw new IllegalArgumentException("unknown artifact sink spec");
+        }
+    }
+
+    @Override
+    public ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException {
+        return toolboxResolver.loadGav(gav, boms);
     }
 
     @Override

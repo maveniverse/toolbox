@@ -45,6 +45,10 @@ public final class DeployingSink implements ArtifactSink {
         this.deployRequest.setTrace(RequestTrace.newChild(null, this));
     }
 
+    public RemoteRepository getRemoteRepository() {
+        return deployRequest.getRepository();
+    }
+
     @Override
     public void accept(Collection<Artifact> artifacts) {
         requireNonNull(artifacts, "artifacts");

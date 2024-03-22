@@ -114,6 +114,10 @@ public final class DirectorySink implements ArtifactSink {
                 : new StandardCopyOption[] {StandardCopyOption.COPY_ATTRIBUTES};
     }
 
+    public Path getDirectory() {
+        return directory;
+    }
+
     @Override
     public void accept(Artifact artifact) throws IOException {
         requireNonNull(artifact, "artifact");

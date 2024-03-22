@@ -16,6 +16,7 @@ import org.eclipse.aether.RequestTrace;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
+import org.eclipse.aether.repository.LocalRepository;
 
 /**
  * Construction to accept collection of artifacts and install them into local repository.
@@ -39,6 +40,10 @@ public final class InstallingSink implements ArtifactSink {
         this.session = requireNonNull(session, "session");
         this.installRequest = new InstallRequest();
         this.installRequest.setTrace(RequestTrace.newChild(null, this));
+    }
+
+    public LocalRepository getLocalRepository() {
+        return session.getLocalRepository();
     }
 
     @Override

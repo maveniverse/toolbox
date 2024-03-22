@@ -53,6 +53,11 @@ public interface ToolboxCommando {
     // Resolver related commands: they target current context contained RemoteRepository
 
     /**
+     * Provides {@link ArtifactSink} according to spec.
+     */
+    ArtifactSink artifactSink(Output output, String spec) throws IOException;
+
+    /**
      * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact.
      */
     default ResolutionRoot loadGav(String gav) throws ArtifactDescriptorException {

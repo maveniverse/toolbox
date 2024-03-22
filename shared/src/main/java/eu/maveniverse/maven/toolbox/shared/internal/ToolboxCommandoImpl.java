@@ -205,7 +205,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             output.normal(
                     "{}",
                     nlg.getFiles().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
-            return true;
+            return !nlg.getFiles().isEmpty();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -218,7 +218,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             List<ArtifactResult> resolveResult = toolboxResolver.resolveArtifacts(artifacts);
             consumer.accept(
                     resolveResult.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
-            return true;
+            return !resolveResult.isEmpty();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -243,7 +243,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             }
             consumer.accept(
                     artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
-            return true;
+            return !artifactResults.isEmpty();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -309,7 +309,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 }
             }));
             repositories.forEach(r -> output.normal(r.toString()));
-            return true;
+            return !repositories.isEmpty();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -318,25 +318,25 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public boolean listAvailablePlugins(Collection<String> groupIds, Output output) {
         output.verbose("Listing plugins in groupIds: {}", groupIds);
-        toolboxResolver.listAvailablePlugins(groupIds).forEach(p -> output.normal(p.toString()));
-        return true;
+        List<Artifact> plugins = toolboxResolver.listAvailablePlugins(groupIds);
+        plugins.forEach(p -> output.normal(p.toString()));
+        return !plugins.isEmpty();
     }
 
     @Override
     public boolean recordStart(Output output) {
         output.verbose("Starting recorder...");
         artifactRecorder.clear();
-        artifactRecorder.setActive(true);
-        return true;
+        return artifactRecorder.setActive(true);
     }
 
     @Override
     public boolean recordStop(Output output) {
         output.verbose("Stopping recorder...");
-        artifactRecorder.setActive(false);
+        boolean result = artifactRecorder.setActive(false);
         output.verbose(
                 "Recorded {} artifacts", artifactRecorder.getAllArtifacts().size());
-        return true;
+        return result;
     }
 
     @Override

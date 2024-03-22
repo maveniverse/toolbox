@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import picocli.CommandLine;
 
 /**
@@ -16,7 +16,7 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "dump", description = "Dump MIMA environment")
 public final class Dump extends CommandSupport {
     @Override
-    protected boolean doCall(Context context) {
-        return getToolboxCommando(context).dump(verbose, output);
+    protected boolean doCall(ToolboxCommando toolboxCommando) {
+        return toolboxCommando.dump(verbose, output);
     }
 }

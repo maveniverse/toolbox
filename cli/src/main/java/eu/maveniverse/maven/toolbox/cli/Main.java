@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import picocli.CommandLine;
 
 /**
@@ -41,9 +41,9 @@ import picocli.CommandLine;
         mixinStandardHelpOptions = true)
 public class Main extends CommandSupport {
     @Override
-    protected boolean doCall(Context context) {
-        getToolboxCommando(context).dump(false, output);
-        return new Repl().doCall(context);
+    protected boolean doCall(ToolboxCommando commando) throws Exception {
+        commando.dump(false, output);
+        return new Repl().doCall(commando);
     }
 
     public static void main(String... args) {

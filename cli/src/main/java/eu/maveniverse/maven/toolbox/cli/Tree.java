@@ -7,7 +7,6 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import picocli.CommandLine;
@@ -41,8 +40,7 @@ public final class Tree extends ResolverCommandSupport {
     private java.util.List<String> boms;
 
     @Override
-    protected boolean doCall(Context context) throws Exception {
-        ToolboxCommando toolboxCommando = getToolboxCommando(context);
+    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.tree(
                 ResolutionScope.parse(resolutionScope), toolboxCommando.loadGav(gav, boms), verboseTree, output);
     }

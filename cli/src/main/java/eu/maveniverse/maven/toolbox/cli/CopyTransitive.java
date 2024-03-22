@@ -7,7 +7,6 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.DirectorySink;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -41,9 +40,8 @@ public final class CopyTransitive extends ResolverCommandSupport {
     private java.util.List<String> boms;
 
     @Override
-    protected boolean doCall(Context context) throws Exception {
+    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
         Path targetPath = target.toAbsolutePath();
-        ToolboxCommando toolboxCommando = getToolboxCommando(context);
         return toolboxCommando.copyTransitive(
                 ResolutionScope.parse(resolutionScope),
                 toolboxCommando.loadGavs(gav, boms),

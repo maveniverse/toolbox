@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
 import picocli.CommandLine;
 
@@ -21,7 +21,7 @@ public final class Search extends SearchCommandSupport {
     private String expression;
 
     @Override
-    protected boolean doCall(Context context) throws IOException {
-        return getToolboxCommando(context).search(getRemoteRepository(), expression, output);
+    protected boolean doCall(ToolboxCommando toolboxCommando) throws IOException {
+        return toolboxCommando.search(getRemoteRepository(), expression, output);
     }
 }

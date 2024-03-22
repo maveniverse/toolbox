@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import picocli.CommandLine;
 
 /**
@@ -20,7 +20,7 @@ public final class ListAvailablePlugins extends ResolverCommandSupport {
     private java.util.List<String> groupIds;
 
     @Override
-    protected boolean doCall(Context context) throws Exception {
-        return getToolboxCommando(context).listAvailablePlugins(groupIds, output);
+    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+        return toolboxCommando.listAvailablePlugins(groupIds, output);
     }
 }

@@ -7,7 +7,6 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.DirectorySink;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
@@ -34,9 +33,8 @@ public final class Copy extends ResolverCommandSupport {
     private java.util.List<String> boms;
 
     @Override
-    protected boolean doCall(Context context) throws Exception {
+    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
         Path targetPath = target.toAbsolutePath();
-        ToolboxCommando toolboxCommando = getToolboxCommando(context);
         return toolboxCommando.copy(
                 gav.stream().map(DefaultArtifact::new).collect(Collectors.toList()),
                 DirectorySink.flat(output, targetPath),

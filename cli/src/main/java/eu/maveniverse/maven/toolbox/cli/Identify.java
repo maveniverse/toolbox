@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
 import picocli.CommandLine;
 
@@ -21,7 +21,7 @@ public final class Identify extends SearchCommandSupport {
     private String target;
 
     @Override
-    protected boolean doCall(Context context) throws IOException {
-        return getToolboxCommando(context).identify(getRemoteRepository(), target, output);
+    protected boolean doCall(ToolboxCommando toolboxCommando) throws IOException {
+        return toolboxCommando.identify(getRemoteRepository(), target, output);
     }
 }

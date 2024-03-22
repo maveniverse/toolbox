@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import picocli.CommandLine;
 
 /**
@@ -19,7 +19,7 @@ public final class DeployRecorded extends ResolverCommandSupport {
     private String remoteRepositorySpec;
 
     @Override
-    protected boolean doCall(Context context) throws Exception {
-        return getToolboxCommando(context).deployAllRecorded(remoteRepositorySpec, true, output);
+    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+        return toolboxCommando.deployAllRecorded(remoteRepositorySpec, true, output);
     }
 }

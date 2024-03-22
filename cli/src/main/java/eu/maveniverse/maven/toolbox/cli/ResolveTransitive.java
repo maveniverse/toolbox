@@ -7,7 +7,6 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import picocli.CommandLine;
@@ -50,8 +49,7 @@ public final class ResolveTransitive extends ResolverCommandSupport {
     private boolean signature;
 
     @Override
-    protected boolean doCall(Context context) throws Exception {
-        ToolboxCommando toolboxCommando = getToolboxCommando(context);
+    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(resolutionScope),
                 toolboxCommando.loadGavs(gav, boms),

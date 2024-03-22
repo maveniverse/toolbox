@@ -399,12 +399,12 @@ public abstract class CommandSupport implements Callable<Integer>, CommandLine.I
     public final Integer call() {
         Ansi.setEnabled(!batch);
         try (Context context = getContext()) {
-            return doCall(context) ? 0 : 1;
+            return doCall(getToolboxCommando(context)) ? 0 : 1;
         } catch (Exception e) {
             error("Error", e);
             return 1;
         }
     }
 
-    protected abstract boolean doCall(Context context) throws Exception;
+    protected abstract boolean doCall(ToolboxCommando toolboxCommando) throws Exception;
 }

@@ -7,7 +7,6 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
-import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -45,8 +44,7 @@ public final class Resolve extends ResolverCommandSupport {
     private boolean signature;
 
     @Override
-    protected boolean doCall(Context context) throws Exception {
-        ToolboxCommando toolboxCommando = getToolboxCommando(context);
+    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolve(
                 gav.stream().map(DefaultArtifact::new).collect(Collectors.toList()),
                 sources,

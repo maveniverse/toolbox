@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
 import org.jline.builtins.ConfigurationPath;
 import org.jline.console.SystemRegistry;
@@ -34,8 +35,9 @@ import picocli.shell.jline3.PicocliCommands;
 @CommandLine.Command(name = "repl", description = "REPL console")
 public class Repl extends CommandSupport {
     @Override
-    public boolean doCall(Context context) {
+    public boolean doCall(ToolboxCommando toolboxCommando) {
         Class<?> tp = JansiTerminalProvider.class;
+        Context context = getContext();
         push(Context.class.getName(), context.customize(context.contextOverrides()));
 
         // set up JLine built-in commands

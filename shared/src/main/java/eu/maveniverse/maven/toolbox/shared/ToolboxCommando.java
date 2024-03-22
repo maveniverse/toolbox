@@ -31,7 +31,7 @@ import org.eclipse.aether.repository.RemoteRepository;
  * If method cleanly returns, the result shows the "successful" outcome of command. If method throws,
  * {@link RuntimeException} instances (for example NPE, IAEx, ISEx) mark "bad input", or configuration
  * errors. The checked exception instances on the other hand come from corresponding subsystem like
- * resolver is.
+ * resolver is. Finally, {@link IOException} is thrown on fatal IO problems.
  */
 public interface ToolboxCommando extends Closeable {
     /**

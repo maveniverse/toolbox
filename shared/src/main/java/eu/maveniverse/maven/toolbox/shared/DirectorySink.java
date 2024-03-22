@@ -28,14 +28,11 @@ import org.eclipse.aether.artifact.Artifact;
 public final class DirectorySink implements ArtifactSink {
     /**
      * Creates plain "flat" directory sink, that accepts all artifacts and copies them out having filenames as
-     * "A[-C]-V.E" and prevents overwrite (what you usually want).
-     * <p>
-     * This means that if your set of artifacts have artifacts with different groupIDs but same artifactIDs, this sink
-     * will fail while accepting them, to prevent overwrite. Duplicated artifacts are filtered out.
+     * "G-A[-C].E" (version-less) and prevents overwrite (what you usually want).
      */
     public static DirectorySink flat(Output output, Path path) throws IOException {
         return new DirectorySink(
-                output, path, Mode.COPY, ArtifactMatcher.unique(), a -> a, ArtifactNameMapper.ACVE(), false);
+                output, path, Mode.COPY, ArtifactMatcher.unique(), a -> a, ArtifactNameMapper.GACE(), false);
     }
 
     /**
@@ -132,6 +129,7 @@ public final class DirectorySink implements ArtifactSink {
             if (!writtenPaths.add(target) && !allowOverwrite) {
                 throw new IOException("Overwrite prevented; check mappings");
             }
+            Files.createDirectories(target.getParent());
             switch (mode) {
                 case COPY:
                     output.verbose("  copied to file {}", target);
@@ -171,4 +169,7 @@ public final class DirectorySink implements ArtifactSink {
             }
         }
     }
+
+    @Override
+    public void close() {}
 }

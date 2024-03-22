@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.toolbox.shared;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -22,35 +21,65 @@ import org.junit.jupiter.api.io.TempDir;
 
 public class DirectorySinkTest {
     @Test
-    void smoke(@TempDir Path source, @TempDir Path target) throws IOException {
-        DirectorySink sink = DirectorySink.flat(new NullOutput(), target);
-        Path a1 = source.resolve("a1");
-        Path a2 = source.resolve("a2");
-        Files.writeString(a1, "one", StandardCharsets.UTF_8);
-        Files.writeString(a2, "two", StandardCharsets.UTF_8);
-        sink.accept(Arrays.asList(
-                new DefaultArtifact("g:a1:1").setFile(a1.toFile()),
-                new DefaultArtifact("g:a2:1").setFile(a2.toFile())));
+    void flat(@TempDir Path source, @TempDir Path target) throws IOException {
+        try (DirectorySink sink = DirectorySink.flat(new NullOutput(), target)) {
+            Path a1 = source.resolve("a1");
+            Path a2 = source.resolve("a2");
+            Files.writeString(a1, "one", StandardCharsets.UTF_8);
+            Files.writeString(a2, "two", StandardCharsets.UTF_8);
+            sink.accept(Arrays.asList(
+                    new DefaultArtifact("g:a1:1").setFile(a1.toFile()),
+                    new DefaultArtifact("g:a2:1").setFile(a2.toFile())));
 
-        Path a1target = target.resolve("a1-1.jar");
-        Path a2target = target.resolve("a2-1.jar");
-        assertTrue(Files.isRegularFile(a1target));
-        assertEquals(Files.readString(a1target, StandardCharsets.UTF_8), "one");
-        assertTrue(Files.isRegularFile(a2target));
-        assertEquals(Files.readString(a2target, StandardCharsets.UTF_8), "two");
+            Path a1target = target.resolve("g.a1.jar");
+            Path a2target = target.resolve("g.a2.jar");
+            assertTrue(Files.isRegularFile(a1target));
+            assertEquals(Files.readString(a1target, StandardCharsets.UTF_8), "one");
+            assertTrue(Files.isRegularFile(a2target));
+            assertEquals(Files.readString(a2target, StandardCharsets.UTF_8), "two");
+        }
     }
 
     @Test
-    void sameADifferentGRejected(@TempDir Path source, @TempDir Path target) throws IOException {
-        DirectorySink sink = DirectorySink.flat(new NullOutput(), target);
-        Path a1 = source.resolve("a1");
-        Path a2 = source.resolve("a2");
-        Files.writeString(a1, "one", StandardCharsets.UTF_8);
-        Files.writeString(a2, "two", StandardCharsets.UTF_8);
-        assertThrows(
-                IOException.class,
-                () -> sink.accept(Arrays.asList(
-                        new DefaultArtifact("g1:a1:1").setFile(a1.toFile()),
-                        new DefaultArtifact("g2:a1:1").setFile(a2.toFile()))));
+    void repository(@TempDir Path source, @TempDir Path target) throws IOException {
+        try (DirectorySink sink = DirectorySink.repository(new NullOutput(), target)) {
+            Path a1 = source.resolve("a1");
+            Path a2 = source.resolve("a2");
+            Files.writeString(a1, "one", StandardCharsets.UTF_8);
+            Files.writeString(a2, "two", StandardCharsets.UTF_8);
+            sink.accept(Arrays.asList(
+                    new DefaultArtifact("g:a1:1").setFile(a1.toFile()),
+                    new DefaultArtifact("g:a2:1").setFile(a2.toFile())));
+
+            Path a1target = target.resolve("g/a1/1/a1-1.jar");
+            Path a2target = target.resolve("g/a2/1/a2-1.jar");
+            assertTrue(Files.isRegularFile(a1target));
+            assertEquals(Files.readString(a1target, StandardCharsets.UTF_8), "one");
+            assertTrue(Files.isRegularFile(a2target));
+            assertEquals(Files.readString(a2target, StandardCharsets.UTF_8), "two");
+        }
+    }
+
+    @Test
+    void flatSameADifferentGAccepted(@TempDir Path source, @TempDir Path target) throws IOException {
+        sameADifferentGAccepted(source, target, DirectorySink.flat(new NullOutput(), target));
+    }
+
+    @Test
+    void repositorySameADifferentGAccepted(@TempDir Path source, @TempDir Path target) throws IOException {
+        sameADifferentGAccepted(source, target, DirectorySink.repository(new NullOutput(), target));
+    }
+
+    private void sameADifferentGAccepted(Path source, Path target, DirectorySink sink) throws IOException {
+        try (sink) {
+            Path a1 = source.resolve("a1");
+            Path a2 = source.resolve("a2");
+            Files.writeString(a1, "one", StandardCharsets.UTF_8);
+            Files.writeString(a2, "two", StandardCharsets.UTF_8);
+            // we do not throw
+            sink.accept(Arrays.asList(
+                    new DefaultArtifact("g1:a1:1").setFile(a1.toFile()),
+                    new DefaultArtifact("g2:a1:1").setFile(a2.toFile())));
+        }
     }
 }

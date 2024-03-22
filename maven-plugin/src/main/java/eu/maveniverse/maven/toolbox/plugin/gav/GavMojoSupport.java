@@ -14,6 +14,7 @@ import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Slf4jOutput;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,11 +33,14 @@ public abstract class GavMojoSupport extends AbstractMojo {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             doExecute(ToolboxCommando.create(runtime, context));
+        } catch (RuntimeException | IOException e) {
+            throw new MojoFailureException(e);
+        } catch (Exception e) {
+            throw new MojoExecutionException(e);
         }
     }
 
-    protected abstract void doExecute(ToolboxCommando toolboxCommando)
-            throws MojoExecutionException, MojoFailureException;
+    protected abstract void doExecute(ToolboxCommando toolboxCommando) throws Exception;
 
     protected Collection<String> csv(String csv) {
         if (csv == null || csv.trim().isEmpty()) {

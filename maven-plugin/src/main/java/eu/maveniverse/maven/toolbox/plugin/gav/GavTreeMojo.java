@@ -9,11 +9,8 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.eclipse.aether.resolution.ArtifactDescriptorException;
 
 @Mojo(name = "gav-tree", requiresProject = false, threadSafe = true)
 public class GavTreeMojo extends GavMojoSupport {
@@ -43,14 +40,8 @@ public class GavTreeMojo extends GavMojoSupport {
     private String boms;
 
     @Override
-    protected void doExecute(ToolboxCommando toolboxCommando) throws MojoExecutionException, MojoFailureException {
-        try {
-            toolboxCommando.tree(
-                    ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, csv(boms)), verboseTree, output);
-        } catch (RuntimeException e) {
-            throw new MojoExecutionException(e);
-        } catch (ArtifactDescriptorException e) {
-            throw new MojoFailureException(e);
-        }
+    protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
+        toolboxCommando.tree(
+                ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, csv(boms)), verboseTree, output);
     }
 }

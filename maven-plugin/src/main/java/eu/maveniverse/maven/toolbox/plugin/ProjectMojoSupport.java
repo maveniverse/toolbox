@@ -15,6 +15,7 @@ import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Slf4jOutput;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.io.IOException;
 import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
@@ -69,9 +70,12 @@ public abstract class ProjectMojoSupport extends AbstractMojo {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
             doExecute(ToolboxCommando.create(runtime, context));
+        } catch (RuntimeException | IOException e) {
+            throw new MojoFailureException(e);
+        } catch (Exception e) {
+            throw new MojoExecutionException(e);
         }
     }
 
-    protected abstract void doExecute(ToolboxCommando toolboxCommando)
-            throws MojoExecutionException, MojoFailureException;
+    protected abstract void doExecute(ToolboxCommando toolboxCommando) throws Exception;
 }

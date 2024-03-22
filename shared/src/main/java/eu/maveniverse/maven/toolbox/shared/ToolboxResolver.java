@@ -123,5 +123,5 @@ public interface ToolboxResolver {
 
     Version findNewestVersion(Artifact artifact, boolean allowSnapshots) throws VersionRangeResolutionException;
 
-    List<Artifact> listAvailablePlugins(Collection<String> groupIds);
+    List<Artifact> listAvailablePlugins(Collection<String> groupIds) throws Exception;
 }

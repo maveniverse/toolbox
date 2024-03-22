@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
-import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import picocli.CommandLine;
 
 /**
@@ -60,7 +59,10 @@ public final class ResolveTransitive extends ResolverCommandSupport {
                         .map(g -> {
                             try {
                                 return toolboxCommando.loadGav(g, boms);
-                            } catch (ArtifactDescriptorException e) {
+                            } catch (Exception e) {
+                                if (e instanceof RuntimeException) {
+                                    throw (RuntimeException) e;
+                                }
                                 throw new RuntimeException(e);
                             }
                         })

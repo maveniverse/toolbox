@@ -12,7 +12,6 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -22,7 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -353,7 +351,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     }
 
     @Override
-    public List<Artifact> listAvailablePlugins(Collection<String> groupIds) {
+    public List<Artifact> listAvailablePlugins(Collection<String> groupIds) throws Exception {
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
         session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_ALWAYS);
 
@@ -394,8 +392,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
                                     newestVersion.toString()));
                         }
                     }
-                } catch (IOException | XmlPullParserException | VersionRangeResolutionException e) {
-                    // skip
                 }
             }
         }

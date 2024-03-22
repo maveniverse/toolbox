@@ -20,13 +20,18 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactDescriptorException;
 
 /**
  * The Toolbox Commando, that implements all the commands that are exposed via Mojos or CLI.
  * <p>
- * This instance manages {@link Context}, corresponding {@link ToolboxResolver} and maps one-to-one onto commands.
- * Can be considered something like "high level" API of Toolbox.
+ * This instance manages {@link Context}, corresponding {@link ToolboxResolver} and {@link ToolboxSearchApi}
+ * and maps one-to-one onto commands. Can be considered something like "high level" API of Toolbox.
+ * <p>
+ * Note on error handling: each "commando" method is marked to throw and returns a {@link boolean}.
+ * If method cleanly returns, the result shows the "successful" outcome of command. If method throws,
+ * {@link RuntimeException} instances (for example NPE, IAEx, ISEx) mark "bad input", or configuration
+ * errors. The checked exception instances on the other hand come from corresponding subsystem like
+ * resolver is.
  */
 public interface ToolboxCommando extends Closeable {
     /**
@@ -53,40 +58,44 @@ public interface ToolboxCommando extends Closeable {
     /**
      * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact.
      */
-    default ResolutionRoot loadGav(String gav) throws ArtifactDescriptorException {
+    default ResolutionRoot loadGav(String gav) throws Exception {
         return loadGav(gav, Collections.emptyList());
     }
 
     /**
      * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact and BOMs.
      */
-    ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException;
+    ResolutionRoot loadGav(String gav, Collection<String> boms) throws Exception;
 
-    boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output);
+    boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) throws Exception;
 
-    boolean copy(Collection<Artifact> artifacts, ArtifactSink sink, Output output);
+    boolean copy(Collection<Artifact> artifacts, ArtifactSink sink, Output output) throws Exception;
 
     boolean copyTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
             ArtifactSink sink,
-            Output output);
+            Output output)
+            throws Exception;
 
-    boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output);
+    boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output)
+            throws Exception;
 
-    boolean deployAllRecorded(String remoteRepositorySpec, boolean stopRecording, Output output);
+    boolean deployAllRecorded(String remoteRepositorySpec, boolean stopRecording, Output output) throws Exception;
 
-    boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output);
+    boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output) throws Exception;
 
-    boolean listRepositories(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output);
+    boolean listRepositories(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output)
+            throws Exception;
 
-    boolean listAvailablePlugins(Collection<String> groupIds, Output output);
+    boolean listAvailablePlugins(Collection<String> groupIds, Output output) throws Exception;
 
     boolean recordStart(Output output);
 
     boolean recordStop(Output output);
 
-    boolean resolve(Collection<Artifact> artifacts, boolean sources, boolean javadoc, boolean signature, Output output);
+    boolean resolve(Collection<Artifact> artifacts, boolean sources, boolean javadoc, boolean signature, Output output)
+            throws Exception;
 
     boolean resolveTransitive(
             ResolutionScope resolutionScope,
@@ -94,9 +103,11 @@ public interface ToolboxCommando extends Closeable {
             boolean sources,
             boolean javadoc,
             boolean signature,
-            Output output);
+            Output output)
+            throws Exception;
 
-    boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output);
+    boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output)
+            throws Exception;
 
     // Search API related commands: they target one single RemoteRepository
 

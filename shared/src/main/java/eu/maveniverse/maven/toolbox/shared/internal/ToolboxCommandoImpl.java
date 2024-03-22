@@ -55,11 +55,9 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.deployment.DeployRequest;
-import org.eclipse.aether.deployment.DeploymentException;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.installation.InstallRequest;
-import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
@@ -190,37 +188,30 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) {
-        try {
-            output.verbose("Resolving {}", resolutionRoot.getArtifact());
-            DependencyResult dependencyResult = toolboxResolver.resolve(
-                    resolutionScope,
-                    resolutionRoot.getArtifact(),
-                    resolutionRoot.getDependencies(),
-                    resolutionRoot.getManagedDependencies());
+    public boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output)
+            throws Exception {
+        output.verbose("Resolving {}", resolutionRoot.getArtifact());
+        DependencyResult dependencyResult = toolboxResolver.resolve(
+                resolutionScope,
+                resolutionRoot.getArtifact(),
+                resolutionRoot.getDependencies(),
+                resolutionRoot.getManagedDependencies());
 
-            PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
-            dependencyResult.getRoot().accept(nlg);
-            // TODO: Do not use PreorderNodeListGenerator#getClassPath() until MRESOLVER-483 is fixed/released
-            output.normal(
-                    "{}",
-                    nlg.getFiles().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
-            return !nlg.getFiles().isEmpty();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
+        dependencyResult.getRoot().accept(nlg);
+        // TODO: Do not use PreorderNodeListGenerator#getClassPath() until MRESOLVER-483 is fixed/released
+        output.normal(
+                "{}",
+                nlg.getFiles().stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator)));
+        return !nlg.getFiles().isEmpty();
     }
 
     @Override
-    public boolean copy(Collection<Artifact> artifacts, ArtifactSink sink, Output output) {
-        try {
-            output.verbose("Resolving {}", artifacts);
-            List<ArtifactResult> resolveResult = toolboxResolver.resolveArtifacts(artifacts);
-            sink.accept(resolveResult.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
-            return !resolveResult.isEmpty();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public boolean copy(Collection<Artifact> artifacts, ArtifactSink sink, Output output) throws Exception {
+        output.verbose("Resolving {}", artifacts);
+        List<ArtifactResult> resolveResult = toolboxResolver.resolveArtifacts(artifacts);
+        sink.accept(resolveResult.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
+        return !resolveResult.isEmpty();
     }
 
     @Override
@@ -228,94 +219,81 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
             ArtifactSink sink,
-            Output output) {
-        try {
-            ArrayList<ArtifactResult> artifactResults = new ArrayList<>();
-            for (ResolutionRoot resolutionRoot : resolutionRoots) {
-                output.verbose("Resolving {}", resolutionRoot.getArtifact());
-                DependencyResult dependencyResult = toolboxResolver.resolve(
-                        resolutionScope,
-                        resolutionRoot.getArtifact(),
-                        resolutionRoot.getDependencies(),
-                        resolutionRoot.getManagedDependencies());
-                artifactResults.addAll(dependencyResult.getArtifactResults());
-            }
-            sink.accept(
-                    artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
-            return !artifactResults.isEmpty();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            Output output)
+            throws Exception {
+        ArrayList<ArtifactResult> artifactResults = new ArrayList<>();
+        for (ResolutionRoot resolutionRoot : resolutionRoots) {
+            output.verbose("Resolving {}", resolutionRoot.getArtifact());
+            DependencyResult dependencyResult = toolboxResolver.resolve(
+                    resolutionScope,
+                    resolutionRoot.getArtifact(),
+                    resolutionRoot.getDependencies(),
+                    resolutionRoot.getManagedDependencies());
+            artifactResults.addAll(dependencyResult.getArtifactResults());
         }
+        sink.accept(artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
+        return !artifactResults.isEmpty();
     }
 
     @Override
-    public boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output) {
-        try {
-            Collection<Artifact> artifacts = artifactSupplier.get();
-            RemoteRepository remoteRepository = toolboxResolver.parseDeploymentRemoteRepository(remoteRepositorySpec);
-            DeployRequest deployRequest = new DeployRequest();
-            deployRequest.setRepository(remoteRepository);
-            artifacts.forEach(deployRequest::addArtifact);
-            context.repositorySystem().deploy(context.repositorySystemSession(), deployRequest);
-            output.normal("");
-            output.normal("Deployed {} artifacts to {}", artifacts.size(), remoteRepository);
-            return !artifacts.isEmpty();
-        } catch (DeploymentException e) {
-            throw new RuntimeException(e);
-        }
+    public boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output)
+            throws Exception {
+        Collection<Artifact> artifacts = artifactSupplier.get();
+        RemoteRepository remoteRepository = toolboxResolver.parseDeploymentRemoteRepository(remoteRepositorySpec);
+        DeployRequest deployRequest = new DeployRequest();
+        deployRequest.setRepository(remoteRepository);
+        artifacts.forEach(deployRequest::addArtifact);
+        context.repositorySystem().deploy(context.repositorySystemSession(), deployRequest);
+        output.normal("");
+        output.normal("Deployed {} artifacts to {}", artifacts.size(), remoteRepository);
+        return !artifacts.isEmpty();
     }
 
     @Override
-    public boolean deployAllRecorded(String remoteRepositorySpec, boolean stopRecording, Output output) {
+    public boolean deployAllRecorded(String remoteRepositorySpec, boolean stopRecording, Output output)
+            throws Exception {
         artifactRecorder.setActive(!stopRecording);
         return deploy(remoteRepositorySpec, () -> new HashSet<>(artifactRecorder.getAllArtifacts()), output);
     }
 
     @Override
-    public boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output) {
-        try {
-            Collection<Artifact> artifacts = artifactSupplier.get();
-            InstallRequest installRequest = new InstallRequest();
-            artifacts.forEach(installRequest::addArtifact);
-            context.repositorySystem().install(context.repositorySystemSession(), installRequest);
-            output.normal("");
-            output.normal("Install {} artifacts to local repository", artifacts.size());
-            return !artifacts.isEmpty();
-        } catch (InstallationException e) {
-            throw new RuntimeException(e);
-        }
+    public boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output) throws Exception {
+        Collection<Artifact> artifacts = artifactSupplier.get();
+        InstallRequest installRequest = new InstallRequest();
+        artifacts.forEach(installRequest::addArtifact);
+        context.repositorySystem().install(context.repositorySystemSession(), installRequest);
+        output.normal("");
+        output.normal("Install {} artifacts to local repository", artifacts.size());
+        return !artifacts.isEmpty();
     }
 
     @Override
-    public boolean listRepositories(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) {
-        try {
-            output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
-            ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
-            output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
-            CollectResult collectResult = toolboxResolver.collect(
-                    resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), false);
-            HashSet<RemoteRepository> repositories = new HashSet<>();
-            collectResult.getRoot().accept(new TreeDependencyVisitor(new DependencyVisitor() {
-                @Override
-                public boolean visitEnter(DependencyNode node) {
-                    repositories.addAll(node.getRepositories());
-                    return true;
-                }
+    public boolean listRepositories(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output)
+            throws Exception {
+        output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
+        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+        output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
+        CollectResult collectResult = toolboxResolver.collect(
+                resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), false);
+        HashSet<RemoteRepository> repositories = new HashSet<>();
+        collectResult.getRoot().accept(new TreeDependencyVisitor(new DependencyVisitor() {
+            @Override
+            public boolean visitEnter(DependencyNode node) {
+                repositories.addAll(node.getRepositories());
+                return true;
+            }
 
-                @Override
-                public boolean visitLeave(DependencyNode node) {
-                    return true;
-                }
-            }));
-            repositories.forEach(r -> output.normal(r.toString()));
-            return !repositories.isEmpty();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+            @Override
+            public boolean visitLeave(DependencyNode node) {
+                return true;
+            }
+        }));
+        repositories.forEach(r -> output.normal(r.toString()));
+        return !repositories.isEmpty();
     }
 
     @Override
-    public boolean listAvailablePlugins(Collection<String> groupIds, Output output) {
+    public boolean listAvailablePlugins(Collection<String> groupIds, Output output) throws Exception {
         output.verbose("Listing plugins in groupIds: {}", groupIds);
         List<Artifact> plugins = toolboxResolver.listAvailablePlugins(groupIds);
         plugins.forEach(p -> output.normal(p.toString()));
@@ -340,36 +318,33 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean resolve(
-            Collection<Artifact> artifacts, boolean sources, boolean javadoc, boolean signature, Output output) {
-        try {
-            output.verbose("Resolving {}", artifacts);
-            toolboxResolver.resolveArtifacts(artifacts);
-            if (sources || javadoc || signature) {
-                HashSet<Artifact> subartifacts = new HashSet<>();
-                artifacts.forEach(a -> {
-                    if (sources && a.getClassifier().isEmpty()) {
-                        subartifacts.add(new SubArtifact(a, "sources", "jar"));
-                    }
-                    if (javadoc && a.getClassifier().isEmpty()) {
-                        subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
-                    }
-                    if (signature && !a.getExtension().endsWith(".asc")) {
-                        subartifacts.add(new SubArtifact(a, "*", "*.asc"));
-                    }
-                });
-                if (!subartifacts.isEmpty()) {
-                    output.verbose("Resolving (best effort) {}", subartifacts);
-                    try {
-                        toolboxResolver.resolveArtifacts(subartifacts);
-                    } catch (ArtifactResolutionException e) {
-                        // ignore, this is "best effort"
-                    }
+            Collection<Artifact> artifacts, boolean sources, boolean javadoc, boolean signature, Output output)
+            throws Exception {
+        output.verbose("Resolving {}", artifacts);
+        toolboxResolver.resolveArtifacts(artifacts);
+        if (sources || javadoc || signature) {
+            HashSet<Artifact> subartifacts = new HashSet<>();
+            artifacts.forEach(a -> {
+                if (sources && a.getClassifier().isEmpty()) {
+                    subartifacts.add(new SubArtifact(a, "sources", "jar"));
+                }
+                if (javadoc && a.getClassifier().isEmpty()) {
+                    subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
+                }
+                if (signature && !a.getExtension().endsWith(".asc")) {
+                    subartifacts.add(new SubArtifact(a, "*", "*.asc"));
+                }
+            });
+            if (!subartifacts.isEmpty()) {
+                output.verbose("Resolving (best effort) {}", subartifacts);
+                try {
+                    toolboxResolver.resolveArtifacts(subartifacts);
+                } catch (ArtifactResolutionException e) {
+                    // ignore, this is "best effort"
                 }
             }
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
+        return !artifacts.isEmpty();
     }
 
     @Override
@@ -379,57 +354,54 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
-            Output output) {
-        try {
-            int totalArtifactCount = 0;
-            long totalArtifactSize = 0;
-            for (ResolutionRoot resolutionRoot : resolutionRoots) {
-                output.verbose("Resolving {}", resolutionRoot.getArtifact());
-                DependencyResult dependencyResult = toolboxResolver.resolve(
-                        resolutionScope,
-                        resolutionRoot.getArtifact(),
-                        resolutionRoot.getDependencies(),
-                        resolutionRoot.getManagedDependencies());
-                if (output.isVerbose()) {
-                    for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
-                        output.verbose(
-                                "{} -> {}",
-                                artifactResult.getArtifact(),
-                                artifactResult.getArtifact().getFile());
-                    }
+            Output output)
+            throws Exception {
+        int totalArtifactCount = 0;
+        long totalArtifactSize = 0;
+        for (ResolutionRoot resolutionRoot : resolutionRoots) {
+            output.verbose("Resolving {}", resolutionRoot.getArtifact());
+            DependencyResult dependencyResult = toolboxResolver.resolve(
+                    resolutionScope,
+                    resolutionRoot.getArtifact(),
+                    resolutionRoot.getDependencies(),
+                    resolutionRoot.getManagedDependencies());
+            if (output.isVerbose()) {
+                for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
+                    output.verbose(
+                            "{} -> {}",
+                            artifactResult.getArtifact(),
+                            artifactResult.getArtifact().getFile());
                 }
-                int artifactCount = dependencyResult.getArtifactResults().size();
-                long artifactSize = dependencyResult.getArtifactResults().stream()
-                        .map(ArtifactResult::getArtifact)
-                        .map(Artifact::getFile)
-                        .filter(Objects::nonNull)
-                        .map(f -> {
-                            try {
-                                return Files.size(f.toPath());
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        })
-                        .collect(Collectors.summarizingLong(Long::longValue))
-                        .getSum();
-                totalArtifactCount += artifactCount;
-                totalArtifactSize += artifactSize;
-
-                output.normal(
-                        "Resolved: {} (count: {}, size: {})",
-                        resolutionRoot.getArtifact(),
-                        artifactCount,
-                        humanReadableByteCountBin(artifactSize));
             }
+            int artifactCount = dependencyResult.getArtifactResults().size();
+            long artifactSize = dependencyResult.getArtifactResults().stream()
+                    .map(ArtifactResult::getArtifact)
+                    .map(Artifact::getFile)
+                    .filter(Objects::nonNull)
+                    .map(f -> {
+                        try {
+                            return Files.size(f.toPath());
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .collect(Collectors.summarizingLong(Long::longValue))
+                    .getSum();
+            totalArtifactCount += artifactCount;
+            totalArtifactSize += artifactSize;
+
             output.normal(
-                    "Total resolved: {} (count: {}, size: {})",
-                    resolutionRoots.size(),
-                    totalArtifactCount,
-                    humanReadableByteCountBin(totalArtifactSize));
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+                    "Resolved: {} (count: {}, size: {})",
+                    resolutionRoot.getArtifact(),
+                    artifactCount,
+                    humanReadableByteCountBin(artifactSize));
         }
+        output.normal(
+                "Total resolved: {} (count: {}, size: {})",
+                resolutionRoots.size(),
+                totalArtifactCount,
+                humanReadableByteCountBin(totalArtifactSize));
+        return true;
     }
 
     @Override

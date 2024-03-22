@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.cli;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.Artifacts;
 import java.nio.file.Path;
-import org.eclipse.aether.deployment.DeploymentException;
 import picocli.CommandLine;
 
 /**
@@ -44,7 +43,7 @@ public final class Deploy extends ResolverCommandSupport {
     private Path javadoc;
 
     @Override
-    protected boolean doCall(Context context) throws DeploymentException {
+    protected boolean doCall(Context context) throws Exception {
         Artifacts artifacts = new Artifacts(gav);
         artifacts.addMain(jar);
         if (pom != null) {

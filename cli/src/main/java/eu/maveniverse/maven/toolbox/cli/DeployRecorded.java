@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.toolbox.cli;
 
 import eu.maveniverse.maven.mima.context.Context;
-import org.eclipse.aether.deployment.DeploymentException;
 import picocli.CommandLine;
 
 /**
@@ -20,7 +19,7 @@ public final class DeployRecorded extends ResolverCommandSupport {
     private String remoteRepositorySpec;
 
     @Override
-    protected boolean doCall(Context context) throws DeploymentException {
+    protected boolean doCall(Context context) throws Exception {
         return getToolboxCommando(context).deployAllRecorded(remoteRepositorySpec, true, output);
     }
 }

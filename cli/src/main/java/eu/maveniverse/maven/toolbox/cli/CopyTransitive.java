@@ -12,7 +12,6 @@ import eu.maveniverse.maven.toolbox.shared.DirectorySink;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
-import java.util.stream.Collectors;
 import picocli.CommandLine;
 
 /**
@@ -47,18 +46,7 @@ public final class CopyTransitive extends ResolverCommandSupport {
         ToolboxCommando toolboxCommando = getToolboxCommando(context);
         return toolboxCommando.copyTransitive(
                 ResolutionScope.parse(resolutionScope),
-                gav.stream()
-                        .map(g -> {
-                            try {
-                                return toolboxCommando.loadGav(g, boms);
-                            } catch (Exception e) {
-                                if (e instanceof RuntimeException) {
-                                    throw (RuntimeException) e;
-                                }
-                                throw new RuntimeException(e);
-                            }
-                        })
-                        .collect(Collectors.toList()),
+                toolboxCommando.loadGavs(gav, boms),
                 DirectorySink.flat(output, targetPath),
                 output);
     }

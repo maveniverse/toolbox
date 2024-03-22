@@ -14,12 +14,15 @@ import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactDescriptorException;
 
 /**
  * The Toolbox Commando, that implements all the commands that are exposed via Mojos or CLI.
@@ -27,11 +30,11 @@ import org.eclipse.aether.repository.RemoteRepository;
  * This instance manages {@link Context}, corresponding {@link ToolboxResolver} and {@link ToolboxSearchApi}
  * and maps one-to-one onto commands. Can be considered something like "high level" API of Toolbox.
  * <p>
- * Note on error handling: each "commando" method is marked to throw and returns a {@link boolean}.
- * If method cleanly returns, the result shows the "successful" outcome of command. If method throws,
- * {@link RuntimeException} instances (for example NPE, IAEx, ISEx) mark "bad input", or configuration
- * errors. The checked exception instances on the other hand come from corresponding subsystem like
- * resolver is. Finally, {@link IOException} is thrown on fatal IO problems.
+ * Note on error handling: each "commando" method is marked to throw and return a {@link boolean}.
+ * If method cleanly returns, the result shows the "logical success" of the command (think about it {@code false} means
+ * "this execution was no-op"). If method throws, {@link RuntimeException} instances (for example NPE, IAEx, ISEx)
+ * mark "bad input", or configuration related errors. The checked exception instances on the other hand come from
+ * corresponding subsystem like resolver is. Finally, {@link IOException} is thrown on fatal IO problems.
  */
 public interface ToolboxCommando extends Closeable {
     /**
@@ -56,16 +59,30 @@ public interface ToolboxCommando extends Closeable {
     // Resolver related commands: they target current context contained RemoteRepository
 
     /**
-     * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact.
+     * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact.
      */
-    default ResolutionRoot loadGav(String gav) throws Exception {
+    default ResolutionRoot loadGav(String gav) throws ArtifactDescriptorException {
         return loadGav(gav, Collections.emptyList());
     }
 
     /**
-     * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact and BOMs.
+     * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact and BOMs.
+     *
+     * @see ToolboxResolver#loadGav(String, Collection)
      */
-    ResolutionRoot loadGav(String gav, Collection<String> boms) throws Exception;
+    ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException;
+
+    /**
+     * Shorthand method, creates collection {@link ResolutionRoot}s out of passed in artifacts and BOMs.
+     */
+    default Collection<ResolutionRoot> loadGavs(Collection<String> gav, Collection<String> boms)
+            throws ArtifactDescriptorException {
+        List<ResolutionRoot> result = new ArrayList<>(gav.size());
+        for (String gavEntry : gav) {
+            result.add(loadGav(gavEntry, boms));
+        }
+        return result;
+    }
 
     boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) throws Exception;
 

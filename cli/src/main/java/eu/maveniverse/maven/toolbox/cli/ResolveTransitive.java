@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.cli;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.stream.Collectors;
 import picocli.CommandLine;
 
 /**
@@ -55,18 +54,7 @@ public final class ResolveTransitive extends ResolverCommandSupport {
         ToolboxCommando toolboxCommando = getToolboxCommando(context);
         return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(resolutionScope),
-                gav.stream()
-                        .map(g -> {
-                            try {
-                                return toolboxCommando.loadGav(g, boms);
-                            } catch (Exception e) {
-                                if (e instanceof RuntimeException) {
-                                    throw (RuntimeException) e;
-                                }
-                                throw new RuntimeException(e);
-                            }
-                        })
-                        .collect(Collectors.toList()),
+                toolboxCommando.loadGavs(gav, boms),
                 sources,
                 javadoc,
                 signature,

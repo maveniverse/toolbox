@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.toolbox.shared;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
@@ -54,13 +53,6 @@ public interface ToolboxResolver {
      * authentication needed to deploy.
      */
     RemoteRepository parseDeploymentRemoteRepository(String spec);
-
-    /**
-     * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact.
-     */
-    default ResolutionRoot loadGav(String gav) throws ArtifactDescriptorException {
-        return loadGav(gav, Collections.emptyList());
-    }
 
     /**
      * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact and BOMs.

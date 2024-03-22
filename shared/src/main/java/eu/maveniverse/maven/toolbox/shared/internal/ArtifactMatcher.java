@@ -104,7 +104,7 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         } else if (pattern.endsWith("*")) {
             return str.startsWith(pattern.substring(0, pattern.length() - 1));
         } else if (pattern.startsWith("*")) {
-            return str.endsWith(pattern.substring(0, pattern.length() - 1));
+            return str.endsWith(pattern.substring(1));
         } else {
             return Objects.equals(pattern, str);
         }

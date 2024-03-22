@@ -13,19 +13,17 @@ import eu.maveniverse.maven.toolbox.shared.internal.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.internal.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.internal.ArtifactNameMapper;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.function.Consumer;
 import org.eclipse.aether.artifact.Artifact;
 
 /**
  * Construction to accept collection of artifacts, for example like a filesystem directory.
  */
-public final class DirectorySink implements Consumer<Collection<Artifact>> {
+public final class DirectorySink implements ArtifactSink {
     /**
      * Creates plain "flat" directory sink that accepts all artifacts and writes them out having filenames as
      * "A[-C]-V.E" and prevents overwrite (what you usually want).
@@ -87,7 +85,7 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
     }
 
     @Override
-    public void accept(Collection<Artifact> artifacts) {
+    public void accept(Collection<Artifact> artifacts) throws IOException {
         requireNonNull(artifacts, "artifacts");
         output.verbose("Copying {} artifacts to directory {}", artifacts.size(), directory);
         try {
@@ -96,11 +94,12 @@ public final class DirectorySink implements Consumer<Collection<Artifact>> {
             }
         } catch (IOException e) {
             cleanup();
-            throw new UncheckedIOException(e);
+            throw e;
         }
     }
 
-    private void accept(Artifact artifact) throws IOException {
+    @Override
+    public void accept(Artifact artifact) throws IOException {
         output.verbose("Accept artifact {}", artifact);
         if (artifactMatcher.test(artifact)) {
             output.verbose("  matched");

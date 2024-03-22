@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -65,12 +64,12 @@ public interface ToolboxCommando extends Closeable {
 
     boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output);
 
-    boolean copy(Collection<Artifact> artifacts, Consumer<Collection<Artifact>> consumer, Output output);
+    boolean copy(Collection<Artifact> artifacts, ArtifactSink sink, Output output);
 
     boolean copyTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
-            Consumer<Collection<Artifact>> consumer,
+            ArtifactSink sink,
             Output output);
 
     boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output);

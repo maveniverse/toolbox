@@ -19,6 +19,7 @@ import eu.maveniverse.maven.mima.context.MavenSystemHome;
 import eu.maveniverse.maven.mima.context.MavenUserHome;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.internal.RuntimeSupport;
+import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
@@ -41,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -212,12 +212,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean copy(Collection<Artifact> artifacts, Consumer<Collection<Artifact>> consumer, Output output) {
+    public boolean copy(Collection<Artifact> artifacts, ArtifactSink sink, Output output) {
         try {
             output.verbose("Resolving {}", artifacts);
             List<ArtifactResult> resolveResult = toolboxResolver.resolveArtifacts(artifacts);
-            consumer.accept(
-                    resolveResult.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
+            sink.accept(resolveResult.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
             return !resolveResult.isEmpty();
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -228,7 +227,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public boolean copyTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
-            Consumer<Collection<Artifact>> consumer,
+            ArtifactSink sink,
             Output output) {
         try {
             ArrayList<ArtifactResult> artifactResults = new ArrayList<>();
@@ -241,7 +240,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         resolutionRoot.getManagedDependencies());
                 artifactResults.addAll(dependencyResult.getArtifactResults());
             }
-            consumer.accept(
+            sink.accept(
                     artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
             return !artifactResults.isEmpty();
         } catch (Exception e) {

@@ -149,17 +149,19 @@ public class ToolboxResolverImpl implements ToolboxResolver {
 
     @Override
     public ResolutionRoot loadRoot(ResolutionRoot resolutionRoot) throws ArtifactDescriptorException {
-        if (!resolutionRoot.isLoad()) {
+        if (resolutionRoot.isPrepared()) {
             return resolutionRoot;
         }
-        ArtifactDescriptorResult artifactDescriptorResult = readArtifactDescriptor(resolutionRoot.getArtifact());
-
-        return ResolutionRoot.ofNotLoaded(resolutionRoot.getArtifact())
-                .withDependencies(
-                        mergeDeps(resolutionRoot.getDependencies(), artifactDescriptorResult.getDependencies()))
-                .withManagedDependencies(mergeDeps(
-                        resolutionRoot.getManagedDependencies(), artifactDescriptorResult.getManagedDependencies()))
-                .build();
+        if (resolutionRoot.isLoad()) {
+            ArtifactDescriptorResult artifactDescriptorResult = readArtifactDescriptor(resolutionRoot.getArtifact());
+            resolutionRoot = ResolutionRoot.ofLoaded(resolutionRoot.getArtifact())
+                    .withDependencies(
+                            mergeDeps(resolutionRoot.getDependencies(), artifactDescriptorResult.getDependencies()))
+                    .withManagedDependencies(mergeDeps(
+                            resolutionRoot.getManagedDependencies(), artifactDescriptorResult.getManagedDependencies()))
+                    .build();
+        }
+        return resolutionRoot.prepared();
     }
 
     private List<Dependency> mergeDeps(List<Dependency> dominant, List<Dependency> recessive) {

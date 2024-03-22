@@ -20,13 +20,19 @@ import org.eclipse.aether.graph.Dependency;
 public final class ResolutionRoot {
     private final Artifact artifact;
     private final boolean load;
+    private final boolean prepared;
     private final List<Dependency> dependencies;
     private final List<Dependency> managedDependencies;
 
     private ResolutionRoot(
-            Artifact artifact, boolean load, List<Dependency> dependencies, List<Dependency> managedDependencies) {
+            Artifact artifact,
+            boolean load,
+            boolean prepared,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies) {
         this.artifact = artifact;
         this.load = load;
+        this.prepared = prepared;
         this.dependencies = dependencies;
         this.managedDependencies = managedDependencies;
     }
@@ -43,6 +49,22 @@ public final class ResolutionRoot {
      */
     public boolean isLoad() {
         return load;
+    }
+
+    /**
+     * Is this instance prepared (for processing)?
+     */
+    public boolean isPrepared() {
+        return prepared;
+    }
+
+    /**
+     * To mark root as prepared (for processing).
+     * <p>
+     * Note: users should not invoke this method, or at least, should be aware of the consequences.
+     */
+    public ResolutionRoot prepared() {
+        return new ResolutionRoot(artifact, load, true, dependencies, managedDependencies);
     }
 
     /**
@@ -118,7 +140,7 @@ public final class ResolutionRoot {
             if (!load && dependencies == null) {
                 throw new IllegalStateException("must specify dependencies for non-loaded artifacts");
             }
-            return new ResolutionRoot(artifact, load, dependencies, managedDependencies);
+            return new ResolutionRoot(artifact, load, false, dependencies, managedDependencies);
         }
     }
 }

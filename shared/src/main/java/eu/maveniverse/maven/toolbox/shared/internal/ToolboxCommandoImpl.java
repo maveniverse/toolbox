@@ -28,7 +28,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -43,8 +46,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
@@ -66,7 +72,6 @@ import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.ChecksumUtils;
 import org.eclipse.aether.util.artifact.SubArtifact;
-import org.eclipse.aether.util.graph.visitor.DependencyGraphDumper;
 import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.util.listener.ChainedRepositoryListener;
@@ -225,7 +230,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     resolutionRoot.getArtifact(),
                     resolutionRoot.getDependencies(),
                     resolutionRoot.getManagedDependencies());
-            artifactResults.addAll(dependencyResult.getArtifactResults());
+            List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
+                    ? dependencyResult.getArtifactResults()
+                    : dependencyResult
+                            .getArtifactResults()
+                            .subList(1, dependencyResult.getArtifactResults().size() - 1);
+            artifactResults.addAll(adjustedResults);
         }
         sink.accept(artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
         return !artifactResults.isEmpty();
@@ -370,16 +380,37 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     resolutionRoot.getArtifact(),
                     resolutionRoot.getDependencies(),
                     resolutionRoot.getManagedDependencies());
-            if (output.isVerbose()) {
-                for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
+            List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
+                    ? dependencyResult.getArtifactResults()
+                    : dependencyResult
+                            .getArtifactResults()
+                            .subList(1, dependencyResult.getArtifactResults().size() - 1);
+            for (ArtifactResult artifactResult : adjustedResults) {
+                ModuleDescriptor moduleDescriptor =
+                        getModuleDescriptor(output, artifactResult.getArtifact().getFile());
+                String moduleInfo = "";
+                if (moduleDescriptor != null) {
+                    moduleInfo = "-- module " + moduleDescriptor.name;
+                    if (moduleDescriptor.automatic) {
+                        if ("MANIFEST".equals(moduleDescriptor.moduleNameSource)) {
+                            moduleInfo += " [auto]";
+                        } else {
+                            moduleInfo += " (auto)";
+                        }
+                    }
+                }
+                if (output.isVerbose()) {
                     output.verbose(
-                            "{} -> {}",
+                            "{} {} -> {}",
                             artifactResult.getArtifact(),
+                            moduleInfo,
                             artifactResult.getArtifact().getFile());
+                } else {
+                    output.normal("{} {}", artifactResult.getArtifact(), moduleInfo);
                 }
             }
-            int artifactCount = dependencyResult.getArtifactResults().size();
-            long artifactSize = dependencyResult.getArtifactResults().stream()
+            int artifactCount = adjustedResults.size();
+            long artifactSize = adjustedResults.stream()
                     .map(ArtifactResult::getArtifact)
                     .map(Artifact::getFile)
                     .filter(Objects::nonNull)
@@ -395,14 +426,16 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             totalArtifactCount += artifactCount;
             totalArtifactSize += artifactSize;
 
+            output.normal("");
             output.normal(
-                    "Resolved: {} (count: {}, size: {})",
+                    "Resolved artifact: {} (artifact count: {}, artifact size: {})",
                     resolutionRoot.getArtifact(),
                     artifactCount,
                     humanReadableByteCountBin(artifactSize));
         }
+        output.normal("====================");
         output.normal(
-                "Total resolved: {} (count: {}, size: {})",
+                "Total resolved artifacts: {} (artifact count: {}, artifact size: {})",
                 resolutionRoots.size(),
                 totalArtifactCount,
                 humanReadableByteCountBin(totalArtifactSize));
@@ -645,11 +678,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         return defVal;
     }
 
-    protected static Map<String, String> loadPomProperties(String groupId, String artifactId) {
+    public static Map<String, String> loadPomProperties(String groupId, String artifactId) {
         return loadClasspathProperties("/META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties");
     }
 
-    protected static Map<String, String> loadClasspathProperties(String resource) {
+    public static Map<String, String> loadClasspathProperties(String resource) {
         final Properties props = new Properties();
         try (InputStream is = RuntimeSupport.class.getResourceAsStream(resource)) {
             if (is != null) {
@@ -664,5 +697,71 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         e -> String.valueOf(e.getValue()),
                         (prev, next) -> next,
                         HashMap::new));
+    }
+
+    public static ModuleDescriptor getModuleDescriptor(Output output, File artifactFile) {
+        ModuleDescriptor moduleDescriptor = null;
+        try {
+            // Use Java9 code to get moduleName, don't try to do it better with own implementation
+            Class<?> moduleFinderClass = Class.forName("java.lang.module.ModuleFinder");
+
+            Path path = artifactFile.toPath();
+
+            Method ofMethod = moduleFinderClass.getMethod("of", java.nio.file.Path[].class);
+            Object moduleFinderInstance = ofMethod.invoke(null, new Object[] {new java.nio.file.Path[] {path}});
+
+            Method findAllMethod = moduleFinderClass.getMethod("findAll");
+            Set<Object> moduleReferences = (Set<Object>) findAllMethod.invoke(moduleFinderInstance);
+
+            // moduleReferences can be empty when referring to target/classes without module-info.class
+            if (!moduleReferences.isEmpty()) {
+                Object moduleReference = moduleReferences.iterator().next();
+                Method descriptorMethod = moduleReference.getClass().getMethod("descriptor");
+                Object moduleDescriptorInstance = descriptorMethod.invoke(moduleReference);
+
+                Method nameMethod = moduleDescriptorInstance.getClass().getMethod("name");
+                String name = (String) nameMethod.invoke(moduleDescriptorInstance);
+
+                moduleDescriptor = new ModuleDescriptor();
+                moduleDescriptor.name = name;
+
+                Method isAutomaticMethod = moduleDescriptorInstance.getClass().getMethod("isAutomatic");
+                moduleDescriptor.automatic = (Boolean) isAutomaticMethod.invoke(moduleDescriptorInstance);
+
+                if (moduleDescriptor.automatic) {
+                    if (artifactFile.isFile()) {
+                        try (JarFile jarFile = new JarFile(artifactFile)) {
+                            Manifest manifest = jarFile.getManifest();
+
+                            if (manifest != null
+                                    && manifest.getMainAttributes().getValue("Automatic-Module-Name") != null) {
+                                moduleDescriptor.moduleNameSource = "MANIFEST";
+                            } else {
+                                moduleDescriptor.moduleNameSource = "FILENAME";
+                            }
+                        } catch (IOException e) {
+                            // noop
+                        }
+                    }
+                }
+            }
+        } catch (ClassNotFoundException | SecurityException | IllegalAccessException | IllegalArgumentException e) {
+            output.verbose("Ignored Exception:", e);
+        } catch (NoSuchMethodException e) {
+            output.verbose("Ignored Exception:", e);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            while (cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+            output.verbose("Can't extract module name from {}:", artifactFile.getName(), cause);
+        }
+        return moduleDescriptor;
+    }
+
+    public static class ModuleDescriptor {
+        String name;
+        boolean automatic = true;
+        String moduleNameSource;
     }
 }

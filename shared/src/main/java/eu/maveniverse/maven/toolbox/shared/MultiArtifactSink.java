@@ -66,4 +66,15 @@ public final class MultiArtifactSink implements ArtifactSink {
     public void cleanup(IOException e) {
         sinks.values().forEach(a -> a.cleanup(e));
     }
+
+    @Override
+    public void close() {
+        for (ArtifactSink sink : sinks.values()) {
+            try {
+                sink.close();
+            } catch (Exception e) {
+                output.warn("Closing sink failed", e);
+            }
+        }
+    }
 }

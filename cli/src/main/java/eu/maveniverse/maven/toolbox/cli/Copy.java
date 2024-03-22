@@ -33,7 +33,7 @@ public final class Copy extends ResolverCommandSupport {
     private java.util.List<String> boms;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
         Path targetPath = target.toAbsolutePath();
         return toolboxCommando.copy(
                 gav.stream().map(DefaultArtifact::new).collect(Collectors.toList()),

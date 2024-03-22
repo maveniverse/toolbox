@@ -23,7 +23,7 @@ public final class Record extends ResolverCommandSupport {
     private boolean stop;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws DependencyResolutionException {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws DependencyResolutionException {
         if (stop) {
             return toolboxCommando.recordStop(output);
         } else {

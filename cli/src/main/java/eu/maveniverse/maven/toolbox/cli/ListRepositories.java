@@ -33,7 +33,7 @@ public final class ListRepositories extends ResolverCommandSupport {
     private java.util.List<String> boms;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.listRepositories(
                 ResolutionScope.parse(resolutionScope), toolboxCommando.loadGav(gav, boms), output);
     }

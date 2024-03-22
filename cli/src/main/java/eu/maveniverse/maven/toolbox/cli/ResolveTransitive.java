@@ -49,7 +49,7 @@ public final class ResolveTransitive extends ResolverCommandSupport {
     private boolean signature;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(resolutionScope),
                 toolboxCommando.loadGavs(gav, boms),

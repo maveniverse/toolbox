@@ -40,7 +40,7 @@ public final class Tree extends ResolverCommandSupport {
     private java.util.List<String> boms;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.tree(
                 ResolutionScope.parse(resolutionScope), toolboxCommando.loadGav(gav, boms), verboseTree, output);
     }

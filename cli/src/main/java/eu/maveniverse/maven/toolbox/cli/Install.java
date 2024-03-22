@@ -40,7 +40,7 @@ public final class Install extends ResolverCommandSupport {
     private Path javadoc;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
         Artifacts artifacts = new Artifacts(gav);
         artifacts.addMain(jar);
         if (pom != null) {

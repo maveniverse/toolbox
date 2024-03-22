@@ -41,9 +41,9 @@ import picocli.CommandLine;
         mixinStandardHelpOptions = true)
 public class Main extends CommandSupport {
     @Override
-    protected boolean doCall(ToolboxCommando commando) throws Exception {
+    protected boolean doExecute(ToolboxCommando commando) throws Exception {
         commando.dump(false, output);
-        return new Repl().doCall(commando);
+        return new Repl().doExecute(commando);
     }
 
     public static void main(String... args) {

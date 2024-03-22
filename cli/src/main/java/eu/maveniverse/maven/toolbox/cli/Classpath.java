@@ -33,7 +33,7 @@ public final class Classpath extends ResolverCommandSupport {
     private java.util.List<String> boms;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.classpath(
                 ResolutionScope.parse(resolutionScope), toolboxCommando.loadGav(gav, boms), output);
     }

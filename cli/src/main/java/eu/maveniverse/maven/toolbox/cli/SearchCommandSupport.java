@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.cli;
 
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.eclipse.aether.repository.RemoteRepository;
 import picocli.CommandLine;
 
@@ -30,9 +31,9 @@ public abstract class SearchCommandSupport extends CommandSupport {
             description = "The targeted repository vendor")
     protected String repositoryVendor;
 
-    protected RemoteRepository getRemoteRepository() {
+    protected RemoteRepository getRemoteRepository(ToolboxCommando toolboxCommando) {
         RemoteRepository remoteRepository =
-                getToolboxCommando(getContext()).getKnownRemoteRepositories().get(repositoryId);
+                toolboxCommando.getKnownRemoteRepositories().get(repositoryId);
         if (remoteRepository != null) {
             return remoteRepository;
         }

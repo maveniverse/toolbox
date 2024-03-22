@@ -16,7 +16,7 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "dump", description = "Dump MIMA environment")
 public final class Dump extends CommandSupport {
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) {
         return toolboxCommando.dump(verbose, output);
     }
 }

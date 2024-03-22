@@ -21,7 +21,7 @@ public final class Identify extends SearchCommandSupport {
     private String target;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws IOException {
-        return toolboxCommando.identify(getRemoteRepository(), target, output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws IOException {
+        return toolboxCommando.identify(getRemoteRepository(toolboxCommando), target, output);
     }
 }

@@ -21,7 +21,7 @@ public final class Search extends SearchCommandSupport {
     private String expression;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws IOException {
-        return toolboxCommando.search(getRemoteRepository(), expression, output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws IOException {
+        return toolboxCommando.search(getRemoteRepository(toolboxCommando), expression, output);
     }
 }

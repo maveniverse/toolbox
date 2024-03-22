@@ -44,7 +44,7 @@ public final class Resolve extends ResolverCommandSupport {
     private boolean signature;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolve(
                 gav.stream().map(DefaultArtifact::new).collect(Collectors.toList()),
                 sources,

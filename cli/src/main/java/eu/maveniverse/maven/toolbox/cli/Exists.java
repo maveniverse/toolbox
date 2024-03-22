@@ -47,8 +47,8 @@ public final class Exists extends SearchCommandSupport {
     private boolean allRequired;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws IOException {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws IOException {
         return toolboxCommando.exists(
-                getRemoteRepository(), gav, pom, sources, javadoc, signature, allRequired, output);
+                getRemoteRepository(toolboxCommando), gav, pom, sources, javadoc, signature, allRequired, output);
     }
 }

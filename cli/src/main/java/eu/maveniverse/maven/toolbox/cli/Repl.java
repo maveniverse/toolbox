@@ -35,7 +35,7 @@ import picocli.shell.jline3.PicocliCommands;
 @CommandLine.Command(name = "repl", description = "REPL console")
 public class Repl extends CommandSupport {
     @Override
-    public boolean doCall(ToolboxCommando toolboxCommando) {
+    public boolean doExecute(ToolboxCommando toolboxCommando) {
         Class<?> tp = JansiTerminalProvider.class;
         Context context = getContext();
         push(Context.class.getName(), context.customize(context.contextOverrides()));

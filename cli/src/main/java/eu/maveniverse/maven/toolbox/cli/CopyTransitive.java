@@ -40,7 +40,7 @@ public final class CopyTransitive extends ResolverCommandSupport {
     private java.util.List<String> boms;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
         Path targetPath = target.toAbsolutePath();
         return toolboxCommando.copyTransitive(
                 ResolutionScope.parse(resolutionScope),

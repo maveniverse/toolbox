@@ -20,7 +20,7 @@ public final class ListAvailablePlugins extends ResolverCommandSupport {
     private java.util.List<String> groupIds;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.listAvailablePlugins(groupIds, output);
     }
 }

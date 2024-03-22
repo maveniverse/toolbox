@@ -21,7 +21,7 @@ public final class List extends SearchCommandSupport {
     private String gavoid;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws IOException {
-        return toolboxCommando.list(getRemoteRepository(), gavoid, output);
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws IOException {
+        return toolboxCommando.list(getRemoteRepository(toolboxCommando), gavoid, output);
     }
 }

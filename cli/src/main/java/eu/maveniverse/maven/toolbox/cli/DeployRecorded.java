@@ -19,7 +19,7 @@ public final class DeployRecorded extends ResolverCommandSupport {
     private String remoteRepositorySpec;
 
     @Override
-    protected boolean doCall(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.deployAllRecorded(remoteRepositorySpec, true, output);
     }
 }

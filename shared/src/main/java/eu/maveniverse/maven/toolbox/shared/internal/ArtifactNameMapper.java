@@ -76,6 +76,21 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
         };
     }
 
+    static ArtifactNameMapper repositoryDefault(String fs) {
+        return artifact -> {
+            StringBuilder path = new StringBuilder(128);
+            path.append(artifact.getGroupId().replace(".", fs)).append(fs);
+            path.append(artifact.getArtifactId()).append(fs);
+            path.append(artifact.getBaseVersion()).append(fs);
+            path.append(artifact.getArtifactId()).append("-").append(artifact.getVersion());
+            if (!artifact.getClassifier().isEmpty()) {
+                path.append("-").append(artifact.getClassifier());
+            }
+            path.append(".").append(artifact.getExtension());
+            return path.toString();
+        };
+    }
+
     static ArtifactNameMapper G() {
         return Artifact::getGroupId;
     }

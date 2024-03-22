@@ -104,10 +104,5 @@ public final class Artifacts implements Supplier<Collection<Artifact>> {
         public int hashCode() {
             return Objects.hash(classifier, extension);
         }
-
-        @Override
-        public String toString() {
-            return (classifier == null ? "" : classifier) + "." + extension;
-        }
     }
 }

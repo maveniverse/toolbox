@@ -210,9 +210,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public boolean copy(Collection<Artifact> artifacts, ArtifactSink sink, Output output) throws Exception {
         output.verbose("Resolving {}", artifacts);
-        List<ArtifactResult> resolveResult = toolboxResolver.resolveArtifacts(artifacts);
-        sink.accept(resolveResult.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
-        return !resolveResult.isEmpty();
+        try (sink) {
+            List<ArtifactResult> resolveResult = toolboxResolver.resolveArtifacts(artifacts);
+            sink.accept(resolveResult.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
+            return !resolveResult.isEmpty();
+        }
     }
 
     @Override
@@ -222,23 +224,27 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ArtifactSink sink,
             Output output)
             throws Exception {
-        ArrayList<ArtifactResult> artifactResults = new ArrayList<>();
-        for (ResolutionRoot resolutionRoot : resolutionRoots) {
-            output.verbose("Resolving {}", resolutionRoot.getArtifact());
-            DependencyResult dependencyResult = toolboxResolver.resolve(
-                    resolutionScope,
-                    resolutionRoot.getArtifact(),
-                    resolutionRoot.getDependencies(),
-                    resolutionRoot.getManagedDependencies());
-            List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
-                    ? dependencyResult.getArtifactResults()
-                    : dependencyResult
-                            .getArtifactResults()
-                            .subList(1, dependencyResult.getArtifactResults().size() - 1);
-            artifactResults.addAll(adjustedResults);
+        try (sink) {
+            ArrayList<ArtifactResult> artifactResults = new ArrayList<>();
+            for (ResolutionRoot resolutionRoot : resolutionRoots) {
+                output.verbose("Resolving {}", resolutionRoot.getArtifact());
+                DependencyResult dependencyResult = toolboxResolver.resolve(
+                        resolutionScope,
+                        resolutionRoot.getArtifact(),
+                        resolutionRoot.getDependencies(),
+                        resolutionRoot.getManagedDependencies());
+                List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
+                        ? dependencyResult.getArtifactResults()
+                        : dependencyResult
+                                .getArtifactResults()
+                                .subList(
+                                        1, dependencyResult.getArtifactResults().size() - 1);
+                artifactResults.addAll(adjustedResults);
+            }
+            sink.accept(
+                    artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
+            return !artifactResults.isEmpty();
         }
-        sink.accept(artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
-        return !artifactResults.isEmpty();
     }
 
     @Override

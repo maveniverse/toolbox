@@ -16,13 +16,22 @@ import org.eclipse.aether.artifact.Artifact;
 /**
  * Construction to accept collection of artifacts, for example like a filesystem directory.
  */
-public interface ArtifactSink {
+public interface ArtifactSink extends AutoCloseable {
     default void accept(Collection<Artifact> artifacts) throws IOException {
         requireNonNull(artifacts, "artifacts");
-        for (Artifact artifact : artifacts) {
-            accept(artifact);
+        try {
+            for (Artifact artifact : artifacts) {
+                accept(artifact);
+            }
+        } catch (IOException e) {
+            cleanup(e);
+            throw e;
         }
     }
 
     void accept(Artifact artifact) throws IOException;
+
+    default void cleanup(IOException e) {}
+
+    default void close() throws Exception {}
 }

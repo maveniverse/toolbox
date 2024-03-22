@@ -13,23 +13,16 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-@Mojo(name = "plugin-tree", threadSafe = true)
-public class PluginTreeMojo extends MPPluginMojoSupport {
+@Mojo(name = "plugin-classpath", threadSafe = true)
+public class PluginClasspathMojo extends MPPluginMojoSupport {
     /**
      * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
      */
     @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
 
-    /**
-     * Set it {@code true} for verbose tree.
-     */
-    @Parameter(property = "verboseTree", defaultValue = "false", required = true)
-    private boolean verboseTree;
-
     @Override
     protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        toolboxCommando.tree(
-                ResolutionScope.parse(scope), pluginAsResolutionRoot(toolboxCommando), verboseTree, output);
+        toolboxCommando.classpath(ResolutionScope.parse(scope), pluginAsResolutionRoot(toolboxCommando), output);
     }
 }

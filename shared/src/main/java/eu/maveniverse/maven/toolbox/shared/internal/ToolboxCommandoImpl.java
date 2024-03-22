@@ -292,7 +292,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }));
         repositories.forEach((k, v) -> {
             output.normal(k.toString());
-            output.verbose("  First introduced on {}", v == sentinel ? "root" : v);
+            output.normal("  First introduced on {}", v == sentinel ? "root" : v);
         });
         return !repositories.isEmpty();
     }

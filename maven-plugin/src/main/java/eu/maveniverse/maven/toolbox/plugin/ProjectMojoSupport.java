@@ -16,6 +16,7 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Slf4jOutput;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
@@ -24,9 +25,12 @@ import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.settings.Settings;
 import org.eclipse.aether.artifact.ArtifactTypeRegistry;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.graph.Dependency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,18 +41,27 @@ public abstract class ProjectMojoSupport extends AbstractMojo {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final Output output = new Slf4jOutput(logger);
 
-    @Component
-    private MavenProject mavenProject;
+    @Parameter(defaultValue = "${settings}", readonly = true, required = true)
+    protected Settings settings;
 
     @Component
-    private MavenSession mavenSession;
+    protected MavenProject mavenProject;
 
     @Component
-    private ArtifactHandlerManager artifactHandlerManager;
+    protected MavenSession mavenSession;
 
-    protected ResolutionRoot projectAsResolutionRoot() {
+    @Component
+    protected ArtifactHandlerManager artifactHandlerManager;
+
+    protected List<Dependency> toDependencies(List<org.apache.maven.model.Dependency> dependencies) {
         ArtifactTypeRegistry artifactTypeRegistry =
                 mavenSession.getRepositorySession().getArtifactTypeRegistry();
+        return dependencies.stream()
+                .map(d -> RepositoryUtils.toDependency(d, artifactTypeRegistry))
+                .collect(Collectors.toList());
+    }
+
+    protected ResolutionRoot projectAsResolutionRoot() {
         return ResolutionRoot.ofNotLoaded(new DefaultArtifact(
                         mavenProject.getGroupId(),
                         mavenProject.getArtifactId(),
@@ -56,12 +69,9 @@ public abstract class ProjectMojoSupport extends AbstractMojo {
                                 .getArtifactHandler(mavenProject.getPackaging())
                                 .getExtension(),
                         mavenProject.getVersion()))
-                .withDependencies(mavenProject.getDependencies().stream()
-                        .map(d -> RepositoryUtils.toDependency(d, artifactTypeRegistry))
-                        .collect(Collectors.toList()))
-                .withManagedDependencies(mavenProject.getDependencyManagement().getDependencies().stream()
-                        .map(d -> RepositoryUtils.toDependency(d, artifactTypeRegistry))
-                        .collect(Collectors.toList()))
+                .withDependencies(toDependencies(mavenProject.getDependencies()))
+                .withManagedDependencies(
+                        toDependencies(mavenProject.getDependencyManagement().getDependencies()))
                 .build();
     }
 

@@ -43,11 +43,29 @@ public class ArtifactMatcherTest {
     }
 
     @Test
+    void composedNotAnd() {
+        assertFalse(ArtifactMatcher.not(ArtifactMatcher.and(
+                        ArtifactMatcher.artifact("g:*:*"),
+                        ArtifactMatcher.artifact("*:a:*"),
+                        ArtifactMatcher.artifact("*:*:v")))
+                .test(artifact));
+    }
+
+    @Test
     void composedOr() {
         assertTrue(ArtifactMatcher.or(
                         ArtifactMatcher.artifact("foo:*:*"),
                         ArtifactMatcher.artifact("*:foo:*"),
                         ArtifactMatcher.artifact("*:*:v"))
+                .test(artifact));
+    }
+
+    @Test
+    void composedNotOr() {
+        assertFalse(ArtifactMatcher.not(ArtifactMatcher.or(
+                        ArtifactMatcher.artifact("foo:*:*"),
+                        ArtifactMatcher.artifact("*:foo:*"),
+                        ArtifactMatcher.artifact("*:*:v")))
                 .test(artifact));
     }
 

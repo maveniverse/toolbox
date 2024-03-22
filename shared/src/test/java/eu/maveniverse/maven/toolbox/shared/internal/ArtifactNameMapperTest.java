@@ -14,12 +14,22 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.Test;
 
 public class ArtifactNameMapperTest {
-    private final Artifact artifact = new DefaultArtifact("g:a:v");
+    private final Artifact artifact = new DefaultArtifact("g:a:jar:classifier:1.0-20240322.113300-2");
 
     @Test
     void compose() {
         ArtifactNameMapper mapper =
-                ArtifactNameMapper.compose(ArtifactNameMapper.prefix("foo/"), ArtifactNameMapper.ACVE());
-        assertEquals(mapper.map(artifact), "foo/a-v.jar");
+                ArtifactNameMapper.compose(ArtifactNameMapper.fixed("foo/"), ArtifactNameMapper.AbVE());
+        assertEquals("foo/a-1.0-SNAPSHOT.jar", mapper.apply(artifact));
+    }
+
+    @Test
+    void composeInsane() {
+        ArtifactNameMapper mapper = ArtifactNameMapper.compose(
+                ArtifactNameMapper.fixed("lib/"),
+                ArtifactNameMapper.G(),
+                ArtifactNameMapper.fixed("/"),
+                ArtifactNameMapper.ACVE());
+        assertEquals("lib/g/a-classifier-1.0-20240322.113300-2.jar", mapper.apply(artifact));
     }
 }

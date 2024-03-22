@@ -15,20 +15,19 @@ import org.junit.jupiter.api.Test;
 
 public class ArtifactMapperTest {
     @Test
-    void identity() {
+    void noChangeEquals() {
         DefaultArtifact a = new DefaultArtifact("a:b:c");
-        Artifact other = ArtifactMapper.identity().map(a);
+        Artifact other = ArtifactMapper.baseVersion().apply(a);
         assertEquals(a, other);
     }
 
     @Test
     void allOfThemComposed() {
         Artifact mapped = ArtifactMapper.compose(
-                        ArtifactMapper.identity(),
                         ArtifactMapper.baseVersion(),
                         ArtifactMapper.omitClassifier(),
                         ArtifactMapper.rename("g1", "a1", null))
-                .map(new DefaultArtifact("g:a:jar:classifier:1.0-20240322.090900-12"));
+                .apply(new DefaultArtifact("g:a:jar:classifier:1.0-20240322.090900-12"));
         assertEquals(new DefaultArtifact("g1:a1:1.0-SNAPSHOT"), mapped);
     }
 }

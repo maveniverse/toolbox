@@ -41,7 +41,7 @@ public class DirectorySinkTest {
     }
 
     @Test
-    void sameA(@TempDir Path source, @TempDir Path target) throws IOException {
+    void sameADifferentGRejected(@TempDir Path source, @TempDir Path target) throws IOException {
         DirectorySink sink = DirectorySink.flat(new NullOutput(), target);
         Path a1 = source.resolve("a1");
         Path a2 = source.resolve("a2");

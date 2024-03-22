@@ -11,13 +11,15 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
 
 /**
  * Mapper that maps artifact onto a string (usually file system friendly).
  */
-public interface ArtifactNameMapper {
-    String map(Artifact artifact);
+public interface ArtifactNameMapper extends Function<Artifact, String> {
+    @Override
+    String apply(Artifact artifact);
 
     static ArtifactNameMapper compose(ArtifactNameMapper... mappers) {
         return compose(Arrays.asList(mappers));
@@ -26,22 +28,80 @@ public interface ArtifactNameMapper {
     static ArtifactNameMapper compose(Collection<ArtifactNameMapper> mappers) {
         return new ArtifactNameMapper() {
             @Override
-            public String map(Artifact artifact) {
+            public String apply(Artifact artifact) {
                 String result = "";
                 for (ArtifactNameMapper mapper : mappers) {
-                    result += mapper.map(artifact);
+                    result += mapper.apply(artifact);
                 }
                 return result;
             }
         };
     }
 
-    static ArtifactNameMapper prefix(String prefix) {
+    static ArtifactNameMapper fixed(String prefix) {
         requireNonNull(prefix, "prefix");
         if (prefix.trim().isEmpty()) {
             throw new IllegalArgumentException("invalid prefix");
         }
         return artifact -> prefix;
+    }
+
+    static ArtifactNameMapper optionalPrefix(String prefix, ArtifactNameMapper artifactNameMapper) {
+        requireNonNull(prefix, "prefix");
+        requireNonNull(artifactNameMapper, "artifactNameMapper");
+        if (prefix.trim().isEmpty()) {
+            throw new IllegalArgumentException("invalid prefix");
+        }
+        return artifact -> {
+            String val = artifactNameMapper.apply(artifact);
+            if (val != null && !val.trim().isEmpty()) {
+                return prefix + val;
+            }
+            return "";
+        };
+    }
+
+    static ArtifactNameMapper optionalSuffix(String suffix, ArtifactNameMapper artifactNameMapper) {
+        requireNonNull(suffix, "suffix");
+        requireNonNull(artifactNameMapper, "artifactNameMapper");
+        if (suffix.trim().isEmpty()) {
+            throw new IllegalArgumentException("invalid suffix");
+        }
+        return artifact -> {
+            String val = artifactNameMapper.apply(artifact);
+            if (val != null && !val.trim().isEmpty()) {
+                return val + suffix;
+            }
+            return "";
+        };
+    }
+
+    static ArtifactNameMapper G() {
+        return Artifact::getGroupId;
+    }
+
+    static ArtifactNameMapper A() {
+        return Artifact::getArtifactId;
+    }
+
+    static ArtifactNameMapper V() {
+        return Artifact::getVersion;
+    }
+
+    static ArtifactNameMapper bV() {
+        return Artifact::getBaseVersion;
+    }
+
+    static ArtifactNameMapper C() {
+        return Artifact::getClassifier;
+    }
+
+    static ArtifactNameMapper E() {
+        return Artifact::getExtension;
+    }
+
+    static ArtifactNameMapper P(String key, String def) {
+        return a -> a.getProperty(key, def);
     }
 
     static ArtifactNameMapper GACVE() {

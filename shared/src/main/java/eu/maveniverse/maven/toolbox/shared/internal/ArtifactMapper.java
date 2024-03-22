@@ -9,14 +9,15 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
 /**
  * Mapper that maps artifact to artifact.
  */
-public interface ArtifactMapper {
-    Artifact map(Artifact artifact);
+public interface ArtifactMapper extends Function<Artifact, Artifact> {
+    Artifact apply(Artifact artifact);
 
     static ArtifactMapper compose(ArtifactMapper... mappers) {
         return compose(Arrays.asList(mappers));
@@ -25,19 +26,10 @@ public interface ArtifactMapper {
     static ArtifactMapper compose(Collection<ArtifactMapper> mappers) {
         return new ArtifactMapper() {
             @Override
-            public Artifact map(Artifact artifact) {
+            public Artifact apply(Artifact artifact) {
                 for (ArtifactMapper mapper : mappers) {
-                    artifact = mapper.map(artifact);
+                    artifact = mapper.apply(artifact);
                 }
-                return artifact;
-            }
-        };
-    }
-
-    static ArtifactMapper identity() {
-        return new ArtifactMapper() {
-            @Override
-            public Artifact map(Artifact artifact) {
                 return artifact;
             }
         };
@@ -46,7 +38,7 @@ public interface ArtifactMapper {
     static ArtifactMapper baseVersion() {
         return new ArtifactMapper() {
             @Override
-            public Artifact map(Artifact artifact) {
+            public Artifact apply(Artifact artifact) {
                 return new DefaultArtifact(
                         artifact.getGroupId(),
                         artifact.getArtifactId(),
@@ -62,7 +54,7 @@ public interface ArtifactMapper {
     static ArtifactMapper omitClassifier() {
         return new ArtifactMapper() {
             @Override
-            public Artifact map(Artifact artifact) {
+            public Artifact apply(Artifact artifact) {
                 return new DefaultArtifact(
                         artifact.getGroupId(),
                         artifact.getArtifactId(),
@@ -78,7 +70,7 @@ public interface ArtifactMapper {
     static ArtifactMapper rename(String g, String a, String v) {
         return new ArtifactMapper() {
             @Override
-            public Artifact map(Artifact artifact) {
+            public Artifact apply(Artifact artifact) {
                 return new DefaultArtifact(
                         g != null ? g : artifact.getGroupId(),
                         a != null ? a : artifact.getArtifactId(),

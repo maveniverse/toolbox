@@ -18,6 +18,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 
 /**
@@ -32,16 +34,15 @@ public final class DirectorySink implements ArtifactSink {
      * will fail while accepting them, to prevent overwrite. Duplicated artifacts are filtered out.
      */
     public static DirectorySink flat(Output output, Path path) throws IOException {
-        return new DirectorySink(
-                output, path, ArtifactMatcher.unique(), ArtifactMapper.identity(), ArtifactNameMapper.ACVE(), false);
+        return new DirectorySink(output, path, ArtifactMatcher.unique(), a -> a, ArtifactNameMapper.ACVE(), false);
     }
 
     private final Output output;
     private final Path directory;
     private final boolean directoryCreated;
-    private final ArtifactMatcher artifactMatcher;
-    private final ArtifactMapper artifactMapper;
-    private final ArtifactNameMapper artifactNameMapper;
+    private final Predicate<Artifact> artifactMatcher;
+    private final Function<Artifact, Artifact> artifactMapper;
+    private final Function<Artifact, String> artifactNameMapper;
     private final boolean allowOverwrite;
     private final HashSet<Path> writtenPaths;
 
@@ -103,7 +104,7 @@ public final class DirectorySink implements ArtifactSink {
         output.verbose("Accept artifact {}", artifact);
         if (artifactMatcher.test(artifact)) {
             output.verbose("  matched");
-            String name = artifactNameMapper.map(artifactMapper.map(artifact));
+            String name = artifactNameMapper.apply(artifactMapper.apply(artifact));
             output.verbose("  mapped to name {}", name);
             Path target = directory.resolve(name).toAbsolutePath();
             if (!target.startsWith(directory)) {

@@ -17,6 +17,8 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +28,9 @@ import org.slf4j.LoggerFactory;
 public abstract class MojoSupport extends AbstractMojo {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final Output output = new Slf4jOutput(logger);
+
+    @Parameter(defaultValue = "${settings}", readonly = true, required = true)
+    protected Settings settings;
 
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {

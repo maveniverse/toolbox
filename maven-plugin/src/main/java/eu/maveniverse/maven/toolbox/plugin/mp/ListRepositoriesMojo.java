@@ -5,37 +5,27 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.plugin.gav;
+package eu.maveniverse.maven.toolbox.plugin.mp;
 
-import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-@Mojo(name = "gav-classpath", requiresProject = false, threadSafe = true)
-public class GavClasspathMojo extends GavMojoSupport {
+/**
+ * Resolves transitively a given GAV and outputs used repositories.
+ */
+@Mojo(name = "list-repositories", threadSafe = true)
+public final class ListRepositoriesMojo extends MPMojoSupport {
     /**
      * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
      */
     @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
 
-    /**
-     * The artifact coordinates in the format {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}
-     * to display tree for.
-     */
-    @Parameter(property = "gav", required = true)
-    private String gav;
-
-    /**
-     * Apply BOMs, if needed. Comma separated GAVs.
-     */
-    @Parameter(property = "boms")
-    private String boms;
-
     @Override
     protected void doExecute(ToolboxCommando toolboxCommando) throws Exception {
-        toolboxCommando.classpath(ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, csv(boms)), output);
+        toolboxCommando.listRepositories(ResolutionScope.parse(scope), projectAsResolutionRoot(), output);
     }
 }

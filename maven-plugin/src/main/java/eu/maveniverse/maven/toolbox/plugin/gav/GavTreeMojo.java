@@ -16,17 +16,17 @@ import org.apache.maven.plugins.annotations.Parameter;
 @Mojo(name = "gav-tree", requiresProject = false, threadSafe = true)
 public class GavTreeMojo extends GavMojoSupport {
     /**
+     * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
+     */
+    @Parameter(property = "scope", defaultValue = "runtime", required = true)
+    private String scope;
+
+    /**
      * The artifact coordinates in the format {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}
      * to display tree for.
      */
     @Parameter(property = "gav", required = true)
     private String gav;
-
-    /**
-     * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
-     */
-    @Parameter(property = "scope", defaultValue = "runtime", required = true)
-    private String scope;
 
     /**
      * Set it {@code true} for verbose tree.

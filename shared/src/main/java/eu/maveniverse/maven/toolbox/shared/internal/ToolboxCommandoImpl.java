@@ -34,6 +34,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -270,20 +271,29 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
         CollectResult collectResult = toolboxResolver.collect(
                 resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), false);
-        HashSet<RemoteRepository> repositories = new HashSet<>();
+        final HashMap<RemoteRepository, Artifact> repositories = new HashMap<>();
+        Artifact sentinel = new DefaultArtifact("sentinel:sentinel:sentinel");
+        context.remoteRepositories().forEach(r -> repositories.put(r, sentinel));
+        final ArrayDeque<Artifact> path = new ArrayDeque<>();
         collectResult.getRoot().accept(new TreeDependencyVisitor(new DependencyVisitor() {
             @Override
             public boolean visitEnter(DependencyNode node) {
-                repositories.addAll(node.getRepositories());
+                Artifact parent = path.peek() == null ? sentinel : path.peek();
+                node.getRepositories().forEach(r -> repositories.putIfAbsent(r, parent));
+                path.push(node.getArtifact());
                 return true;
             }
 
             @Override
             public boolean visitLeave(DependencyNode node) {
+                path.pop();
                 return true;
             }
         }));
-        repositories.forEach(r -> output.normal(r.toString()));
+        repositories.forEach((k, v) -> {
+            output.normal(k.toString());
+            output.verbose("  First introduced on {}", v == sentinel ? "root" : v);
+        });
         return !repositories.isEmpty();
     }
 

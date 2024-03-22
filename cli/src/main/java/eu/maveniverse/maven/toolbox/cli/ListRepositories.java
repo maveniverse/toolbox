@@ -13,7 +13,7 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import picocli.CommandLine;
 
 /**
- * Resolves transitively a given GAV and outputs classpath path.
+ * Resolves transitively a given GAV and outputs used repositories.
  */
 @CommandLine.Command(name = "listRepositories", description = "Lists repositories used to resolve given GAV")
 public final class ListRepositories extends ResolverCommandSupport {

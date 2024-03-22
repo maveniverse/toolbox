@@ -14,9 +14,7 @@ import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugins.annotations.Component;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.settings.Settings;
 import org.eclipse.aether.artifact.ArtifactTypeRegistry;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
@@ -25,9 +23,6 @@ import org.eclipse.aether.graph.Dependency;
  * Support class for "project aware" Mojos.
  */
 public abstract class MPMojoSupport extends MojoSupport {
-    @Parameter(defaultValue = "${settings}", readonly = true, required = true)
-    protected Settings settings;
-
     @Component
     protected MavenProject mavenProject;
 

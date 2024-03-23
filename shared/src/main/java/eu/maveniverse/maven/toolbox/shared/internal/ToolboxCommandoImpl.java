@@ -14,6 +14,7 @@ import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 import static org.apache.maven.search.api.request.Query.query;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.HTTPProxy;
 import eu.maveniverse.maven.mima.context.MavenSystemHome;
 import eu.maveniverse.maven.mima.context.MavenUserHome;
@@ -42,6 +43,7 @@ import java.text.StringCharacterIterator;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -92,6 +94,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     private final ArtifactRecorderImpl artifactRecorder;
     private final ToolboxResolverImpl toolboxResolver;
 
+    private final Map<String, RemoteRepository> knownSearchRemoteRepositories;
+
     public ToolboxCommandoImpl(Runtime runtime, Context context) {
         this.runtime = requireNonNull(runtime, "runtime");
         this.context = requireNonNull(context, "context");
@@ -102,6 +106,60 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 ChainedRepositoryListener.newInstance(session.getRepositoryListener(), artifactRecorder));
         this.toolboxResolver =
                 new ToolboxResolverImpl(context.repositorySystem(), session, context.remoteRepositories());
+        this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());
+    }
+
+    protected Map<String, RemoteRepository> createKnownSearchRemoteRepositories() {
+        Map<String, RemoteRepository> rr = new HashMap<>();
+        rr.put(
+                ContextOverrides.CENTRAL.getId(),
+                new RemoteRepository.Builder(
+                                ContextOverrides.CENTRAL.getId(), "central", ContextOverrides.CENTRAL.getUrl())
+                        .build());
+        rr.put(
+                "sonatype-oss-releases",
+                new RemoteRepository.Builder(
+                                "sonatype-oss-releases",
+                                "nx2",
+                                "https://oss.sonatype.org/content/repositories/releases/")
+                        .build());
+        rr.put(
+                "sonatype-oss-staging",
+                new RemoteRepository.Builder(
+                                "sonatype-oss-staging", "nx2", "https://oss.sonatype.org/content/groups/staging//")
+                        .build());
+        rr.put(
+                "sonatype-s01-releases",
+                new RemoteRepository.Builder(
+                                "sonatype-s01-releases",
+                                "nx2",
+                                "https://s01.oss.sonatype.org/content/repositories/releases/")
+                        .build());
+        rr.put(
+                "sonatype-s01-staging",
+                new RemoteRepository.Builder(
+                                "sonatype-s01-staging", "nx2", "https://s01.oss.sonatype.org/content/groups/staging//")
+                        .build());
+        rr.put(
+                "apache-releases",
+                new RemoteRepository.Builder(
+                                "apache-releases",
+                                "nx2",
+                                "https://repository.apache.org/content/repositories/releases/")
+                        .build());
+        rr.put(
+                "apache-staging",
+                new RemoteRepository.Builder(
+                                "apache-staging", "nx2", "https://repository.apache.org/content/groups/staging/")
+                        .build());
+        rr.put(
+                "apache-maven-staging",
+                new RemoteRepository.Builder(
+                                "apache-maven-staging",
+                                "nx2",
+                                "https://repository.apache.org/content/groups/maven-staging-group/")
+                        .build());
+        return rr;
     }
 
     @Override
@@ -183,6 +241,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             output.error("Error: {}", "Message", new RuntimeException("runtime"));
         }
         return true;
+    }
+
+    @Override
+    public RemoteRepository parseRemoteRepository(String spec) {
+        return toolboxResolver.parseRemoteRepository(spec);
     }
 
     @Override
@@ -494,8 +557,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Map<String, RemoteRepository> getKnownRemoteRepositories() {
-        return toolboxSearchApi.getKnownRemoteRepositories();
+    public Map<String, RemoteRepository> getKnownSearchRemoteRepositories() {
+        return knownSearchRemoteRepositories;
     }
 
     @Override

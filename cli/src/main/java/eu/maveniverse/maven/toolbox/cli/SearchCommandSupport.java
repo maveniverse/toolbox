@@ -33,13 +33,13 @@ public abstract class SearchCommandSupport extends CommandSupport {
 
     protected RemoteRepository getRemoteRepository(ToolboxCommando toolboxCommando) {
         RemoteRepository remoteRepository =
-                toolboxCommando.getKnownRemoteRepositories().get(repositoryId);
+                toolboxCommando.getKnownSearchRemoteRepositories().get(repositoryId);
         if (remoteRepository != null) {
             return remoteRepository;
         }
         if (repositoryBaseUri == null && repositoryVendor == null) {
             throw new IllegalArgumentException("for new remote repository one must specify all information");
         }
-        return new RemoteRepository.Builder(repositoryId, repositoryVendor, repositoryBaseUri).build();
+        return toolboxCommando.parseRemoteRepository(repositoryId + "::" + repositoryVendor + "::" + repositoryBaseUri);
     }
 }

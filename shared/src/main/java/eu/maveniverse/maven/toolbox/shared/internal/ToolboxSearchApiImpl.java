@@ -16,10 +16,7 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.Record;
@@ -40,65 +37,8 @@ import org.slf4j.LoggerFactory;
 
 public class ToolboxSearchApiImpl implements ToolboxSearchApi {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Map<String, RemoteRepository> knownRemoteRepositories;
 
-    public ToolboxSearchApiImpl() {
-        Map<String, RemoteRepository> rr = new HashMap<>();
-        rr.put(
-                ContextOverrides.CENTRAL.getId(),
-                new RemoteRepository.Builder(
-                                ContextOverrides.CENTRAL.getId(), "central", ContextOverrides.CENTRAL.getUrl())
-                        .build());
-        rr.put(
-                "sonatype-oss-releases",
-                new RemoteRepository.Builder(
-                                "sonatype-oss-releases",
-                                "nx2",
-                                "https://oss.sonatype.org/content/repositories/releases/")
-                        .build());
-        rr.put(
-                "sonatype-oss-staging",
-                new RemoteRepository.Builder(
-                                "sonatype-oss-staging", "nx2", "https://oss.sonatype.org/content/groups/staging//")
-                        .build());
-        rr.put(
-                "sonatype-s01-releases",
-                new RemoteRepository.Builder(
-                                "sonatype-s01-releases",
-                                "nx2",
-                                "https://s01.oss.sonatype.org/content/repositories/releases/")
-                        .build());
-        rr.put(
-                "sonatype-s01-staging",
-                new RemoteRepository.Builder(
-                                "sonatype-s01-staging", "nx2", "https://s01.oss.sonatype.org/content/groups/staging//")
-                        .build());
-        rr.put(
-                "apache-releases",
-                new RemoteRepository.Builder(
-                                "apache-releases",
-                                "nx2",
-                                "https://repository.apache.org/content/repositories/releases/")
-                        .build());
-        rr.put(
-                "apache-staging",
-                new RemoteRepository.Builder(
-                                "apache-staging", "nx2", "https://repository.apache.org/content/groups/staging/")
-                        .build());
-        rr.put(
-                "apache-maven-staging",
-                new RemoteRepository.Builder(
-                                "apache-maven-staging",
-                                "nx2",
-                                "https://repository.apache.org/content/groups/maven-staging-group/")
-                        .build());
-        this.knownRemoteRepositories = Collections.unmodifiableMap(rr);
-    }
-
-    @Override
-    public Map<String, RemoteRepository> getKnownRemoteRepositories() {
-        return knownRemoteRepositories;
-    }
+    public ToolboxSearchApiImpl() {}
 
     @Override
     public SearchBackend getRemoteRepositoryBackend(RemoteRepository remoteRepository) {

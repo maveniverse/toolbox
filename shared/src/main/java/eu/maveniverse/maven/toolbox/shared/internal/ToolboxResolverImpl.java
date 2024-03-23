@@ -129,6 +129,8 @@ public class ToolboxResolverImpl implements ToolboxResolver {
             result = new RemoteRepository.Builder("mima", "default", parts[0]).build();
         } else if (parts.length == 2) {
             result = new RemoteRepository.Builder(parts[0], "default", parts[1]).build();
+        } else if (parts.length == 3) {
+            result = new RemoteRepository.Builder(parts[0], parts[1], parts[2]).build();
         } else {
             throw new IllegalArgumentException("Invalid remote repository spec");
         }

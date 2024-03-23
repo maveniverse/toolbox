@@ -53,6 +53,12 @@ public interface ToolboxCommando {
     // Resolver related commands: they target current context contained RemoteRepository
 
     /**
+     * Parses remote repository string into {@link RemoteRepository}. It may be {@code url} only, {@code id::url} or
+     * {@code id::type::url} form. In first case, repository ID will be {@code "mima"}.
+     */
+    RemoteRepository parseRemoteRepository(String spec);
+
+    /**
      * Provides {@link ArtifactSink} according to spec.
      */
     ArtifactSink artifactSink(Output output, String spec) throws IOException;
@@ -127,7 +133,11 @@ public interface ToolboxCommando {
 
     // Search API related commands: they target one single RemoteRepository
 
-    Map<String, RemoteRepository> getKnownRemoteRepositories();
+    /**
+     * Returns a list of known <em>search remote repositories</em>. These {@link RemoteRepository} are NOT usable with
+     * Resolver (i.e. to deploy to them), only with Search API!
+     */
+    Map<String, RemoteRepository> getKnownSearchRemoteRepositories();
 
     boolean exists(
             RemoteRepository remoteRepository,

@@ -9,7 +9,6 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 import org.apache.maven.search.api.Record;
 import org.apache.maven.search.api.SearchBackend;
@@ -21,14 +20,6 @@ import org.eclipse.aether.repository.RemoteRepository;
  * The Toolbox Search API implements "lower level" Search API related operations.
  */
 public interface ToolboxSearchApi {
-    /**
-     * Shorthand for some "well known" repositories.
-     * <p>
-     * Important note: while these ARE {@link RemoteRepository} instances, they are NOT usable with Resolver, only
-     * with Search API.
-     */
-    Map<String, RemoteRepository> getKnownRemoteRepositories();
-
     /**
      * Returns new instance of RR backend.
      */

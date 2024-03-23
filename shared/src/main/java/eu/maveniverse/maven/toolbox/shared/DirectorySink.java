@@ -52,6 +52,9 @@ public final class DirectorySink implements ArtifactSink {
                 false);
     }
 
+    /**
+     * Writing mode.
+     */
     public enum Mode {
         COPY,
         LINK,

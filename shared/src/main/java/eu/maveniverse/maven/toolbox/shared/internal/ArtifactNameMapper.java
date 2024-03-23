@@ -16,6 +16,9 @@ import org.eclipse.aether.artifact.Artifact;
 
 /**
  * Mapper that maps artifact onto a string (usually file system friendly).
+ * <p>
+ * Name mappers {@link #GAVKey()}, {@link #GAbVKey()} and {@link #GACEVKey()} are NOT file system friendly mappers,
+ * they are more key-producing oriented mappers.
  */
 public interface ArtifactNameMapper extends Function<Artifact, String> {
     @Override
@@ -89,6 +92,22 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
             path.append(".").append(artifact.getExtension());
             return path.toString();
         };
+    }
+
+    static ArtifactNameMapper GAKey() {
+        return artifact -> artifact.getGroupId() + ":" + artifact.getArtifactId();
+    }
+
+    static ArtifactNameMapper GAVKey() {
+        return artifact -> artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion();
+    }
+
+    static ArtifactNameMapper GAbVKey() {
+        return artifact -> artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getBaseVersion();
+    }
+
+    static ArtifactNameMapper GACEVKey() {
+        return Artifact::toString;
     }
 
     static ArtifactNameMapper G() {

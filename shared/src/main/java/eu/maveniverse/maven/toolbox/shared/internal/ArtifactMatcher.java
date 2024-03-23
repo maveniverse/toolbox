@@ -85,11 +85,15 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
     }
 
     static ArtifactMatcher unique() {
-        HashSet<Artifact> artifacts = new HashSet<>();
+        return uniqueBy(ArtifactNameMapper.GACEVKey());
+    }
+
+    static ArtifactMatcher uniqueBy(ArtifactNameMapper mapper) {
+        HashSet<String> keys = new HashSet<>();
         return new ArtifactMatcher() {
             @Override
             public boolean test(Artifact artifact) {
-                return artifacts.add(artifact);
+                return keys.add(mapper.apply(artifact));
             }
         };
     }

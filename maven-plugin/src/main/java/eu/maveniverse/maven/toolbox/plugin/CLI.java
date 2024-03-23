@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin;
 
 import eu.maveniverse.maven.toolbox.plugin.gav.GavClasspathMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyTransitiveMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavDumpMojo;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -19,7 +20,7 @@ import picocli.CommandLine;
  */
 @CommandLine.Command(
         name = "toolbox",
-        subcommands = {GavClasspathMojo.class, GavCopyMojo.class, GavDumpMojo.class},
+        subcommands = {GavClasspathMojo.class, GavCopyMojo.class, GavCopyTransitiveMojo.class, GavDumpMojo.class},
         versionProvider = CLI.class,
         description = "Toolbox CLI",
         mixinStandardHelpOptions = true)

@@ -9,19 +9,20 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import picocli.CommandLine;
 
 /**
- * Resolves a given GAV and copies resulting artifact to target.
+ * Resolves Maven Artifact transitively and copies all of them to target.
  */
-@CommandLine.Command(name = "copy", description = "Resolves Maven Artifact and copies it to target")
-@Mojo(name = "gav-copy", requiresProject = false, threadSafe = true)
-public final class GavCopyMojo extends GavMojoSupport {
+@CommandLine.Command(
+        name = "copy-transitive",
+        description = "Resolves Maven Artifact transitively and copies all of them to target")
+@Mojo(name = "gav-copy-transitive", requiresProject = false, threadSafe = true)
+public final class GavCopyTransitiveMojo extends GavMojoSupport {
     /**
      * The target spec.
      */
@@ -37,20 +38,30 @@ public final class GavCopyMojo extends GavMojoSupport {
     private String gav;
 
     /**
+     * The resolution scope to resolve (default is 'runtime').
+     */
+    @CommandLine.Option(
+            names = {"--scope"},
+            defaultValue = "runtime",
+            description = "Resolution scope to resolve (default 'runtime')")
+    @Parameter(property = "scope", defaultValue = "runtime", required = true)
+    private String scope;
+
+    /**
      * Comma separated list of BOMs to apply.
      */
     @CommandLine.Option(
             names = {"--boms"},
             defaultValue = "",
-            split = ",",
             description = "Comma separated list of BOMs to apply")
     @Parameter(property = "boms")
-    private java.util.List<String> boms;
+    private String boms;
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.copy(
-                csv(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
+        return toolboxCommando.copyTransitive(
+                ResolutionScope.parse(scope),
+                toolboxCommando.loadGavs(csv(gav), csv(boms)),
                 toolboxCommando.artifactSink(output, targetSpec),
                 output);
     }

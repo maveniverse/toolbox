@@ -8,16 +8,19 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
+import picocli.CommandLine;
 
 /**
- * Dumps the MIMA environment.
+ * Dumps MIMA environment.
  */
+@CommandLine.Command(name = "dump", description = "Dump MIMA environment")
 @Mojo(name = "gav-dump", requiresProject = false, threadSafe = true)
 public class GavDumpMojo extends GavMojoSupport {
     @Override
-    protected boolean doExecute(ToolboxCommando toolboxCommando) {
-        return toolboxCommando.dump(logger.isDebugEnabled(), output);
+    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) {
+        return toolboxCommando.dump(output.isVerbose(), output);
     }
 }

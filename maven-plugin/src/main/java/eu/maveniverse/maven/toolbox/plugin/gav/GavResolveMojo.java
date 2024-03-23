@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -42,7 +43,7 @@ public class GavResolveMojo extends GavMojoSupport {
     private boolean signature;
 
     @Override
-    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolve(
                 csv(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
                 sources,

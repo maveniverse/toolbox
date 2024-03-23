@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 
@@ -17,7 +18,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 @Mojo(name = "dump", threadSafe = true)
 public class DumpMojo extends MPMojoSupport {
     @Override
-    protected boolean doExecute(ToolboxCommando toolboxCommando) {
-        return toolboxCommando.dump(logger.isDebugEnabled(), output);
+    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) {
+        return toolboxCommando.dump(output.isVerbose(), output);
     }
 }

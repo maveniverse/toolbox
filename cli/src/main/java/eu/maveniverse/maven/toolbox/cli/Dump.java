@@ -17,6 +17,6 @@ import picocli.CommandLine;
 public final class Dump extends CommandSupport {
     @Override
     protected boolean doExecute(ToolboxCommando toolboxCommando) {
-        return toolboxCommando.dump(verbose, output);
+        return toolboxCommando.dump(output.isVerbose(), output);
     }
 }

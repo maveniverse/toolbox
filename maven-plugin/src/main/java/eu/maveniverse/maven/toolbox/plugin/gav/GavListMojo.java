@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -24,7 +25,7 @@ public class GavListMojo extends GavSearchMojoSupport {
     private String gavoid;
 
     @Override
-    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.list(getRemoteRepository(toolboxCommando), gavoid, output);
     }
 }

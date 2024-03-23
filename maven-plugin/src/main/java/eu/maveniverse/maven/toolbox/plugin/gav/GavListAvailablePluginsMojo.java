@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -24,7 +25,7 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
     private String groupIds;
 
     @Override
-    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         if (groupIds == null || groupIds.trim().isEmpty()) {
             groupIds = String.join(",", settings.getPluginGroups());
         }

@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -31,7 +32,7 @@ public class TreeMojo extends MPMojoSupport {
     private boolean verboseTree;
 
     @Override
-    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.tree(ResolutionScope.parse(scope), projectAsResolutionRoot(), verboseTree, output);
     }
 }

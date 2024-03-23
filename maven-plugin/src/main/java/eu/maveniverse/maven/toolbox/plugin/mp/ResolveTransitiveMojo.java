@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.Collections;
@@ -35,7 +36,7 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
     private boolean signature;
 
     @Override
-    protected boolean doExecute(ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(scope),
                 Collections.singleton(projectAsResolutionRoot()),

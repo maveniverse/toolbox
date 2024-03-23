@@ -202,7 +202,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         output,
                         context.repositorySystem(),
                         context.repositorySystemSession(),
-                        toolboxResolver.parseDeploymentRemoteRepository(spec.substring("deploy:".length())));
+                        toolboxResolver.parseRemoteRepository(spec.substring("deploy:".length())));
             default:
                 throw new IllegalArgumentException("unknown artifact sink spec");
         }
@@ -276,7 +276,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output)
             throws Exception {
         Collection<Artifact> artifacts = artifactSupplier.get();
-        RemoteRepository remoteRepository = toolboxResolver.parseDeploymentRemoteRepository(remoteRepositorySpec);
+        RemoteRepository remoteRepository = toolboxResolver.parseRemoteRepository(remoteRepositorySpec);
         DeployRequest deployRequest = new DeployRequest();
         deployRequest.setRepository(remoteRepository);
         artifacts.forEach(deployRequest::addArtifact);
@@ -776,9 +776,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     }
                 }
             }
-        } catch (ClassNotFoundException | SecurityException | IllegalAccessException | IllegalArgumentException e) {
-            output.verbose("Ignored Exception:", e);
-        } catch (NoSuchMethodException e) {
+        } catch (ClassNotFoundException
+                | SecurityException
+                | IllegalAccessException
+                | IllegalArgumentException
+                | NoSuchMethodException e) {
             output.verbose("Ignored Exception:", e);
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();

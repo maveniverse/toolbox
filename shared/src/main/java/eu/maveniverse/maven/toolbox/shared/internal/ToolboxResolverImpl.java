@@ -124,18 +124,15 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     @Override
     public RemoteRepository parseRemoteRepository(String spec) {
         String[] parts = spec.split("::");
+        RemoteRepository result;
         if (parts.length == 1) {
-            return new RemoteRepository.Builder("mima", "default", parts[0]).build();
+            result = new RemoteRepository.Builder("mima", "default", parts[0]).build();
         } else if (parts.length == 2) {
-            return new RemoteRepository.Builder(parts[0], "default", parts[1]).build();
+            result = new RemoteRepository.Builder(parts[0], "default", parts[1]).build();
         } else {
             throw new IllegalArgumentException("Invalid remote repository spec");
         }
-    }
-
-    @Override
-    public RemoteRepository parseDeploymentRemoteRepository(String spec) {
-        return repositorySystem.newDeploymentRepository(session, parseRemoteRepository(spec));
+        return repositorySystem.newDeploymentRepository(session, result);
     }
 
     @Override

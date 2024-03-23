@@ -49,12 +49,6 @@ public interface ToolboxResolver {
     RemoteRepository parseRemoteRepository(String spec);
 
     /**
-     * Similar to {@link #parseRemoteRepository(String)} but will equip resulting repository with any possible
-     * authentication needed to deploy.
-     */
-    RemoteRepository parseDeploymentRemoteRepository(String spec);
-
-    /**
      * Shorthand method, creates {@link ResolutionRoot} our of passed in artifact and BOMs.
      */
     ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException;

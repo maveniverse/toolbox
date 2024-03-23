@@ -113,52 +113,34 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         Map<String, RemoteRepository> rr = new HashMap<>();
         rr.put(
                 ContextOverrides.CENTRAL.getId(),
-                new RemoteRepository.Builder(
-                                ContextOverrides.CENTRAL.getId(), "central", ContextOverrides.CENTRAL.getUrl())
-                        .build());
+                parseRemoteRepository(
+                        ContextOverrides.CENTRAL.getId() + "::central::" + ContextOverrides.CENTRAL.getUrl()));
         rr.put(
                 "sonatype-oss-releases",
-                new RemoteRepository.Builder(
-                                "sonatype-oss-releases",
-                                "nx2",
-                                "https://oss.sonatype.org/content/repositories/releases/")
-                        .build());
+                parseRemoteRepository(
+                        "sonatype-oss-releases::nx2::https://oss.sonatype.org/content/repositories/releases/"));
         rr.put(
                 "sonatype-oss-staging",
-                new RemoteRepository.Builder(
-                                "sonatype-oss-staging", "nx2", "https://oss.sonatype.org/content/groups/staging//")
-                        .build());
+                parseRemoteRepository("sonatype-oss-staging::nx2::https://oss.sonatype.org/content/groups/staging/"));
         rr.put(
                 "sonatype-s01-releases",
-                new RemoteRepository.Builder(
-                                "sonatype-s01-releases",
-                                "nx2",
-                                "https://s01.oss.sonatype.org/content/repositories/releases/")
-                        .build());
+                parseRemoteRepository(
+                        "sonatype-s01-releases::nx2::https://s01.oss.sonatype.org/content/repositories/releases/"));
         rr.put(
                 "sonatype-s01-staging",
-                new RemoteRepository.Builder(
-                                "sonatype-s01-staging", "nx2", "https://s01.oss.sonatype.org/content/groups/staging//")
-                        .build());
+                parseRemoteRepository(
+                        "sonatype-s01-staging::nx2::https://s01.oss.sonatype.org/content/groups/staging/"));
         rr.put(
                 "apache-releases",
-                new RemoteRepository.Builder(
-                                "apache-releases",
-                                "nx2",
-                                "https://repository.apache.org/content/repositories/releases/")
-                        .build());
+                parseRemoteRepository(
+                        "apache-releases::nx2::https://repository.apache.org/content/repositories/releases/"));
         rr.put(
                 "apache-staging",
-                new RemoteRepository.Builder(
-                                "apache-staging", "nx2", "https://repository.apache.org/content/groups/staging/")
-                        .build());
+                parseRemoteRepository("apache-staging::nx2::https://repository.apache.org/content/groups/staging/"));
         rr.put(
                 "apache-maven-staging",
-                new RemoteRepository.Builder(
-                                "apache-maven-staging",
-                                "nx2",
-                                "https://repository.apache.org/content/groups/maven-staging-group/")
-                        .build());
+                parseRemoteRepository(
+                        "apache-maven-staging::nx2::https://repository.apache.org/content/groups/maven-staging-group/"));
         return rr;
     }
 

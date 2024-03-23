@@ -12,7 +12,6 @@ import eu.maveniverse.maven.toolbox.shared.Artifacts;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.File;
-
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import picocli.CommandLine;

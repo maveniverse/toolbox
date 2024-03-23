@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,6 +27,7 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.repository.RemoteRepository;
 
 /**
  * Construction to accept collection of artifacts and purge them from local repository.
@@ -35,16 +37,25 @@ public final class PurgingSink implements ArtifactSink {
      * Creates purging sink treats artifacts as "whole", purges whole GAVs from passed in session local repository.
      * Artifacts this sink accepts MUST BE resolved from the same local repository this purging sink is about to purge.
      */
-    public static PurgingSink purging(Output output, RepositorySystem system, RepositorySystemSession session) {
-        return purging(output, Mode.WHOLE, true, system, session);
+    public static PurgingSink purging(
+            Output output,
+            RepositorySystem system,
+            RepositorySystemSession session,
+            List<RemoteRepository> remoteRepositories) {
+        return purging(output, Mode.WHOLE, true, system, session, remoteRepositories);
     }
 
     /**
      * Creates purging sink that purges from passed in session local repository.
      */
     public static PurgingSink purging(
-            Output output, Mode mode, boolean enforceOrigin, RepositorySystem system, RepositorySystemSession session) {
-        return new PurgingSink(output, mode, enforceOrigin, system, session);
+            Output output,
+            Mode mode,
+            boolean enforceOrigin,
+            RepositorySystem system,
+            RepositorySystemSession session,
+            List<RemoteRepository> remoteRepositories) {
+        return new PurgingSink(output, mode, enforceOrigin, system, session, remoteRepositories);
     }
 
     /**
@@ -77,17 +88,24 @@ public final class PurgingSink implements ArtifactSink {
     private final AtomicBoolean perform;
     private final RepositorySystem system;
     private final RepositorySystemSession session;
+    private final List<RemoteRepository> remoteRepositories;
     private final ArrayList<Artifact> artifacts;
     private final ArtifactMatcher artifactMatcher;
 
     private PurgingSink(
-            Output output, Mode mode, boolean enforceOrigin, RepositorySystem system, RepositorySystemSession session) {
+            Output output,
+            Mode mode,
+            boolean enforceOrigin,
+            RepositorySystem system,
+            RepositorySystemSession session,
+            List<RemoteRepository> remoteRepositories) {
         this.output = requireNonNull(output, "output");
         this.mode = requireNonNull(mode, "mode");
         this.enforceOrigin = enforceOrigin;
         this.perform = new AtomicBoolean(true);
         this.system = requireNonNull(system, "system");
         this.session = requireNonNull(session, "session");
+        this.remoteRepositories = requireNonNull(remoteRepositories, "remoteRepositories");
         this.artifacts = new ArrayList<>();
 
         // Note: delimiters, while MAY look superfluous, are actually required differentiate a.b:c.d and a.b.c:d
@@ -169,6 +187,23 @@ public final class PurgingSink implements ArtifactSink {
                             .toPath()
                             .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)))
                     != 0;
+        }
+        for (RemoteRepository repository : remoteRepositories) {
+            path = session.getLocalRepository()
+                    .getBasedir()
+                    .toPath()
+                    .resolve(session.getLocalRepositoryManager().getPathForRemoteArtifact(artifact, repository, null));
+            if (Files.isDirectory(path.getParent())) {
+                unregisterArtifact(path);
+                resetMetadata(
+                        path.getParent(),
+                        artifact.isSnapshot() && Objects.equals(artifact.getVersion(), artifact.getBaseVersion()));
+                return deleteFileAndSubs(session.getLocalRepository()
+                                .getBasedir()
+                                .toPath()
+                                .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)))
+                        != 0;
+            }
         }
         return false;
     }

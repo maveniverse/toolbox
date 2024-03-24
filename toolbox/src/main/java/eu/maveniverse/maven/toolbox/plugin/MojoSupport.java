@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.plugin;
 
+import static java.util.Objects.requireNonNull;
 import static org.jline.jansi.Ansi.Attribute.INTENSITY_BOLD;
 import static org.jline.jansi.Ansi.Attribute.INTENSITY_BOLD_OFF;
 import static org.jline.jansi.Ansi.Attribute.INTENSITY_FAINT;
@@ -24,15 +25,16 @@ import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Slf4jOutput;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommandoVersion;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -129,109 +131,102 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         };
     }
 
-    private static final ConcurrentHashMap<String, ArrayDeque<Object>> CLI_EXECUTION_CONTEXT =
-            new ConcurrentHashMap<>();
+    private static final AtomicReference<Map<Object, Object>> CONTEXT = new AtomicReference<>(null);
 
-    protected Object getOrCreate(String key, Supplier<?> supplier) {
-        ArrayDeque<Object> deque = CLI_EXECUTION_CONTEXT.computeIfAbsent(key, k -> new ArrayDeque<>());
-        if (deque.isEmpty()) {
-            deque.push(supplier.get());
-        }
-        return deque.peek();
+    protected <T> T getOrCreate(Class<T> key, Supplier<T> supplier) {
+        return (T) CONTEXT.get().computeIfAbsent(key, k -> supplier.get());
     }
 
-    protected void push(String key, Object object) {
-        ArrayDeque<Object> deque = CLI_EXECUTION_CONTEXT.computeIfAbsent(key, k -> new ArrayDeque<>());
-        deque.push(object);
-    }
-
-    protected Object pop(String key) {
-        ArrayDeque<Object> deque = CLI_EXECUTION_CONTEXT.computeIfAbsent(key, k -> new ArrayDeque<>());
-        return deque.pop();
+    protected <T> T get(Class<T> key) {
+        return (T) requireNonNull(CONTEXT.get().get(key), "key is not present");
     }
 
     @Override
     public String[] getVersion() {
         return new String[] {
-            "MIMA " + getRuntime().version(),
-            "Toolbox " + getToolboxCommando(getContext()).getVersion()
+            "MIMA " + Runtimes.INSTANCE.getRuntime().version(), "Toolbox " + ToolboxCommandoVersion.getVersion()
         };
     }
 
-    protected Runtime getRuntime() {
-        return (Runtime) getOrCreate(Runtime.class.getName(), Runtimes.INSTANCE::getRuntime);
+    private ContextOverrides createCLIContextOverrides() {
+        // create builder with some sane defaults
+        ContextOverrides.Builder builder = ContextOverrides.create().withUserSettings(true);
+        if (offline) {
+            builder.offline(true);
+        }
+        if (userSettingsXml != null) {
+            builder.withUserSettingsXmlOverride(userSettingsXml);
+        }
+        if (globalSettingsXml != null) {
+            builder.withGlobalSettingsXmlOverride(globalSettingsXml);
+        }
+        if (profiles != null && !profiles.isEmpty()) {
+            ArrayList<String> activeProfiles = new ArrayList<>();
+            ArrayList<String> inactiveProfiles = new ArrayList<>();
+            for (String profile : profiles) {
+                if (profile.startsWith("+")) {
+                    activeProfiles.add(profile.substring(1));
+                } else if (profile.startsWith("-") || profile.startsWith("!")) {
+                    inactiveProfiles.add(profile.substring(1));
+                } else {
+                    activeProfiles.add(profile);
+                }
+            }
+            builder.withActiveProfileIds(activeProfiles).withInactiveProfileIds(inactiveProfiles);
+        }
+        if (userProperties != null && !userProperties.isEmpty()) {
+            HashMap<String, String> defined = new HashMap<>(userProperties.size());
+            String name;
+            String value;
+            for (String property : userProperties) {
+                int i = property.indexOf('=');
+                if (i <= 0) {
+                    name = property.trim();
+                    value = Boolean.TRUE.toString();
+                } else {
+                    name = property.substring(0, i).trim();
+                    value = property.substring(i + 1);
+                }
+                defined.put(name, value);
+            }
+            builder.userProperties(defined);
+        }
+        if (proxy != null) {
+            String[] elems = proxy.split(":");
+            if (elems.length != 2) {
+                throw new IllegalArgumentException("Proxy must be specified as 'host:port'");
+            }
+            Proxy proxySettings = new Proxy();
+            proxySettings.setId("mima-mixin");
+            proxySettings.setActive(true);
+            proxySettings.setProtocol("http");
+            proxySettings.setHost(elems[0]);
+            proxySettings.setPort(Integer.parseInt(elems[1]));
+            Settings proxyMixin = new Settings();
+            proxyMixin.addProxy(proxySettings);
+            builder.withEffectiveSettingsMixin(proxyMixin);
+        }
+        return builder.build();
     }
 
-    protected ContextOverrides getContextOverrides() {
-        return (ContextOverrides) getOrCreate(ContextOverrides.class.getName(), () -> {
-            // create builder with some sane defaults
-            ContextOverrides.Builder builder = ContextOverrides.create().withUserSettings(true);
-            if (offline) {
-                builder.offline(true);
-            }
-            if (userSettingsXml != null) {
-                builder.withUserSettingsXmlOverride(userSettingsXml);
-            }
-            if (globalSettingsXml != null) {
-                builder.withGlobalSettingsXmlOverride(globalSettingsXml);
-            }
-            if (profiles != null && !profiles.isEmpty()) {
-                ArrayList<String> activeProfiles = new ArrayList<>();
-                ArrayList<String> inactiveProfiles = new ArrayList<>();
-                for (String profile : profiles) {
-                    if (profile.startsWith("+")) {
-                        activeProfiles.add(profile.substring(1));
-                    } else if (profile.startsWith("-") || profile.startsWith("!")) {
-                        inactiveProfiles.add(profile.substring(1));
-                    } else {
-                        activeProfiles.add(profile);
-                    }
-                }
-                builder.withActiveProfileIds(activeProfiles).withInactiveProfileIds(inactiveProfiles);
-            }
-            if (userProperties != null && !userProperties.isEmpty()) {
-                HashMap<String, String> defined = new HashMap<>(userProperties.size());
-                String name;
-                String value;
-                for (String property : userProperties) {
-                    int i = property.indexOf('=');
-                    if (i <= 0) {
-                        name = property.trim();
-                        value = Boolean.TRUE.toString();
-                    } else {
-                        name = property.substring(0, i).trim();
-                        value = property.substring(i + 1);
-                    }
-                    defined.put(name, value);
-                }
-                builder.userProperties(defined);
-            }
-            if (proxy != null) {
-                String[] elems = proxy.split(":");
-                if (elems.length != 2) {
-                    throw new IllegalArgumentException("Proxy must be specified as 'host:port'");
-                }
-                Proxy proxySettings = new Proxy();
-                proxySettings.setId("mima-mixin");
-                proxySettings.setActive(true);
-                proxySettings.setProtocol("http");
-                proxySettings.setHost(elems[0]);
-                proxySettings.setPort(Integer.parseInt(elems[1]));
-                Settings proxyMixin = new Settings();
-                proxyMixin.addProxy(proxySettings);
-                builder.withEffectiveSettingsMixin(proxyMixin);
-            }
-            return builder.build();
-        });
+    private ContextOverrides createMavenContextOverrides() {
+        return ContextOverrides.create().build();
+    }
+
+    protected Runtime getRuntime() {
+        return get(Runtime.class);
     }
 
     protected Context getContext() {
-        return (Context) getOrCreate(Context.class.getName(), () -> getRuntime().create(getContextOverrides()));
+        return get(Context.class);
     }
 
-    private ToolboxCommando getToolboxCommando(Context context) {
-        return (ToolboxCommando)
-                getOrCreate(ToolboxCommando.class.getName(), () -> ToolboxCommando.create(getRuntime(), context));
+    protected Output getOutput() {
+        return get(Output.class);
+    }
+
+    protected ToolboxCommando getToolboxCommando() {
+        return getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getRuntime(), getContext()));
     }
 
     private void verbose(String format, Object... args) {
@@ -408,8 +403,18 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     @Override
     public final Integer call() {
         Ansi.setEnabled(!batch);
-        try (Context context = getContext()) {
-            return doExecute(createCliOutput(), getToolboxCommando(context)) ? 0 : 1;
+        CONTEXT.compareAndSet(null, new HashMap<>());
+        getOrCreate(Output.class, this::createCliOutput);
+        getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
+        getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
+
+        try {
+            boolean result = doExecute(getOutput(), getToolboxCommando());
+            if (!result && failOnLogicalFailure) {
+                return 1;
+            } else {
+                return 0;
+            }
         } catch (Exception e) {
             error("Error", e);
             return 1;
@@ -421,8 +426,11 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     private Output createMojoOutput() {
         return new Slf4jOutput(LoggerFactory.getLogger(getClass()));
     }
-    ;
 
+    @CommandLine.Option(
+            names = {"--fail-on-logical-failure"},
+            defaultValue = "true",
+            description = "Fail on operation logical failure")
     @Parameter(property = "failOnLogicalFailure", defaultValue = "true")
     protected boolean failOnLogicalFailure;
 
@@ -431,9 +439,13 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
 
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {
-        Runtime runtime = Runtimes.INSTANCE.getRuntime();
-        try (Context context = runtime.create(ContextOverrides.create().build())) {
-            boolean result = doExecute(createMojoOutput(), ToolboxCommando.create(runtime, context));
+        CONTEXT.compareAndSet(null, getPluginContext());
+        getOrCreate(Output.class, this::createMojoOutput);
+        getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
+        getOrCreate(Context.class, () -> get(Runtime.class).create(createMavenContextOverrides()));
+
+        try {
+            boolean result = doExecute(getOutput(), getToolboxCommando());
             if (!result && failOnLogicalFailure) {
                 throw new MojoFailureException("Operation failed");
             }

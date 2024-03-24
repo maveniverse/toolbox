@@ -36,7 +36,6 @@ public class GavReplMojo extends GavMojoSupport {
     public boolean doExecute(Output output, ToolboxCommando toolboxCommando) {
         Class<?> tp = JansiTerminalProvider.class;
         Context context = getContext();
-        push(Context.class.getName(), context.customize(context.contextOverrides()));
 
         toolboxCommando.dump(false, output);
 

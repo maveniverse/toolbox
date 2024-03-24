@@ -46,7 +46,9 @@ public interface ToolboxCommando {
         return new ToolboxCommandoImpl(runtime, context);
     }
 
-    String getVersion();
+    default String getVersion() {
+        return ToolboxCommandoVersion.getVersion();
+    }
 
     boolean dump(boolean verbose, Output output);
 

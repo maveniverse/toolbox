@@ -145,11 +145,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public String getVersion() {
-        return discoverArtifactVersion("eu.maveniverse.maven.toolbox", "shared", "unknown");
-    }
-
-    @Override
     public boolean dump(boolean verbose, Output output) {
         output.warn("Toolbox {} (MIMA Runtime '{}' version {})", getVersion(), runtime.name(), runtime.version());
         output.warn("=======");

@@ -17,30 +17,23 @@ import org.apache.maven.plugins.annotations.Parameter;
 import picocli.CommandLine;
 
 /**
- * Deploys Maven Artifact into remote repository.
+ * Installs an artifact into local repository.
  */
-@CommandLine.Command(name = "deploy", description = "Deploys Maven Artifact into remote repository")
-@Mojo(name = "gav-deploy", requiresProject = false, threadSafe = true)
-public final class GavDeployMojo extends GavMojoSupport {
-
-    /**
-     * The remote repository spec (id::url).
-     */
-    @CommandLine.Parameters(index = "0", description = "The remote repository spec (id::url)", arity = "1")
-    @Parameter(property = "remoteRepositorySpec", required = true)
-    private String remoteRepositorySpec;
+@CommandLine.Command(name = "install", description = "Installs an artifact into local repository")
+@Mojo(name = "gav-install", requiresProject = false, threadSafe = true)
+public final class GavInstallMojo extends GavMojoSupport {
 
     /**
      * The GAV to deploy to.
      */
-    @CommandLine.Parameters(index = "1", description = "The GAV to deploy to", arity = "1")
+    @CommandLine.Parameters(index = "0", description = "The GAV to deploy to", arity = "1")
     @Parameter(property = "gav", required = true)
     private String gav;
 
     /**
      * The artifact JAR file.
      */
-    @CommandLine.Parameters(index = "2", description = "The artifact JAR file", arity = "1")
+    @CommandLine.Parameters(index = "1", description = "The artifact JAR file", arity = "1")
     @Parameter(property = "jar", required = true)
     private File jar;
 
@@ -84,6 +77,6 @@ public final class GavDeployMojo extends GavMojoSupport {
         if (javadoc != null) {
             artifacts.addJavadoc(javadoc.toPath());
         }
-        return toolboxCommando.deploy(remoteRepositorySpec, artifacts, output);
+        return toolboxCommando.install(artifacts, output);
     }
 }

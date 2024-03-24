@@ -13,28 +13,38 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import picocli.CommandLine;
 
 /**
- * Resolves transitively a given GAV and outputs used repositories.
+ * Lists repositories used to resolve given GAV.
  */
+@CommandLine.Command(name = "list-repositories", description = "Lists repositories used to resolve given GAV")
 @Mojo(name = "gav-list-repositories", threadSafe = true)
 public final class GavListRepositoriesMojo extends GavMojoSupport {
     /**
-     * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
+     * The GAV to list repositories for.
      */
-    @Parameter(property = "scope", defaultValue = "runtime", required = true)
-    private String scope;
-
-    /**
-     * The artifact coordinates in the format {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}
-     * to display tree for.
-     */
+    @CommandLine.Parameters(index = "0", description = "The GAV to list repositories for")
     @Parameter(property = "gav", required = true)
     private String gav;
 
     /**
-     * Apply BOMs, if needed. Comma separated GAVs.
+     * Resolution scope to resolve (default 'runtime').
      */
+    @CommandLine.Option(
+            names = {"--scope"},
+            defaultValue = "runtime",
+            description = "Resolution scope to resolve (default 'runtime')")
+    @Parameter(property = "scope", defaultValue = "runtime", required = true)
+    private String scope;
+
+    /**
+     * Comma separated list of BOMs to apply.
+     */
+    @CommandLine.Option(
+            names = {"--boms"},
+            defaultValue = "",
+            description = "Comma separated list of BOMs to apply")
     @Parameter(property = "boms", defaultValue = "")
     private String boms;
 

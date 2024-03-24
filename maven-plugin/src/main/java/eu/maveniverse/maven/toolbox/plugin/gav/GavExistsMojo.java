@@ -13,31 +13,65 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import picocli.CommandLine;
 
 /**
  * Checks given GAV for existence in a remote repository.
  */
+@CommandLine.Command(name = "exists", description = "Checks Maven Artifact existence")
 @Mojo(name = "gav-exists", requiresProject = false, threadSafe = true)
 public class GavExistsMojo extends GavSearchMojoSupport {
     /**
-     * The artifact coordinates in the format
-     * {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>} to check existence.
+     * The GAV to check for.
      */
+    @CommandLine.Parameters(index = "0", description = "The GAV to check for")
     @Parameter(property = "gav", required = true)
     private String gav;
 
+    /**
+     * Check POM presence as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--pom"},
+            description = "Check POM presence as well (derive coordinates from GAV)")
     @Parameter(property = "pom", defaultValue = "false")
     private boolean pom;
 
+    /**
+     * Check sources JAR as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--sources"},
+            description = "Check sources JAR as well (derive coordinates from GAV)")
     @Parameter(property = "sources", defaultValue = "false")
     private boolean sources;
 
+    /**
+     * Check javadoc JAR as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--javadoc"},
+            description = "Check javadoc JAR as well (derive coordinates from GAV)")
     @Parameter(property = "javadoc", defaultValue = "false")
     private boolean javadoc;
 
+    /**
+     * Check GnuPG signature as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--signature"},
+            description = "Check GnuPG signature as well (derive coordinates from GAV)")
     @Parameter(property = "signature", defaultValue = "false")
     private boolean signature;
 
+    /**
+     * If set, any missing derived artifact will be reported as failure as well. Otherwise, just the specified GAVs
+     * presence is required.
+     */
+    @CommandLine.Option(
+            names = {"--all-required"},
+            description =
+                    "If set, any missing derived artifact will be reported as failure as well. Otherwise just the specified GAVs presence is required")
     @Parameter(property = "allRequired", defaultValue = "false")
     private boolean allRequired;
 

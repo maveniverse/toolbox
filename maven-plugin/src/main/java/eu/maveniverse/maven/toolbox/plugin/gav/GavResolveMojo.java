@@ -14,31 +14,55 @@ import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import picocli.CommandLine;
 
 /**
- * Resolves given artifacts.
+ * Resolves Maven Artifacts.
  */
+@CommandLine.Command(name = "resolve", description = "Resolves Maven Artifacts")
 @Mojo(name = "gav-resolve", requiresProject = false, threadSafe = true)
 public class GavResolveMojo extends GavMojoSupport {
     /**
-     * The comma separated artifact coordinates in the format
-     * {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>} to resolve.
+     * The comma separated GAVs to resolve.
      */
+    @CommandLine.Parameters(index = "0", description = "The comma separated GAVs to resolve", arity = "1")
     @Parameter(property = "gav", required = true)
     private String gav;
 
     /**
-     * Apply BOMs, if needed. Comma separated GAVs.
+     * Comma separated list of BOMs to apply.
      */
+    @CommandLine.Option(
+            names = {"--boms"},
+            defaultValue = "",
+            description = "Comma separated list of BOMs to apply")
     @Parameter(property = "boms")
     private String boms;
 
+    /**
+     * Resolve sources JAR as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--sources"},
+            description = "Resolve sources JAR as well (derive coordinates from GAV)")
     @Parameter(property = "sources", defaultValue = "false")
     private boolean sources;
 
+    /**
+     * Resolve javadoc JAR as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--javadoc"},
+            description = "Resolve javadoc JAR as well (derive coordinates from GAV)")
     @Parameter(property = "javadoc", defaultValue = "false")
     private boolean javadoc;
 
+    /**
+     * Resolve GnuPG signature as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--signature"},
+            description = "Resolve GnuPG signature as well (derive coordinates from GAV)")
     @Parameter(property = "signature", defaultValue = "false")
     private boolean signature;
 

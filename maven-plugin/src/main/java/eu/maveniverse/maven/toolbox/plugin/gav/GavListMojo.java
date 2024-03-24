@@ -12,15 +12,20 @@ import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import picocli.CommandLine;
 
 /**
- * Lists the given "gavoid".
+ * Lists remote repository by given "gavoid" (G or G:A or G:A:V where V may be a version constraint).
  */
+@CommandLine.Command(
+        name = "list",
+        description = "Lists remote repository by given 'gavoid' (G or G:A or G:A:V where V may be version constraint)")
 @Mojo(name = "gav-list", requiresProject = false, threadSafe = true)
 public class GavListMojo extends GavSearchMojoSupport {
     /**
-     * The "gavoid" part to list.
+     * The GAV-oid to list (G or G:A or G:A:V), where V may be a version constraint.
      */
+    @CommandLine.Parameters(index = "0", description = "The GAV-oid to list (G or G:A or G:A:V)")
     @Parameter(property = "gavoid", required = true)
     private String gavoid;
 

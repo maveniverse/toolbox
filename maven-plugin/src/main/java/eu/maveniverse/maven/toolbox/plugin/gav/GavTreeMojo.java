@@ -13,36 +13,46 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import picocli.CommandLine;
 
 /**
- * Collects given GAV and output its dependency tree.
+ * Displays dependency tree of Maven Artifact.
  */
+@CommandLine.Command(name = "tree", description = "Displays dependency tree of Maven Artifact")
 @Mojo(name = "gav-tree", requiresProject = false, threadSafe = true)
 public class GavTreeMojo extends GavMojoSupport {
     /**
-     * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
+     * The GAV to show tree for.
      */
+    @CommandLine.Parameters(index = "0", description = "The GAV to show tree for", arity = "1")
+    @Parameter(property = "gav", required = true)
+    private String gav;
+
+    /**
+     * Resolution scope to resolve (default 'runtime').
+     */
+    @CommandLine.Option(
+            names = {"--scope"},
+            defaultValue = "runtime",
+            description = "Resolution scope to resolve (default 'runtime')")
     @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
 
     /**
-     * The artifact coordinates in the format {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}
-     * to display tree for.
+     * Comma separated list of BOMs to apply.
      */
-    @Parameter(property = "gav", required = true)
-    private String gav;
+    @CommandLine.Option(
+            names = {"--boms"},
+            defaultValue = "",
+            description = "Comma separated list of BOMs to apply")
+    @Parameter(property = "boms")
+    private String boms;
 
     /**
      * Set it {@code true} for verbose tree.
      */
     @Parameter(property = "verboseTree", defaultValue = "false", required = true)
     private boolean verboseTree;
-
-    /**
-     * Apply BOMs, if needed. Comma separated GAVs.
-     */
-    @Parameter(property = "boms", defaultValue = "")
-    private String boms;
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {

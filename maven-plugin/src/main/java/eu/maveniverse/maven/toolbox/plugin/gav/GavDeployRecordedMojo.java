@@ -15,23 +15,22 @@ import org.apache.maven.plugins.annotations.Parameter;
 import picocli.CommandLine;
 
 /**
- * List available plugins for given Gs.
+ * Deploys all recorded Maven Artifacts to remote repository.
  */
-@CommandLine.Command(name = "list-available-plugins", description = "List available plugins for given Gs")
-@Mojo(name = "gav-list-available-plugins", requiresProject = false, threadSafe = true)
-public class GavListAvailablePluginsMojo extends GavMojoSupport {
+@CommandLine.Command(
+        name = "deploy-recorded",
+        description = "Deploys all recorded Maven Artifacts to remote repository")
+@Mojo(name = "gav-deploy-recorded", requiresProject = false, threadSafe = true)
+public final class GavDeployRecordedMojo extends GavMojoSupport {
     /**
-     * The comma separated GroupIDs to list.
+     * The RemoteRepository spec (id::url).
      */
-    @CommandLine.Parameters(index = "0", description = "The comma separated GroupIDs to list", arity = "1")
-    @Parameter(property = "groupIds")
-    private String groupIds;
+    @CommandLine.Parameters(index = "0", description = "The RemoteRepository spec (id::url)", arity = "1")
+    @Parameter(property = "remoteRepositorySpec", required = true)
+    private String remoteRepositorySpec;
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        if (groupIds == null || groupIds.trim().isEmpty()) {
-            groupIds = String.join(",", settings.getPluginGroups());
-        }
-        return toolboxCommando.listAvailablePlugins(csv(groupIds), output);
+        return toolboxCommando.deployAllRecorded(remoteRepositorySpec, true, output);
     }
 }

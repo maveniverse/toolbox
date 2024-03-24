@@ -13,37 +13,65 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import picocli.CommandLine;
 
 /**
- * Resolves transitively given artifacts.
+ * Resolves Maven Artifacts transitively.
  */
+@CommandLine.Command(name = "resolve-transitive", description = "Resolves Maven Artifacts transitively")
 @Mojo(name = "gav-resolve-transitive", requiresProject = false, threadSafe = true)
 public class GavResolveTransitiveMojo extends GavMojoSupport {
     /**
-     * The resolution scope to resolve, accepted values are "runtime", "compile", "test", etc.
+     * The comma separated GAVs to resolve.
      */
-    @Parameter(property = "scope", defaultValue = "runtime", required = true)
-    private String scope;
-
-    /**
-     * The comma separated artifact coordinates in the format
-     * {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>} to resolve.
-     */
+    @CommandLine.Parameters(index = "0", description = "The comma separated GAVs to resolve", arity = "1")
     @Parameter(property = "gav", required = true)
     private String gav;
 
     /**
-     * Apply BOMs, if needed. Comma separated GAVs.
+     * Resolution scope to resolve (default 'runtime').
      */
+    @CommandLine.Option(
+            names = {"--scope"},
+            defaultValue = "runtime",
+            description = "Resolution scope to resolve (default 'runtime')")
+    @Parameter(property = "scope", defaultValue = "runtime", required = true)
+    private String scope;
+
+    /**
+     * Comma separated list of BOMs to apply.
+     */
+    @CommandLine.Option(
+            names = {"--boms"},
+            defaultValue = "",
+            description = "Comma separated list of BOMs to apply")
     @Parameter(property = "boms")
     private String boms;
 
+    /**
+     * Resolve sources JAR as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--sources"},
+            description = "Resolve sources JAR as well (derive coordinates from GAV)")
     @Parameter(property = "sources", defaultValue = "false")
     private boolean sources;
 
+    /**
+     * Resolve javadoc JAR as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--javadoc"},
+            description = "Resolve javadoc JAR as well (derive coordinates from GAV)")
     @Parameter(property = "javadoc", defaultValue = "false")
     private boolean javadoc;
 
+    /**
+     * Resolve GnuPG signature as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--signature"},
+            description = "Resolve GnuPG signature as well (derive coordinates from GAV)")
     @Parameter(property = "signature", defaultValue = "false")
     private boolean signature;
 

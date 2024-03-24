@@ -22,7 +22,21 @@ import picocli.CommandLine;
             GavCopyMojo.class,
             GavCopyTransitiveMojo.class,
             GavDeployMojo.class,
-            GavDumpMojo.class
+            GavDeployRecordedMojo.class,
+            GavDumpMojo.class,
+            GavExistsMojo.class,
+            GavIdentifyMojo.class,
+            GavInstallMojo.class,
+            GavListMojo.class,
+            GavListAvailablePluginsMojo.class,
+            GavListRepositoriesMojo.class,
+            GavRecordMojo.class,
+            GavReplMojo.class,
+            GavResolveMojo.class,
+            GavResolveTransitiveMojo.class,
+            GavSearchMojo.class,
+            GavTreeMojo.class,
+            GavVerifyMojo.class
         },
         versionProvider = CLI.class,
         description = "Toolbox CLI",
@@ -30,9 +44,7 @@ import picocli.CommandLine;
 public class CLI extends MojoSupport {
     @Override
     protected boolean doExecute(Output output, ToolboxCommando commando) throws Exception {
-        commando.dump(false, output);
-        return false;
-        // return new Repl().doExecute(commando);
+        return new GavReplMojo().doExecute(output, commando);
     }
 
     public static void main(String... args) {

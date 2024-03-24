@@ -13,15 +13,18 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import picocli.CommandLine;
 
 /**
- * Searches artifacts using SMO service.
+ * Searches Maven Artifacts using SMO service.
  */
+@CommandLine.Command(name = "search", description = "Searches Maven Artifacts using SMO service")
 @Mojo(name = "gav-search", requiresProject = false, threadSafe = true)
 public class GavSearchMojo extends GavSearchMojoSupport {
     /**
-     * The "expression" for search.
+     * The expression to search for.
      */
+    @CommandLine.Parameters(index = "0", description = "The expression to search for")
     @Parameter(property = "expression", required = true)
     private String expression;
 

@@ -13,21 +13,27 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import picocli.CommandLine;
 
 /**
- * Verifies artifact against known SHA-1.
+ * Verifies Maven Artifact against known SHA-1 using origin repository.
  */
+@CommandLine.Command(
+        name = "verify",
+        description = "Verifies Maven Artifact against known SHA-1 using origin repository")
 @Mojo(name = "gav-verify", requiresProject = false, threadSafe = true)
 public class GavVerifyMojo extends GavSearchMojoSupport {
     /**
-     * The artifact to verify.
+     * The GAV to verify.
      */
+    @CommandLine.Parameters(index = "0", description = "The GAV to show tree for", arity = "1")
     @Parameter(property = "gav", required = true)
     private String gav;
 
     /**
-     * The known artifact SHA-1.
+     * The locally known SHA-1 of GAV.
      */
+    @CommandLine.Parameters(index = "1", description = "The locally known SHA-1 of GAV")
     @Parameter(property = "sha1", required = true)
     private String sha1;
 

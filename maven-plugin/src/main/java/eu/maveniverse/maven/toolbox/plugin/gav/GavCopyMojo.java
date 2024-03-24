@@ -36,17 +36,6 @@ public final class GavCopyMojo extends GavMojoSupport {
     @Parameter(property = "gav", required = true)
     private String gav;
 
-    /**
-     * Comma separated list of BOMs to apply.
-     */
-    @CommandLine.Option(
-            names = {"--boms"},
-            defaultValue = "",
-            split = ",",
-            description = "Comma separated list of BOMs to apply")
-    @Parameter(property = "boms")
-    private java.util.List<String> boms;
-
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.copy(

@@ -35,8 +35,7 @@
 
   <modules>
     <module>shared</module>
-    <module>maven-plugin</module>
-    <module>cli</module>
+    <module>toolbox</module>
   </modules>
 
   <scm>

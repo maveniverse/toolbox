@@ -116,6 +116,8 @@ public interface ToolboxCommando {
 
     boolean recordStart(Output output);
 
+    boolean recordStats(Output output);
+
     boolean recordStop(Output output);
 
     boolean resolve(Collection<Artifact> artifacts, boolean sources, boolean javadoc, boolean signature, Output output)

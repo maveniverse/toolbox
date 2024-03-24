@@ -406,7 +406,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     @Override
     public final Integer call() {
         Ansi.setEnabled(!batch);
-        CONTEXT.compareAndSet(null, new HashMap<>());
+        boolean seeded = CONTEXT.compareAndSet(null, new HashMap<>());
         getOrCreate(Output.class, this::createCliOutput);
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
@@ -421,6 +421,10 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         } catch (Exception e) {
             error("Error", e);
             return 1;
+        } finally {
+            if (seeded) {
+                getContext().close();
+            }
         }
     }
 

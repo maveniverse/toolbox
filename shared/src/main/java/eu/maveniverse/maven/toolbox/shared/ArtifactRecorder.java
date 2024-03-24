@@ -26,6 +26,11 @@ public interface ArtifactRecorder {
     RemoteRepository SENTINEL = new RemoteRepository.Builder("sentinel", "default", "none").build();
 
     /**
+     * Tells is recorder active or not.
+     */
+    boolean isActive();
+
+    /**
      * Activate/deactivate recorder.
      */
     boolean setActive(boolean active);

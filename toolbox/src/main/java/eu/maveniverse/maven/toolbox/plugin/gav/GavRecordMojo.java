@@ -26,8 +26,17 @@ public final class GavRecordMojo extends GavMojoSupport {
      * Stops recording if set, otherwise starts it.
      */
     @CommandLine.Option(
+            names = {"--start"},
+            description = "Starts recording")
+    @Parameter(property = "start", defaultValue = "false", required = true)
+    private boolean start;
+
+    /**
+     * Stops recording if set, otherwise starts it.
+     */
+    @CommandLine.Option(
             names = {"--stop"},
-            description = "Stops recording if set, otherwise starts it")
+            description = "Stops recording")
     @Parameter(property = "stop", defaultValue = "false", required = true)
     private boolean stop;
 
@@ -35,8 +44,10 @@ public final class GavRecordMojo extends GavMojoSupport {
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws DependencyResolutionException {
         if (stop) {
             return toolboxCommando.recordStop(output);
-        } else {
+        } else if (start) {
             return toolboxCommando.recordStart(output);
+        } else {
+            return toolboxCommando.recordStats(output);
         }
     }
 }

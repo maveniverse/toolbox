@@ -41,6 +41,11 @@ public class ArtifactRecorderImpl extends AbstractRepositoryListener implements 
     }
 
     @Override
+    public boolean isActive() {
+        return active.get();
+    }
+
+    @Override
     public boolean setActive(boolean val) {
         return active.compareAndSet(!val, val);
     }

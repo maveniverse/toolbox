@@ -343,16 +343,17 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         rangeRequest.setRepositories(remoteRepositories);
         rangeRequest.setRequestContext(CTX_TOOLBOX);
         VersionRangeResult result = repositorySystem.resolveVersionRange(session, rangeRequest);
-        if (allowSnapshots) {
-            return result.getHighestVersion();
-        } else {
-            int idx = result.getVersions().size() - 1;
-            Version highest = result.getVersions().get(idx);
-            while (highest.toString().endsWith("SNAPSHOT")) {
-                idx -= 1;
-                highest = result.getVersions().get(idx);
-            }
+        Version highest = result.getHighestVersion();
+        if (allowSnapshots || !highest.toString().endsWith("SNAPSHOT")) {
             return highest;
+        } else {
+            for (int idx = result.getVersions().size() - 1; idx >= 0; idx--) {
+                highest = result.getVersions().get(idx);
+                if (!highest.toString().endsWith("SNAPSHOT")) {
+                    return highest;
+                }
+            }
+            return null;
         }
     }
 
@@ -391,11 +392,13 @@ public class ToolboxResolverImpl implements ToolboxResolver {
                             Artifact blueprint =
                                     new DefaultArtifact(metadata.getGroupId(), plugin.getArtifactId(), "jar", "0");
                             Version newestVersion = findNewestVersion(blueprint, false);
-                            result.add(new DefaultArtifact(
-                                    blueprint.getGroupId(),
-                                    blueprint.getArtifactId(),
-                                    blueprint.getExtension(),
-                                    newestVersion.toString()));
+                            if (newestVersion != null) {
+                                result.add(new DefaultArtifact(
+                                        blueprint.getGroupId(),
+                                        blueprint.getArtifactId(),
+                                        blueprint.getExtension(),
+                                        newestVersion.toString()));
+                            }
                         }
                     }
                 }

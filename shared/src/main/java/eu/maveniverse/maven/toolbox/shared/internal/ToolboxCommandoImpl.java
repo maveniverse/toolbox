@@ -388,17 +388,27 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean recordStart(Output output) {
-        output.verbose("Starting recorder...");
+        output.normal("Starting recorder...");
         artifactRecorder.clear();
         return artifactRecorder.setActive(true);
+    }
+
+    @Override
+    public boolean recordStats(Output output) {
+        output.normal(
+                "Recorder is {}; recorded {} artifacts so far",
+                artifactRecorder.isActive() ? "started" : "stopped",
+                artifactRecorder.getAllArtifacts().size());
+        return true;
     }
 
     @Override
     public boolean recordStop(Output output) {
         output.verbose("Stopping recorder...");
         boolean result = artifactRecorder.setActive(false);
-        output.verbose(
-                "Recorded {} artifacts", artifactRecorder.getAllArtifacts().size());
+        output.normal(
+                "Stopped recorder, recorded {} artifacts",
+                artifactRecorder.getAllArtifacts().size());
         return result;
     }
 

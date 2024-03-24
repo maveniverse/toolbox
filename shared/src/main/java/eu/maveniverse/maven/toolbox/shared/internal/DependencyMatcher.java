@@ -92,4 +92,9 @@ public interface DependencyMatcher extends Predicate<Dependency> {
             }
         };
     }
+
+    static DependencyMatcher parse(String spec) {
+        // TODO: do it
+        throw new RuntimeException("not yet implemented");
+    }
 }

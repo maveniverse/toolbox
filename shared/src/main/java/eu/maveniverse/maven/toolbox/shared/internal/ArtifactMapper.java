@@ -82,4 +82,9 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
             }
         };
     }
+
+    static ArtifactMapper parse(String spec) {
+        // TODO: do it
+        throw new RuntimeException("not yet implemented");
+    }
 }

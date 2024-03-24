@@ -98,6 +98,11 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         };
     }
 
+    static ArtifactMatcher parse(String spec) {
+        // TODO: do it
+        throw new RuntimeException("not yet implemented");
+    }
+
     private static boolean isAny(String str) {
         return "*".equals(str);
     }

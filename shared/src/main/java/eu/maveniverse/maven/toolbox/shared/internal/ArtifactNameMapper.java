@@ -265,4 +265,9 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
             return result;
         };
     }
+
+    static ArtifactNameMapper parse(String spec) {
+        // TODO: do it
+        throw new RuntimeException("not yet implemented");
+    }
 }

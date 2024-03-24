@@ -9,7 +9,6 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Output;
-import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.Collections;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -18,14 +17,8 @@ import org.apache.maven.plugins.annotations.Parameter;
 /**
  * Resolves transitively given project build plugin.
  */
-@Mojo(name = "plugin-resolve-transitive", requiresProject = false, threadSafe = true)
-public class PluginResolveTransitiveMojo extends MPPluginMojoSupport {
-    /**
-     * The resolution scope to resolve, accepted values are "runtime", "compile", "test", etc.
-     */
-    @Parameter(property = "scope", defaultValue = "runtime", required = true)
-    private String scope;
-
+@Mojo(name = "plugin-resolve", requiresProject = false, threadSafe = true)
+public class PluginResolveMojo extends MPPluginMojoSupport {
     /**
      * Resolve sources JAR as well (derive coordinates from GAV).
      */
@@ -46,9 +39,8 @@ public class PluginResolveTransitiveMojo extends MPPluginMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.resolveTransitive(
-                ResolutionScope.parse(scope),
-                Collections.singleton(pluginAsResolutionRoot(toolboxCommando)),
+        return toolboxCommando.resolve(
+                Collections.singleton(pluginAsResolutionRoot(toolboxCommando).getArtifact()),
                 sources,
                 javadoc,
                 signature,

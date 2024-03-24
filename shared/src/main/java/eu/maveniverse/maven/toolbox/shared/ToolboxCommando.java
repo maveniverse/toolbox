@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.Runtime;
-import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
+import eu.maveniverse.maven.toolbox.shared.internal.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,13 +52,35 @@ public interface ToolboxCommando {
 
     boolean dump(boolean verbose, Output output);
 
-    // Resolver related commands: they target current context contained RemoteRepository
+    // Parsers
+
+    /**
+     * Parses artifact mapper string into {@link ArtifactMapper}.
+     */
+    ArtifactMapper parseArtifactMapperSpec(String spec);
+
+    /**
+     * Parses artifact matcher string into {@link ArtifactMatcher}.
+     */
+    ArtifactMatcher parseArtifactMatcherSpec(String spec);
+
+    /**
+     * Parses artifact name mapper string into {@link ArtifactNameMapper}.
+     */
+    ArtifactNameMapper parseArtifactNameMapperSpec(String spec);
+
+    /**
+     * Parses dependency matcher string into {@link DependencyMatcher}.
+     */
+    DependencyMatcher parseDependencyMatcherSpec(String spec);
 
     /**
      * Parses remote repository string into {@link RemoteRepository}. It may be {@code url} only, {@code id::url} or
      * {@code id::type::url} form. In first case, repository ID will be {@code "mima"}.
      */
     RemoteRepository parseRemoteRepository(String spec);
+
+    // Resolver related commands: they target current context contained RemoteRepository
 
     /**
      * Provides {@link ArtifactSink} according to spec.

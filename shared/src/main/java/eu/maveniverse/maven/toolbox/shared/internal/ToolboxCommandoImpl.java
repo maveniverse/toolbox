@@ -221,6 +221,30 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public ArtifactMapper parseArtifactMapperSpec(String spec) {
+        // TODO: do it
+        throw new RuntimeException("not yet implemented");
+    }
+
+    @Override
+    public ArtifactMatcher parseArtifactMatcherSpec(String spec) {
+        // TODO: do it
+        throw new RuntimeException("not yet implemented");
+    }
+
+    @Override
+    public ArtifactNameMapper parseArtifactNameMapperSpec(String spec) {
+        // TODO: do it
+        throw new RuntimeException("not yet implemented");
+    }
+
+    @Override
+    public DependencyMatcher parseDependencyMatcherSpec(String spec) {
+        // TODO: do it
+        throw new RuntimeException("not yet implemented");
+    }
+
+    @Override
     public RemoteRepository parseRemoteRepository(String spec) {
         return toolboxResolver.parseRemoteRepository(spec);
     }

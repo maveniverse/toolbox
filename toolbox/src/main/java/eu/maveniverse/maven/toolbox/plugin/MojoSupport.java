@@ -400,6 +400,9 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         }
     }
 
+    /**
+     * Picocli CLI entry point.
+     */
     @Override
     public final Integer call() {
         Ansi.setEnabled(!batch);
@@ -437,6 +440,9 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     @Parameter(defaultValue = "${settings}", readonly = true, required = true)
     protected Settings settings;
 
+    /**
+     * Maven Mojo entry point.
+     */
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {
         CONTEXT.compareAndSet(null, getPluginContext());

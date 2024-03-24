@@ -420,7 +420,8 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
 
     private Output createMojoOutput() {
         return new Slf4jOutput(LoggerFactory.getLogger(getClass()));
-    };
+    }
+    ;
 
     @Parameter(property = "failOnLogicalFailure", defaultValue = "true")
     protected boolean failOnLogicalFailure;

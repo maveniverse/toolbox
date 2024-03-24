@@ -41,7 +41,6 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
 import org.jline.jansi.Ansi;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 import picocli.CommandLine;
@@ -101,32 +100,34 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
             description = "Show error stack traces")
     private boolean errors;
 
-    private final Output cliOutput = new Output() {
-        @Override
-        public boolean isVerbose() {
-            return verbose;
-        }
+    private Output createCliOutput() {
+        return new Output() {
+            @Override
+            public boolean isVerbose() {
+                return verbose;
+            }
 
-        @Override
-        public void verbose(String msg, Object... params) {
-            MojoSupport.this.verbose(msg, params);
-        }
+            @Override
+            public void verbose(String msg, Object... params) {
+                MojoSupport.this.verbose(msg, params);
+            }
 
-        @Override
-        public void normal(String msg, Object... params) {
-            MojoSupport.this.normal(msg, params);
-        }
+            @Override
+            public void normal(String msg, Object... params) {
+                MojoSupport.this.normal(msg, params);
+            }
 
-        @Override
-        public void warn(String msg, Object... params) {
-            MojoSupport.this.warn(msg, params);
-        }
+            @Override
+            public void warn(String msg, Object... params) {
+                MojoSupport.this.warn(msg, params);
+            }
 
-        @Override
-        public void error(String msg, Object... params) {
-            MojoSupport.this.error(msg, params);
-        }
-    };
+            @Override
+            public void error(String msg, Object... params) {
+                MojoSupport.this.error(msg, params);
+            }
+        };
+    }
 
     private static final ConcurrentHashMap<String, ArrayDeque<Object>> CLI_EXECUTION_CONTEXT =
             new ConcurrentHashMap<>();
@@ -408,7 +409,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     public final Integer call() {
         Ansi.setEnabled(!batch);
         try (Context context = getContext()) {
-            return doExecute(cliOutput, getToolboxCommando(context)) ? 0 : 1;
+            return doExecute(createCliOutput(), getToolboxCommando(context)) ? 0 : 1;
         } catch (Exception e) {
             error("Error", e);
             return 1;
@@ -417,8 +418,9 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
 
     // Mojo
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Output mojoOutput = new Slf4jOutput(logger);
+    private Output createMojoOutput() {
+        return new Slf4jOutput(LoggerFactory.getLogger(getClass()));
+    };
 
     @Parameter(property = "failOnLogicalFailure", defaultValue = "true")
     protected boolean failOnLogicalFailure;
@@ -430,7 +432,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     public final void execute() throws MojoExecutionException, MojoFailureException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
-            boolean result = doExecute(mojoOutput, ToolboxCommando.create(runtime, context));
+            boolean result = doExecute(createMojoOutput(), ToolboxCommando.create(runtime, context));
             if (!result && failOnLogicalFailure) {
                 throw new MojoFailureException("Operation failed");
             }

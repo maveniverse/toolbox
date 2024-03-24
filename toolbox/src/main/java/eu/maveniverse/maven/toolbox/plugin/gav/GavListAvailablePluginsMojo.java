@@ -23,7 +23,11 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
     /**
      * The comma separated GroupIDs to list.
      */
-    @CommandLine.Parameters(index = "0", description = "The comma separated GroupIDs to list", arity = "1")
+    @CommandLine.Parameters(
+            index = "0",
+            defaultValue = "org.apache.maven.plugins,org.codehaus.mojo",
+            description = "The comma separated GroupIDs to list",
+            arity = "1")
     @Parameter(property = "groupIds")
     private String groupIds;
 

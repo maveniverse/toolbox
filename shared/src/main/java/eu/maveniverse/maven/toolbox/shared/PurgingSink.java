@@ -142,7 +142,7 @@ public final class PurgingSink implements ArtifactSink {
     }
 
     @Override
-    public void cleanup(IOException e) {
+    public void cleanup(Exception e) {
         perform.set(false);
     }
 

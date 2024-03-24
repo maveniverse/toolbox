@@ -63,7 +63,7 @@ public final class MultiArtifactSink implements ArtifactSink {
     }
 
     @Override
-    public void cleanup(IOException e) {
+    public void cleanup(Exception e) {
         sinks.values().forEach(a -> a.cleanup(e));
     }
 

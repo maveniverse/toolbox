@@ -84,6 +84,15 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         return artifact("*");
     }
 
+    static ArtifactMatcher snapshot() {
+        return new ArtifactMatcher() {
+            @Override
+            public boolean test(Artifact artifact) {
+                return artifact.isSnapshot();
+            }
+        };
+    }
+
     static ArtifactMatcher unique() {
         return uniqueBy(ArtifactNameMapper.GACEVKey());
     }

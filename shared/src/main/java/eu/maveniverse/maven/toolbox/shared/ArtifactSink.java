@@ -23,7 +23,7 @@ public interface ArtifactSink extends AutoCloseable {
             for (Artifact artifact : artifacts) {
                 accept(artifact);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             cleanup(e);
             throw e;
         }
@@ -31,7 +31,7 @@ public interface ArtifactSink extends AutoCloseable {
 
     void accept(Artifact artifact) throws IOException;
 
-    default void cleanup(IOException e) {}
+    default void cleanup(Exception e) {}
 
     default void close() throws Exception {}
 }

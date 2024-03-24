@@ -32,21 +32,24 @@ public final class DirectorySink implements ArtifactSink {
      */
     public static DirectorySink flat(Output output, Path path) throws IOException {
         return new DirectorySink(
-                output, path, Mode.COPY, ArtifactMatcher.unique(), a -> a, ArtifactNameMapper.GACE(), false);
+                output, path, Mode.COPY, ArtifactMatcher.unique(), false, a -> a, ArtifactNameMapper.GACE(), false);
     }
 
     /**
-     * Creates "repository" directory sink, that accepts all artifacts and copies them out having filenames as
-     * a "remote repository" (usable as file based remote repository, or can be published via HTTP). It also
-     * prevents overwrite (what you usually want). This repository may ve handy for testing, but does not serve
-     * as interchangeable solution of installing or deploying artifacts for real.
+     * Creates "repository" directory sink, that accepts all non-snapshot artifacts and copies them out having
+     * filenames as a "remote repository" (usable as file based remote repository, or can be published via HTTP). It
+     * also prevents overwrite (what you usually want). This repository may be handy for testing, but does not serve
+     * as interchangeable solution of installing or deploying artifacts for real. This sink accepts release artifacts
+     * only, and fails with snapshot ones, as this is not equivalent to deploy them (no timestamped version is
+     * created).
      */
     public static DirectorySink repository(Output output, Path path) throws IOException {
         return new DirectorySink(
                 output,
                 path,
                 Mode.COPY,
-                ArtifactMatcher.unique(),
+                ArtifactMatcher.and(ArtifactMatcher.not(ArtifactMatcher.snapshot()), ArtifactMatcher.unique()),
+                true,
                 a -> a,
                 ArtifactNameMapper.repositoryDefault(File.separator),
                 false);
@@ -66,6 +69,7 @@ public final class DirectorySink implements ArtifactSink {
     private final boolean directoryCreated;
     private final Mode mode;
     private final Predicate<Artifact> artifactMatcher;
+    private final boolean failIfUnmatched;
     private final Function<Artifact, Artifact> artifactMapper;
     private final Function<Artifact, String> artifactNameMapper;
     private final boolean allowOverwrite;
@@ -90,6 +94,7 @@ public final class DirectorySink implements ArtifactSink {
             Path directory,
             Mode mode,
             ArtifactMatcher artifactMatcher,
+            boolean failIfUnmatched,
             ArtifactMapper artifactMapper,
             ArtifactNameMapper artifactNameMapper,
             boolean allowOverwrite)
@@ -108,6 +113,7 @@ public final class DirectorySink implements ArtifactSink {
         }
 
         this.artifactMatcher = requireNonNull(artifactMatcher, "artifactMatcher");
+        this.failIfUnmatched = failIfUnmatched;
         this.artifactMapper = requireNonNull(artifactMapper, "artifactMapper");
         this.artifactNameMapper = requireNonNull(artifactNameMapper, "artifactNameMapper");
         this.allowOverwrite = allowOverwrite;
@@ -154,12 +160,16 @@ public final class DirectorySink implements ArtifactSink {
                     throw new IllegalArgumentException("unknown mode");
             }
         } else {
-            output.verbose("  not matched");
+            if (failIfUnmatched) {
+                throw new IllegalArgumentException("not matched");
+            } else {
+                output.verbose("  not matched");
+            }
         }
     }
 
     @Override
-    public void cleanup(IOException e) {
+    public void cleanup(Exception e) {
         output.error("Cleaning up: {}", directory);
         writtenPaths.forEach(p -> {
             try {

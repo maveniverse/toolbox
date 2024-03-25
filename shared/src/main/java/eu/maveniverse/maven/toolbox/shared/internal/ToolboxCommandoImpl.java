@@ -221,26 +221,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public ArtifactMapper parseArtifactMapperSpec(String spec) {
-        return ArtifactMapper.parse(spec);
-    }
-
-    @Override
-    public ArtifactMatcher parseArtifactMatcherSpec(String spec) {
-        return ArtifactMatcher.parse(spec);
-    }
-
-    @Override
-    public ArtifactNameMapper parseArtifactNameMapperSpec(String spec) {
-        return ArtifactNameMapper.parse(spec);
-    }
-
-    @Override
-    public DependencyMatcher parseDependencyMatcherSpec(String spec) {
-        return DependencyMatcher.parse(spec);
-    }
-
-    @Override
     public RemoteRepository parseRemoteRepository(String spec) {
         return toolboxResolver.parseRemoteRepository(spec);
     }

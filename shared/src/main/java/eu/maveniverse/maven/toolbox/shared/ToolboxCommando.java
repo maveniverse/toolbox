@@ -57,22 +57,30 @@ public interface ToolboxCommando {
     /**
      * Parses artifact mapper string into {@link ArtifactMapper}.
      */
-    ArtifactMapper parseArtifactMapperSpec(String spec);
+    default ArtifactMapper parseArtifactMapperSpec(String spec) {
+        return ArtifactMapper.parse(spec);
+    }
 
     /**
      * Parses artifact matcher string into {@link ArtifactMatcher}.
      */
-    ArtifactMatcher parseArtifactMatcherSpec(String spec);
+    default ArtifactMatcher parseArtifactMatcherSpec(String spec) {
+        return ArtifactMatcher.parse(spec);
+    }
 
     /**
      * Parses artifact name mapper string into {@link ArtifactNameMapper}.
      */
-    ArtifactNameMapper parseArtifactNameMapperSpec(String spec);
+    default ArtifactNameMapper parseArtifactNameMapperSpec(String spec) {
+        return ArtifactNameMapper.parse(spec);
+    }
 
     /**
      * Parses dependency matcher string into {@link DependencyMatcher}.
      */
-    DependencyMatcher parseDependencyMatcherSpec(String spec);
+    default DependencyMatcher parseDependencyMatcherSpec(String spec) {
+        return DependencyMatcher.parse(spec);
+    }
 
     /**
      * Parses remote repository string into {@link RemoteRepository}. It may be {@code url} only, {@code id::url} or

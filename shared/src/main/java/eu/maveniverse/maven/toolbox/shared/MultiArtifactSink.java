@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.internal.ArtifactMatcher;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.eclipse.aether.artifact.Artifact;
@@ -19,31 +20,40 @@ import org.eclipse.aether.artifact.Artifact;
  * Construction to accept collection of artifacts and differentiate the into separate "lanes", or sinks.
  */
 public final class MultiArtifactSink implements ArtifactSink {
+    public static final class MultiArtifactSinkBuilder {
+        private final Output output;
+        private final LinkedHashMap<ArtifactMatcher, ArtifactSink> sinks;
+
+        private MultiArtifactSinkBuilder(Output output) {
+            this.output = requireNonNull(output);
+            this.sinks = new LinkedHashMap<>();
+        }
+
+        public MultiArtifactSinkBuilder addSink(ArtifactMatcher artifactMatcher, ArtifactSink sink) {
+            requireNonNull(artifactMatcher, "artifactMatcher");
+            requireNonNull(sink, "sink");
+            sinks.put(artifactMatcher, sink);
+            return this;
+        }
+
+        public MultiArtifactSink build() {
+            return new MultiArtifactSink(output, sinks);
+        }
+    }
+
     /**
      * Creates new empty instance.
      */
-    public static MultiArtifactSink multi(Output output) {
-        return new MultiArtifactSink(output);
+    public static MultiArtifactSinkBuilder multiBuilder(Output output) {
+        return new MultiArtifactSinkBuilder(output);
     }
 
     private final Output output;
-    private final LinkedHashMap<ArtifactMatcher, ArtifactSink> sinks;
+    private final Map<ArtifactMatcher, ArtifactSink> sinks;
 
-    /**
-     * Creates a multi artifact sink.
-     *
-     * @param output The output.
-     */
-    private MultiArtifactSink(Output output) {
+    private MultiArtifactSink(Output output, LinkedHashMap<ArtifactMatcher, ArtifactSink> sinks) {
         this.output = requireNonNull(output, "output");
-        this.sinks = new LinkedHashMap<>();
-    }
-
-    public MultiArtifactSink addSink(ArtifactMatcher artifactMatcher, ArtifactSink sink) {
-        requireNonNull(artifactMatcher, "artifactMatcher");
-        requireNonNull(sink, "sink");
-        sinks.put(artifactMatcher, sink);
-        return this;
+        this.sinks = Collections.unmodifiableMap(sinks);
     }
 
     @Override

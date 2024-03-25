@@ -23,7 +23,9 @@ import eu.maveniverse.maven.mima.context.internal.RuntimeSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.DeployingSink;
 import eu.maveniverse.maven.toolbox.shared.DirectorySink;
+import eu.maveniverse.maven.toolbox.shared.InstallingSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.PurgingSink;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -237,12 +239,22 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             case "repository":
                 return DirectorySink.repository(
                         output, context.basedir().resolve(spec.substring("repository:".length())));
+            case "install":
+                return InstallingSink.installing(
+                        output,
+                        context.repositorySystem(),
+                        context.repositorySystemSession());
             case "deploy":
                 return DeployingSink.deploying(
                         output,
                         context.repositorySystem(),
                         context.repositorySystemSession(),
                         toolboxResolver.parseRemoteRepository(spec.substring("deploy:".length())));
+            case "purge":
+                return PurgingSink.purging(output,
+                        context.repositorySystem(),
+                        context.repositorySystemSession(),
+                        context.remoteRepositories());
             default:
                 throw new IllegalArgumentException("unknown artifact sink spec");
         }

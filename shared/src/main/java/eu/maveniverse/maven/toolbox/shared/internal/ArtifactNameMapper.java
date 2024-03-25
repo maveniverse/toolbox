@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
@@ -79,7 +80,11 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
         };
     }
 
-    static ArtifactNameMapper repositoryDefault(String fs) {
+    static ArtifactNameMapper repositoryDefault() {
+        return repository(File.separator);
+    }
+
+    static ArtifactNameMapper repository(String fs) {
         return artifact -> {
             StringBuilder path = new StringBuilder(128);
             path.append(artifact.getGroupId().replace(".", fs)).append(fs);

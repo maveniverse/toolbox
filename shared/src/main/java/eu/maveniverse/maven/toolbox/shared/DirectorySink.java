@@ -12,7 +12,6 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.toolbox.shared.internal.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.internal.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.internal.ArtifactNameMapper;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,7 +50,7 @@ public final class DirectorySink implements ArtifactSink {
                 ArtifactMatcher.and(ArtifactMatcher.not(ArtifactMatcher.snapshot()), ArtifactMatcher.unique()),
                 true,
                 a -> a,
-                ArtifactNameMapper.repositoryDefault(File.separator),
+                ArtifactNameMapper.repositoryDefault(),
                 false);
     }
 

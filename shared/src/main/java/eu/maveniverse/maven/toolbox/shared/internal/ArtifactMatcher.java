@@ -107,6 +107,13 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         };
     }
 
+    /**
+     * Examples:
+     * <ul>
+     *     <li>any</li>
+     *     <li>or(artifact("g:*"),artifact("*:a"))</li>
+     * </ul>
+     */
     static ArtifactMatcher parse(String spec) {
         // TODO: do it
         throw new RuntimeException("not yet implemented");

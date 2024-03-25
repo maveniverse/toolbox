@@ -240,10 +240,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 return DirectorySink.repository(
                         output, context.basedir().resolve(spec.substring("repository:".length())));
             case "install":
-                return InstallingSink.installing(
-                        output,
-                        context.repositorySystem(),
-                        context.repositorySystemSession());
+                return InstallingSink.installing(output, context.repositorySystem(), context.repositorySystemSession());
             case "deploy":
                 return DeployingSink.deploying(
                         output,
@@ -251,7 +248,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         context.repositorySystemSession(),
                         toolboxResolver.parseRemoteRepository(spec.substring("deploy:".length())));
             case "purge":
-                return PurgingSink.purging(output,
+                return PurgingSink.purging(
+                        output,
                         context.repositorySystem(),
                         context.repositorySystemSession(),
                         context.remoteRepositories());

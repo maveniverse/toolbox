@@ -10,8 +10,11 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
 
@@ -272,7 +275,94 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
     }
 
     static ArtifactNameMapper parse(String spec) {
-        // TODO: do it
-        throw new RuntimeException("not yet implemented");
+        requireNonNull(spec, "spec");
+        ArtifactNameMapperBuilder builder = new ArtifactNameMapperBuilder();
+        SpecParser.parse(spec).accept(builder);
+        return builder.build();
+    }
+
+    class ArtifactNameMapperBuilder implements SpecParser.Visitor {
+        private ArrayList<Object> params = new ArrayList<>();
+
+        @Override
+        public boolean visitEnter(SpecParser.Node node) {
+            return true;
+        }
+
+        @Override
+        public boolean visitExit(SpecParser.Node node) {
+            if (node instanceof SpecParser.Literal) {
+                params.add(node.getValue());
+            } else {
+                switch (node.getValue()) {
+                    case "G":
+                        params.add(G());
+                        break;
+                    case "A":
+                        params.add(A());
+                        break;
+                    case "V":
+                        params.add(V());
+                        break;
+                    case "fixed":
+                        params.add(fixed(stringParam(node.getValue())));
+                        break;
+                    case "optionalPrefix": {
+                        ArtifactNameMapper p1 = artifactNameMapperParam(node.getValue());
+                        String p0 = stringParam(node.getValue());
+                        params.add(optionalPrefix(p0, p1));
+                        break;
+                    }
+                    case "optionalSuffix": {
+                        ArtifactNameMapper p1 = artifactNameMapperParam(node.getValue());
+                        String p0 = stringParam(node.getValue());
+                        params.add(optionalSuffix(p0, p1));
+                        break;
+                    }
+                    case "compose":
+                        ArrayList<ArtifactNameMapper> mappers =
+                                new ArrayList<>(artifactNameMapperParams(node.getValue()));
+                        Collections.reverse(mappers);
+                        params.add(compose(mappers));
+                        break;
+                    default:
+                        throw new IllegalArgumentException("unknown op " + node.getValue());
+                }
+            }
+            return true;
+        }
+
+        private String stringParam(String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return (String) params.remove(params.size() - 1);
+        }
+
+        private ArtifactNameMapper artifactNameMapperParam(String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return (ArtifactNameMapper) params.remove(params.size() - 1);
+        }
+
+        private List<ArtifactNameMapper> artifactNameMapperParams(String op) {
+            ArrayList<ArtifactNameMapper> result = new ArrayList<>();
+            while (!params.isEmpty()) {
+                if (params.get(params.size() - 1) instanceof ArtifactNameMapper) {
+                    result.add(artifactNameMapperParam(op));
+                } else {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        public ArtifactNameMapper build() {
+            if (params.size() != 1) {
+                throw new IllegalArgumentException("bad spec");
+            }
+            return (ArtifactNameMapper) params.get(0);
+        }
     }
 }

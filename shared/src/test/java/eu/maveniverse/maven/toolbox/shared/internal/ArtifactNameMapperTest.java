@@ -32,4 +32,18 @@ public class ArtifactNameMapperTest {
                 ArtifactNameMapper.ACVE());
         assertEquals("lib/g/a-classifier-1.0-20240322.113300-2.jar", mapper.apply(artifact));
     }
+
+    @Test
+    void parse() {
+        ArtifactNameMapper artifactNameMapper;
+        String mapped;
+
+        artifactNameMapper = ArtifactNameMapper.parse("fixed(zoo)");
+        mapped = artifactNameMapper.apply(artifact);
+        assertEquals("zoo", mapped);
+
+        artifactNameMapper = ArtifactNameMapper.parse("compose(G(), fixed(:), A(), fixed(:), V())");
+        mapped = artifactNameMapper.apply(artifact);
+        assertEquals("g:a:1.0-20240322.113300-2", mapped);
+    }
 }

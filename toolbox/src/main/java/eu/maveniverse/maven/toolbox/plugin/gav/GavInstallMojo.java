@@ -26,7 +26,7 @@ public final class GavInstallMojo extends GavMojoSupport {
     /**
      * The GAV to deploy to.
      */
-    @CommandLine.Parameters(index = "0", description = "The GAV to deploy to", arity = "1")
+    @CommandLine.Parameters(index = "0", description = "The GAV to install to", arity = "1")
     @Parameter(property = "gav", required = true)
     private String gav;
 

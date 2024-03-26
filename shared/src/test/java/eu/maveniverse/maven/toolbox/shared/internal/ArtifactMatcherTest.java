@@ -16,9 +16,6 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.Test;
 
-/**
- * Mapper that maps artifact to artifact.
- */
 public class ArtifactMatcherTest {
     private final Artifact artifact = new DefaultArtifact("g:a:classifier:jar:1.0-20240322.113300-2");
 

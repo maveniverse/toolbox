@@ -111,6 +111,18 @@ public final class SpecParser {
             return (String) params.remove(params.size() - 1);
         }
 
+        protected List<String> stringParams(String op) {
+            ArrayList<String> result = new ArrayList<>();
+            while (!params.isEmpty()) {
+                if (params.get(params.size() - 1) instanceof String) {
+                    result.add(stringParam(op));
+                } else {
+                    break;
+                }
+            }
+            return result;
+        }
+
         protected boolean booleanParam(String op) {
             if (params.isEmpty()) {
                 throw new IllegalArgumentException("bad parameter count for " + op);

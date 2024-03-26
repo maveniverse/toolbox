@@ -276,6 +276,7 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
     }
 
     static ArtifactNameMapper build(Map<String, Object> properties, String spec) {
+        requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         ArtifactNameMapperBuilder builder = new ArtifactNameMapperBuilder(properties);
         SpecParser.parse(spec).accept(builder);
@@ -290,6 +291,20 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
         @Override
         protected void processOp(SpecParser.Node node) {
             switch (node.getValue()) {
+                    // keys
+                case "GAKey":
+                    params.add(GAKey());
+                    break;
+                case "GAVKey":
+                    params.add(GAVKey());
+                    break;
+                case "GAbVKey":
+                    params.add(GAbVKey());
+                    break;
+                case "GACEVKey":
+                    params.add(GACEVKey());
+                    break;
+                    // mappers
                 case "G":
                     params.add(G());
                     break;
@@ -370,18 +385,6 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
                     break;
                 case "repository":
                     params.add(repository(stringParam(node.getValue())));
-                    break;
-                case "GAKey":
-                    params.add(GAKey());
-                    break;
-                case "GAVKey":
-                    params.add(GAVKey());
-                    break;
-                case "GAbVKey":
-                    params.add(GAbVKey());
-                    break;
-                case "GACEVKey":
-                    params.add(GACEVKey());
                     break;
                 case "compose":
                     ArrayList<ArtifactNameMapper> mappers = new ArrayList<>(artifactNameMapperParams(node.getValue()));

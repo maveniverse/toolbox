@@ -203,6 +203,7 @@ public final class SpecParser {
             char ch = spec.charAt(idx);
             if (!Character.isWhitespace(ch)) {
                 if (Character.isAlphabetic(ch)
+                        || Character.isDigit(ch)
                         || '*' == ch
                         || ':' == ch
                         || '.' == ch
@@ -250,7 +251,7 @@ public final class SpecParser {
                     }
                     wasComma = true;
                 } else {
-                    throw new IllegalArgumentException("invalid character");
+                    throw new IllegalArgumentException("invalid character: " + ch);
                 }
             }
         }

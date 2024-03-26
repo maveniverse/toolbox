@@ -60,5 +60,21 @@ public class ArtifactNameMapperTest {
         assertEquals(
                 "g--this-is-a-separator--a--this-is-a-separator--1.0-SNAPSHOT--this-is-a-separator--a-1.0-20240322.113300-2-classifier.jar",
                 mapped);
+
+        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GAKey()");
+        mapped = artifactNameMapper.apply(artifact);
+        assertEquals("g:a", mapped);
+
+        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GAVKey()");
+        mapped = artifactNameMapper.apply(artifact);
+        assertEquals("g:a:1.0-20240322.113300-2", mapped);
+
+        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GAbVKey()");
+        mapped = artifactNameMapper.apply(artifact);
+        assertEquals("g:a:1.0-SNAPSHOT", mapped);
+
+        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GACEVKey()");
+        mapped = artifactNameMapper.apply(artifact);
+        assertEquals(artifact.toString(), mapped);
     }
 }

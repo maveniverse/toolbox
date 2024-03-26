@@ -7,8 +7,12 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static java.util.Objects.requireNonNull;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
@@ -85,7 +89,69 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
     }
 
     static ArtifactMapper build(Map<String, Object> properties, String spec) {
-        // TODO: do it
-        throw new RuntimeException("not yet implemented");
+        requireNonNull(properties, "properties");
+        requireNonNull(spec, "spec");
+        ArtifactMapperBuilder builder = new ArtifactMapperBuilder(properties);
+        SpecParser.parse(spec).accept(builder);
+        return builder.build();
+    }
+
+    class ArtifactMapperBuilder extends SpecParser.Builder {
+        public ArtifactMapperBuilder(Map<String, Object> properties) {
+            super(properties);
+        }
+
+        @Override
+        protected void processOp(SpecParser.Node node) {
+            switch (node.getValue()) {
+                case "baseVersion": {
+                    params.add(baseVersion());
+                    break;
+                }
+                case "omitClassifier": {
+                    params.add(omitClassifier());
+                    break;
+                }
+                case "rename": {
+                    String p2 = stringParam(node.getValue());
+                    String p1 = stringParam(node.getValue());
+                    String p0 = stringParam(node.getValue());
+                    params.add(rename(p0, p1, p2));
+                    break;
+                }
+                case "compose": {
+                    params.add(compose(artifactMapperParams(node.getValue())));
+                    break;
+                }
+                default:
+                    throw new IllegalArgumentException("unknown op " + node.getValue());
+            }
+        }
+
+        private ArtifactMapper artifactMapperParam(String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return (ArtifactMapper) params.remove(params.size() - 1);
+        }
+
+        private List<ArtifactMapper> artifactMapperParams(String op) {
+            ArrayList<ArtifactMapper> result = new ArrayList<>();
+            while (!params.isEmpty()) {
+                if (params.get(params.size() - 1) instanceof ArtifactMapper) {
+                    result.add(artifactMapperParam(op));
+                } else {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        public ArtifactMapper build() {
+            if (params.size() != 1) {
+                throw new IllegalArgumentException("bad spec");
+            }
+            return (ArtifactMapper) params.get(0);
+        }
     }
 }

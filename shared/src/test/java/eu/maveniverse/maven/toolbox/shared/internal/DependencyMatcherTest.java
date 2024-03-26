@@ -7,20 +7,19 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
-import org.eclipse.aether.artifact.Artifact;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.HashMap;
+import java.util.Map;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class DependencyMatcherTest {
     private final Dependency dependency1 = new Dependency(new DefaultArtifact("g:a:1.0"), "compile", false);
-    private final Dependency dependency2 = new Dependency(new DefaultArtifact("g:a:jar:classifier:1.0-20240322.113300-2"), "runtime", true);
+    private final Dependency dependency2 =
+            new Dependency(new DefaultArtifact("g:a:jar:classifier:1.0-20240322.113300-2"), "runtime", true);
 
     @Test
     void any() {

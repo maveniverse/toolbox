@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,8 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.eclipse.aether.graph.Dependency;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Dependency matcher.
@@ -109,7 +109,6 @@ public interface DependencyMatcher extends Predicate<Dependency> {
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
-
 
     class DependencyMatcherBuilder extends SpecParser.Builder {
         public DependencyMatcherBuilder(Map<String, Object> properties) {

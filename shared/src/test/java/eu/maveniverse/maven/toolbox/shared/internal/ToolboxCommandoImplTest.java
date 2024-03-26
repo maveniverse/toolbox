@@ -17,7 +17,9 @@ import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.DeployingSink;
 import eu.maveniverse.maven.toolbox.shared.DirectorySink;
+import eu.maveniverse.maven.toolbox.shared.InstallingSink;
 import eu.maveniverse.maven.toolbox.shared.NullOutput;
+import eu.maveniverse.maven.toolbox.shared.PurgingSink;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -53,6 +55,18 @@ public class ToolboxCommandoImplTest {
             assertEquals(
                     ((DeployingSink) sink).getRemoteRepository(),
                     new RemoteRepository.Builder("id", "default", "https://somewhere.com/").build());
+
+            sink = commando.artifactSink(new NullOutput(), "install:" + tempDir);
+            assertInstanceOf(InstallingSink.class, sink);
+            assertEquals(
+                    tempDir,
+                    ((InstallingSink) sink).getLocalRepository().getBasedir().toPath());
+
+            sink = commando.artifactSink(new NullOutput(), "purge:" + tempDir);
+            assertInstanceOf(PurgingSink.class, sink);
+            assertEquals(
+                    tempDir,
+                    ((PurgingSink) sink).getLocalRepository().getBasedir().toPath());
         }
     }
 }

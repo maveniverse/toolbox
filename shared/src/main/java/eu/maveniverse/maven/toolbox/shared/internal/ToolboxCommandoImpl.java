@@ -71,6 +71,8 @@ import org.eclipse.aether.deployment.DeployRequest;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.installation.InstallRequest;
+import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
@@ -251,10 +253,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public ArtifactSink artifactSink(Output output, String spec) throws IOException {
         // This is to honor paths like "C:/..." (so we check for "prefix" longer than 3 chars)
         String prefix = spec.indexOf(':') > 3 ? spec.substring(0, spec.indexOf(":")) : "flatImplied";
+        String path;
         switch (prefix) {
             case "flatImplied":
             case "flat":
-                String path = "flatImplied".equals(prefix) ? spec : spec.substring(prefix.length() + 1);
+                path = "flatImplied".equals(prefix) ? spec : spec.substring(prefix.length() + 1);
                 ArtifactNameMapper artifactNameMapper = null;
                 if (path.indexOf(',') > -1) {
                     String artifactNameMapperSpec = path.substring(path.indexOf(',') + 1);
@@ -269,7 +272,20 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 return DirectorySink.repository(
                         output, context.basedir().resolve(spec.substring("repository:".length())));
             case "install":
-                return InstallingSink.installing(output, context.repositorySystem(), context.repositorySystemSession());
+                path = spec.substring(prefix.length() + 1);
+                if (!path.trim().isEmpty()) {
+                    Path altLocalRepository = context.basedir().resolve(path);
+                    LocalRepository localRepository = new LocalRepository(altLocalRepository.toFile());
+                    LocalRepositoryManager lrm = context.repositorySystem()
+                            .newLocalRepositoryManager(context.repositorySystemSession(), localRepository);
+                    DefaultRepositorySystemSession session =
+                            new DefaultRepositorySystemSession(context.repositorySystemSession());
+                    session.setLocalRepositoryManager(lrm);
+                    return InstallingSink.installing(output, context.repositorySystem(), session);
+                } else {
+                    return InstallingSink.installing(
+                            output, context.repositorySystem(), context.repositorySystemSession());
+                }
             case "deploy":
                 return DeployingSink.deploying(
                         output,
@@ -277,11 +293,24 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         context.repositorySystemSession(),
                         toolboxResolver.parseRemoteRepository(spec.substring("deploy:".length())));
             case "purge":
-                return PurgingSink.purging(
-                        output,
-                        context.repositorySystem(),
-                        context.repositorySystemSession(),
-                        context.remoteRepositories());
+                path = spec.substring(prefix.length() + 1);
+                if (!path.trim().isEmpty()) {
+                    Path altLocalRepository = context.basedir().resolve(path);
+                    LocalRepository localRepository = new LocalRepository(altLocalRepository.toFile());
+                    LocalRepositoryManager lrm = context.repositorySystem()
+                            .newLocalRepositoryManager(context.repositorySystemSession(), localRepository);
+                    DefaultRepositorySystemSession session =
+                            new DefaultRepositorySystemSession(context.repositorySystemSession());
+                    session.setLocalRepositoryManager(lrm);
+                    return PurgingSink.purging(
+                            output, context.repositorySystem(), session, context.remoteRepositories());
+                } else {
+                    return PurgingSink.purging(
+                            output,
+                            context.repositorySystem(),
+                            context.repositorySystemSession(),
+                            context.remoteRepositories());
+                }
             default:
                 throw new IllegalArgumentException("unknown artifact sink spec");
         }

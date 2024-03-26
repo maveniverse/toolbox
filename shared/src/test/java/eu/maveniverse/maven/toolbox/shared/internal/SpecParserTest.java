@@ -55,7 +55,7 @@ public class SpecParserTest {
 
     @Test
     void example() {
-        SpecParser.Op root = SpecParser.parse("a(b(One, tWo, *), c(param), bbb)");
+        SpecParser.Op root = SpecParser.parse("a(b(One, tWo, *), c(${param}), bbb)");
         assertEquals("a", root.getValue());
         assertEquals(3, root.getChildren().size());
 
@@ -72,6 +72,8 @@ public class SpecParserTest {
         SpecParser.Op c = (SpecParser.Op) root.getChildren().get(1);
         assertEquals("c", c.getValue());
         assertEquals(1, c.getChildren().size());
+        assertInstanceOf(SpecParser.Literal.class, c.getChildren().get(0));
+        assertEquals("${param}", c.getChildren().get(0).getValue());
 
         SpecParser.Literal bbb = (SpecParser.Literal) root.getChildren().get(2);
         assertEquals("bbb", bbb.getValue());

@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
@@ -107,14 +108,7 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         };
     }
 
-    /**
-     * Examples:
-     * <ul>
-     *     <li>any</li>
-     *     <li>or(artifact("g:*"),artifact("*:a"))</li>
-     * </ul>
-     */
-    static ArtifactMatcher parse(String spec) {
+    static ArtifactMatcher build(Map<String, Object> properties, String spec) {
         // TODO: do it
         throw new RuntimeException("not yet implemented");
     }

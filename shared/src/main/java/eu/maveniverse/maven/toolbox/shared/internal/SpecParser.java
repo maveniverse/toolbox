@@ -12,13 +12,15 @@ import static java.util.Objects.requireNonNull;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
  * Simple spec parser. Parses input string, and produces a tree of {@link Op} and {@link Literal}s. Root must
- * always be {@link Op}.
+ * always be {@link Op}. This tree can be transformed into something then...
  */
 public final class SpecParser {
     private SpecParser() {}
@@ -48,6 +50,79 @@ public final class SpecParser {
                 nodes.pop();
             }
             return true;
+        }
+    }
+
+    public abstract static class Builder implements Visitor {
+        protected final ArrayList<Object> params = new ArrayList<>();
+        protected final Map<String, Object> properties;
+
+        public Builder() {
+            this.properties = null;
+        }
+
+        public Builder(Map<String, Object> properties) {
+            this.properties = new HashMap<>(properties);
+        }
+
+        @Override
+        public boolean visitEnter(SpecParser.Node node) {
+            return true;
+        }
+
+        @Override
+        public boolean visitExit(SpecParser.Node node) {
+            if (node instanceof SpecParser.Literal) {
+                processLiteral(node);
+            } else if (node instanceof SpecParser.Op) {
+                processOp(node);
+            }
+            return true;
+        }
+
+        protected void processLiteral(Node node) {
+            String value = node.getValue();
+            if (value.startsWith("${") && value.endsWith("}")) {
+                if (properties == null) {
+                    throw new IllegalStateException("reference used without properties defined");
+                }
+                Object referenced = properties.get(value.substring(2, value.length() - 1));
+                if (referenced == null) {
+                    referenced = "";
+                }
+                params.add(referenced);
+            } else {
+                params.add(value);
+            }
+        }
+
+        /**
+         * Implement this, by using "ops" of the thing being built.
+         * <p>
+         * Important: parameters are REVERSED, so are nibbles but in reversed, so instead {@code [[a,b,c],[d,e]]} we
+         * have nibbles reversed: {@code [[c,b,a],[e,d]]}.
+         */
+        protected abstract void processOp(Node node);
+
+        protected String stringParam(String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return (String) params.remove(params.size() - 1);
+        }
+
+        protected boolean booleanParam(String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return Boolean.parseBoolean((String) params.remove(params.size() - 1));
+        }
+
+        protected int intParam(String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return Integer.parseInt((String) params.remove(params.size() - 1));
         }
     }
 
@@ -85,7 +160,7 @@ public final class SpecParser {
         }
     }
 
-    public static final class Literal extends Node {
+    public abstract static class Literal extends Node {
         private Literal(String value) {
             super(value);
         }
@@ -98,6 +173,12 @@ public final class SpecParser {
         @Override
         public List<Node> getChildren() {
             return Collections.emptyList();
+        }
+    }
+
+    public static class StringLiteral extends Literal {
+        private StringLiteral(String value) {
+            super(value);
         }
     }
 
@@ -121,7 +202,14 @@ public final class SpecParser {
         for (int idx = 0; idx < spec.length(); idx++) {
             char ch = spec.charAt(idx);
             if (!Character.isWhitespace(ch)) {
-                if (Character.isAlphabetic(ch) || '*' == ch || ':' == ch || '.' == ch || '-' == ch) {
+                if (Character.isAlphabetic(ch)
+                        || '*' == ch
+                        || ':' == ch
+                        || '.' == ch
+                        || '-' == ch
+                        || '$' == ch
+                        || '{' == ch
+                        || '}' == ch) {
                     value += ch;
                 } else if ('(' == ch) {
                     Op op = new Op(value);
@@ -136,7 +224,7 @@ public final class SpecParser {
                     path.push(op);
                 } else if (')' == ch) {
                     if (!value.isEmpty()) {
-                        Literal literal = new Literal(value);
+                        Literal literal = new StringLiteral(value);
                         value = "";
                         if (!path.isEmpty()) {
                             path.peek().addChild(literal);
@@ -150,7 +238,7 @@ public final class SpecParser {
                     path.pop();
                 } else if (',' == ch) {
                     if (!value.isEmpty()) {
-                        Literal literal = new Literal(value);
+                        Literal literal = new StringLiteral(value);
                         value = "";
                         if (!path.isEmpty()) {
                             path.peek().addChild(literal);

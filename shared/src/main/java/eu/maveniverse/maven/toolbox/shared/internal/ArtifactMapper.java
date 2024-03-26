@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -83,7 +84,7 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
         };
     }
 
-    static ArtifactMapper parse(String spec) {
+    static ArtifactMapper build(Map<String, Object> properties, String spec) {
         // TODO: do it
         throw new RuntimeException("not yet implemented");
     }

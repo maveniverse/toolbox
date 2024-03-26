@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
 
@@ -274,69 +275,122 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
         };
     }
 
-    static ArtifactNameMapper parse(String spec) {
+    static ArtifactNameMapper build(Map<String, Object> properties, String spec) {
         requireNonNull(spec, "spec");
-        ArtifactNameMapperBuilder builder = new ArtifactNameMapperBuilder();
+        ArtifactNameMapperBuilder builder = new ArtifactNameMapperBuilder(properties);
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
 
-    class ArtifactNameMapperBuilder implements SpecParser.Visitor {
-        private ArrayList<Object> params = new ArrayList<>();
-
-        @Override
-        public boolean visitEnter(SpecParser.Node node) {
-            return true;
+    class ArtifactNameMapperBuilder extends SpecParser.Builder {
+        public ArtifactNameMapperBuilder(Map<String, Object> properties) {
+            super(properties);
         }
 
         @Override
-        public boolean visitExit(SpecParser.Node node) {
-            if (node instanceof SpecParser.Literal) {
-                params.add(node.getValue());
-            } else {
-                switch (node.getValue()) {
-                    case "G":
-                        params.add(G());
-                        break;
-                    case "A":
-                        params.add(A());
-                        break;
-                    case "V":
-                        params.add(V());
-                        break;
-                    case "fixed":
-                        params.add(fixed(stringParam(node.getValue())));
-                        break;
-                    case "optionalPrefix": {
-                        ArtifactNameMapper p1 = artifactNameMapperParam(node.getValue());
-                        String p0 = stringParam(node.getValue());
-                        params.add(optionalPrefix(p0, p1));
-                        break;
-                    }
-                    case "optionalSuffix": {
-                        ArtifactNameMapper p1 = artifactNameMapperParam(node.getValue());
-                        String p0 = stringParam(node.getValue());
-                        params.add(optionalSuffix(p0, p1));
-                        break;
-                    }
-                    case "compose":
-                        ArrayList<ArtifactNameMapper> mappers =
-                                new ArrayList<>(artifactNameMapperParams(node.getValue()));
-                        Collections.reverse(mappers);
-                        params.add(compose(mappers));
-                        break;
-                    default:
-                        throw new IllegalArgumentException("unknown op " + node.getValue());
+        protected void processOp(SpecParser.Node node) {
+            switch (node.getValue()) {
+                case "G":
+                    params.add(G());
+                    break;
+                case "A":
+                    params.add(A());
+                    break;
+                case "V":
+                    params.add(V());
+                    break;
+                case "bV":
+                    params.add(bV());
+                    break;
+                case "C":
+                    params.add(C());
+                    break;
+                case "E":
+                    params.add(E());
+                    break;
+                case "P": {
+                    String p1 = stringParam(node.getValue());
+                    String p0 = stringParam(node.getValue());
+                    params.add(P(p0, p1));
+                    break;
                 }
+                case "GACVE":
+                    params.add(GACVE());
+                    break;
+                case "GACbVE":
+                    params.add(GACbVE());
+                    break;
+                case "GACE":
+                    params.add(GACE());
+                    break;
+                case "GAVE":
+                    params.add(GAVE());
+                    break;
+                case "GAbVE":
+                    params.add(GAbVE());
+                    break;
+                case "GAE":
+                    params.add(GAE());
+                    break;
+                case "ACVE":
+                    params.add(ACVE());
+                    break;
+                case "ACbVE":
+                    params.add(ACbVE());
+                    break;
+                case "ACE":
+                    params.add(ACE());
+                    break;
+                case "AVE":
+                    params.add(AVE());
+                    break;
+                case "AbVE":
+                    params.add(AbVE());
+                    break;
+                case "AE":
+                    params.add(AE());
+                    break;
+                case "fixed":
+                    params.add(fixed(stringParam(node.getValue())));
+                    break;
+                case "optionalPrefix": {
+                    ArtifactNameMapper p1 = artifactNameMapperParam(node.getValue());
+                    String p0 = stringParam(node.getValue());
+                    params.add(optionalPrefix(p0, p1));
+                    break;
+                }
+                case "optionalSuffix": {
+                    ArtifactNameMapper p1 = artifactNameMapperParam(node.getValue());
+                    String p0 = stringParam(node.getValue());
+                    params.add(optionalSuffix(p0, p1));
+                    break;
+                }
+                case "repositoryDefault":
+                    params.add(repositoryDefault());
+                    break;
+                case "repository":
+                    params.add(repository(stringParam(node.getValue())));
+                    break;
+                case "GAKey":
+                    params.add(GAKey());
+                    break;
+                case "GAVKey":
+                    params.add(GAVKey());
+                    break;
+                case "GAbVKey":
+                    params.add(GAbVKey());
+                    break;
+                case "GACEVKey":
+                    params.add(GACEVKey());
+                    break;
+                case "compose":
+                    ArrayList<ArtifactNameMapper> mappers = new ArrayList<>(artifactNameMapperParams(node.getValue()));
+                    Collections.reverse(mappers);
+                    params.add(compose(mappers));
+                    break;
+                default:
+                    throw new IllegalArgumentException("unknown op " + node.getValue());
             }
-            return true;
-        }
-
-        private String stringParam(String op) {
-            if (params.isEmpty()) {
-                throw new IllegalArgumentException("bad parameter count for " + op);
-            }
-            return (String) params.remove(params.size() - 1);
         }
 
         private ArtifactNameMapper artifactNameMapperParam(String op) {

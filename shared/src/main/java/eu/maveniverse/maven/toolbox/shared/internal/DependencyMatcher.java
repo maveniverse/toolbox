@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.function.Predicate;
 import org.eclipse.aether.graph.Dependency;
 
@@ -93,7 +94,7 @@ public interface DependencyMatcher extends Predicate<Dependency> {
         };
     }
 
-    static DependencyMatcher parse(String spec) {
+    static DependencyMatcher build(Map<String, Object> properties, String spec) {
         // TODO: do it
         throw new RuntimeException("not yet implemented");
     }

@@ -226,6 +226,18 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
         };
     }
 
+    static ArtifactNameMapper AVCE() {
+        return artifact -> {
+            String result = artifact.getArtifactId();
+            result += "-" + artifact.getVersion();
+            if (!artifact.getClassifier().isEmpty()) {
+                result += "-" + artifact.getClassifier();
+            }
+            result += "." + artifact.getExtension();
+            return result;
+        };
+    }
+
     static ArtifactNameMapper ACbVE() {
         return artifact -> {
             String result = artifact.getArtifactId();
@@ -233,6 +245,18 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
                 result += "-" + artifact.getClassifier();
             }
             result += "-" + artifact.getBaseVersion();
+            result += "." + artifact.getExtension();
+            return result;
+        };
+    }
+
+    static ArtifactNameMapper AbVCE() {
+        return artifact -> {
+            String result = artifact.getArtifactId();
+            result += "-" + artifact.getBaseVersion();
+            if (!artifact.getClassifier().isEmpty()) {
+                result += "-" + artifact.getClassifier();
+            }
             result += "." + artifact.getExtension();
             return result;
         };
@@ -350,8 +374,14 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
                 case "ACVE":
                     params.add(ACVE());
                     break;
+                case "AVCE":
+                    params.add(AVCE());
+                    break;
                 case "ACbVE":
                     params.add(ACbVE());
+                    break;
+                case "AbVCE":
+                    params.add(AbVCE());
                     break;
                 case "ACE":
                     params.add(ACE());

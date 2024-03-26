@@ -34,15 +34,19 @@ public class ToolboxCommandoImplTest {
 
             sink = commando.artifactSink(new NullOutput(), tempDir.toString());
             assertInstanceOf(DirectorySink.class, sink);
-            assertEquals(((DirectorySink) sink).getDirectory(), tempDir);
+            assertEquals(tempDir, ((DirectorySink) sink).getDirectory());
 
             sink = commando.artifactSink(new NullOutput(), "flat:" + tempDir);
             assertInstanceOf(DirectorySink.class, sink);
-            assertEquals(((DirectorySink) sink).getDirectory(), tempDir);
+            assertEquals(tempDir, ((DirectorySink) sink).getDirectory());
+
+            sink = commando.artifactSink(new NullOutput(), "flat:" + tempDir + ",AVCE()");
+            assertInstanceOf(DirectorySink.class, sink);
+            assertEquals(tempDir, ((DirectorySink) sink).getDirectory());
 
             sink = commando.artifactSink(new NullOutput(), "repository:" + tempDir);
             assertInstanceOf(DirectorySink.class, sink);
-            assertEquals(((DirectorySink) sink).getDirectory(), tempDir);
+            assertEquals(tempDir, ((DirectorySink) sink).getDirectory());
 
             sink = commando.artifactSink(new NullOutput(), "deploy:id::https://somewhere.com/");
             assertInstanceOf(DeployingSink.class, sink);

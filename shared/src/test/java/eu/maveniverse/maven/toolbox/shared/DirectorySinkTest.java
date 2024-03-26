@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.shared;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.maveniverse.maven.toolbox.shared.internal.ArtifactNameMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,7 +23,7 @@ import org.junit.jupiter.api.io.TempDir;
 public class DirectorySinkTest {
     @Test
     void flat(@TempDir Path source, @TempDir Path target) throws IOException {
-        try (DirectorySink sink = DirectorySink.flat(new NullOutput(), target)) {
+        try (DirectorySink sink = DirectorySink.flat(new NullOutput(), target, ArtifactNameMapper.GACE())) {
             Path a1 = source.resolve("a1");
             Path a2 = source.resolve("a2");
             Files.writeString(a1, "one", StandardCharsets.UTF_8);
@@ -62,7 +63,8 @@ public class DirectorySinkTest {
 
     @Test
     void flatSameADifferentGAccepted(@TempDir Path source, @TempDir Path target) throws IOException {
-        sameADifferentGAccepted(source, target, DirectorySink.flat(new NullOutput(), target));
+        sameADifferentGAccepted(
+                source, target, DirectorySink.flat(new NullOutput(), target, ArtifactNameMapper.GACE()));
     }
 
     @Test

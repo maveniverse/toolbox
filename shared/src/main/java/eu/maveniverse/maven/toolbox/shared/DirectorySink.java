@@ -26,12 +26,13 @@ import org.eclipse.aether.artifact.Artifact;
  */
 public final class DirectorySink implements ArtifactSink {
     /**
-     * Creates plain "flat" directory sink, that accepts all artifacts and copies them out having filenames as
-     * "G-A[-C].E" (version-less) and prevents overwrite (what you usually want).
+     * Creates plain "flat" directory sink, that accepts all artifacts and copies them out having filenames according
+     * to supplied {@link ArtifactNameMapper} and prevents overwrite (what you usually want).
      */
-    public static DirectorySink flat(Output output, Path path) throws IOException {
+    public static DirectorySink flat(Output output, Path path, ArtifactNameMapper artifactNameMapper)
+            throws IOException {
         return new DirectorySink(
-                output, path, Mode.COPY, ArtifactMatcher.unique(), false, a -> a, ArtifactNameMapper.GACE(), false);
+                output, path, Mode.COPY, ArtifactMatcher.unique(), false, a -> a, artifactNameMapper, false);
     }
 
     /**

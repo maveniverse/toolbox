@@ -253,9 +253,18 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         String prefix = spec.indexOf(':') > 3 ? spec.substring(0, spec.indexOf(":")) : "flatImplied";
         switch (prefix) {
             case "flatImplied":
-                return DirectorySink.flat(output, context.basedir().resolve(spec));
             case "flat":
-                return DirectorySink.flat(output, context.basedir().resolve(spec.substring("flat:".length())));
+                String path = "flatImplied".equals(prefix) ? spec : spec.substring(prefix.length() + 1);
+                ArtifactNameMapper artifactNameMapper = null;
+                if (path.indexOf(',') > -1) {
+                    String artifactNameMapperSpec = path.substring(path.indexOf(',') + 1);
+                    artifactNameMapper = parseArtifactNameMapperSpec(artifactNameMapperSpec);
+                    path = path.substring(0, path.indexOf(','));
+                }
+                return DirectorySink.flat(
+                        output,
+                        context.basedir().resolve(path),
+                        Objects.requireNonNullElseGet(artifactNameMapper, ArtifactNameMapper::AbVCE));
             case "repository":
                 return DirectorySink.repository(
                         output, context.basedir().resolve(spec.substring("repository:".length())));

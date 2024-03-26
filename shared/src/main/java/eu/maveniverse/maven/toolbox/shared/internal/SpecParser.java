@@ -189,13 +189,13 @@ public final class SpecParser {
     }
 
     public static class StringLiteral extends Literal {
-        private StringLiteral(String value) {
+        StringLiteral(String value) {
             super(value);
         }
     }
 
     public static final class Op extends Node {
-        private Op(String name) {
+        Op(String name) {
             super(name);
         }
     }

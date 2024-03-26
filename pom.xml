@@ -205,28 +205,6 @@
         <version>${version.mavenIndexer}</version>
       </dependency>
 
-      <!-- DI -->
-      <dependency>
-        <groupId>javax.inject</groupId>
-        <artifactId>javax.inject</artifactId>
-        <version>1</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.inject</groupId>
-        <artifactId>guice</artifactId>
-        <version>6.0.0</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-        <version>32.1.3-jre</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.sisu</groupId>
-        <artifactId>org.eclipse.sisu.inject</artifactId>
-        <version>${version.sisu}</version>
-      </dependency>
-
       <!-- CLI -->
       <dependency>
         <groupId>info.picocli</groupId>

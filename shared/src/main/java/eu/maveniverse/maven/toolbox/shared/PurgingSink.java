@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -91,7 +92,7 @@ public final class PurgingSink implements ArtifactSink {
     private final RepositorySystemSession session;
     private final List<RemoteRepository> remoteRepositories;
     private final ArrayList<Artifact> artifacts;
-    private final ArtifactMatcher artifactMatcher;
+    private final Predicate<Artifact> artifactMatcher;
 
     private PurgingSink(
             Output output,

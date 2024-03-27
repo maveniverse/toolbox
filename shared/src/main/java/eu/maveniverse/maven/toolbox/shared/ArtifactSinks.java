@@ -9,7 +9,6 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.toolbox.shared.internal.ArtifactMatcher;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
 
@@ -48,17 +48,17 @@ public final class ArtifactSinks {
      * Creates a delegating sink that delegates calls only with matched artifacts.
      */
     public static MatchingArtifactSink matchingArtifactSink(
-            ArtifactMatcher artifactMatcher, ArtifactSink artifactSink) {
+            Predicate<Artifact> artifactMatcher, ArtifactSink artifactSink) {
         requireNonNull(artifactMatcher, "artifactMatcher");
         requireNonNull(artifactSink, "artifactSink");
         return new MatchingArtifactSink(artifactMatcher, artifactSink);
     }
 
     public static class MatchingArtifactSink implements ArtifactSink {
-        private final ArtifactMatcher artifactMatcher;
+        private final Predicate<Artifact> artifactMatcher;
         private final ArtifactSink artifactSink;
 
-        private MatchingArtifactSink(ArtifactMatcher artifactMatcher, ArtifactSink artifactSink) {
+        private MatchingArtifactSink(Predicate<Artifact> artifactMatcher, ArtifactSink artifactSink) {
             this.artifactMatcher = artifactMatcher;
             this.artifactSink = artifactSink;
         }

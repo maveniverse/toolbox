@@ -9,7 +9,6 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.toolbox.shared.internal.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.internal.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.internal.ArtifactNameMapper;
 import java.io.IOException;
@@ -93,10 +92,10 @@ public final class DirectorySink implements ArtifactSink {
             Output output,
             Path directory,
             Mode mode,
-            ArtifactMatcher artifactMatcher,
+            Predicate<Artifact> artifactMatcher,
             boolean failIfUnmatched,
-            ArtifactMapper artifactMapper,
-            ArtifactNameMapper artifactNameMapper,
+            Function<Artifact, Artifact> artifactMapper,
+            Function<Artifact, String> artifactNameMapper,
             boolean allowOverwrite)
             throws IOException {
         this.output = requireNonNull(output, "output");

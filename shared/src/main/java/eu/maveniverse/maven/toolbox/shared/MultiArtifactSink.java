@@ -9,11 +9,11 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.toolbox.shared.internal.ArtifactMatcher;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 
 /**
@@ -22,14 +22,14 @@ import org.eclipse.aether.artifact.Artifact;
 public final class MultiArtifactSink implements ArtifactSink {
     public static final class MultiArtifactSinkBuilder {
         private final Output output;
-        private final LinkedHashMap<ArtifactMatcher, ArtifactSink> sinks;
+        private final LinkedHashMap<Predicate<Artifact>, ArtifactSink> sinks;
 
         private MultiArtifactSinkBuilder(Output output) {
             this.output = requireNonNull(output);
             this.sinks = new LinkedHashMap<>();
         }
 
-        public MultiArtifactSinkBuilder addSink(ArtifactMatcher artifactMatcher, ArtifactSink sink) {
+        public MultiArtifactSinkBuilder addSink(Predicate<Artifact> artifactMatcher, ArtifactSink sink) {
             requireNonNull(artifactMatcher, "artifactMatcher");
             requireNonNull(sink, "sink");
             sinks.put(artifactMatcher, sink);
@@ -49,9 +49,9 @@ public final class MultiArtifactSink implements ArtifactSink {
     }
 
     private final Output output;
-    private final Map<ArtifactMatcher, ArtifactSink> sinks;
+    private final Map<Predicate<Artifact>, ArtifactSink> sinks;
 
-    private MultiArtifactSink(Output output, LinkedHashMap<ArtifactMatcher, ArtifactSink> sinks) {
+    private MultiArtifactSink(Output output, LinkedHashMap<Predicate<Artifact>, ArtifactSink> sinks) {
         this.output = requireNonNull(output, "output");
         this.sinks = Collections.unmodifiableMap(sinks);
     }
@@ -60,7 +60,7 @@ public final class MultiArtifactSink implements ArtifactSink {
     public void accept(Artifact artifact) throws IOException {
         output.verbose("Accept artifact {}", artifact);
         boolean processed = false;
-        for (Map.Entry<ArtifactMatcher, ArtifactSink> sink : sinks.entrySet()) {
+        for (Map.Entry<Predicate<Artifact>, ArtifactSink> sink : sinks.entrySet()) {
             if (sink.getKey().test(artifact)) {
                 sink.getValue().accept(artifact);
                 processed = true;

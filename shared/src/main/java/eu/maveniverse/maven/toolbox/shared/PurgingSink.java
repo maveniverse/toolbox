@@ -186,9 +186,9 @@ public final class PurgingSink implements ArtifactSink {
                     path.getParent(),
                     artifact.isSnapshot() && Objects.equals(artifact.getVersion(), artifact.getBaseVersion()));
             deleted = deleteFileAndSubs(session.getLocalRepository()
-                            .getBasedir()
-                            .toPath()
-                            .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
+                    .getBasedir()
+                    .toPath()
+                    .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
         }
         for (RemoteRepository repository : remoteRepositories) {
             path = session.getLocalRepository()

@@ -260,10 +260,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     artifactNameMapper = parseArtifactNameMapperSpec(artifactNameMapperSpec);
                     path = path.substring(0, path.indexOf('?'));
                 }
-                return DirectorySink.flat(
-                        output,
-                        context.basedir().resolve(path),
-                        artifactNameMapper);
+                return DirectorySink.flat(output, context.basedir().resolve(path), artifactNameMapper);
             case "repository":
                 return DirectorySink.repository(
                         output, context.basedir().resolve(spec.substring("repository:".length())));

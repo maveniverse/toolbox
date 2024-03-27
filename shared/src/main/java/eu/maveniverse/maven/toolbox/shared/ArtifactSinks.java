@@ -44,6 +44,9 @@ public final class ArtifactSinks {
         public void accept(Artifact artifact) {}
     }
 
+    /**
+     * Creates a delegating sink that delegates calls only with matched artifacts.
+     */
     public static MatchingArtifactSink matchingArtifactSink(
             ArtifactMatcher artifactMatcher, ArtifactSink artifactSink) {
         requireNonNull(artifactMatcher, "artifactMatcher");
@@ -74,7 +77,7 @@ public final class ArtifactSinks {
     }
 
     /**
-     * Creates a counting sink, that simply counts all the accepted and matched artifacts.
+     * Creates a counting sink, that simply counts all the accepted artifacts.
      */
     public static CountingArtifactSink countingArtifactSink() {
         return new CountingArtifactSink();

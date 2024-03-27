@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
 
 /**
@@ -43,34 +44,52 @@ public final class ArtifactSinks {
         public void accept(Artifact artifact) {}
     }
 
-    /**
-     * Creates a counting sink, that simply counts all the accepted artifacts.
-     */
-    public static CountingArtifactSink countingArtifactSink() {
-        return countingArtifactSink(ArtifactMatcher.any());
+    public static MatchingArtifactSink matchingArtifactSink(
+            ArtifactMatcher artifactMatcher, ArtifactSink artifactSink) {
+        requireNonNull(artifactMatcher, "artifactMatcher");
+        requireNonNull(artifactSink, "artifactSink");
+        return new MatchingArtifactSink(artifactMatcher, artifactSink);
+    }
+
+    public static class MatchingArtifactSink implements ArtifactSink {
+        private final ArtifactMatcher artifactMatcher;
+        private final ArtifactSink artifactSink;
+
+        private MatchingArtifactSink(ArtifactMatcher artifactMatcher, ArtifactSink artifactSink) {
+            this.artifactMatcher = artifactMatcher;
+            this.artifactSink = artifactSink;
+        }
+
+        @Override
+        public void accept(Collection<Artifact> artifacts) throws IOException {
+            artifactSink.accept(artifacts.stream().filter(artifactMatcher).collect(Collectors.toList()));
+        }
+
+        @Override
+        public void accept(Artifact artifact) throws IOException {
+            if (artifactMatcher.test(artifact)) {
+                artifactSink.accept(artifact);
+            }
+        }
     }
 
     /**
      * Creates a counting sink, that simply counts all the accepted and matched artifacts.
      */
-    public static CountingArtifactSink countingArtifactSink(ArtifactMatcher artifactMatcher) {
-        return new CountingArtifactSink(artifactMatcher);
+    public static CountingArtifactSink countingArtifactSink() {
+        return new CountingArtifactSink();
     }
 
     public static class CountingArtifactSink implements ArtifactSink {
         private final LongAdder counter;
-        private final ArtifactMatcher artifactMatcher;
 
-        private CountingArtifactSink(ArtifactMatcher artifactMatcher) {
+        private CountingArtifactSink() {
             this.counter = new LongAdder();
-            this.artifactMatcher = requireNonNull(artifactMatcher, "artifactMatcher");
         }
 
         @Override
         public void accept(Artifact artifact) {
-            if (artifactMatcher.test(artifact)) {
-                counter.increment();
-            }
+            counter.increment();
         }
 
         public int count() {
@@ -82,32 +101,21 @@ public final class ArtifactSinks {
      * Creates a sizing sink, that simply accumulate byte sizes of all accepted (and resolved) artifacts.
      */
     public static SizingArtifactSink sizingArtifactSink() {
-        return sizingArtifactSink(ArtifactMatcher.any());
-    }
-
-    /**
-     * Creates a sizing sink, that simply accumulate byte sizes of all accepted and matched (and resolved) artifacts.
-     */
-    public static SizingArtifactSink sizingArtifactSink(ArtifactMatcher artifactMatcher) {
-        return new SizingArtifactSink(artifactMatcher);
+        return new SizingArtifactSink();
     }
 
     public static class SizingArtifactSink implements ArtifactSink {
         private final LongAdder size;
-        private final ArtifactMatcher artifactMatcher;
 
-        private SizingArtifactSink(ArtifactMatcher artifactMatcher) {
+        private SizingArtifactSink() {
             this.size = new LongAdder();
-            this.artifactMatcher = requireNonNull(artifactMatcher, "artifactMatcher");
         }
 
         @Override
         public void accept(Artifact artifact) throws IOException {
-            if (artifactMatcher.test(artifact)) {
-                Path path = artifact.getFile() != null ? artifact.getFile().toPath() : null;
-                if (path != null && Files.exists(path)) {
-                    size.add(Files.size(path));
-                }
+            Path path = artifact.getFile() != null ? artifact.getFile().toPath() : null;
+            if (path != null && Files.exists(path)) {
+                size.add(Files.size(path));
             }
         }
 
@@ -140,6 +148,7 @@ public final class ArtifactSinks {
      * Creates a "tee" artifact sink out of supplied sinks.
      */
     public static TeeArtifactSink teeArtifactSink(boolean doClose, Collection<? extends ArtifactSink> artifactSinks) {
+        requireNonNull(artifactSinks, "artifactSinks");
         return new TeeArtifactSink(doClose, artifactSinks);
     }
 

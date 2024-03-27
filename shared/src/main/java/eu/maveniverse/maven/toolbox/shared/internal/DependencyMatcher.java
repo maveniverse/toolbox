@@ -102,7 +102,7 @@ public interface DependencyMatcher extends Predicate<Dependency> {
         };
     }
 
-    static DependencyMatcher build(Map<String, Object> properties, String spec) {
+    static DependencyMatcher build(Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         DependencyMatcherBuilder builder = new DependencyMatcherBuilder(properties);
@@ -111,7 +111,7 @@ public interface DependencyMatcher extends Predicate<Dependency> {
     }
 
     class DependencyMatcherBuilder extends SpecParser.Builder {
-        public DependencyMatcherBuilder(Map<String, Object> properties) {
+        public DependencyMatcherBuilder(Map<String, ?> properties) {
             super(properties);
         }
 

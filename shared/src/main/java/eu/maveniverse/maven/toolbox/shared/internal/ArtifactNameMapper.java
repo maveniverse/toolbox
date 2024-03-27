@@ -299,7 +299,7 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
         };
     }
 
-    static ArtifactNameMapper build(Map<String, Object> properties, String spec) {
+    static ArtifactNameMapper build(Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         ArtifactNameMapperBuilder builder = new ArtifactNameMapperBuilder(properties);
@@ -308,7 +308,7 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
     }
 
     class ArtifactNameMapperBuilder extends SpecParser.Builder {
-        public ArtifactNameMapperBuilder(Map<String, Object> properties) {
+        public ArtifactNameMapperBuilder(Map<String, ?> properties) {
             super(properties);
         }
 

@@ -55,13 +55,13 @@ public final class SpecParser {
 
     public abstract static class Builder implements Visitor {
         protected final ArrayList<Object> params = new ArrayList<>();
-        protected final Map<String, Object> properties;
+        protected final Map<String, ?> properties;
 
         public Builder() {
             this.properties = null;
         }
 
-        public Builder(Map<String, Object> properties) {
+        public Builder(Map<String, ?> properties) {
             this.properties = new HashMap<>(properties);
         }
 

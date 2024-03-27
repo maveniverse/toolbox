@@ -110,7 +110,7 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         };
     }
 
-    static ArtifactMatcher build(Map<String, Object> properties, String spec) {
+    static ArtifactMatcher build(Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         ArtifactMatcherBuilder builder = new ArtifactMatcherBuilder(properties);
@@ -119,7 +119,7 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
     }
 
     class ArtifactMatcherBuilder extends SpecParser.Builder {
-        public ArtifactMatcherBuilder(Map<String, Object> properties) {
+        public ArtifactMatcherBuilder(Map<String, ?> properties) {
             super(properties);
         }
 

@@ -22,6 +22,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
  * Mapper that maps artifact to artifact.
  */
 public interface ArtifactMapper extends Function<Artifact, Artifact> {
+    @Override
     Artifact apply(Artifact artifact);
 
     static ArtifactMapper compose(ArtifactMapper... mappers) {
@@ -88,7 +89,7 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
         };
     }
 
-    static ArtifactMapper build(Map<String, Object> properties, String spec) {
+    static ArtifactMapper build(Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         ArtifactMapperBuilder builder = new ArtifactMapperBuilder(properties);
@@ -97,7 +98,7 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
     }
 
     class ArtifactMapperBuilder extends SpecParser.Builder {
-        public ArtifactMapperBuilder(Map<String, Object> properties) {
+        public ArtifactMapperBuilder(Map<String, ?> properties) {
             super(properties);
         }
 

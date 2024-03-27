@@ -35,14 +35,15 @@ import org.eclipse.aether.repository.RemoteRepository;
 public final class PurgingSink implements ArtifactSink {
     /**
      * Creates purging sink treats artifacts as "whole", purges whole GAVs from passed in session local repository.
-     * Artifacts this sink accepts MUST BE resolved from the same local repository this purging sink is about to purge.
+     * Artifacts this sink accepts MUST NOT BE resolved from the same local repository this purging sink is about to
+     * purge.
      */
     public static PurgingSink purging(
             Output output,
             RepositorySystem system,
             RepositorySystemSession session,
             List<RemoteRepository> remoteRepositories) {
-        return purging(output, Mode.WHOLE, true, system, session, remoteRepositories);
+        return purging(output, Mode.WHOLE, false, system, session, remoteRepositories);
     }
 
     /**

@@ -20,6 +20,10 @@ import org.eclipse.aether.repository.LocalRepository;
 
 /**
  * Construction to accept collection of artifacts and install them into local repository.
+ * <p>
+ * Note about this sink: while it does use the Resolver API to install artifacts, this sink should never be directed
+ * onto your "real" local repository, as it can lead to unexpected results. Installed artifacts with this sink will
+ * appear as "locally built" ones, as "install" operation means exactly that: install built artifacts.
  */
 public final class InstallingSink implements ArtifactSink {
     /**

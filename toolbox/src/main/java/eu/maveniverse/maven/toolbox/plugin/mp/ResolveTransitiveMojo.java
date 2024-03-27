@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSinks;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
@@ -52,6 +51,12 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
     @Parameter(property = "signature", defaultValue = "false")
     private boolean signature;
 
+    /**
+     * The artifact sink spec (default: "null").
+     */
+    @Parameter(property = "sinkSpec", defaultValue = "null", required = true)
+    private String sinkSpec;
+
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         ResolutionRoot project = projectAsResolutionRoot();
@@ -66,7 +71,7 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
                 sources,
                 javadoc,
                 signature,
-                ArtifactSinks.nullArtifactSink(),
+                toolboxCommando.artifactSink(output, sinkSpec),
                 output);
     }
 }

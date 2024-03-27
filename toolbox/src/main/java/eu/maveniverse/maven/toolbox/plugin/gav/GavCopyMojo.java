@@ -23,11 +23,11 @@ import picocli.CommandLine;
 @Mojo(name = "gav-copy", requiresProject = false, threadSafe = true)
 public final class GavCopyMojo extends GavMojoSupport {
     /**
-     * The target spec.
+     * The sink spec.
      */
-    @CommandLine.Parameters(index = "0", description = "The target spec", arity = "1")
-    @Parameter(property = "targetSpec", required = true)
-    private String targetSpec;
+    @CommandLine.Parameters(index = "0", description = "The sink spec", arity = "1")
+    @Parameter(property = "sinkSpec", required = true)
+    private String sinkSpec;
 
     /**
      * The comma separated GAVs to resolve.
@@ -40,7 +40,7 @@ public final class GavCopyMojo extends GavMojoSupport {
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.copy(
                 csv(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
-                toolboxCommando.artifactSink(output, targetSpec),
+                toolboxCommando.artifactSink(output, sinkSpec),
                 output);
     }
 }

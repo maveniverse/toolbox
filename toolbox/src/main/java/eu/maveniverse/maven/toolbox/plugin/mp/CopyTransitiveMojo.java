@@ -21,11 +21,12 @@ import org.apache.maven.plugins.annotations.Parameter;
  */
 @Mojo(name = "copy-transitive", threadSafe = true)
 public final class CopyTransitiveMojo extends MPMojoSupport {
+
     /**
-     * The target spec.
+     * The artifact sink spec (default: "null").
      */
-    @Parameter(property = "targetSpec", required = true)
-    private String targetSpec;
+    @Parameter(property = "sinkSpec", defaultValue = "null", required = true)
+    private String sinkSpec;
 
     /**
      * The resolution scope to resolve (default is 'runtime').
@@ -50,7 +51,7 @@ public final class CopyTransitiveMojo extends MPMojoSupport {
                                 .withManagedDependencies(project.getManagedDependencies())
                                 .build())
                         .collect(Collectors.toList()),
-                toolboxCommando.artifactSink(output, targetSpec),
+                toolboxCommando.artifactSink(output, sinkSpec),
                 output);
     }
 }

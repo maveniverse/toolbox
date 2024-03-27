@@ -20,11 +20,12 @@ import org.eclipse.aether.graph.Dependency;
  */
 @Mojo(name = "copy", threadSafe = true)
 public final class CopyMojo extends MPMojoSupport {
+
     /**
-     * The target spec.
+     * The artifact sink spec (default: "null").
      */
-    @Parameter(property = "targetSpec", required = true)
-    private String targetSpec;
+    @Parameter(property = "sinkSpec", defaultValue = "null", required = true)
+    private String sinkSpec;
 
     /**
      * The dependency matcher spec.
@@ -39,7 +40,7 @@ public final class CopyMojo extends MPMojoSupport {
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
                         .map(Dependency::getArtifact)
                         .collect(Collectors.toList()),
-                toolboxCommando.artifactSink(output, targetSpec),
+                toolboxCommando.artifactSink(output, sinkSpec),
                 output);
     }
 }

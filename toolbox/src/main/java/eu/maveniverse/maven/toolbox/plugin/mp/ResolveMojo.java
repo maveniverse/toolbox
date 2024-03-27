@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSinks;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
@@ -45,6 +44,12 @@ public class ResolveMojo extends MPMojoSupport {
     @Parameter(property = "signature", defaultValue = "false")
     private boolean signature;
 
+    /**
+     * The artifact sink spec (default: "null").
+     */
+    @Parameter(property = "sinkSpec", defaultValue = "null", required = true)
+    private String sinkSpec;
+
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolve(
@@ -55,7 +60,7 @@ public class ResolveMojo extends MPMojoSupport {
                 sources,
                 javadoc,
                 signature,
-                ArtifactSinks.nullArtifactSink(),
+                toolboxCommando.artifactSink(output, sinkSpec),
                 output);
     }
 }

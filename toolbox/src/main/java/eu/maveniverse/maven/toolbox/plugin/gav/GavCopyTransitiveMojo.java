@@ -24,11 +24,11 @@ import picocli.CommandLine;
 @Mojo(name = "gav-copy-transitive", requiresProject = false, threadSafe = true)
 public final class GavCopyTransitiveMojo extends GavMojoSupport {
     /**
-     * The target spec.
+     * The sink spec.
      */
-    @CommandLine.Parameters(index = "0", description = "The target spec", arity = "1")
-    @Parameter(property = "targetSpec", required = true)
-    private String targetSpec;
+    @CommandLine.Parameters(index = "0", description = "The sink spec", arity = "1")
+    @Parameter(property = "sinkSpec", required = true)
+    private String sinkSpec;
 
     /**
      * The comma separated GAVs to resolve.
@@ -62,7 +62,7 @@ public final class GavCopyTransitiveMojo extends GavMojoSupport {
         return toolboxCommando.copyTransitive(
                 ResolutionScope.parse(scope),
                 toolboxCommando.loadGavs(csv(gav), csv(boms)),
-                toolboxCommando.artifactSink(output, targetSpec),
+                toolboxCommando.artifactSink(output, sinkSpec),
                 output);
     }
 }

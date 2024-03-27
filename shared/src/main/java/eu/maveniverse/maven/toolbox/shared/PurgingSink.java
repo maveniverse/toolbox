@@ -276,14 +276,20 @@ public final class PurgingSink implements ArtifactSink {
     }
 
     private int deleteDirectory(Path directory) throws IOException {
+        int found = 0;
         int deleted = 0;
         if (Files.isDirectory(directory)) {
-            try (DirectoryStream<Path> toBeDeleted =
-                    Files.newDirectoryStream(directory, p -> Files.exists(p) && !Files.isDirectory(p))) {
+            try (DirectoryStream<Path> toBeDeleted = Files.newDirectoryStream(directory)) {
                 for (Path p : toBeDeleted) {
-                    Files.delete(p);
-                    deleted++;
+                    found++;
+                    if (!Files.isDirectory(p)) {
+                        Files.delete(p);
+                        deleted++;
+                    }
                 }
+            }
+            if (found == deleted) {
+                Files.delete(directory);
             }
         }
         return deleted;

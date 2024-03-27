@@ -21,9 +21,11 @@ import eu.maveniverse.maven.mima.context.MavenUserHome;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.internal.RuntimeSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
+import eu.maveniverse.maven.toolbox.shared.ArtifactSinks;
 import eu.maveniverse.maven.toolbox.shared.DeployingSink;
 import eu.maveniverse.maven.toolbox.shared.DirectorySink;
 import eu.maveniverse.maven.toolbox.shared.InstallingSink;
+import eu.maveniverse.maven.toolbox.shared.ModuleDescriptorExtractingSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.PurgingSink;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
@@ -33,8 +35,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,11 +52,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
@@ -311,6 +308,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                             context.repositorySystemSession(),
                             context.remoteRepositories());
                 }
+            case "null":
+                return ArtifactSinks.nullArtifactSink();
             default:
                 throw new IllegalArgumentException("unknown artifact sink spec");
         }
@@ -482,33 +481,56 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean resolve(
-            Collection<Artifact> artifacts, boolean sources, boolean javadoc, boolean signature, Output output)
+            Collection<Artifact> artifacts,
+            boolean sources,
+            boolean javadoc,
+            boolean signature,
+            ArtifactSink sink,
+            Output output)
             throws Exception {
         output.verbose("Resolving {}", artifacts);
-        toolboxResolver.resolveArtifacts(artifacts);
-        if (sources || javadoc || signature) {
-            HashSet<Artifact> subartifacts = new HashSet<>();
-            artifacts.forEach(a -> {
-                if (sources && a.getClassifier().isEmpty()) {
-                    subartifacts.add(new SubArtifact(a, "sources", "jar"));
-                }
-                if (javadoc && a.getClassifier().isEmpty()) {
-                    subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
-                }
-                if (signature && !a.getExtension().endsWith(".asc")) {
-                    subartifacts.add(new SubArtifact(a, "*", "*.asc"));
-                }
-            });
-            if (!subartifacts.isEmpty()) {
-                output.verbose("Resolving (best effort) {}", subartifacts);
-                try {
-                    toolboxResolver.resolveArtifacts(subartifacts);
-                } catch (ArtifactResolutionException e) {
-                    // ignore, this is "best effort"
+        ArtifactSinks.SizingArtifactSink sizingArtifactSink = ArtifactSinks.sizingArtifactSink();
+        ArtifactSinks.CountingArtifactSink countingArtifactSink = ArtifactSinks.countingArtifactSink();
+        try (ArtifactSink artifactSink =
+                ArtifactSinks.teeArtifactSink(sink, sizingArtifactSink, countingArtifactSink)) {
+            List<ArtifactResult> artifactResults = toolboxResolver.resolveArtifacts(artifacts);
+            artifactSink.accept(
+                    artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
+            if (sources || javadoc || signature) {
+                HashSet<Artifact> subartifacts = new HashSet<>();
+                artifacts.forEach(a -> {
+                    if (sources && a.getClassifier().isEmpty()) {
+                        subartifacts.add(new SubArtifact(a, "sources", "jar"));
+                    }
+                    if (javadoc && a.getClassifier().isEmpty()) {
+                        subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
+                    }
+                    if (signature && !a.getExtension().endsWith(".asc")) {
+                        subartifacts.add(new SubArtifact(a, "*", "*.asc"));
+                    }
+                });
+                if (!subartifacts.isEmpty()) {
+                    output.verbose("Resolving (best effort) {}", subartifacts);
+                    try {
+                        List<ArtifactResult> subartifactResults = toolboxResolver.resolveArtifacts(subartifacts);
+                        artifactSink.accept(subartifactResults.stream()
+                                .map(ArtifactResult::getArtifact)
+                                .collect(Collectors.toList()));
+                    } catch (ArtifactResolutionException e) {
+                        // ignore, this is "best effort"
+                        artifactSink.accept(e.getResults().stream()
+                                .filter(ArtifactResult::isResolved)
+                                .map(ArtifactResult::getArtifact)
+                                .collect(Collectors.toList()));
+                    }
                 }
             }
+            output.normal(
+                    "Resolved {} artifacts (size: {})",
+                    countingArtifactSink.count(),
+                    humanReadableByteCountBin(sizingArtifactSink.size()));
+            return !artifacts.isEmpty();
         }
-        return !artifacts.isEmpty();
     }
 
     @Override
@@ -518,77 +540,106 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
+            ArtifactSink sink,
             Output output)
             throws Exception {
-        int totalArtifactCount = 0;
-        long totalArtifactSize = 0;
-        for (ResolutionRoot resolutionRoot : resolutionRoots) {
-            output.verbose("Resolving {}", resolutionRoot.getArtifact());
-            DependencyResult dependencyResult = toolboxResolver.resolve(
-                    resolutionScope,
-                    resolutionRoot.getArtifact(),
-                    resolutionRoot.getDependencies(),
-                    resolutionRoot.getManagedDependencies());
-            List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
-                    ? dependencyResult.getArtifactResults()
-                    : dependencyResult
-                            .getArtifactResults()
-                            .subList(1, dependencyResult.getArtifactResults().size() - 1);
-            for (ArtifactResult artifactResult : adjustedResults) {
-                ModuleDescriptor moduleDescriptor =
-                        getModuleDescriptor(output, artifactResult.getArtifact().getFile());
-                String moduleInfo = "";
-                if (moduleDescriptor != null) {
-                    moduleInfo = "-- module " + moduleDescriptor.name;
-                    if (moduleDescriptor.automatic) {
-                        if ("MANIFEST".equals(moduleDescriptor.moduleNameSource)) {
-                            moduleInfo += " [auto]";
-                        } else {
-                            moduleInfo += " (auto)";
+        ArtifactSinks.CountingArtifactSink totalCount = ArtifactSinks.countingArtifactSink();
+        ArtifactSinks.SizingArtifactSink totalSize = ArtifactSinks.sizingArtifactSink();
+        ModuleDescriptorExtractingSink moduleNameSource = new ModuleDescriptorExtractingSink();
+        try (ArtifactSink artifactSink = ArtifactSinks.teeArtifactSink(sink, totalSize, totalCount, moduleNameSource)) {
+            for (ResolutionRoot resolutionRoot : resolutionRoots) {
+                output.verbose("Resolving {}", resolutionRoot.getArtifact());
+                DependencyResult dependencyResult = toolboxResolver.resolve(
+                        resolutionScope,
+                        resolutionRoot.getArtifact(),
+                        resolutionRoot.getDependencies(),
+                        resolutionRoot.getManagedDependencies());
+                List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
+                        ? dependencyResult.getArtifactResults()
+                        : dependencyResult
+                                .getArtifactResults()
+                                .subList(
+                                        1, dependencyResult.getArtifactResults().size() - 1);
+
+                ArtifactSinks.CountingArtifactSink subCount = ArtifactSinks.countingArtifactSink();
+                ArtifactSinks.SizingArtifactSink subSize = ArtifactSinks.sizingArtifactSink();
+                ArtifactSink batchSink = ArtifactSinks.teeArtifactSink(false, artifactSink, subCount, subSize);
+
+                batchSink.accept(adjustedResults.stream()
+                        .map(ArtifactResult::getArtifact)
+                        .collect(Collectors.toList()));
+
+                for (ArtifactResult artifactResult : adjustedResults) {
+                    ModuleDescriptorExtractingSink.ModuleDescriptor moduleDescriptor =
+                            moduleNameSource.getModuleDescriptor(artifactResult.getArtifact());
+                    String moduleInfo = "";
+                    if (moduleDescriptor != null) {
+                        moduleInfo = "-- module " + moduleDescriptor.name();
+                        if (moduleDescriptor.automatic()) {
+                            if ("MANIFEST".equals(moduleDescriptor.moduleNameSource())) {
+                                moduleInfo += " [auto]";
+                            } else {
+                                moduleInfo += " (auto)";
+                            }
+                        }
+                    }
+                    if (output.isVerbose()) {
+                        output.verbose(
+                                "{} {} -> {}",
+                                artifactResult.getArtifact(),
+                                moduleInfo,
+                                artifactResult.getArtifact().getFile());
+                    } else {
+                        output.normal("{} {}", artifactResult.getArtifact(), moduleInfo);
+                    }
+                }
+
+                if (sources || javadoc || signature) {
+                    HashSet<Artifact> subartifacts = new HashSet<>();
+                    adjustedResults.stream().map(ArtifactResult::getArtifact).forEach(a -> {
+                        if (sources && a.getClassifier().isEmpty()) {
+                            subartifacts.add(new SubArtifact(a, "sources", "jar"));
+                        }
+                        if (javadoc && a.getClassifier().isEmpty()) {
+                            subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
+                        }
+                        if (signature && !a.getExtension().endsWith(".asc")) {
+                            subartifacts.add(new SubArtifact(a, "*", "*.asc"));
+                        }
+                    });
+                    if (!subartifacts.isEmpty()) {
+                        output.verbose("Resolving (best effort) {}", subartifacts);
+                        try {
+                            List<ArtifactResult> subartifactResults = toolboxResolver.resolveArtifacts(subartifacts);
+                            batchSink.accept(subartifactResults.stream()
+                                    .map(ArtifactResult::getArtifact)
+                                    .collect(Collectors.toList()));
+                        } catch (ArtifactResolutionException e) {
+                            // ignore, this is "best effort"
+                            batchSink.accept(e.getResults().stream()
+                                    .filter(ArtifactResult::isResolved)
+                                    .map(ArtifactResult::getArtifact)
+                                    .collect(Collectors.toList()));
                         }
                     }
                 }
-                if (output.isVerbose()) {
-                    output.verbose(
-                            "{} {} -> {}",
-                            artifactResult.getArtifact(),
-                            moduleInfo,
-                            artifactResult.getArtifact().getFile());
-                } else {
-                    output.normal("{} {}", artifactResult.getArtifact(), moduleInfo);
-                }
-            }
-            int artifactCount = adjustedResults.size();
-            long artifactSize = adjustedResults.stream()
-                    .map(ArtifactResult::getArtifact)
-                    .map(Artifact::getFile)
-                    .filter(Objects::nonNull)
-                    .map(f -> {
-                        try {
-                            return Files.size(f.toPath());
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .collect(Collectors.summarizingLong(Long::longValue))
-                    .getSum();
-            totalArtifactCount += artifactCount;
-            totalArtifactSize += artifactSize;
 
-            output.normal("");
+                output.normal("--------------------");
+                output.normal(
+                        "Resolved artifact: {} (artifact count: {}, artifact size: {})",
+                        resolutionRoot.getArtifact(),
+                        subCount.count(),
+                        humanReadableByteCountBin(subSize.size()));
+                output.normal("");
+            }
+            output.normal("====================");
             output.normal(
-                    "Resolved artifact: {} (artifact count: {}, artifact size: {})",
-                    resolutionRoot.getArtifact(),
-                    artifactCount,
-                    humanReadableByteCountBin(artifactSize));
+                    "Total resolved roots: {} (artifact count: {}, artifact size: {})",
+                    resolutionRoots.size(),
+                    totalCount.count(),
+                    humanReadableByteCountBin(totalSize.size()));
+            return !resolutionRoots.isEmpty();
         }
-        output.normal("====================");
-        output.normal(
-                "Total resolved artifacts: {} (artifact count: {}, artifact size: {})",
-                resolutionRoots.size(),
-                totalArtifactCount,
-                humanReadableByteCountBin(totalArtifactSize));
-        return true;
     }
 
     @Override
@@ -846,73 +897,5 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         e -> String.valueOf(e.getValue()),
                         (prev, next) -> next,
                         HashMap::new));
-    }
-
-    public static ModuleDescriptor getModuleDescriptor(Output output, File artifactFile) {
-        ModuleDescriptor moduleDescriptor = null;
-        try {
-            // Use Java9 code to get moduleName, don't try to do it better with own implementation
-            Class<?> moduleFinderClass = Class.forName("java.lang.module.ModuleFinder");
-
-            Path path = artifactFile.toPath();
-
-            Method ofMethod = moduleFinderClass.getMethod("of", java.nio.file.Path[].class);
-            Object moduleFinderInstance = ofMethod.invoke(null, new Object[] {new java.nio.file.Path[] {path}});
-
-            Method findAllMethod = moduleFinderClass.getMethod("findAll");
-            Set<Object> moduleReferences = (Set<Object>) findAllMethod.invoke(moduleFinderInstance);
-
-            // moduleReferences can be empty when referring to target/classes without module-info.class
-            if (!moduleReferences.isEmpty()) {
-                Object moduleReference = moduleReferences.iterator().next();
-                Method descriptorMethod = moduleReference.getClass().getMethod("descriptor");
-                Object moduleDescriptorInstance = descriptorMethod.invoke(moduleReference);
-
-                Method nameMethod = moduleDescriptorInstance.getClass().getMethod("name");
-                String name = (String) nameMethod.invoke(moduleDescriptorInstance);
-
-                moduleDescriptor = new ModuleDescriptor();
-                moduleDescriptor.name = name;
-
-                Method isAutomaticMethod = moduleDescriptorInstance.getClass().getMethod("isAutomatic");
-                moduleDescriptor.automatic = (Boolean) isAutomaticMethod.invoke(moduleDescriptorInstance);
-
-                if (moduleDescriptor.automatic) {
-                    if (artifactFile.isFile()) {
-                        try (JarFile jarFile = new JarFile(artifactFile)) {
-                            Manifest manifest = jarFile.getManifest();
-
-                            if (manifest != null
-                                    && manifest.getMainAttributes().getValue("Automatic-Module-Name") != null) {
-                                moduleDescriptor.moduleNameSource = "MANIFEST";
-                            } else {
-                                moduleDescriptor.moduleNameSource = "FILENAME";
-                            }
-                        } catch (IOException e) {
-                            // noop
-                        }
-                    }
-                }
-            }
-        } catch (ClassNotFoundException
-                | SecurityException
-                | IllegalAccessException
-                | IllegalArgumentException
-                | NoSuchMethodException e) {
-            output.verbose("Ignored Exception:", e);
-        } catch (InvocationTargetException e) {
-            Throwable cause = e.getCause();
-            while (cause.getCause() != null) {
-                cause = cause.getCause();
-            }
-            output.verbose("Can't extract module name from {}:", artifactFile.getName(), cause);
-        }
-        return moduleDescriptor;
-    }
-
-    public static class ModuleDescriptor {
-        String name;
-        boolean automatic = true;
-        String moduleNameSource;
     }
 }

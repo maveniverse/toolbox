@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.ArtifactSinks;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
@@ -54,6 +55,7 @@ public class ResolveMojo extends MPMojoSupport {
                 sources,
                 javadoc,
                 signature,
+                ArtifactSinks.nullArtifactSink(),
                 output);
     }
 }

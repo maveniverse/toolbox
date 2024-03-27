@@ -142,7 +142,13 @@ public interface ToolboxCommando {
 
     boolean recordStop(Output output);
 
-    boolean resolve(Collection<Artifact> artifacts, boolean sources, boolean javadoc, boolean signature, Output output)
+    boolean resolve(
+            Collection<Artifact> artifacts,
+            boolean sources,
+            boolean javadoc,
+            boolean signature,
+            ArtifactSink sink,
+            Output output)
             throws Exception;
 
     boolean resolveTransitive(
@@ -151,6 +157,7 @@ public interface ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
+            ArtifactSink sink,
             Output output)
             throws Exception;
 

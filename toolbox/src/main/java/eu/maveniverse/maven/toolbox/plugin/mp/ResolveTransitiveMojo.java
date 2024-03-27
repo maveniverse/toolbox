@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.ArtifactSinks;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
@@ -65,6 +66,7 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
                 sources,
                 javadoc,
                 signature,
+                ArtifactSinks.nullArtifactSink(),
                 output);
     }
 }

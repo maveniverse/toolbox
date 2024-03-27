@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.ArtifactSinks;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
@@ -73,6 +74,7 @@ public class GavResolveMojo extends GavMojoSupport {
                 sources,
                 javadoc,
                 signature,
+                ArtifactSinks.nullArtifactSink(),
                 output);
     }
 }

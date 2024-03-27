@@ -130,19 +130,6 @@ public final class ArtifactSinks {
     /**
      * Creates a "tee" artifact sink out of supplied sinks.
      */
-    public static TeeArtifactSink teeArtifactSink(ArtifactSink... artifactSinks) {
-        return teeArtifactSink(true, artifactSinks);
-    }
-
-    /**
-     * Creates a "tee" artifact sink out of supplied sinks.
-     */
-    public static TeeArtifactSink teeArtifactSink(Collection<? extends ArtifactSink> artifactSinks) {
-        return teeArtifactSink(true, artifactSinks);
-    }
-    /**
-     * Creates a "tee" artifact sink out of supplied sinks.
-     */
     public static TeeArtifactSink teeArtifactSink(boolean doClose, ArtifactSink... artifactSinks) {
         return teeArtifactSink(doClose, Arrays.asList(artifactSinks));
     }

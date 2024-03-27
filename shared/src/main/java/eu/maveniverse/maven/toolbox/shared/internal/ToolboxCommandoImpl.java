@@ -50,7 +50,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -255,16 +254,16 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             case "flatImplied":
             case "flat":
                 path = "flatImplied".equals(prefix) ? spec : spec.substring(prefix.length() + 1);
-                ArtifactNameMapper artifactNameMapper = null;
-                if (path.indexOf(',') > -1) {
-                    String artifactNameMapperSpec = path.substring(path.indexOf(',') + 1);
+                ArtifactNameMapper artifactNameMapper = ArtifactNameMapper.AbVCE();
+                if (path.contains("?artifactNameMapperSpec=")) {
+                    String artifactNameMapperSpec = path.substring(path.indexOf('=') + 1);
                     artifactNameMapper = parseArtifactNameMapperSpec(artifactNameMapperSpec);
-                    path = path.substring(0, path.indexOf(','));
+                    path = path.substring(0, path.indexOf('?'));
                 }
                 return DirectorySink.flat(
                         output,
                         context.basedir().resolve(path),
-                        Objects.requireNonNullElseGet(artifactNameMapper, ArtifactNameMapper::AbVCE));
+                        artifactNameMapper);
             case "repository":
                 return DirectorySink.repository(
                         output, context.basedir().resolve(spec.substring("repository:".length())));

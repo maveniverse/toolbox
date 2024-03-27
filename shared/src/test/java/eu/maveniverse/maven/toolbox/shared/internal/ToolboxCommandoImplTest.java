@@ -15,10 +15,12 @@ import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
+import eu.maveniverse.maven.toolbox.shared.ArtifactSinks;
 import eu.maveniverse.maven.toolbox.shared.DeployingSink;
 import eu.maveniverse.maven.toolbox.shared.DirectorySink;
 import eu.maveniverse.maven.toolbox.shared.InstallingSink;
 import eu.maveniverse.maven.toolbox.shared.NullOutput;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.PurgingSink;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,42 +33,46 @@ public class ToolboxCommandoImplTest {
     void artifactSinkSpec(@TempDir Path tempDir) throws IOException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create().build())) {
+            Output output = new NullOutput();
             ToolboxCommandoImpl commando = new ToolboxCommandoImpl(runtime, context);
             ArtifactSink sink;
 
-            sink = commando.artifactSink(new NullOutput(), tempDir.toString());
+            sink = commando.artifactSink(output, tempDir.toString());
             assertInstanceOf(DirectorySink.class, sink);
             assertEquals(tempDir, ((DirectorySink) sink).getDirectory());
 
-            sink = commando.artifactSink(new NullOutput(), "flat:" + tempDir);
+            sink = commando.artifactSink(output, "flat:" + tempDir);
             assertInstanceOf(DirectorySink.class, sink);
             assertEquals(tempDir, ((DirectorySink) sink).getDirectory());
 
-            sink = commando.artifactSink(new NullOutput(), "flat:" + tempDir + ",AVCE()");
+            sink = commando.artifactSink(output, "flat:" + tempDir + "?artifactNameMapperSpec=AVCE()");
             assertInstanceOf(DirectorySink.class, sink);
             assertEquals(tempDir, ((DirectorySink) sink).getDirectory());
 
-            sink = commando.artifactSink(new NullOutput(), "repository:" + tempDir);
+            sink = commando.artifactSink(output, "repository:" + tempDir);
             assertInstanceOf(DirectorySink.class, sink);
             assertEquals(tempDir, ((DirectorySink) sink).getDirectory());
 
-            sink = commando.artifactSink(new NullOutput(), "deploy:id::https://somewhere.com/");
+            sink = commando.artifactSink(output, "deploy:id::https://somewhere.com/");
             assertInstanceOf(DeployingSink.class, sink);
             assertEquals(
                     ((DeployingSink) sink).getRemoteRepository(),
                     new RemoteRepository.Builder("id", "default", "https://somewhere.com/").build());
 
-            sink = commando.artifactSink(new NullOutput(), "install:" + tempDir);
+            sink = commando.artifactSink(output, "install:" + tempDir);
             assertInstanceOf(InstallingSink.class, sink);
             assertEquals(
                     tempDir,
                     ((InstallingSink) sink).getLocalRepository().getBasedir().toPath());
 
-            sink = commando.artifactSink(new NullOutput(), "purge:" + tempDir);
+            sink = commando.artifactSink(output, "purge:" + tempDir);
             assertInstanceOf(PurgingSink.class, sink);
             assertEquals(
                     tempDir,
                     ((PurgingSink) sink).getLocalRepository().getBasedir().toPath());
+
+            sink = commando.artifactSink(output, "null:");
+            assertInstanceOf(ArtifactSinks.NullArtifactSink.class, sink);
         }
     }
 }

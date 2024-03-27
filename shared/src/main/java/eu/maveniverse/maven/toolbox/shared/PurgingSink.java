@@ -175,6 +175,7 @@ public final class PurgingSink implements ArtifactSink {
     private boolean purgeExact(Artifact artifact) throws IOException {
         // maintain repository state
         // purge artifact file and additional sub-files (hashes, signatures, lastUpdated...)
+        int deleted = 0;
         Path path = session.getLocalRepository()
                 .getBasedir()
                 .toPath()
@@ -184,11 +185,10 @@ public final class PurgingSink implements ArtifactSink {
             resetMetadata(
                     path.getParent(),
                     artifact.isSnapshot() && Objects.equals(artifact.getVersion(), artifact.getBaseVersion()));
-            return deleteFileAndSubs(session.getLocalRepository()
+            deleted = deleteFileAndSubs(session.getLocalRepository()
                             .getBasedir()
                             .toPath()
-                            .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)))
-                    != 0;
+                            .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
         }
         for (RemoteRepository repository : remoteRepositories) {
             path = session.getLocalRepository()
@@ -200,14 +200,13 @@ public final class PurgingSink implements ArtifactSink {
                 resetMetadata(
                         path.getParent(),
                         artifact.isSnapshot() && Objects.equals(artifact.getVersion(), artifact.getBaseVersion()));
-                return deleteFileAndSubs(session.getLocalRepository()
-                                .getBasedir()
-                                .toPath()
-                                .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)))
-                        != 0;
+                deleted += deleteFileAndSubs(session.getLocalRepository()
+                        .getBasedir()
+                        .toPath()
+                        .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
             }
         }
-        return false;
+        return deleted != 0;
     }
 
     private boolean purgeGAV(Artifact artifact) throws IOException {

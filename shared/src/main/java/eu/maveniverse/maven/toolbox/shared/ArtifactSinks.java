@@ -48,30 +48,30 @@ public final class ArtifactSinks {
      * Creates a delegating sink that delegates calls only with matched artifacts.
      */
     public static MatchingArtifactSink matchingArtifactSink(
-            Predicate<Artifact> artifactMatcher, ArtifactSink artifactSink) {
+            Predicate<Artifact> artifactMatcher, ArtifactSink delegate) {
         requireNonNull(artifactMatcher, "artifactMatcher");
-        requireNonNull(artifactSink, "artifactSink");
-        return new MatchingArtifactSink(artifactMatcher, artifactSink);
+        requireNonNull(delegate, "delegate");
+        return new MatchingArtifactSink(artifactMatcher, delegate);
     }
 
     public static class MatchingArtifactSink implements ArtifactSink {
         private final Predicate<Artifact> artifactMatcher;
-        private final ArtifactSink artifactSink;
+        private final ArtifactSink delegate;
 
-        private MatchingArtifactSink(Predicate<Artifact> artifactMatcher, ArtifactSink artifactSink) {
+        private MatchingArtifactSink(Predicate<Artifact> artifactMatcher, ArtifactSink delegate) {
             this.artifactMatcher = artifactMatcher;
-            this.artifactSink = artifactSink;
+            this.delegate = delegate;
         }
 
         @Override
         public void accept(Collection<Artifact> artifacts) throws IOException {
-            artifactSink.accept(artifacts.stream().filter(artifactMatcher).collect(Collectors.toList()));
+            delegate.accept(artifacts.stream().filter(artifactMatcher).collect(Collectors.toList()));
         }
 
         @Override
         public void accept(Artifact artifact) throws IOException {
             if (artifactMatcher.test(artifact)) {
-                artifactSink.accept(artifact);
+                delegate.accept(artifact);
             }
         }
     }

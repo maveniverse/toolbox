@@ -48,9 +48,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -415,10 +417,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
         CollectResult collectResult = toolboxResolver.collect(
                 resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), false);
-        final HashMap<RemoteRepository, Artifact> repositories = new HashMap<>();
+        LinkedHashMap<RemoteRepository, Artifact> repositories = new LinkedHashMap<>();
         Artifact sentinel = new DefaultArtifact("sentinel:sentinel:sentinel");
         context.remoteRepositories().forEach(r -> repositories.put(r, sentinel));
-        final ArrayDeque<Artifact> path = new ArrayDeque<>();
+        ArrayDeque<Artifact> path = new ArrayDeque<>();
         collectResult.getRoot().accept(new TreeDependencyVisitor(new DependencyVisitor() {
             @Override
             public boolean visitEnter(DependencyNode node) {
@@ -434,8 +436,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 return true;
             }
         }));
+        AtomicInteger counter = new AtomicInteger(0);
         repositories.forEach((k, v) -> {
-            output.normal(k.toString());
+            output.normal("{}. {}", counter.incrementAndGet(), k.toString());
             output.normal("  First introduced on {}", v == sentinel ? "root" : v);
         });
         return !repositories.isEmpty();

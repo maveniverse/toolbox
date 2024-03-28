@@ -74,7 +74,7 @@
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mima.runtime</groupId>
-      <artifactId>standalone-static-uber</artifactId>
+      <artifactId>standalone-sisu-uber</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -163,10 +163,27 @@
       <artifactId>search-backend-smo</artifactId>
     </dependency>
 
+    <!-- DI -->
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
     <!-- Test -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.sisu</groupId>
+      <artifactId>org.eclipse.sisu.inject</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.inject</groupId>
+      <artifactId>guice</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

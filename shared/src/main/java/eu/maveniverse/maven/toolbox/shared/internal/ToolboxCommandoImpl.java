@@ -58,7 +58,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -260,7 +259,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         String path;
         switch (prefix) {
             case "flatImplied":
-            case "flat":
+            case "flat": {
                 path = "flatImplied".equals(prefix) ? spec : spec.substring(prefix.length() + 1);
                 ArtifactNameMapper artifactNameMapper = ArtifactNameMapper.AbVCE();
                 if (path.contains("?artifactNameMapperSpec=")) {
@@ -269,9 +268,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     path = path.substring(0, path.indexOf('?'));
                 }
                 return DirectorySink.flat(output, context.basedir().resolve(path), artifactNameMapper);
+            }
             case "repository":
                 return DirectorySink.repository(output, context.basedir().resolve(spec.substring(prefix.length() + 1)));
-            case "install":
+            case "install": {
                 path = spec.substring(prefix.length() + 1);
                 if (!path.trim().isEmpty()) {
                     Path altLocalRepository = context.basedir().resolve(path);
@@ -286,13 +286,14 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     return InstallingSink.installing(
                             output, context.repositorySystem(), context.repositorySystemSession());
                 }
+            }
             case "deploy":
                 return DeployingSink.deploying(
                         output,
                         context.repositorySystem(),
                         context.repositorySystemSession(),
                         toolboxResolver.parseRemoteRepository(spec.substring(prefix.length() + 1)));
-            case "purge":
+            case "purge": {
                 path = spec.substring(prefix.length() + 1);
                 if (!path.trim().isEmpty()) {
                     Path altLocalRepository = context.basedir().resolve(path);
@@ -311,9 +312,19 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                             context.repositorySystemSession(),
                             context.remoteRepositories());
                 }
-            case "unpack":
+            }
+            case "unpack": {
+                path = spec.substring(prefix.length() + 1);
+                ArtifactNameMapper artifactNameMapper = ArtifactNameMapper.ACVE();
+                boolean allowEntryOverwrite = true;
+                if (path.contains("?artifactNameMapperSpec=")) {
+                    String artifactNameMapperSpec = path.substring(path.indexOf('=') + 1);
+                    artifactNameMapper = parseArtifactNameMapperSpec(artifactNameMapperSpec);
+                    path = path.substring(0, path.indexOf('?'));
+                }
                 return UnpackSink.flat(
-                        output, context.basedir().resolve(spec.substring(prefix.length() + 1)), Function.identity());
+                        output, context.basedir().resolve(path), artifactNameMapper, allowEntryOverwrite);
+            }
             case "null":
                 return ArtifactSinks.nullArtifactSink();
             default:

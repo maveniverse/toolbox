@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -38,8 +39,15 @@ import org.eclipse.aether.artifact.Artifact;
 public final class UnpackSink implements ArtifactSink {
     /**
      * Creates plain "flat" directory where unpacks.
+     *
+     * @param output The output.
+     * @param path The root where unpack happens.
+     * @param artifactNameMapper The artifact mapper where are the roots of artifacts unpacked. To achieve "overlay",
+     *                           unpack every artifact to same root, use {@link ArtifactNameMapper#empty()}.
+     * @param allowEntryOverwrite Does this sink allow entry overlap (among unpacked archives) or not?
      */
-    public static UnpackSink flat(Output output, Path path, Function<String, String> fileNameMapper)
+    public static UnpackSink flat(
+            Output output, Path path, Function<Artifact, String> artifactNameMapper, boolean allowEntryOverwrite)
             throws IOException {
         return new UnpackSink(
                 output,
@@ -47,9 +55,10 @@ public final class UnpackSink implements ArtifactSink {
                 ArtifactMatcher.unique(),
                 false,
                 a -> a,
-                ArtifactNameMapper.ACVE(),
-                fileNameMapper,
-                false);
+                artifactNameMapper,
+                Function.identity(),
+                true,
+                allowEntryOverwrite);
     }
 
     private final Output output;
@@ -60,7 +69,8 @@ public final class UnpackSink implements ArtifactSink {
     private final Function<Artifact, Artifact> artifactMapper;
     private final Function<Artifact, String> artifactNameMapper;
     private final Function<String, String> fileNameMapper;
-    private final boolean allowOverwrite;
+    private final boolean allowRootOverwrite;
+    private final boolean allowEntryOverwrite;
     private final HashSet<Path> writtenPaths;
     /**
      * Creates a directory sink.
@@ -71,8 +81,9 @@ public final class UnpackSink implements ArtifactSink {
      * @param artifactMapper The artifact mapper, that may re-map artifact.
      * @param artifactNameMapper The artifact name mapper, that decides what file name will be of the artifact.
      * @param fileNameMapper The file name mapper.
-     * @param allowOverwrite Does sink allow overwrites. Tip: you usually do not want to allow, as that means you have
-     *                       some mismatch in name mapping or alike.
+     * @param allowRootOverwrite Does sink allow use of same roots for unpack operations.
+     * @param allowEntryOverwrite Does sink allow unpacked entry overwrites. Tip: you usually do not want to allow,
+     *                            as that means you have some overlap in unpacked archives.
      * @throws IOException In case of IO problem.
      */
     private UnpackSink(
@@ -83,7 +94,8 @@ public final class UnpackSink implements ArtifactSink {
             Function<Artifact, Artifact> artifactMapper,
             Function<Artifact, String> artifactNameMapper,
             Function<String, String> fileNameMapper,
-            boolean allowOverwrite)
+            boolean allowRootOverwrite,
+            boolean allowEntryOverwrite)
             throws IOException {
         this.output = requireNonNull(output, "output");
         this.directory = requireNonNull(directory, "directory").toAbsolutePath();
@@ -102,7 +114,8 @@ public final class UnpackSink implements ArtifactSink {
         this.artifactMapper = requireNonNull(artifactMapper, "artifactMapper");
         this.artifactNameMapper = requireNonNull(artifactNameMapper, "artifactNameMapper");
         this.fileNameMapper = requireNonNull(fileNameMapper, "fileNameMapper");
-        this.allowOverwrite = allowOverwrite;
+        this.allowRootOverwrite = allowRootOverwrite;
+        this.allowEntryOverwrite = allowEntryOverwrite;
         this.writtenPaths = new HashSet<>();
     }
 
@@ -122,8 +135,8 @@ public final class UnpackSink implements ArtifactSink {
             if (!target.startsWith(directory)) {
                 throw new IOException("Path escape prevented; check mappings");
             }
-            if (!writtenPaths.add(target) && !allowOverwrite) {
-                throw new IOException("Overwrite prevented; check mappings");
+            if (!writtenPaths.add(target) && !allowRootOverwrite) {
+                throw new IOException("Root overwrite prevented; check mappings");
             }
             switch (artifact.getExtension()) {
                 case "jar": {
@@ -173,10 +186,7 @@ public final class UnpackSink implements ArtifactSink {
                     Files.createDirectories(f);
                 } else {
                     Files.createDirectories(f.getParent());
-                    try (OutputStream o = Files.newOutputStream(f)) {
-                        IOUtils.copy(tar, o);
-                        Files.setLastModifiedTime(f, entry.getLastModifiedTime());
-                    }
+                    mayCopy(f, tar, entry.getLastModifiedTime());
                 }
             }
         }
@@ -197,10 +207,7 @@ public final class UnpackSink implements ArtifactSink {
                     Files.createDirectories(f);
                 } else {
                     Files.createDirectories(f.getParent());
-                    try (OutputStream o = Files.newOutputStream(f)) {
-                        IOUtils.copy(zip.getInputStream(entry), o);
-                        Files.setLastModifiedTime(f, entry.getLastModifiedTime());
-                    }
+                    mayCopy(f, zip.getInputStream(entry), entry.getLastModifiedTime());
                 }
             }
         }
@@ -220,10 +227,7 @@ public final class UnpackSink implements ArtifactSink {
                     Files.createDirectories(f);
                 } else {
                     Files.createDirectories(f.getParent());
-                    try (OutputStream o = Files.newOutputStream(f)) {
-                        IOUtils.copy(jar, o);
-                        Files.setLastModifiedTime(f, entry.getLastModifiedTime());
-                    }
+                    mayCopy(f, jar, entry.getLastModifiedTime());
                 }
             }
         }
@@ -235,6 +239,18 @@ public final class UnpackSink implements ArtifactSink {
             throw new IOException("Path escape prevented");
         }
         return f;
+    }
+
+    private void mayCopy(Path target, InputStream inputStream, FileTime fileTime) throws IOException {
+        if (Files.exists(target) && !allowEntryOverwrite) {
+            throw new IOException("Entry overwrite prevented; overlap in archives");
+        }
+        try (OutputStream o = Files.newOutputStream(target)) {
+            IOUtils.copy(inputStream, o);
+            if (fileTime != null) {
+                Files.setLastModifiedTime(target, fileTime);
+            }
+        }
     }
 
     @Override

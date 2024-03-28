@@ -47,6 +47,10 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
         };
     }
 
+    static ArtifactNameMapper empty() {
+        return artifact -> "";
+    }
+
     static ArtifactNameMapper fixed(String prefix) {
         requireNonNull(prefix, "prefix");
         if (prefix.trim().isEmpty()) {
@@ -395,6 +399,9 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
                     break;
                 case "AE":
                     params.add(AE());
+                    break;
+                case "empty":
+                    params.add(empty());
                     break;
                 case "fixed":
                     params.add(fixed(stringParam(node.getValue())));

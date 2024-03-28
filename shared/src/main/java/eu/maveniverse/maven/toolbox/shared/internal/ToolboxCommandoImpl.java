@@ -439,7 +439,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         AtomicInteger counter = new AtomicInteger(0);
         repositories.forEach((k, v) -> {
             output.normal("{}. {}", counter.incrementAndGet(), k.toString());
-            output.normal("  First introduced on {}", v == sentinel ? "root" : v);
+            output.normal("   First introduced on {}", v == sentinel ? "root" : v);
         });
         return !repositories.isEmpty();
     }

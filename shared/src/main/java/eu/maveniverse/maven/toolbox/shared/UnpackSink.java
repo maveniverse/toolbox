@@ -38,16 +38,17 @@ import org.eclipse.aether.artifact.Artifact;
  */
 public final class UnpackSink implements ArtifactSink {
     /**
-     * Creates plain "flat" directory where unpacks.
+     * Creates plain unpack sink where unpacking happens according to supplied parameters.
      *
      * @param output The output.
      * @param path The root where unpack happens.
-     * @param artifactNameMapper The artifact mapper where are the roots of artifacts unpacked. To achieve "overlay",
-     *                           unpack every artifact to same root, use {@link ArtifactNameMapper#empty()}.
+     * @param artifactRootMapper The artifact root mapper, that decides where is root of unpacking for given artifact.
+     *                           To achieve "overlay", one can use {@code fixed(.)} mapper that will map roots into
+     *                           root of {@code path} parameter.
      * @param allowEntryOverwrite Does this sink allow entry overlap (among unpacked archives) or not?
      */
-    public static UnpackSink flat(
-            Output output, Path path, Function<Artifact, String> artifactNameMapper, boolean allowEntryOverwrite)
+    public static UnpackSink unpack(
+            Output output, Path path, Function<Artifact, String> artifactRootMapper, boolean allowEntryOverwrite)
             throws IOException {
         return new UnpackSink(
                 output,
@@ -55,7 +56,7 @@ public final class UnpackSink implements ArtifactSink {
                 ArtifactMatcher.unique(),
                 false,
                 a -> a,
-                artifactNameMapper,
+                artifactRootMapper,
                 Function.identity(),
                 true,
                 allowEntryOverwrite);
@@ -67,7 +68,7 @@ public final class UnpackSink implements ArtifactSink {
     private final Predicate<Artifact> artifactMatcher;
     private final boolean failIfUnmatched;
     private final Function<Artifact, Artifact> artifactMapper;
-    private final Function<Artifact, String> artifactNameMapper;
+    private final Function<Artifact, String> artifactRootMapper;
     private final Function<String, String> fileNameMapper;
     private final boolean allowRootOverwrite;
     private final boolean allowEntryOverwrite;
@@ -79,7 +80,7 @@ public final class UnpackSink implements ArtifactSink {
      * @param directory The directory, if not existing, will be created.
      * @param artifactMatcher The matcher, that decides is this sink accepting artifact or not.
      * @param artifactMapper The artifact mapper, that may re-map artifact.
-     * @param artifactNameMapper The artifact name mapper, that decides what file name will be of the artifact.
+     * @param artifactRootMapper The artifact root mapper, that decides where is root of unpacking for given artifact.
      * @param fileNameMapper The file name mapper.
      * @param allowRootOverwrite Does sink allow use of same roots for unpack operations.
      * @param allowEntryOverwrite Does sink allow unpacked entry overwrites. Tip: you usually do not want to allow,
@@ -92,7 +93,7 @@ public final class UnpackSink implements ArtifactSink {
             Predicate<Artifact> artifactMatcher,
             boolean failIfUnmatched,
             Function<Artifact, Artifact> artifactMapper,
-            Function<Artifact, String> artifactNameMapper,
+            Function<Artifact, String> artifactRootMapper,
             Function<String, String> fileNameMapper,
             boolean allowRootOverwrite,
             boolean allowEntryOverwrite)
@@ -112,7 +113,7 @@ public final class UnpackSink implements ArtifactSink {
         this.artifactMatcher = requireNonNull(artifactMatcher, "artifactMatcher");
         this.failIfUnmatched = failIfUnmatched;
         this.artifactMapper = requireNonNull(artifactMapper, "artifactMapper");
-        this.artifactNameMapper = requireNonNull(artifactNameMapper, "artifactNameMapper");
+        this.artifactRootMapper = requireNonNull(artifactRootMapper, "artifactRootMapper");
         this.fileNameMapper = requireNonNull(fileNameMapper, "fileNameMapper");
         this.allowRootOverwrite = allowRootOverwrite;
         this.allowEntryOverwrite = allowEntryOverwrite;
@@ -129,7 +130,7 @@ public final class UnpackSink implements ArtifactSink {
         output.verbose("Accept artifact {}", artifact);
         if (artifactMatcher.test(artifact)) {
             output.verbose("  matched");
-            String targetName = artifactNameMapper.apply(artifactMapper.apply(artifact));
+            String targetName = artifactRootMapper.apply(artifactMapper.apply(artifact));
             output.verbose("  mapped to name {}", targetName);
             Path target = directory.resolve(targetName).toAbsolutePath();
             if (!target.startsWith(directory)) {

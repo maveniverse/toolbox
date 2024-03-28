@@ -314,6 +314,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 }
             }
             case "unpack": {
+                // overlay: "unpack:rel/path?artifactNameMapperSpec=fixed(.)"
+                // unpack each-by-each: "unpack:rel/path" (and will name root dirs ACVE)
                 path = spec.substring(prefix.length() + 1);
                 ArtifactNameMapper artifactNameMapper = ArtifactNameMapper.ACVE();
                 boolean allowEntryOverwrite = true;
@@ -322,7 +324,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     artifactNameMapper = parseArtifactNameMapperSpec(artifactNameMapperSpec);
                     path = path.substring(0, path.indexOf('?'));
                 }
-                return UnpackSink.flat(
+                return UnpackSink.unpack(
                         output, context.basedir().resolve(path), artifactNameMapper, allowEntryOverwrite);
             }
             case "null":

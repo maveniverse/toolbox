@@ -9,8 +9,6 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.toolbox.shared.internal.ArtifactMatcher;
-import eu.maveniverse.maven.toolbox.shared.internal.ArtifactNameMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

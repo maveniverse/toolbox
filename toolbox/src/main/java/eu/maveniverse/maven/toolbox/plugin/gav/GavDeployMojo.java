@@ -8,8 +8,8 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.Artifacts;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.ProjectArtifacts;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.File;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -73,17 +73,17 @@ public final class GavDeployMojo extends GavMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        Artifacts artifacts = new Artifacts(gav);
-        artifacts.addMain(jar.toPath());
+        ProjectArtifacts projectArtifacts = new ProjectArtifacts(gav);
+        projectArtifacts.addMain(jar.toPath());
         if (pom != null) {
-            artifacts.addPom(pom.toPath());
+            projectArtifacts.addPom(pom.toPath());
         }
         if (sources != null) {
-            artifacts.addSources(sources.toPath());
+            projectArtifacts.addSources(sources.toPath());
         }
         if (javadoc != null) {
-            artifacts.addJavadoc(javadoc.toPath());
+            projectArtifacts.addJavadoc(javadoc.toPath());
         }
-        return toolboxCommando.deploy(remoteRepositorySpec, artifacts, output);
+        return toolboxCommando.deploy(remoteRepositorySpec, projectArtifacts, output);
     }
 }

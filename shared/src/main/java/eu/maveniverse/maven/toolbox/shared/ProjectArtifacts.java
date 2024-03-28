@@ -26,14 +26,14 @@ import org.eclipse.aether.artifact.DefaultArtifact;
  * <p>
  * Warning: this abstraction uses extension and not packaging, as this one does not create POM, it is caller obligation.
  */
-public final class Artifacts implements Supplier<Collection<Artifact>> {
+public final class ProjectArtifacts implements Supplier<Collection<Artifact>> {
     private final String groupId;
     private final String artifactId;
     private final String version;
     private final String extension;
     private final Map<CE, Path> artifacts;
 
-    public Artifacts(String gav) {
+    public ProjectArtifacts(String gav) {
         DefaultArtifact prototype = new DefaultArtifact(gav);
         this.groupId = prototype.getGroupId();
         this.artifactId = prototype.getArtifactId();

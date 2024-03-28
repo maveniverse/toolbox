@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.maveniverse.maven.toolbox.shared.internal.ArtifactNameMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

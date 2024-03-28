@@ -12,7 +12,6 @@ import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.toolbox.shared.Output;
-import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,12 +34,11 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ToolboxSearchApiImpl implements ToolboxSearchApi {
+public class ToolboxSearchApiImpl {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public ToolboxSearchApiImpl() {}
 
-    @Override
     public SearchBackend getRemoteRepositoryBackend(RemoteRepository remoteRepository) {
         final ResponseExtractor extractor;
         if ("central".equals(remoteRepository.getContentType())) {
@@ -58,7 +56,6 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
                 extractor);
     }
 
-    @Override
     public SearchBackend getSmoBackend(RemoteRepository remoteRepository) {
         if (!ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())) {
             throw new IllegalArgumentException("The SMO service is offered for Central only");
@@ -70,7 +67,6 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
                 new Java11HttpClientTransport());
     }
 
-    @Override
     public void renderPage(List<Record> page, Predicate<String> versionPredicate, Output output) {
         for (Record record : page) {
             final String version = record.getValue(MAVEN.VERSION);
@@ -118,7 +114,6 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         }
     }
 
-    @Override
     public boolean exists(SearchBackend backend, Artifact artifact) throws IOException {
         Query query = toRrQuery(artifact);
         SearchRequest searchRequest = new SearchRequest(query);
@@ -126,7 +121,6 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         return searchResponse.getTotalHits() == 1;
     }
 
-    @Override
     public boolean verify(SearchBackend backend, Artifact artifact, String sha1) throws IOException {
         Query query = toRrQuery(artifact);
         query = and(query, fieldQuery(MAVEN.SHA1, sha1));
@@ -135,7 +129,6 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         return searchResponse.getTotalHits() == 1;
     }
 
-    @Override
     public Query toRrQuery(Artifact artifact) {
         Query result = fieldQuery(MAVEN.GROUP_ID, artifact.getGroupId());
         result = and(result, fieldQuery(MAVEN.ARTIFACT_ID, artifact.getArtifactId()));
@@ -146,7 +139,6 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         return and(result, fieldQuery(MAVEN.FILE_EXTENSION, artifact.getExtension()));
     }
 
-    @Override
     public Query toSmoQuery(Artifact artifact) {
         Query result = null;
         if (!"*".equals(artifact.getGroupId())) {

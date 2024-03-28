@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
-import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -59,7 +58,7 @@ import org.eclipse.aether.version.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ToolboxResolverImpl implements ToolboxResolver {
+public class ToolboxResolverImpl {
     private static final String CTX_TOOLBOX = "toolbox";
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final RepositorySystem repositorySystem;
@@ -75,14 +74,12 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         this.remoteRepositories = requireNonNull(remoteRepositories, "remoteRepositories");
     }
 
-    @Override
     public ArtifactDescriptorResult readArtifactDescriptor(Artifact artifact) throws ArtifactDescriptorException {
         ArtifactDescriptorRequest artifactDescriptorRequest =
                 new ArtifactDescriptorRequest(artifact, remoteRepositories, CTX_TOOLBOX);
         return repositorySystem.readArtifactDescriptor(session, artifactDescriptorRequest);
     }
 
-    @Override
     public List<Dependency> importBOMs(Collection<String> boms) throws ArtifactDescriptorException {
         HashSet<String> keys = new HashSet<>();
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
@@ -105,7 +102,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return managedDependencies;
     }
 
-    @Override
     public Artifact parseGav(String gav, List<Dependency> managedDependencies) {
         try {
             return new DefaultArtifact(gav);
@@ -123,7 +119,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         }
     }
 
-    @Override
     public RemoteRepository parseRemoteRepository(String spec) {
         String[] parts = spec.split("::");
         String id = "mima";
@@ -144,7 +139,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return repositorySystem.newDeploymentRepository(session, new RemoteRepository.Builder(id, type, url).build());
     }
 
-    @Override
     public ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException {
         List<Dependency> managedDependency = importBOMs(boms);
         Artifact artifact = parseGav(gav, managedDependency);
@@ -153,7 +147,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
                 .build());
     }
 
-    @Override
     public ResolutionRoot loadRoot(ResolutionRoot resolutionRoot) throws ArtifactDescriptorException {
         if (resolutionRoot.isPrepared()) {
             return resolutionRoot;
@@ -197,7 +190,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return a.getGroupId() + ':' + a.getArtifactId() + ':' + a.getClassifier() + ':' + a.getExtension();
     }
 
-    @Override
     public CollectResult collect(
             ResolutionScope resolutionScope,
             Artifact root,
@@ -208,7 +200,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return doCollect(resolutionScope, null, root, dependencies, managedDependencies, remoteRepositories, verbose);
     }
 
-    @Override
     public CollectResult collect(
             ResolutionScope resolutionScope,
             Dependency root,
@@ -219,7 +210,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return doCollect(resolutionScope, root, null, dependencies, managedDependencies, remoteRepositories, verbose);
     }
 
-    @Override
     public DependencyResult resolve(
             ResolutionScope resolutionScope,
             Artifact root,
@@ -229,7 +219,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return doResolve(resolutionScope, null, root, dependencies, managedDependencies, remoteRepositories);
     }
 
-    @Override
     public DependencyResult resolve(
             ResolutionScope resolutionScope,
             Dependency root,
@@ -338,7 +327,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         }
     }
 
-    @Override
     public List<ArtifactResult> resolveArtifacts(Collection<Artifact> artifacts) throws ArtifactResolutionException {
         requireNonNull(artifacts);
 
@@ -347,7 +335,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return repositorySystem.resolveArtifacts(session, artifactRequests);
     }
 
-    @Override
     public Version findNewestVersion(Artifact artifact, boolean allowSnapshots) throws VersionRangeResolutionException {
         VersionRangeRequest rangeRequest = new VersionRangeRequest();
         rangeRequest.setArtifact(new DefaultArtifact(
@@ -373,7 +360,6 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         }
     }
 
-    @Override
     public List<Artifact> listAvailablePlugins(Collection<String> groupIds) throws Exception {
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
         session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_ALWAYS);

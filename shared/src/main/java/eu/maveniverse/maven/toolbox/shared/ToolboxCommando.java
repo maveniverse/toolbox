@@ -26,7 +26,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
 /**
  * The Toolbox Commando, that implements all the commands that are exposed via Mojos or CLI.
  * <p>
- * This instance manages {@link Context}, corresponding {@link ToolboxResolver} and {@link ToolboxSearchApi}
+ * This instance manages {@link Context}, corresponding resolver and search API
  * and maps one-to-one onto commands. Can be considered something like "high level" API of Toolbox.
  * <p>
  * Note on error handling: each "commando" method is marked to throw and return a {@link boolean}.
@@ -37,7 +37,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
  */
 public interface ToolboxCommando {
     /**
-     * Gets or creates context. This method should be used to get {@link ToolboxResolver} instance that may be shared
+     * Gets or creates context. This method should be used to get instance that may be shared
      * across context (session).
      */
     static ToolboxCommando create(Runtime runtime, Context context) {
@@ -96,8 +96,6 @@ public interface ToolboxCommando {
 
     /**
      * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact and BOMs.
-     *
-     * @see ToolboxResolver#loadGav(String, Collection)
      */
     ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException;
 

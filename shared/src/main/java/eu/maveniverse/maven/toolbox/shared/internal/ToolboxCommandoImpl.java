@@ -57,7 +57,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -457,10 +456,29 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 return true;
             }
         }));
-        AtomicInteger counter = new AtomicInteger(0);
-        repositories.forEach((k, v) -> {
-            output.normal("{}. {}", counter.incrementAndGet(), k.toString());
-            output.normal("   First introduced on {}", v == sentinel ? "root" : v);
+        if (repositories.isEmpty()) {
+            output.normal("No remote repository is used by this build.");
+            return true;
+        }
+
+        Map<Boolean, List<RemoteRepository>> repoGroupByMirrors = repositories.keySet().stream()
+                .collect(Collectors.groupingBy(
+                        repo -> repo.getMirroredRepositories().isEmpty()));
+        repoGroupByMirrors.getOrDefault(Boolean.TRUE, Collections.emptyList()).forEach(r -> {
+            output.normal(" * {}", r);
+            Artifact firstIntroduced = repositories.get(r);
+            output.normal("   First introduced on {}", firstIntroduced == sentinel ? "root" : firstIntroduced);
+        });
+
+        Map<RemoteRepository, RemoteRepository> mirrorMap = new HashMap<>();
+        repoGroupByMirrors.getOrDefault(Boolean.FALSE, Collections.emptyList()).forEach(repo -> {
+            repo.getMirroredRepositories().forEach(mrepo -> mirrorMap.put(mrepo, repo));
+        });
+        mirrorMap.forEach((r, mirror) -> {
+            output.normal(" * {}", r);
+            Artifact firstIntroduced = repositories.get(mirror);
+            output.normal("   First introduced on {}", firstIntroduced == sentinel ? "root" : firstIntroduced);
+            output.normal("   Mirrored by {}", mirror);
         });
         return !repositories.isEmpty();
     }

@@ -41,16 +41,18 @@ public abstract class MPMojoSupport extends MojoSupport {
     }
 
     protected ResolutionRoot projectAsResolutionRoot() {
-        return ResolutionRoot.ofNotLoaded(new DefaultArtifact(
+        ResolutionRoot.Builder builder = ResolutionRoot.ofNotLoaded(new DefaultArtifact(
                         mavenProject.getGroupId(),
                         mavenProject.getArtifactId(),
                         artifactHandlerManager
                                 .getArtifactHandler(mavenProject.getPackaging())
                                 .getExtension(),
                         mavenProject.getVersion()))
-                .withDependencies(toDependencies(mavenProject.getDependencies()))
-                .withManagedDependencies(
-                        toDependencies(mavenProject.getDependencyManagement().getDependencies()))
-                .build();
+                .withDependencies(toDependencies(mavenProject.getDependencies()));
+        if (mavenProject.getDependencyManagement() != null) {
+            builder.withManagedDependencies(
+                    toDependencies(mavenProject.getDependencyManagement().getDependencies()));
+        }
+        return builder.build();
     }
 }

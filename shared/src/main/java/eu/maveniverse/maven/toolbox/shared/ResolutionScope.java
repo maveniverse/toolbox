@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-import java.util.function.Predicate;
 import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.filter.DependencyFilterUtils;
@@ -26,25 +25,53 @@ import org.eclipse.aether.util.filter.DependencyFilterUtils;
  * Uses Maven3 mojo resolution scopes as template.
  */
 public enum ResolutionScope {
-    NONE(Collections.emptySet()),
-    COMPILE(Arrays.asList(JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM)),
-    COMPILE_PLUS_RUNTIME(Arrays.asList(JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME)),
-    RUNTIME(Arrays.asList(JavaScopes.COMPILE, JavaScopes.RUNTIME)),
-    RUNTIME_PLUS_SYSTEM(Arrays.asList(JavaScopes.COMPILE, JavaScopes.RUNTIME, JavaScopes.SYSTEM)),
-    TEST(Arrays.asList(
-            JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME, JavaScopes.PROVIDED, JavaScopes.TEST));
+    NONE(
+            false,
+            Collections.emptySet(),
+            Arrays.asList(
+                    JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME, JavaScopes.PROVIDED, JavaScopes.TEST)),
+    COMPILE(
+            false,
+            Arrays.asList(JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM),
+            Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
+    COMPILE_PLUS_RUNTIME(
+            false,
+            Arrays.asList(JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME),
+            Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
+    RUNTIME(
+            true,
+            Arrays.asList(JavaScopes.COMPILE, JavaScopes.RUNTIME),
+            Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
+    RUNTIME_PLUS_SYSTEM(
+            true,
+            Arrays.asList(JavaScopes.COMPILE, JavaScopes.RUNTIME, JavaScopes.SYSTEM),
+            Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
+    TEST(
+            false,
+            Arrays.asList(
+                    JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME, JavaScopes.PROVIDED, JavaScopes.TEST),
+            Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST));
 
+    private final boolean eliminateTest;
     private final Set<String> directInclude;
+    private final Set<String> transitiveExclude;
 
-    ResolutionScope(Collection<String> directInclude) {
+    ResolutionScope(boolean eliminateTest, Collection<String> directInclude, Collection<String> transitiveExclude) {
+        this.eliminateTest = eliminateTest;
         this.directInclude = new HashSet<>(directInclude);
+        this.transitiveExclude = new HashSet<>(transitiveExclude);
     }
 
-    public Predicate<String> getDirectExclude() {
-        HashSet<String> directExclude = new HashSet<>(Arrays.asList(
-                JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME, JavaScopes.PROVIDED, JavaScopes.TEST));
-        directExclude.removeAll(directInclude);
-        return directExclude::contains;
+    public boolean isEliminateTest() {
+        return eliminateTest;
+    }
+
+    public Set<String> getDirectInclude() {
+        return directInclude;
+    }
+
+    public Set<String> getTransitiveExclude() {
+        return transitiveExclude;
     }
 
     public DependencyFilter getDependencyFilter() {

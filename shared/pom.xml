@@ -84,6 +84,12 @@
       <artifactId>search-backend-smo</artifactId>
     </dependency>
 
+    <!-- Commons Compress (unpack) -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-compress</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>

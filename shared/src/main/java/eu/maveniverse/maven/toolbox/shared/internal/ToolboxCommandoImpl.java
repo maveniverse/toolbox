@@ -35,6 +35,7 @@ import eu.maveniverse.maven.toolbox.shared.PurgingSink;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.UnpackSink;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -57,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -268,8 +270,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 }
                 return DirectorySink.flat(output, context.basedir().resolve(path), artifactNameMapper);
             case "repository":
-                return DirectorySink.repository(
-                        output, context.basedir().resolve(spec.substring("repository:".length())));
+                return DirectorySink.repository(output, context.basedir().resolve(spec.substring(prefix.length() + 1)));
             case "install":
                 path = spec.substring(prefix.length() + 1);
                 if (!path.trim().isEmpty()) {
@@ -290,7 +291,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         output,
                         context.repositorySystem(),
                         context.repositorySystemSession(),
-                        toolboxResolver.parseRemoteRepository(spec.substring("deploy:".length())));
+                        toolboxResolver.parseRemoteRepository(spec.substring(prefix.length() + 1)));
             case "purge":
                 path = spec.substring(prefix.length() + 1);
                 if (!path.trim().isEmpty()) {
@@ -310,6 +311,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                             context.repositorySystemSession(),
                             context.remoteRepositories());
                 }
+            case "unpack":
+                return UnpackSink.flat(
+                        output, context.basedir().resolve(spec.substring(prefix.length() + 1)), Function.identity());
             case "null":
                 return ArtifactSinks.nullArtifactSink();
             default:

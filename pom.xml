@@ -205,6 +205,18 @@
         <version>${version.mavenIndexer}</version>
       </dependency>
 
+      <!-- Commons Compress (unpack) -->
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>1.26.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.14.0</version>
+      </dependency>
+
       <!-- CLI -->
       <dependency>
         <groupId>info.picocli</groupId>

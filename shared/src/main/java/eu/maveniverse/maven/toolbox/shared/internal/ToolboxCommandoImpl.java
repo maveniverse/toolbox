@@ -399,11 +399,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean copyAllRecorded(ArtifactSink sink, boolean stopRecording, Output output) throws Exception {
-        boolean wasRecording = artifactRecorder.setActive(!stopRecording);
+        artifactRecorder.setActive(!stopRecording);
         try (sink) {
-            sink.accept(artifactRecorder.getAllArtifacts());
+            List<Artifact> artifacts = artifactRecorder.getAllArtifacts();
+            sink.accept(artifacts);
+            return !artifacts.isEmpty();
         }
-        return wasRecording;
     }
 
     @Override

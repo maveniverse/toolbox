@@ -398,6 +398,15 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public boolean copyAllRecorded(ArtifactSink sink, boolean stopRecording, Output output) throws Exception {
+        boolean wasRecording = artifactRecorder.setActive(!stopRecording);
+        try (sink) {
+            sink.accept(artifactRecorder.getAllArtifacts());
+        }
+        return wasRecording;
+    }
+
+    @Override
     public boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output)
             throws Exception {
         Collection<Artifact> artifacts = artifactSupplier.get();

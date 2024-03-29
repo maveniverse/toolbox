@@ -25,27 +25,45 @@ import org.eclipse.aether.util.filter.DependencyFilterUtils;
  * Uses Maven3 mojo resolution scopes as template.
  */
 public enum ResolutionScope {
+    /**
+     * None.
+     */
     NONE(
             false,
             Collections.emptySet(),
             Arrays.asList(
                     JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME, JavaScopes.PROVIDED, JavaScopes.TEST)),
+    /**
+     * This scope contains all dependencies needed for compilation.
+     */
     COMPILE(
             false,
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM),
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
+    /**
+     * Same as {@link #COMPILE} with addition of {@link JavaScopes#RUNTIME}.
+     */
     COMPILE_PLUS_RUNTIME(
             false,
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME),
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
+    /**
+     * This scope contains all dependencies needed at runtime.
+     */
     RUNTIME(
             true,
             Arrays.asList(JavaScopes.COMPILE, JavaScopes.RUNTIME),
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
+    /**
+     * Same as {@link #RUNTIME} with addition of {@link JavaScopes#SYSTEM}.
+     */
     RUNTIME_PLUS_SYSTEM(
             true,
             Arrays.asList(JavaScopes.COMPILE, JavaScopes.RUNTIME, JavaScopes.SYSTEM),
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
+    /**
+     * This scope contains all dependencies needed for test compilation and test runtime.
+     */
     TEST(
             false,
             Arrays.asList(

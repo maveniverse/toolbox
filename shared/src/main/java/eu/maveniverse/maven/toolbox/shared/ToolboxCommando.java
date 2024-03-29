@@ -124,6 +124,8 @@ public interface ToolboxCommando {
             Output output)
             throws Exception;
 
+    boolean copyAllRecorded(ArtifactSink sink, boolean stopRecording, Output output) throws Exception;
+
     boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output)
             throws Exception;
 

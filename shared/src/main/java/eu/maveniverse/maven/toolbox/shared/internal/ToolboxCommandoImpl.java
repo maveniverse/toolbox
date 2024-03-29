@@ -408,10 +408,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output)
+    public boolean deploy(
+            RemoteRepository remoteRepository, Supplier<Collection<Artifact>> artifactSupplier, Output output)
             throws Exception {
         Collection<Artifact> artifacts = artifactSupplier.get();
-        RemoteRepository remoteRepository = toolboxResolver.parseRemoteRepository(remoteRepositorySpec);
         DeployRequest deployRequest = new DeployRequest();
         deployRequest.setRepository(remoteRepository);
         artifacts.forEach(deployRequest::addArtifact);
@@ -422,10 +422,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean deployAllRecorded(String remoteRepositorySpec, boolean stopRecording, Output output)
+    public boolean deployAllRecorded(RemoteRepository remoteRepository, boolean stopRecording, Output output)
             throws Exception {
         artifactRecorder.setActive(!stopRecording);
-        return deploy(remoteRepositorySpec, () -> new HashSet<>(artifactRecorder.getAllArtifacts()), output);
+        return deploy(remoteRepository, () -> new HashSet<>(artifactRecorder.getAllArtifacts()), output);
     }
 
     @Override

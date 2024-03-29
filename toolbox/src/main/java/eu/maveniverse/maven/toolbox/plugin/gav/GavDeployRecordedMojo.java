@@ -31,6 +31,7 @@ public final class GavDeployRecordedMojo extends GavMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.deployAllRecorded(remoteRepositorySpec, true, output);
+        return toolboxCommando.deployAllRecorded(
+                toolboxCommando.parseRemoteRepository(remoteRepositorySpec), true, output);
     }
 }

@@ -126,10 +126,10 @@ public interface ToolboxCommando {
 
     boolean copyAllRecorded(ArtifactSink sink, boolean stopRecording, Output output) throws Exception;
 
-    boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output)
+    boolean deploy(RemoteRepository remoteRepository, Supplier<Collection<Artifact>> artifactSupplier, Output output)
             throws Exception;
 
-    boolean deployAllRecorded(String remoteRepositorySpec, boolean stopRecording, Output output) throws Exception;
+    boolean deployAllRecorded(RemoteRepository remoteRepository, boolean stopRecording, Output output) throws Exception;
 
     boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output) throws Exception;
 

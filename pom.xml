@@ -68,7 +68,7 @@
     <requireBuildtimeJavaVersion.version>[11.0.2,)</requireBuildtimeJavaVersion.version>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.9</version.mima>
+    <version.mima>2.4.10</version.mima>
     <version.maven>3.9.6</version.maven>
     <version.mavenIndexer>7.1.2</version.mavenIndexer>
     <version.resolver>1.9.18</version.resolver>

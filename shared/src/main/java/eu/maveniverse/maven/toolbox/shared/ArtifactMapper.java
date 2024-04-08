@@ -42,6 +42,34 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
         };
     }
 
+    static ArtifactMapper identity() {
+        return new ArtifactMapper() {
+            @Override
+            public Artifact apply(Artifact artifact) {
+                return artifact;
+            }
+        };
+    }
+
+    static ArtifactMapper versionSuffix(String suffix) {
+        if (suffix == null || suffix.isEmpty()) {
+            throw new IllegalArgumentException("suffix must not be null or empty");
+        }
+        return new ArtifactMapper() {
+            @Override
+            public Artifact apply(Artifact artifact) {
+                return new DefaultArtifact(
+                        artifact.getGroupId(),
+                        artifact.getArtifactId(),
+                        artifact.getClassifier(),
+                        artifact.getExtension(),
+                        artifact.getVersion() + suffix,
+                        artifact.getProperties(),
+                        artifact.getFile());
+            }
+        };
+    }
+
     static ArtifactMapper baseVersion() {
         return new ArtifactMapper() {
             @Override
@@ -52,6 +80,25 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
                         artifact.getClassifier(),
                         artifact.getExtension(),
                         artifact.getBaseVersion(),
+                        artifact.getProperties(),
+                        artifact.getFile());
+            }
+        };
+    }
+
+    static ArtifactMapper baseVersionSuffix(String suffix) {
+        if (suffix == null || suffix.isEmpty()) {
+            throw new IllegalArgumentException("suffix must not be null or empty");
+        }
+        return new ArtifactMapper() {
+            @Override
+            public Artifact apply(Artifact artifact) {
+                return new DefaultArtifact(
+                        artifact.getGroupId(),
+                        artifact.getArtifactId(),
+                        artifact.getClassifier(),
+                        artifact.getExtension(),
+                        artifact.getBaseVersion() + suffix,
                         artifact.getProperties(),
                         artifact.getFile());
             }
@@ -106,8 +153,22 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
         @Override
         protected void processOp(SpecParser.Node node) {
             switch (node.getValue()) {
+                case "identity": {
+                    params.add(identity());
+                    break;
+                }
                 case "baseVersion": {
                     params.add(baseVersion());
+                    break;
+                }
+                case "versionSuffix": {
+                    String p0 = stringParam(node.getValue());
+                    params.add(versionSuffix(p0));
+                    break;
+                }
+                case "baseVersionSuffix": {
+                    String p0 = stringParam(node.getValue());
+                    params.add(baseVersionSuffix(p0));
                     break;
                 }
                 case "omitClassifier": {

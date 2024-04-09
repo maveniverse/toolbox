@@ -329,7 +329,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             }
             case "mapping": {
                 path = spec.substring(prefix.length() + 1);
-                ArtifactSink delegate = null;
                 ArtifactMapper artifactMapper = ArtifactMapper.identity();
                 if (path.contains("?artifactMapperSpec=")) {
                     String artifactMapperSpec = path.substring(path.indexOf('=') + 1);
@@ -493,9 +492,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         });
 
         Map<RemoteRepository, RemoteRepository> mirrorMap = new HashMap<>();
-        repoGroupByMirrors.getOrDefault(Boolean.FALSE, Collections.emptyList()).forEach(repo -> {
-            repo.getMirroredRepositories().forEach(mrepo -> mirrorMap.put(mrepo, repo));
-        });
+        repoGroupByMirrors
+                .getOrDefault(Boolean.FALSE, Collections.emptyList())
+                .forEach(repo -> repo.getMirroredRepositories().forEach(mrepo -> mirrorMap.put(mrepo, repo)));
         mirrorMap.forEach((r, mirror) -> {
             output.normal(" * {}", r);
             Artifact firstIntroduced = repositories.get(mirror);

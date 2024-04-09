@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
 
@@ -26,10 +27,10 @@ public final class MappingArtifactSink implements ArtifactSink {
     }
 
     private final Output output;
-    private final ArtifactMapper artifactMapper;
+    private final Function<Artifact, Artifact> artifactMapper;
     private final ArtifactSink delegate;
 
-    private MappingArtifactSink(Output output, ArtifactMapper artifactMapper, ArtifactSink delegate) {
+    private MappingArtifactSink(Output output, Function<Artifact, Artifact> artifactMapper, ArtifactSink delegate) {
         this.output = requireNonNull(output, "output");
         this.artifactMapper = requireNonNull(artifactMapper, "artifactMapper");
         this.delegate = requireNonNull(delegate, "delegate");

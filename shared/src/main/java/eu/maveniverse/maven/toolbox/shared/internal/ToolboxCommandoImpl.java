@@ -29,7 +29,6 @@ import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.DeployingSink;
 import eu.maveniverse.maven.toolbox.shared.DirectorySink;
 import eu.maveniverse.maven.toolbox.shared.InstallingSink;
-import eu.maveniverse.maven.toolbox.shared.MappingArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.ModuleDescriptorExtractingSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.PurgingSink;
@@ -335,7 +334,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     artifactMapper = parseArtifactMapperSpec(artifactMapperSpec);
                     path = path.substring(0, path.indexOf('?'));
                 }
-                return MappingArtifactSink.mapping(output, artifactMapper, artifactSink(output, path));
+                return ArtifactSinks.mappingArtifactSink(artifactMapper, artifactSink(output, path));
             }
             case "null":
                 return ArtifactSinks.nullArtifactSink();

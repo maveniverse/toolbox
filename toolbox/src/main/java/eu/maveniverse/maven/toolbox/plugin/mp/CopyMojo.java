@@ -22,9 +22,9 @@ import org.eclipse.aether.graph.Dependency;
 public final class CopyMojo extends MPMojoSupport {
 
     /**
-     * The artifact sink spec (default: "null:").
+     * The artifact sink spec (default: "null()").
      */
-    @Parameter(property = "sinkSpec", defaultValue = "null:", required = true)
+    @Parameter(property = "sinkSpec", defaultValue = "null()", required = true)
     private String sinkSpec;
 
     /**

@@ -20,7 +20,7 @@ public abstract class GavMojoSupport extends MojoSupport {
     /**
      * Splits comma separated string into elements.
      */
-    protected Collection<String> csv(String csv) throws IOException {
+    protected Collection<String> csv(String csv) {
         if (csv == null || csv.trim().isEmpty()) {
             return Collections.emptyList();
         }
@@ -40,7 +40,7 @@ public abstract class GavMojoSupport extends MojoSupport {
                 return Files.readAllLines(target);
             }
         } catch (InvalidPathException e) {
-           // ignore
+            // ignore
         }
         return csv(csv);
     }

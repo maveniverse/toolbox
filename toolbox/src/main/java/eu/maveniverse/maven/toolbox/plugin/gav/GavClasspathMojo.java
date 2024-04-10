@@ -51,6 +51,7 @@ public class GavClasspathMojo extends GavMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.classpath(ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)), output);
+        return toolboxCommando.classpath(
+                ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)), output);
     }
 }

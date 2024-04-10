@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.aether.artifact.Artifact;
@@ -83,7 +84,7 @@ public final class IndexFileSink implements ArtifactSink {
         try {
             close();
             if (backupFile != null) {
-                Files.move(backupFile, file);
+                Files.move(backupFile, file, StandardCopyOption.REPLACE_EXISTING);
             } else {
                 Files.deleteIfExists(file);
             }

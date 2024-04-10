@@ -17,6 +17,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 
 /**
  * Construction to accept collection of artifacts into "index file", that is a file having GAV per line.
@@ -75,7 +76,7 @@ public final class IndexFileSink implements ArtifactSink {
         if (closed.get()) {
             throw new IllegalStateException("already closed");
         }
-        printWriter.println(artifact);
+        printWriter.println(ArtifactIdUtils.toId(artifact));
     }
 
     @Override

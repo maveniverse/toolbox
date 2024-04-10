@@ -89,7 +89,7 @@ public class GavResolveTransitiveMojo extends GavMojoSupport {
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(scope),
-                toolboxCommando.loadGavs(csv(gav), csv(boms)),
+                toolboxCommando.loadGavs(slurp(gav), slurp(boms)),
                 sources,
                 javadoc,
                 signature,

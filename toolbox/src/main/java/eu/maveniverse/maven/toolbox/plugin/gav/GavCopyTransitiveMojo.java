@@ -61,7 +61,7 @@ public final class GavCopyTransitiveMojo extends GavMojoSupport {
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.copyTransitive(
                 ResolutionScope.parse(scope),
-                toolboxCommando.loadGavs(csv(gav), csv(boms)),
+                toolboxCommando.loadGavs(slurp(gav), slurp(boms)),
                 toolboxCommando.artifactSink(output, sinkSpec),
                 output);
     }

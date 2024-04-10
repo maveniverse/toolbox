@@ -51,6 +51,6 @@ public final class GavListRepositoriesMojo extends GavMojoSupport {
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.listRepositories(
-                ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, csv(boms)), output);
+                ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)), output);
     }
 }

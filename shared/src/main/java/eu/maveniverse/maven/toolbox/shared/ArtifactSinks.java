@@ -9,13 +9,11 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.toolbox.shared.internal.SpecParser;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -27,6 +25,111 @@ import org.eclipse.aether.artifact.Artifact;
  */
 public final class ArtifactSinks {
     private ArtifactSinks() {}
+
+    static ArtifactSink build(Map<String, ?> properties, Output output, String spec) {
+        requireNonNull(properties, "properties");
+        requireNonNull(output, "output");
+        requireNonNull(spec, "spec");
+        ArtifactSinkBuilder builder = new ArtifactSinkBuilder(properties, output);
+        SpecParser.parse(spec).accept(builder);
+        return builder.build();
+    }
+
+    static class ArtifactSinkBuilder extends SpecParser.Builder {
+        private final Output output;
+
+        public ArtifactSinkBuilder(Map<String, ?> properties, Output output) {
+            super(properties);
+            this.output = output;
+        }
+
+        @Override
+        public boolean visitEnter(SpecParser.Node node) {
+            return super.visitEnter(node) && !"matching".equals(node.getValue()) && !"mapping".equals(node.getValue());
+        }
+
+        @Override
+        protected void processOp(SpecParser.Node node) {
+            switch (node.getValue()) {
+                case "null": {
+                    params.add(nullArtifactSink());
+                    break;
+                }
+                case "matching": {
+                    if (node.getChildren().size() != 2) {
+                        throw new IllegalArgumentException("op matching accepts only 2 argument");
+                    }
+                    ArtifactMatcher.ArtifactMatcherBuilder matcherBuilder =
+                            new ArtifactMatcher.ArtifactMatcherBuilder(properties);
+                    node.getChildren().get(0).accept(matcherBuilder);
+                    ArtifactMatcher matcher = matcherBuilder.build();
+                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, output);
+                    node.getChildren().get(1).accept(sinkBuilder);
+                    ArtifactSink delegate = sinkBuilder.build();
+                    params.add(matchingArtifactSink(matcher, delegate));
+                    node.getChildren().clear();
+                    break;
+                }
+                case "mapping": {
+                    if (node.getChildren().size() != 2) {
+                        throw new IllegalArgumentException("op mapping accepts only 2 argument");
+                    }
+                    ArtifactMapper.ArtifactMapperBuilder mapperBuilder =
+                            new ArtifactMapper.ArtifactMapperBuilder(properties);
+                    node.getChildren().get(0).accept(mapperBuilder);
+                    ArtifactMapper mapper = mapperBuilder.build();
+                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, output);
+                    node.getChildren().get(1).accept(sinkBuilder);
+                    ArtifactSink delegate = sinkBuilder.build();
+                    params.add(mappingArtifactSink(mapper, delegate));
+                    node.getChildren().clear();
+                    break;
+                }
+                default:
+                    throw new IllegalArgumentException("unknown op " + node.getValue());
+            }
+        }
+
+        private ArtifactSink artifactSinkParam(String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return (ArtifactSink) params.remove(params.size() - 1);
+        }
+
+        private ArtifactMapper artifactMapperParam(String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return (ArtifactMapper) params.remove(params.size() - 1);
+        }
+
+        private ArtifactMatcher artifactMatcherParam(String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return (ArtifactMatcher) params.remove(params.size() - 1);
+        }
+
+        private List<ArtifactMapper> artifactMapperParams(String op) {
+            ArrayList<ArtifactMapper> result = new ArrayList<>();
+            while (!params.isEmpty()) {
+                if (params.get(params.size() - 1) instanceof ArtifactMapper) {
+                    result.add(artifactMapperParam(op));
+                } else {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        public ArtifactSink build() {
+            if (params.size() != 1) {
+                throw new IllegalArgumentException("bad spec");
+            }
+            return (ArtifactSink) params.get(0);
+        }
+    }
 
     /**
      * Creates a "/dev/null" artifact sink.

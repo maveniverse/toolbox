@@ -84,8 +84,6 @@ public interface ToolboxCommando {
 
     /**
      * Provides {@link ArtifactSink} according to spec.
-     *
-     * TODO: consider using here URI, like "proto" + "path" (if proto needs it) and "?opt=value" etc.
      */
     ArtifactSink artifactSink(Output output, String spec) throws IOException;
 

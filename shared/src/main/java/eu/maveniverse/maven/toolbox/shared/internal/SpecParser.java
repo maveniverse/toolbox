@@ -220,6 +220,8 @@ public final class SpecParser {
                         || ':' == ch
                         || '.' == ch
                         || '-' == ch
+                        || '/' == ch
+                        || '\\' == ch
                         || '$' == ch
                         || '{' == ch
                         || '}' == ch) {

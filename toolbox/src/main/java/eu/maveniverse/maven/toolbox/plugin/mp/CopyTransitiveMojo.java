@@ -23,9 +23,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 public final class CopyTransitiveMojo extends MPMojoSupport {
 
     /**
-     * The artifact sink spec (default: "null:").
+     * The artifact sink spec (default: "null()").
      */
-    @Parameter(property = "sinkSpec", defaultValue = "null:", required = true)
+    @Parameter(property = "sinkSpec", defaultValue = "null()", required = true)
     private String sinkSpec;
 
     /**

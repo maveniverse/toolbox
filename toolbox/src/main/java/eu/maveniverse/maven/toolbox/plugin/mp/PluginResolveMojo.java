@@ -38,9 +38,9 @@ public class PluginResolveMojo extends MPPluginMojoSupport {
     private boolean signature;
 
     /**
-     * The artifact sink spec (default: "null:").
+     * The artifact sink spec (default: "null()").
      */
-    @Parameter(property = "sinkSpec", defaultValue = "null:", required = true)
+    @Parameter(property = "sinkSpec", defaultValue = "null()", required = true)
     private String sinkSpec;
 
     @Override

@@ -20,6 +20,7 @@ import picocli.CommandLine;
         subcommands = {
             GavClasspathMojo.class,
             GavCopyMojo.class,
+            GavCopyRecordedMojo.class,
             GavCopyTransitiveMojo.class,
             GavDeployMojo.class,
             GavDeployRecordedMojo.class,
@@ -27,8 +28,8 @@ import picocli.CommandLine;
             GavExistsMojo.class,
             GavIdentifyMojo.class,
             GavInstallMojo.class,
-            GavListMojo.class,
             GavListAvailablePluginsMojo.class,
+            GavListMojo.class,
             GavListRepositoriesMojo.class,
             GavRecordMojo.class,
             GavReplMojo.class,

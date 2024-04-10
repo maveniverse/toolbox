@@ -26,22 +26,16 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSinks;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
-import eu.maveniverse.maven.toolbox.shared.DeployingSink;
-import eu.maveniverse.maven.toolbox.shared.DirectorySink;
-import eu.maveniverse.maven.toolbox.shared.InstallingSink;
 import eu.maveniverse.maven.toolbox.shared.ModuleDescriptorExtractingSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
-import eu.maveniverse.maven.toolbox.shared.PurgingSink;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.UnpackSink;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -73,8 +67,6 @@ import org.eclipse.aether.deployment.DeployRequest;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.installation.InstallRequest;
-import org.eclipse.aether.repository.LocalRepository;
-import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
@@ -113,6 +105,14 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         this.toolboxResolver =
                 new ToolboxResolverImpl(context.repositorySystem(), session, context.remoteRepositories());
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());
+    }
+
+    public Context getContext() {
+        return context;
+    }
+
+    public ToolboxResolverImpl getToolboxResolver() {
+        return toolboxResolver;
     }
 
     protected Map<String, RemoteRepository> createKnownSearchRemoteRepositories() {
@@ -253,94 +253,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public ArtifactSink artifactSink(Output output, String spec) throws IOException {
-        // This is to honor paths like "C:/..." (so we check for "prefix" longer than 3 chars)
-        String prefix = spec.indexOf(':') > 3 ? spec.substring(0, spec.indexOf(":")) : "flatImplied";
-        String path;
-        switch (prefix) {
-            case "flatImplied":
-            case "flat": {
-                path = "flatImplied".equals(prefix) ? spec : spec.substring(prefix.length() + 1);
-                ArtifactNameMapper artifactNameMapper = ArtifactNameMapper.AbVCE();
-                if (path.contains("?artifactNameMapperSpec=")) {
-                    String artifactNameMapperSpec = path.substring(path.indexOf('=') + 1);
-                    artifactNameMapper = parseArtifactNameMapperSpec(artifactNameMapperSpec);
-                    path = path.substring(0, path.indexOf('?'));
-                }
-                return DirectorySink.flat(output, context.basedir().resolve(path), artifactNameMapper);
-            }
-            case "repository":
-                return DirectorySink.repository(output, context.basedir().resolve(spec.substring(prefix.length() + 1)));
-            case "install": {
-                path = spec.substring(prefix.length() + 1);
-                if (!path.trim().isEmpty()) {
-                    Path altLocalRepository = context.basedir().resolve(path);
-                    LocalRepository localRepository = new LocalRepository(altLocalRepository.toFile());
-                    LocalRepositoryManager lrm = context.repositorySystem()
-                            .newLocalRepositoryManager(context.repositorySystemSession(), localRepository);
-                    DefaultRepositorySystemSession session =
-                            new DefaultRepositorySystemSession(context.repositorySystemSession());
-                    session.setLocalRepositoryManager(lrm);
-                    return InstallingSink.installing(output, context.repositorySystem(), session);
-                } else {
-                    return InstallingSink.installing(
-                            output, context.repositorySystem(), context.repositorySystemSession());
-                }
-            }
-            case "deploy":
-                return DeployingSink.deploying(
-                        output,
-                        context.repositorySystem(),
-                        context.repositorySystemSession(),
-                        toolboxResolver.parseRemoteRepository(spec.substring(prefix.length() + 1)));
-            case "purge": {
-                path = spec.substring(prefix.length() + 1);
-                if (!path.trim().isEmpty()) {
-                    Path altLocalRepository = context.basedir().resolve(path);
-                    LocalRepository localRepository = new LocalRepository(altLocalRepository.toFile());
-                    LocalRepositoryManager lrm = context.repositorySystem()
-                            .newLocalRepositoryManager(context.repositorySystemSession(), localRepository);
-                    DefaultRepositorySystemSession session =
-                            new DefaultRepositorySystemSession(context.repositorySystemSession());
-                    session.setLocalRepositoryManager(lrm);
-                    return PurgingSink.purging(
-                            output, context.repositorySystem(), session, context.remoteRepositories());
-                } else {
-                    return PurgingSink.purging(
-                            output,
-                            context.repositorySystem(),
-                            context.repositorySystemSession(),
-                            context.remoteRepositories());
-                }
-            }
-            case "unpack": {
-                // overlay: "unpack:rel/path?artifactNameMapperSpec=fixed(.)"
-                // unpack each-by-each: "unpack:rel/path" (and will name root dirs ACVE)
-                path = spec.substring(prefix.length() + 1);
-                ArtifactNameMapper artifactNameMapper = ArtifactNameMapper.ACVE();
-                boolean allowEntryOverwrite = true;
-                if (path.contains("?artifactNameMapperSpec=")) {
-                    String artifactNameMapperSpec = path.substring(path.indexOf('=') + 1);
-                    artifactNameMapper = parseArtifactNameMapperSpec(artifactNameMapperSpec);
-                    path = path.substring(0, path.indexOf('?'));
-                }
-                return UnpackSink.unpack(
-                        output, context.basedir().resolve(path), artifactNameMapper, allowEntryOverwrite);
-            }
-            case "mapping": {
-                path = spec.substring(prefix.length() + 1);
-                ArtifactMapper artifactMapper = ArtifactMapper.identity();
-                if (path.contains("?artifactMapperSpec=")) {
-                    String artifactMapperSpec = path.substring(path.indexOf('=') + 1);
-                    artifactMapper = parseArtifactMapperSpec(artifactMapperSpec);
-                    path = path.substring(0, path.indexOf('?'));
-                }
-                return ArtifactSinks.mappingArtifactSink(artifactMapper, artifactSink(output, path));
-            }
-            case "null":
-                return ArtifactSinks.nullArtifactSink();
-            default:
-                throw new IllegalArgumentException("unknown artifact sink spec");
-        }
+        return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), output, this, spec);
     }
 
     @Override

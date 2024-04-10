@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
@@ -44,6 +45,32 @@ public final class ArtifactSinks {
         public void accept(Artifact artifact) {}
     }
 
+    public abstract static class DelegatingArtifactSink implements ArtifactSink {
+        private final ArtifactSink delegate;
+
+        public DelegatingArtifactSink(final ArtifactSink delegate) {
+            this.delegate = requireNonNull(delegate, "delegate");
+        }
+
+        public void accept(Collection<Artifact> artifacts) throws IOException {
+            delegate.accept(artifacts);
+        }
+
+        public void accept(final Artifact artifact) throws IOException {
+            delegate.accept(artifact);
+        }
+
+        @Override
+        public void cleanup(Exception e) {
+            delegate.cleanup(e);
+        }
+
+        @Override
+        public void close() throws Exception {
+            delegate.close();
+        }
+    }
+
     /**
      * Creates a delegating sink that delegates calls only with matched artifacts.
      */
@@ -54,25 +81,53 @@ public final class ArtifactSinks {
         return new MatchingArtifactSink(artifactMatcher, delegate);
     }
 
-    public static class MatchingArtifactSink implements ArtifactSink {
+    public static class MatchingArtifactSink extends DelegatingArtifactSink {
         private final Predicate<Artifact> artifactMatcher;
-        private final ArtifactSink delegate;
 
         private MatchingArtifactSink(Predicate<Artifact> artifactMatcher, ArtifactSink delegate) {
+            super(delegate);
             this.artifactMatcher = artifactMatcher;
-            this.delegate = delegate;
         }
 
         @Override
         public void accept(Collection<Artifact> artifacts) throws IOException {
-            delegate.accept(artifacts.stream().filter(artifactMatcher).collect(Collectors.toList()));
+            super.accept(artifacts.stream().filter(artifactMatcher).collect(Collectors.toList()));
         }
 
         @Override
         public void accept(Artifact artifact) throws IOException {
             if (artifactMatcher.test(artifact)) {
-                delegate.accept(artifact);
+                super.accept(artifact);
             }
+        }
+    }
+
+    /**
+     * Creates a delegating sink that delegates calls with mapped artifacts.
+     */
+    public static MappingArtifactSink mappingArtifactSink(
+            Function<Artifact, Artifact> artifactMapper, ArtifactSink delegate) {
+        requireNonNull(artifactMapper, "artifactMapper");
+        requireNonNull(delegate, "delegate");
+        return new MappingArtifactSink(artifactMapper, delegate);
+    }
+
+    public static class MappingArtifactSink extends DelegatingArtifactSink {
+        private final Function<Artifact, Artifact> artifactMapper;
+
+        private MappingArtifactSink(Function<Artifact, Artifact> artifactMapper, ArtifactSink delegate) {
+            super(delegate);
+            this.artifactMapper = artifactMapper;
+        }
+
+        @Override
+        public void accept(Collection<Artifact> artifacts) throws IOException {
+            super.accept(artifacts.stream().map(artifactMapper).collect(Collectors.toList()));
+        }
+
+        @Override
+        public void accept(Artifact artifact) throws IOException {
+            super.accept(artifactMapper.apply(artifact));
         }
     }
 

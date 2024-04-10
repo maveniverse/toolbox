@@ -15,6 +15,7 @@ import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,9 @@ public class ArtifactSinksTest {
     @Test
     void parse() {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
-        try (Context context = runtime.create(ContextOverrides.create().build())) {
+        try (Context context = runtime.create(ContextOverrides.create()
+                .withBasedirOverride(Paths.get("target").toAbsolutePath())
+                .build())) {
             ToolboxCommandoImpl tc = new ToolboxCommandoImpl(runtime, context);
 
             HashMap<String, Object> properties = new HashMap<>();

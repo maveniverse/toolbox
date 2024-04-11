@@ -5,8 +5,9 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared;
+package eu.maveniverse.maven.toolbox.shared.internal;
 
+import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;

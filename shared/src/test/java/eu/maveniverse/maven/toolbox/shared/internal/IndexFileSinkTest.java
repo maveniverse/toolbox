@@ -5,10 +5,11 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared;
+package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import eu.maveniverse.maven.toolbox.shared.NullOutput;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

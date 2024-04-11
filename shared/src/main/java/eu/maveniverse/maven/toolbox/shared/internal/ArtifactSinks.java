@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl.humanReadableByteCountBin;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
@@ -76,15 +77,19 @@ public final class ArtifactSinks {
                     break;
                 }
                 case "counting": {
-                    params.add(countingArtifactSink());
+                    params.add(countingArtifactSink(output));
                     break;
                 }
                 case "sizing": {
-                    params.add(sizingArtifactSink());
+                    params.add(sizingArtifactSink(output));
                     break;
                 }
                 case "tee": {
-                    params.add(teeArtifactSink(true, artifactSinkParams(node.getValue())));
+                    params.add(teeArtifactSink(artifactSinkParams(node.getValue())));
+                    break;
+                }
+                case "nonClosing": {
+                    params.add(nonClosingArtifactSink(artifactSinkParam(node.getValue())));
                     break;
                 }
                 case "flat": {
@@ -220,6 +225,10 @@ public final class ArtifactSinks {
                     node.getChildren().clear();
                     break;
                 }
+                case "moduleDescriptor": {
+                    params.add(new ModuleDescriptorExtractingSink(output));
+                    break;
+                }
                 default:
                     throw new IllegalArgumentException("unknown op " + node.getValue());
             }
@@ -296,6 +305,25 @@ public final class ArtifactSinks {
     }
 
     /**
+     * Creates a delegating sink that prevents closing delegate.
+     */
+    public static NonClosingArtifactSink nonClosingArtifactSink(ArtifactSink delegate) {
+        requireNonNull(delegate, "delegate");
+        return new NonClosingArtifactSink(delegate);
+    }
+
+    public static class NonClosingArtifactSink extends DelegatingArtifactSink {
+        private NonClosingArtifactSink(ArtifactSink delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public void close() {
+            // do nothing
+        }
+    }
+
+    /**
      * Creates a delegating sink that delegates calls only with matched artifacts.
      */
     public static MatchingArtifactSink matchingArtifactSink(
@@ -358,20 +386,28 @@ public final class ArtifactSinks {
     /**
      * Creates a counting sink, that simply counts all the accepted artifacts.
      */
-    public static CountingArtifactSink countingArtifactSink() {
-        return new CountingArtifactSink();
+    public static CountingArtifactSink countingArtifactSink(Output output) {
+        requireNonNull(output, "output");
+        return new CountingArtifactSink(output);
     }
 
     public static class CountingArtifactSink implements ArtifactSink {
+        private final Output output;
         private final LongAdder counter;
 
-        private CountingArtifactSink() {
+        private CountingArtifactSink(Output output) {
+            this.output = output;
             this.counter = new LongAdder();
         }
 
         @Override
         public void accept(Artifact artifact) {
             counter.increment();
+        }
+
+        @Override
+        public void close() throws Exception {
+            output.normal("  Count {}", count());
         }
 
         public int count() {
@@ -382,14 +418,17 @@ public final class ArtifactSinks {
     /**
      * Creates a sizing sink, that simply accumulate byte sizes of all accepted (and resolved) artifacts.
      */
-    public static SizingArtifactSink sizingArtifactSink() {
-        return new SizingArtifactSink();
+    public static SizingArtifactSink sizingArtifactSink(Output output) {
+        requireNonNull(output, "output");
+        return new SizingArtifactSink(output);
     }
 
     public static class SizingArtifactSink implements ArtifactSink {
+        private final Output output;
         private final LongAdder size;
 
-        private SizingArtifactSink() {
+        private SizingArtifactSink(Output output) {
+            this.output = output;
             this.size = new LongAdder();
         }
 
@@ -401,6 +440,11 @@ public final class ArtifactSinks {
             }
         }
 
+        @Override
+        public void close() throws Exception {
+            output.normal("  Size {}", humanReadableByteCountBin(size()));
+        }
+
         public long size() {
             return size.sum();
         }
@@ -409,24 +453,22 @@ public final class ArtifactSinks {
     /**
      * Creates a "tee" artifact sink out of supplied sinks.
      */
-    public static TeeArtifactSink teeArtifactSink(boolean doClose, ArtifactSink... artifactSinks) {
-        return teeArtifactSink(doClose, Arrays.asList(artifactSinks));
+    public static TeeArtifactSink teeArtifactSink(ArtifactSink... artifactSinks) {
+        return teeArtifactSink(Arrays.asList(artifactSinks));
     }
 
     /**
      * Creates a "tee" artifact sink out of supplied sinks.
      */
-    public static TeeArtifactSink teeArtifactSink(boolean doClose, Collection<? extends ArtifactSink> artifactSinks) {
+    public static TeeArtifactSink teeArtifactSink(Collection<? extends ArtifactSink> artifactSinks) {
         requireNonNull(artifactSinks, "artifactSinks");
-        return new TeeArtifactSink(doClose, artifactSinks);
+        return new TeeArtifactSink(artifactSinks);
     }
 
     public static class TeeArtifactSink implements ArtifactSink {
-        private final boolean doClose;
         private final Collection<ArtifactSink> artifactSinks;
 
-        private TeeArtifactSink(boolean doClose, Collection<? extends ArtifactSink> artifactSinks) {
-            this.doClose = doClose;
+        private TeeArtifactSink(Collection<? extends ArtifactSink> artifactSinks) {
             this.artifactSinks = Collections.unmodifiableCollection(new ArrayList<>(artifactSinks));
         }
 
@@ -453,10 +495,8 @@ public final class ArtifactSinks {
 
         @Override
         public void close() throws Exception {
-            if (doClose) {
-                for (ArtifactSink sink : artifactSinks) {
-                    sink.close();
-                }
+            for (ArtifactSink sink : artifactSinks) {
+                sink.close();
             }
         }
     }

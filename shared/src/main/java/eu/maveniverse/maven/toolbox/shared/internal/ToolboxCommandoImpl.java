@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.ArtifactSinks.nonClosingArtifactSink;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.maven.search.api.request.BooleanQuery.and;
@@ -458,10 +459,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Output output)
             throws Exception {
         output.verbose("Resolving {}", artifacts);
-        ArtifactSinks.SizingArtifactSink sizingArtifactSink = ArtifactSinks.sizingArtifactSink();
-        ArtifactSinks.CountingArtifactSink countingArtifactSink = ArtifactSinks.countingArtifactSink();
+        ArtifactSinks.SizingArtifactSink sizingArtifactSink = ArtifactSinks.sizingArtifactSink(output);
+        ArtifactSinks.CountingArtifactSink countingArtifactSink = ArtifactSinks.countingArtifactSink(output);
         try (ArtifactSink artifactSink =
-                ArtifactSinks.teeArtifactSink(true, sink, sizingArtifactSink, countingArtifactSink)) {
+                ArtifactSinks.teeArtifactSink(sink, sizingArtifactSink, countingArtifactSink)) {
             List<ArtifactResult> artifactResults = toolboxResolver.resolveArtifacts(artifacts);
             artifactSink.accept(
                     artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
@@ -494,10 +495,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     }
                 }
             }
-            output.normal(
-                    "Resolved {} artifacts (size: {})",
-                    countingArtifactSink.count(),
-                    humanReadableByteCountBin(sizingArtifactSink.size()));
             return !artifacts.isEmpty();
         }
     }
@@ -512,11 +509,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ArtifactSink sink,
             Output output)
             throws Exception {
-        ArtifactSinks.CountingArtifactSink totalCount = ArtifactSinks.countingArtifactSink();
-        ArtifactSinks.SizingArtifactSink totalSize = ArtifactSinks.sizingArtifactSink();
-        ModuleDescriptorExtractingSink moduleNameSource = new ModuleDescriptorExtractingSink();
-        try (ArtifactSink artifactSink =
-                ArtifactSinks.teeArtifactSink(true, sink, totalSize, totalCount, moduleNameSource)) {
+        ArtifactSinks.CountingArtifactSink totalCount = ArtifactSinks.countingArtifactSink(output);
+        ArtifactSinks.SizingArtifactSink totalSize = ArtifactSinks.sizingArtifactSink(output);
+        try (ArtifactSink artifactSink = ArtifactSinks.teeArtifactSink(sink, totalSize, totalCount)) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 output.verbose("Resolving {}", resolutionRoot.getArtifact());
                 DependencyResult dependencyResult = toolboxResolver.resolve(
@@ -531,83 +526,51 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                                 .subList(
                                         1, dependencyResult.getArtifactResults().size() - 1);
 
-                ArtifactSinks.CountingArtifactSink subCount = ArtifactSinks.countingArtifactSink();
-                ArtifactSinks.SizingArtifactSink subSize = ArtifactSinks.sizingArtifactSink();
-                ArtifactSink batchSink = ArtifactSinks.teeArtifactSink(false, artifactSink, subCount, subSize);
+                ModuleDescriptorExtractingSink moduleNameSource = new ModuleDescriptorExtractingSink(output);
+                ArtifactSinks.CountingArtifactSink subCount = ArtifactSinks.countingArtifactSink(output);
+                ArtifactSinks.SizingArtifactSink subSize = ArtifactSinks.sizingArtifactSink(output);
+                try (ArtifactSink batchSink = ArtifactSinks.teeArtifactSink(
+                        nonClosingArtifactSink(artifactSink), moduleNameSource, subSize, subCount)) {
+                    batchSink.accept(adjustedResults.stream()
+                            .map(ArtifactResult::getArtifact)
+                            .collect(Collectors.toList()));
 
-                batchSink.accept(adjustedResults.stream()
-                        .map(ArtifactResult::getArtifact)
-                        .collect(Collectors.toList()));
-
-                for (ArtifactResult artifactResult : adjustedResults) {
-                    ModuleDescriptorExtractingSink.ModuleDescriptor moduleDescriptor =
-                            moduleNameSource.getModuleDescriptor(artifactResult.getArtifact());
-                    String moduleInfo = "";
-                    if (moduleDescriptor != null) {
-                        moduleInfo = "-- module " + moduleDescriptor.name();
-                        if (moduleDescriptor.automatic()) {
-                            if ("MANIFEST".equals(moduleDescriptor.moduleNameSource())) {
-                                moduleInfo += " [auto]";
-                            } else {
-                                moduleInfo += " (auto)";
+                    if (sources || javadoc || signature) {
+                        HashSet<Artifact> subartifacts = new HashSet<>();
+                        adjustedResults.stream()
+                                .map(ArtifactResult::getArtifact)
+                                .forEach(a -> {
+                                    if (sources && a.getClassifier().isEmpty()) {
+                                        subartifacts.add(new SubArtifact(a, "sources", "jar"));
+                                    }
+                                    if (javadoc && a.getClassifier().isEmpty()) {
+                                        subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
+                                    }
+                                    if (signature && !a.getExtension().endsWith(".asc")) {
+                                        subartifacts.add(new SubArtifact(a, "*", "*.asc"));
+                                    }
+                                });
+                        if (!subartifacts.isEmpty()) {
+                            output.verbose("Resolving (best effort) {}", subartifacts);
+                            try {
+                                List<ArtifactResult> subartifactResults =
+                                        toolboxResolver.resolveArtifacts(subartifacts);
+                                batchSink.accept(subartifactResults.stream()
+                                        .map(ArtifactResult::getArtifact)
+                                        .collect(Collectors.toList()));
+                            } catch (ArtifactResolutionException e) {
+                                // ignore, this is "best effort"
+                                batchSink.accept(e.getResults().stream()
+                                        .filter(ArtifactResult::isResolved)
+                                        .map(ArtifactResult::getArtifact)
+                                        .collect(Collectors.toList()));
                             }
                         }
                     }
-                    if (output.isVerbose()) {
-                        output.verbose(
-                                "{} {} -> {}",
-                                artifactResult.getArtifact(),
-                                moduleInfo,
-                                artifactResult.getArtifact().getFile());
-                    } else {
-                        output.normal("{} {}", artifactResult.getArtifact(), moduleInfo);
-                    }
                 }
-
-                if (sources || javadoc || signature) {
-                    HashSet<Artifact> subartifacts = new HashSet<>();
-                    adjustedResults.stream().map(ArtifactResult::getArtifact).forEach(a -> {
-                        if (sources && a.getClassifier().isEmpty()) {
-                            subartifacts.add(new SubArtifact(a, "sources", "jar"));
-                        }
-                        if (javadoc && a.getClassifier().isEmpty()) {
-                            subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
-                        }
-                        if (signature && !a.getExtension().endsWith(".asc")) {
-                            subartifacts.add(new SubArtifact(a, "*", "*.asc"));
-                        }
-                    });
-                    if (!subartifacts.isEmpty()) {
-                        output.verbose("Resolving (best effort) {}", subartifacts);
-                        try {
-                            List<ArtifactResult> subartifactResults = toolboxResolver.resolveArtifacts(subartifacts);
-                            batchSink.accept(subartifactResults.stream()
-                                    .map(ArtifactResult::getArtifact)
-                                    .collect(Collectors.toList()));
-                        } catch (ArtifactResolutionException e) {
-                            // ignore, this is "best effort"
-                            batchSink.accept(e.getResults().stream()
-                                    .filter(ArtifactResult::isResolved)
-                                    .map(ArtifactResult::getArtifact)
-                                    .collect(Collectors.toList()));
-                        }
-                    }
-                }
-
-                output.normal("--------------------");
-                output.normal(
-                        "Resolved artifact: {} (artifact count: {}, artifact size: {})",
-                        resolutionRoot.getArtifact(),
-                        subCount.count(),
-                        humanReadableByteCountBin(subSize.size()));
                 output.normal("");
             }
             output.normal("====================");
-            output.normal(
-                    "Total resolved roots: {} (artifact count: {}, artifact size: {})",
-                    resolutionRoots.size(),
-                    totalCount.count(),
-                    humanReadableByteCountBin(totalSize.size()));
             return !resolutionRoots.isEmpty();
         }
     }

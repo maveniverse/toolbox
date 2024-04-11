@@ -7,7 +7,10 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static java.util.Objects.requireNonNull;
+
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -37,9 +40,11 @@ public final class ModuleDescriptorExtractingSink implements ArtifactSink {
     }
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Output output;
     private final ConcurrentMap<Artifact, ModuleDescriptor> moduleDescriptors;
 
-    public ModuleDescriptorExtractingSink() {
+    public ModuleDescriptorExtractingSink(Output output) {
+        this.output = requireNonNull(output, "output");
         this.moduleDescriptors = new ConcurrentHashMap<>();
     }
 
@@ -47,6 +52,33 @@ public final class ModuleDescriptorExtractingSink implements ArtifactSink {
     public void accept(Artifact artifact) throws IOException {
         if (artifact.getFile() != null) {
             moduleDescriptors.computeIfAbsent(artifact, k -> getModuleDescriptor(artifact.getFile()));
+        }
+    }
+
+    @Override
+    public void close() throws Exception {
+        for (Map.Entry<Artifact, ModuleDescriptor> entry : moduleDescriptors.entrySet()) {
+            String moduleInfo = "";
+            if (entry.getValue() != null) {
+                ModuleDescriptor moduleDescriptor = entry.getValue();
+                moduleInfo = "-- module " + moduleDescriptor.name();
+                if (moduleDescriptor.automatic()) {
+                    if ("MANIFEST".equals(moduleDescriptor.moduleNameSource())) {
+                        moduleInfo += " [auto]";
+                    } else {
+                        moduleInfo += " (auto)";
+                    }
+                }
+            }
+            if (output.isVerbose()) {
+                output.verbose(
+                        "{} {} -> {}",
+                        entry.getKey(),
+                        moduleInfo,
+                        entry.getKey().getFile());
+            } else {
+                output.normal("{} {}", entry.getKey(), moduleInfo);
+            }
         }
     }
 

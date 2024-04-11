@@ -264,6 +264,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output)
             throws Exception {
         output.verbose("Resolving {}", resolutionRoot.getArtifact());
+        resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
         DependencyResult dependencyResult = toolboxResolver.resolve(
                 resolutionScope,
                 resolutionRoot.getArtifact(),
@@ -300,6 +301,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ArrayList<ArtifactResult> artifactResults = new ArrayList<>();
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 output.verbose("Resolving {}", resolutionRoot.getArtifact());
+                resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
                 DependencyResult dependencyResult = toolboxResolver.resolve(
                         resolutionScope,
                         resolutionRoot.getArtifact(),
@@ -459,10 +461,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Output output)
             throws Exception {
         output.verbose("Resolving {}", artifacts);
+        ModuleDescriptorExtractingSink moduleDescriptorExtractingSink = new ModuleDescriptorExtractingSink(output);
         ArtifactSinks.SizingArtifactSink sizingArtifactSink = ArtifactSinks.sizingArtifactSink(output);
         ArtifactSinks.CountingArtifactSink countingArtifactSink = ArtifactSinks.countingArtifactSink(output);
-        try (ArtifactSink artifactSink =
-                ArtifactSinks.teeArtifactSink(sink, sizingArtifactSink, countingArtifactSink)) {
+        try (ArtifactSink artifactSink = ArtifactSinks.teeArtifactSink(
+                sink, moduleDescriptorExtractingSink, sizingArtifactSink, countingArtifactSink)) {
             List<ArtifactResult> artifactResults = toolboxResolver.resolveArtifacts(artifacts);
             artifactSink.accept(
                     artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
@@ -514,6 +517,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         try (ArtifactSink artifactSink = ArtifactSinks.teeArtifactSink(sink, totalSize, totalCount)) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 output.verbose("Resolving {}", resolutionRoot.getArtifact());
+                resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
                 DependencyResult dependencyResult = toolboxResolver.resolve(
                         resolutionScope,
                         resolutionRoot.getArtifact(),

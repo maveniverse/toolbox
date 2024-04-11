@@ -21,16 +21,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.graph.DependencyVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Sink that extracts module descriptors from artifacts.
  */
-public final class ModuleDescriptorExtractingSink implements ArtifactSink {
+public final class ModuleDescriptorExtractingSink implements ArtifactSink, DependencyVisitor {
     public interface ModuleDescriptor {
         String name();
 
@@ -55,20 +58,25 @@ public final class ModuleDescriptorExtractingSink implements ArtifactSink {
         }
     }
 
+    private String formatString(ModuleDescriptor moduleDescriptor) {
+        String moduleInfo = "-- module " + moduleDescriptor.name();
+        if (moduleDescriptor.automatic()) {
+            if ("MANIFEST".equals(moduleDescriptor.moduleNameSource())) {
+                moduleInfo += " [auto]";
+            } else {
+                moduleInfo += " (auto)";
+            }
+        }
+        return moduleInfo;
+    }
+
     @Override
     public void close() throws Exception {
         for (Map.Entry<Artifact, ModuleDescriptor> entry : moduleDescriptors.entrySet()) {
             String moduleInfo = "";
             if (entry.getValue() != null) {
                 ModuleDescriptor moduleDescriptor = entry.getValue();
-                moduleInfo = "-- module " + moduleDescriptor.name();
-                if (moduleDescriptor.automatic()) {
-                    if ("MANIFEST".equals(moduleDescriptor.moduleNameSource())) {
-                        moduleInfo += " [auto]";
-                    } else {
-                        moduleInfo += " (auto)";
-                    }
-                }
+                moduleInfo = formatString(moduleDescriptor);
             }
             if (output.isVerbose()) {
                 output.verbose(
@@ -150,6 +158,36 @@ public final class ModuleDescriptorExtractingSink implements ArtifactSink {
             logger.debug("Can't extract module name from {}:", artifactFile.getName(), cause);
         }
         return moduleDescriptor;
+    }
+
+    @Override
+    public boolean visitEnter(DependencyNode dependencyNode) {
+        if (dependencyNode.getDependency() != null) {
+            try {
+                accept(dependencyNode.getDependency().getArtifact());
+            } catch (IOException e) {
+                logger.warn("IO problem: ", e);
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean visitLeave(DependencyNode dependencyNode) {
+        return true;
+    }
+
+    public Function<DependencyNode, String> decorator() {
+        return node -> {
+            if (node != null && node.getDependency() != null) {
+                ModuleDescriptor moduleDescriptor =
+                        getModuleDescriptor(node.getDependency().getArtifact());
+                if (moduleDescriptor != null) {
+                    return formatString(moduleDescriptor);
+                }
+            }
+            return null;
+        };
     }
 
     private static class ModuleDescriptorImpl implements ModuleDescriptor {

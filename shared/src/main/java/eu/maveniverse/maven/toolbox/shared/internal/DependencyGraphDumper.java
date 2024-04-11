@@ -21,12 +21,16 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
@@ -40,16 +44,28 @@ import org.eclipse.aether.util.graph.transformer.ConflictResolver;
  * A dependency visitor that dumps the graph to any {@link Consumer}{@code <String>}. Meant for diagnostic and testing, as
  * it may output the graph to standard output, error or even some logging interface.
  * <p>
- * Copy of the corresponding class from Resolver 1.9.18, to retain same output across Maven 3.6+
+ * Copy of the corresponding class from Resolver, to retain same output across Maven 3.6+
  */
 public class DependencyGraphDumper implements DependencyVisitor {
 
     private final Consumer<String> consumer;
-
+    private final Collection<String> properties;
+    private final Function<DependencyNode, String> decorator;
     private final Deque<DependencyNode> nodes = new ArrayDeque<>();
 
     public DependencyGraphDumper(Consumer<String> consumer) {
+        this(consumer, Collections.emptyList());
+    }
+
+    public DependencyGraphDumper(Consumer<String> consumer, Collection<String> properties) {
+        this(consumer, properties, null);
+    }
+
+    public DependencyGraphDumper(
+            Consumer<String> consumer, Collection<String> properties, Function<DependencyNode, String> decorator) {
         this.consumer = requireNonNull(consumer);
+        this.properties = new ArrayList<>(properties);
+        this.decorator = decorator;
     }
 
     @Override
@@ -149,6 +165,20 @@ public class DependencyGraphDumper implements DependencyVisitor {
                     buffer.append(w);
                 }
                 buffer.append(")");
+            }
+        }
+        if (!properties.isEmpty() && node.getDependency() != null) {
+            String props = properties.stream()
+                    .map(p -> p + "=" + node.getDependency().getArtifact().getProperty(p, "n/a"))
+                    .collect(Collectors.joining(","));
+            if (!props.isEmpty()) {
+                buffer.append(" (").append(props).append(")");
+            }
+        }
+        if (decorator != null) {
+            String decoration = decorator.apply(node);
+            if (decoration != null) {
+                buffer.append(" ").append(decoration);
             }
         }
         return buffer.toString();

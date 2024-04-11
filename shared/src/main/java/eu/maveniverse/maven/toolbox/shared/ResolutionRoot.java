@@ -7,7 +7,10 @@
  */
 package eu.maveniverse.maven.toolbox.shared;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
@@ -64,7 +67,12 @@ public final class ResolutionRoot {
      * Note: users should not invoke this method, or at least, should be aware of the consequences.
      */
     public ResolutionRoot prepared() {
-        return new ResolutionRoot(artifact, load, true, dependencies, managedDependencies);
+        return new ResolutionRoot(
+                artifact,
+                load,
+                true,
+                dependencies == null ? Collections.emptyList() : dependencies,
+                managedDependencies == null ? Collections.emptyList() : managedDependencies);
     }
 
     /**
@@ -113,7 +121,7 @@ public final class ResolutionRoot {
         private List<Dependency> managedDependencies = null;
 
         private Builder(Artifact artifact) {
-            this.artifact = artifact;
+            this.artifact = requireNonNull(artifact, "artifact");
         }
 
         public Builder load() {

@@ -51,6 +51,10 @@ public class GavTreeMojo extends GavMojoSupport {
     /**
      * Set it {@code true} for verbose tree.
      */
+    @CommandLine.Option(
+            names = {"--verboseTree"},
+            defaultValue = "false",
+            description = "Make it true for verbose tree")
     @Parameter(property = "verboseTree", defaultValue = "false", required = true)
     private boolean verboseTree;
 

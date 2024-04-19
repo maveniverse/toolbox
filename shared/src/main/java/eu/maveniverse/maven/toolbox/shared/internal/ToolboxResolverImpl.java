@@ -276,7 +276,7 @@ public class ToolboxResolverImpl {
 
         logger.debug("Collecting {}", collectRequest);
         CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
-        if (resolutionScope != ResolutionScope.TEST) {
+        if (!verbose && resolutionScope != ResolutionScope.TEST) {
             ArrayList<DependencyNode> childrenToRemove = new ArrayList<>();
             for (DependencyNode node : result.getRoot().getChildren()) {
                 if (!resolutionScope

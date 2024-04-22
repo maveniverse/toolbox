@@ -9,10 +9,14 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.artifact.Artifact;
 
 /**
  * Resolves transitively given project build plugin.
@@ -45,12 +49,16 @@ public class PluginResolveMojo extends MPPluginMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+        Collection<Artifact> roots;
+        ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
+        if (root != null) {
+            roots = Collections.singleton(root.getArtifact());
+        } else {
+            roots = allPluginsAsResolutionRoots(toolboxCommando).stream()
+                    .map(ResolutionRoot::getArtifact)
+                    .collect(Collectors.toList());
+        }
         return toolboxCommando.resolve(
-                Collections.singleton(pluginAsResolutionRoot(toolboxCommando).getArtifact()),
-                sources,
-                javadoc,
-                signature,
-                toolboxCommando.artifactSink(output, sinkSpec),
-                output);
+                roots, sources, javadoc, signature, toolboxCommando.artifactSink(output, sinkSpec), output);
     }
 }

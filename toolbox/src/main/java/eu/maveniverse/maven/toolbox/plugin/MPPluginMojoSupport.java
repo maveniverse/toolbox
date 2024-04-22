@@ -9,8 +9,11 @@ package eu.maveniverse.maven.toolbox.plugin;
 
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.resolution.ArtifactDescriptorException;
 
 /**
  * Support class for "project aware" Mojos.
@@ -21,13 +24,22 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
      * groupId (as configured in settings.xml) it may be in format of {@code :<artifactId>} and this mojo will find it.
      * Finally, if plugin key is plain string like {@code "clean"}, this mojo will apply some heuristics to find it.
      */
-    @Parameter(property = "pluginKey", required = true)
+    @Parameter(property = "pluginKey")
     private String pluginKey;
 
     protected ResolutionRoot pluginAsResolutionRoot(ToolboxCommando toolboxCommando) throws Exception {
+        return pluginAsResolutionRoot(toolboxCommando, true);
+    }
+
+    protected ResolutionRoot pluginAsResolutionRoot(ToolboxCommando toolboxCommando, boolean mandatoryPluginKey)
+            throws Exception {
         Plugin plugin = null;
         if (pluginKey == null || pluginKey.trim().isEmpty()) {
-            throw new IllegalArgumentException("pluginKey must not be empty string");
+            if (mandatoryPluginKey) {
+                throw new IllegalArgumentException("Parameter 'pluginKey' must be set");
+            } else {
+                return null;
+            }
         }
         if (pluginKey.startsWith(":")) {
             for (String pluginGroup : settings.getPluginGroups()) {
@@ -56,5 +68,19 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
             root.getDependencies().addAll(toDependencies(plugin.getDependencies()));
         }
         return root;
+    }
+
+    protected List<ResolutionRoot> allPluginsAsResolutionRoots(ToolboxCommando toolboxCommando)
+            throws ArtifactDescriptorException {
+        List<ResolutionRoot> roots = new ArrayList<>();
+        for (Plugin plugin : mavenProject.getBuildPlugins()) {
+            ResolutionRoot root = toolboxCommando.loadGav(
+                    plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion());
+            if (!plugin.getDependencies().isEmpty()) {
+                root.getDependencies().addAll(toDependencies(plugin.getDependencies()));
+            }
+            roots.add(root);
+        }
+        return roots;
     }
 }

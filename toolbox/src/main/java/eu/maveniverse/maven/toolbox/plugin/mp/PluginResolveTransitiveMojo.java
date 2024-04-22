@@ -9,8 +9,10 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.util.Collection;
 import java.util.Collections;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -52,9 +54,16 @@ public class PluginResolveTransitiveMojo extends MPPluginMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+        Collection<ResolutionRoot> roots;
+        ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
+        if (root != null) {
+            roots = Collections.singleton(root);
+        } else {
+            roots = allPluginsAsResolutionRoots(toolboxCommando);
+        }
         return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(scope),
-                Collections.singleton(pluginAsResolutionRoot(toolboxCommando)),
+                roots,
                 sources,
                 javadoc,
                 signature,

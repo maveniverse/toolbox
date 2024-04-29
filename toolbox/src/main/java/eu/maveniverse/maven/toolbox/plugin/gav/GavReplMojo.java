@@ -24,7 +24,7 @@ import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
-import org.jline.terminal.impl.jansi.JansiTerminalProvider;
+import org.jline.terminal.impl.jni.JniTerminalProvider;
 import org.jline.widget.TailTipWidgets;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
@@ -34,7 +34,7 @@ import picocli.shell.jline3.PicocliCommands;
 public class GavReplMojo extends GavMojoSupport {
     @Override
     public boolean doExecute(Output output, ToolboxCommando toolboxCommando) {
-        Class<?> tp = JansiTerminalProvider.class;
+        Class<?> tp = JniTerminalProvider.class;
         Context context = getContext();
 
         toolboxCommando.dump(false, output);

@@ -27,9 +27,6 @@ import org.eclipse.aether.artifact.Artifact;
  * they are more key-producing oriented mappers.
  */
 public interface ArtifactNameMapper extends Function<Artifact, String> {
-    @Override
-    String apply(Artifact artifact);
-
     static ArtifactNameMapper compose(ArtifactNameMapper... mappers) {
         return compose(Arrays.asList(mappers));
     }

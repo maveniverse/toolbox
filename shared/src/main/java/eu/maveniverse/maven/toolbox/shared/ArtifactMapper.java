@@ -23,9 +23,6 @@ import org.eclipse.aether.artifact.DefaultArtifact;
  * Mapper that maps artifact to artifact.
  */
 public interface ArtifactMapper extends Function<Artifact, Artifact> {
-    @Override
-    Artifact apply(Artifact artifact);
-
     static ArtifactMapper compose(ArtifactMapper... mappers) {
         return compose(Arrays.asList(mappers));
     }

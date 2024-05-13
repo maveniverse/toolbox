@@ -73,7 +73,7 @@
     <version.mavenIndexer>7.1.2</version.mavenIndexer>
     <version.resolver>1.9.20</version.resolver>
     <version.mavenPluginTools>3.13.0</version.mavenPluginTools>
-    <version.slf4j>1.7.36</version.slf4j>
+    <version.slf4j>2.0.13</version.slf4j>
     <version.picocli>4.7.6</version.picocli>
     <version.jline>3.26.1</version.jline>
   </properties>

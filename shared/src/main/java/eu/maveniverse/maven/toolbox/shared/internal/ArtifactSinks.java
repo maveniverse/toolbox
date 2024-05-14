@@ -40,23 +40,20 @@ import org.eclipse.aether.repository.LocalRepositoryManager;
 public final class ArtifactSinks {
     private ArtifactSinks() {}
 
-    public static ArtifactSink build(Map<String, ?> properties, Output output, ToolboxCommandoImpl tc, String spec) {
+    public static ArtifactSink build(Map<String, ?> properties, ToolboxCommandoImpl tc, String spec) {
         requireNonNull(properties, "properties");
-        requireNonNull(output, "output");
         requireNonNull(tc, "tc");
         requireNonNull(spec, "spec");
-        ArtifactSinkBuilder builder = new ArtifactSinkBuilder(properties, output, tc);
+        ArtifactSinkBuilder builder = new ArtifactSinkBuilder(properties, tc);
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
 
     static class ArtifactSinkBuilder extends SpecParser.Builder {
-        private final Output output;
         private final ToolboxCommandoImpl tc;
 
-        public ArtifactSinkBuilder(Map<String, ?> properties, Output output, ToolboxCommandoImpl tc) {
+        public ArtifactSinkBuilder(Map<String, ?> properties, ToolboxCommandoImpl tc) {
             super(properties);
-            this.output = output;
             this.tc = tc;
         }
 
@@ -77,11 +74,11 @@ public final class ArtifactSinks {
                     break;
                 }
                 case "counting": {
-                    params.add(countingArtifactSink(output));
+                    params.add(countingArtifactSink());
                     break;
                 }
                 case "sizing": {
-                    params.add(sizingArtifactSink(output));
+                    params.add(sizingArtifactSink());
                     break;
                 }
                 case "tee": {
@@ -112,7 +109,7 @@ public final class ArtifactSinks {
                         } else {
                             throw new IllegalArgumentException("op flat accepts only 1..2 argument");
                         }
-                        params.add(DirectorySink.flat(output, p0, p1));
+                        params.add(DirectorySink.flat(p0, p1));
                         node.getChildren().clear();
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
@@ -122,7 +119,7 @@ public final class ArtifactSinks {
                 case "repository": {
                     try {
                         Path p0 = tc.getContext().basedir().resolve(stringParam(node.getValue()));
-                        params.add(DirectorySink.repository(output, p0));
+                        params.add(DirectorySink.repository(p0));
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -131,7 +128,6 @@ public final class ArtifactSinks {
                 case "install": {
                     if (node.getChildren().isEmpty()) {
                         params.add(InstallingSink.installing(
-                                output,
                                 tc.getToolboxResolver().getRepositorySystem(),
                                 tc.getToolboxResolver().getSession()));
                     } else if (node.getChildren().size() == 1) {
@@ -146,7 +142,7 @@ public final class ArtifactSinks {
                                 tc.getToolboxResolver().getSession());
                         session.setLocalRepositoryManager(lrm);
                         params.add(InstallingSink.installing(
-                                output, tc.getToolboxResolver().getRepositorySystem(), session));
+                                tc.getToolboxResolver().getRepositorySystem(), session));
                     } else {
                         throw new IllegalArgumentException("op install accepts only 0..1 argument");
                     }
@@ -154,7 +150,6 @@ public final class ArtifactSinks {
                 }
                 case "deploy": {
                     params.add(DeployingSink.deploying(
-                            output,
                             tc.getToolboxResolver().getRepositorySystem(),
                             tc.getToolboxResolver().getSession(),
                             tc.parseRemoteRepository(stringParam(node.getValue()))));
@@ -162,7 +157,6 @@ public final class ArtifactSinks {
                 }
                 case "purge": {
                     params.add(PurgingSink.purging(
-                            output,
                             tc.getToolboxResolver().getRepositorySystem(),
                             tc.getToolboxResolver().getSession(),
                             stringParams(node.getValue()).stream()
@@ -176,7 +170,7 @@ public final class ArtifactSinks {
                             Path p0 = tc.getContext()
                                     .basedir()
                                     .resolve(node.getChildren().get(0).getValue());
-                            params.add(UnpackSink.unpack(output, p0, ArtifactNameMapper.ACVE(), true));
+                            params.add(UnpackSink.unpack(p0, ArtifactNameMapper.ACVE(), true));
                         } else if (node.getChildren().size() == 2) {
                             ArtifactNameMapper.ArtifactNameMapperBuilder mapperBuilder =
                                     new ArtifactNameMapper.ArtifactNameMapperBuilder(properties);
@@ -185,7 +179,7 @@ public final class ArtifactSinks {
                             Path p0 = tc.getContext()
                                     .basedir()
                                     .resolve(node.getChildren().get(0).getValue());
-                            params.add(UnpackSink.unpack(output, p0, p1, true));
+                            params.add(UnpackSink.unpack(p0, p1, true));
                         } else {
                             throw new IllegalArgumentException("op unpack accepts only 1..2 argument");
                         }
@@ -203,7 +197,7 @@ public final class ArtifactSinks {
                             new ArtifactMatcher.ArtifactMatcherBuilder(properties);
                     node.getChildren().get(0).accept(matcherBuilder);
                     ArtifactMatcher matcher = matcherBuilder.build();
-                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, output, tc);
+                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);
                     ArtifactSink delegate = sinkBuilder.build();
                     params.add(matchingArtifactSink(matcher, delegate));
@@ -218,7 +212,7 @@ public final class ArtifactSinks {
                             new ArtifactMapper.ArtifactMapperBuilder(properties);
                     node.getChildren().get(0).accept(mapperBuilder);
                     ArtifactMapper mapper = mapperBuilder.build();
-                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, output, tc);
+                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);
                     ArtifactSink delegate = sinkBuilder.build();
                     params.add(mappingArtifactSink(mapper, delegate));
@@ -226,7 +220,7 @@ public final class ArtifactSinks {
                     break;
                 }
                 case "moduleDescriptor": {
-                    params.add(new ModuleDescriptorExtractingSink(output));
+                    params.add(new ModuleDescriptorExtractingSink());
                     break;
                 }
                 default:
@@ -386,28 +380,20 @@ public final class ArtifactSinks {
     /**
      * Creates a counting sink, that simply counts all the accepted artifacts.
      */
-    public static CountingArtifactSink countingArtifactSink(Output output) {
-        requireNonNull(output, "output");
-        return new CountingArtifactSink(output);
+    public static CountingArtifactSink countingArtifactSink() {
+        return new CountingArtifactSink();
     }
 
     public static class CountingArtifactSink implements ArtifactSink {
-        private final Output output;
         private final LongAdder counter;
 
-        private CountingArtifactSink(Output output) {
-            this.output = output;
+        private CountingArtifactSink() {
             this.counter = new LongAdder();
         }
 
         @Override
         public void accept(Artifact artifact) {
             counter.increment();
-        }
-
-        @Override
-        public void close() throws Exception {
-            output.normal("  Count {}", count());
         }
 
         public int count() {
@@ -418,17 +404,14 @@ public final class ArtifactSinks {
     /**
      * Creates a sizing sink, that simply accumulate byte sizes of all accepted (and resolved) artifacts.
      */
-    public static SizingArtifactSink sizingArtifactSink(Output output) {
-        requireNonNull(output, "output");
-        return new SizingArtifactSink(output);
+    public static SizingArtifactSink sizingArtifactSink() {
+        return new SizingArtifactSink();
     }
 
     public static class SizingArtifactSink implements ArtifactSink {
-        private final Output output;
         private final LongAdder size;
 
-        private SizingArtifactSink(Output output) {
-            this.output = output;
+        private SizingArtifactSink() {
             this.size = new LongAdder();
         }
 
@@ -438,11 +421,6 @@ public final class ArtifactSinks {
             if (path != null && Files.exists(path)) {
                 size.add(Files.size(path));
             }
-        }
-
-        @Override
-        public void close() throws Exception {
-            output.normal("  Size {}", humanReadableByteCountBin(size()));
         }
 
         public long size() {
@@ -498,6 +476,75 @@ public final class ArtifactSinks {
             for (ArtifactSink sink : artifactSinks) {
                 sink.close();
             }
+        }
+    }
+
+    /**
+     * Creates a "stat" artifact sink out of supplied sinks.
+     */
+    public static StatArtifactSink statArtifactSink(int level, boolean moduleDescriptor, Output output) {
+        return new StatArtifactSink(level, moduleDescriptor, output);
+    }
+
+    public static class StatArtifactSink implements ArtifactSink {
+        private final int level;
+        private final Output output;
+        private final CountingArtifactSink countingArtifactSink = new CountingArtifactSink();
+        private final SizingArtifactSink sizingArtifactSink = new SizingArtifactSink();
+        private final ModuleDescriptorExtractingSink moduleDescriptorExtractingSink;
+
+        private StatArtifactSink(int level, boolean moduleDescriptor, Output output) {
+            this.level = level;
+            this.output = requireNonNull(output, "output");
+            this.moduleDescriptorExtractingSink = moduleDescriptor ? new ModuleDescriptorExtractingSink() : null;
+        }
+
+        @Override
+        public void accept(Artifact artifact) throws IOException {
+            countingArtifactSink.accept(artifact);
+            sizingArtifactSink.accept(artifact);
+            if (moduleDescriptorExtractingSink != null) {
+                moduleDescriptorExtractingSink.accept(artifact);
+            }
+        }
+
+        @Override
+        public void close() throws Exception {
+            String indent = "";
+            for (int i = 0; i < level; i++) {
+                indent += "  ";
+            }
+            countingArtifactSink.close();
+            sizingArtifactSink.close();
+            if (moduleDescriptorExtractingSink != null) {
+                moduleDescriptorExtractingSink.close();
+                output.normal("{}------------------------------", indent);
+                for (Map.Entry<Artifact, ModuleDescriptorExtractingSink.ModuleDescriptor> entry :
+                        moduleDescriptorExtractingSink.getModuleDescriptors().entrySet()) {
+                    String moduleInfo = "";
+                    if (entry.getValue() != null) {
+                        ModuleDescriptorExtractingSink.ModuleDescriptor moduleDescriptor = entry.getValue();
+                        moduleInfo = moduleDescriptorExtractingSink.formatString(moduleDescriptor);
+                    }
+                    if (output.isVerbose()) {
+                        output.verbose(
+                                "{}{} {} -> {}",
+                                indent,
+                                entry.getKey(),
+                                moduleInfo,
+                                entry.getKey().getFile());
+                    } else {
+                        output.normal("{}{} {}", indent, entry.getKey(), moduleInfo);
+                    }
+                }
+                output.normal("{}------------------------------", indent);
+            }
+            output.normal(
+                    "{}Total of {} artifacts ({})",
+                    indent,
+                    countingArtifactSink.count(),
+                    humanReadableByteCountBin(sizingArtifactSink.size()));
+            output.normal("{}------------------------------", indent);
         }
     }
 }

@@ -117,7 +117,7 @@
       </dependency>
       <dependency>
         <groupId>eu.maveniverse.maven.mima.runtime</groupId>
-        <artifactId>standalone-static</artifactId>
+        <artifactId>standalone-static-uber</artifactId>
         <version>${version.mima}</version>
       </dependency>
 

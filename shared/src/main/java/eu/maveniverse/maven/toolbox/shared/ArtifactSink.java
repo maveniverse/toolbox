@@ -33,5 +33,6 @@ public interface ArtifactSink extends AutoCloseable {
 
     default void cleanup(Exception e) {}
 
+    @Override
     default void close() throws Exception {}
 }

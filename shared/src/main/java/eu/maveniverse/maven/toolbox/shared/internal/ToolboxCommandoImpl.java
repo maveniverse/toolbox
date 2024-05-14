@@ -252,7 +252,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public ArtifactSink artifactSink(Output output, String spec) throws IOException {
-        return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), output, this, spec);
+        return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
     }
 
     @Override
@@ -437,7 +437,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         output.normal(
                 "Recorder is {}; recorded {} artifacts so far",
                 artifactRecorder.isActive() ? "started" : "stopped",
-                artifactRecorder.getAllArtifacts().size());
+                artifactRecorder.recordedCount());
         return true;
     }
 
@@ -445,9 +445,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public boolean recordStop(Output output) {
         output.verbose("Stopping recorder...");
         boolean result = artifactRecorder.setActive(false);
-        output.normal(
-                "Stopped recorder, recorded {} artifacts",
-                artifactRecorder.getAllArtifacts().size());
+        output.normal("Stopped recorder, recorded {} artifacts", artifactRecorder.recordedCount());
         return result;
     }
 
@@ -461,11 +459,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Output output)
             throws Exception {
         output.verbose("Resolving {}", artifacts);
-        ModuleDescriptorExtractingSink moduleDescriptorExtractingSink = new ModuleDescriptorExtractingSink(output);
-        ArtifactSinks.SizingArtifactSink sizingArtifactSink = ArtifactSinks.sizingArtifactSink(output);
-        ArtifactSinks.CountingArtifactSink countingArtifactSink = ArtifactSinks.countingArtifactSink(output);
-        try (ArtifactSink artifactSink = ArtifactSinks.teeArtifactSink(
-                sink, moduleDescriptorExtractingSink, sizingArtifactSink, countingArtifactSink)) {
+        try (ArtifactSink artifactSink =
+                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, output))) {
             List<ArtifactResult> artifactResults = toolboxResolver.resolveArtifacts(artifacts);
             artifactSink.accept(
                     artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
@@ -512,9 +507,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ArtifactSink sink,
             Output output)
             throws Exception {
-        ArtifactSinks.CountingArtifactSink totalCount = ArtifactSinks.countingArtifactSink(output);
-        ArtifactSinks.SizingArtifactSink totalSize = ArtifactSinks.sizingArtifactSink(output);
-        try (ArtifactSink artifactSink = ArtifactSinks.teeArtifactSink(sink, totalSize, totalCount)) {
+        try (ArtifactSink artifactSink =
+                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, false, output))) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 output.verbose("Resolving {}", resolutionRoot.getArtifact());
                 resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
@@ -530,11 +524,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                                 .subList(
                                         1, dependencyResult.getArtifactResults().size() - 1);
 
-                ModuleDescriptorExtractingSink moduleNameSource = new ModuleDescriptorExtractingSink(output);
-                ArtifactSinks.CountingArtifactSink subCount = ArtifactSinks.countingArtifactSink(output);
-                ArtifactSinks.SizingArtifactSink subSize = ArtifactSinks.sizingArtifactSink(output);
                 try (ArtifactSink batchSink = ArtifactSinks.teeArtifactSink(
-                        nonClosingArtifactSink(artifactSink), moduleNameSource, subSize, subCount)) {
+                        nonClosingArtifactSink(artifactSink), ArtifactSinks.statArtifactSink(1, true, output))) {
                     batchSink.accept(adjustedResults.stream()
                             .map(ArtifactResult::getArtifact)
                             .collect(Collectors.toList()));
@@ -572,9 +563,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         }
                     }
                 }
-                output.normal("");
             }
-            output.normal("====================");
             return !resolutionRoots.isEmpty();
         }
     }

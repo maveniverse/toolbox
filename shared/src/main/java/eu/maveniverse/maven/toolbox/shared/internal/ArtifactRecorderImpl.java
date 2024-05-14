@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactRecorder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,11 @@ public class ArtifactRecorderImpl extends AbstractRepositoryListener implements 
     @Override
     public boolean setActive(boolean val) {
         return active.compareAndSet(!val, val);
+    }
+
+    @Override
+    public int recordedCount() {
+        return recordedArtifacts.values().stream().mapToInt(Collection::size).sum();
     }
 
     @Override

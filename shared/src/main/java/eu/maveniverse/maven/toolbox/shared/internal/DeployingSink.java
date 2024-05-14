@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import java.util.Collection;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -28,18 +27,15 @@ public final class DeployingSink implements ArtifactSink {
      * Creates installing sink that installs into passed in session local repository.
      */
     public static DeployingSink deploying(
-            Output output, RepositorySystem system, RepositorySystemSession session, RemoteRepository repository) {
-        return new DeployingSink(output, system, session, repository);
+            RepositorySystem system, RepositorySystemSession session, RemoteRepository repository) {
+        return new DeployingSink(system, session, repository);
     }
 
-    private final Output output;
     private final RepositorySystem system;
     private final RepositorySystemSession session;
     private final DeployRequest deployRequest;
 
-    private DeployingSink(
-            Output output, RepositorySystem system, RepositorySystemSession session, RemoteRepository repository) {
-        this.output = requireNonNull(output, "output");
+    private DeployingSink(RepositorySystem system, RepositorySystemSession session, RemoteRepository repository) {
         this.system = requireNonNull(system, "system");
         this.session = requireNonNull(session, "session");
         this.deployRequest = new DeployRequest();
@@ -65,8 +61,6 @@ public final class DeployingSink implements ArtifactSink {
 
     @Override
     public void close() throws DeploymentException {
-        output.normal(
-                "Deploying {} artifacts to {}...", deployRequest.getArtifacts().size(), deployRequest.getRepository());
         system.deploy(session, deployRequest);
     }
 }

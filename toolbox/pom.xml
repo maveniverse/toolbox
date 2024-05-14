@@ -78,7 +78,7 @@
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mima.runtime</groupId>
-      <artifactId>standalone-static</artifactId>
+      <artifactId>standalone-static-uber</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -241,6 +241,7 @@
               <artifactSet>
                 <!-- These are already provided by runtime -->
                 <excludes>
+                  <exclude>eu.maveniverse.maven.mima.runtime:embedded-maven</exclude>
                   <exclude>commons-codec:commons-codec</exclude>
                   <exclude>org.apache.commons:commons-lang3</exclude>
                 </excludes>

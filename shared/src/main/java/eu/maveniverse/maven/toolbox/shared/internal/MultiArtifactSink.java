@@ -10,8 +10,8 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,12 +23,16 @@ import org.eclipse.aether.artifact.Artifact;
  */
 public final class MultiArtifactSink implements ArtifactSink {
     public static final class MultiArtifactSinkBuilder {
-        private final Output output;
         private final LinkedHashMap<Predicate<Artifact>, ArtifactSink> sinks;
+        private boolean missedArtifactFails = true;
 
-        private MultiArtifactSinkBuilder(Output output) {
-            this.output = requireNonNull(output);
+        private MultiArtifactSinkBuilder() {
             this.sinks = new LinkedHashMap<>();
+        }
+
+        public MultiArtifactSinkBuilder setMissedArtifactFails(boolean missedArtifactFails) {
+            this.missedArtifactFails = missedArtifactFails;
+            return this;
         }
 
         public MultiArtifactSinkBuilder addSink(Predicate<Artifact> artifactMatcher, ArtifactSink sink) {
@@ -39,28 +43,27 @@ public final class MultiArtifactSink implements ArtifactSink {
         }
 
         public MultiArtifactSink build() {
-            return new MultiArtifactSink(output, sinks);
+            return new MultiArtifactSink(sinks, missedArtifactFails);
         }
     }
 
     /**
      * Creates new empty instance.
      */
-    public static MultiArtifactSinkBuilder multiBuilder(Output output) {
-        return new MultiArtifactSinkBuilder(output);
+    public static MultiArtifactSinkBuilder builder() {
+        return new MultiArtifactSinkBuilder();
     }
 
-    private final Output output;
     private final Map<Predicate<Artifact>, ArtifactSink> sinks;
+    private final boolean missedArtifactFails;
 
-    private MultiArtifactSink(Output output, LinkedHashMap<Predicate<Artifact>, ArtifactSink> sinks) {
-        this.output = requireNonNull(output, "output");
+    private MultiArtifactSink(LinkedHashMap<Predicate<Artifact>, ArtifactSink> sinks, boolean missedArtifactFails) {
         this.sinks = Collections.unmodifiableMap(sinks);
+        this.missedArtifactFails = missedArtifactFails;
     }
 
     @Override
     public void accept(Artifact artifact) throws IOException {
-        output.verbose("Accept artifact {}", artifact);
         boolean processed = false;
         for (Map.Entry<Predicate<Artifact>, ArtifactSink> sink : sinks.entrySet()) {
             if (sink.getKey().test(artifact)) {
@@ -69,8 +72,8 @@ public final class MultiArtifactSink implements ArtifactSink {
                 break;
             }
         }
-        if (!processed) {
-            output.verbose("Nobody accepted artifact {}", artifact);
+        if (!processed && missedArtifactFails) {
+            throw new IllegalStateException("Nobody accepted artifact: " + artifact);
         }
     }
 
@@ -80,13 +83,19 @@ public final class MultiArtifactSink implements ArtifactSink {
     }
 
     @Override
-    public void close() {
+    public void close() throws Exception {
+        ArrayList<Exception> exceptions = new ArrayList<>();
         for (ArtifactSink sink : sinks.values()) {
             try {
                 sink.close();
             } catch (Exception e) {
-                output.warn("Closing sink failed", e);
+                exceptions.add(e);
             }
+        }
+        if (!exceptions.isEmpty()) {
+            IllegalStateException ex = new IllegalStateException("Closing failed");
+            exceptions.forEach(ex::addSuppressed);
+            throw ex;
         }
     }
 }

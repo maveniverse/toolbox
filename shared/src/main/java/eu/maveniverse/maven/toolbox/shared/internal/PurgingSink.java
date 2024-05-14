@@ -12,7 +12,6 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,6 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -42,24 +42,20 @@ public final class PurgingSink implements ArtifactSink {
      * purge.
      */
     public static PurgingSink purging(
-            Output output,
-            RepositorySystem system,
-            RepositorySystemSession session,
-            List<RemoteRepository> remoteRepositories) {
-        return purging(output, Mode.WHOLE, false, system, session, remoteRepositories);
+            RepositorySystem system, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
+        return purging(Mode.WHOLE, false, system, session, remoteRepositories);
     }
 
     /**
      * Creates purging sink that purges from passed in session local repository.
      */
     public static PurgingSink purging(
-            Output output,
             Mode mode,
             boolean enforceOrigin,
             RepositorySystem system,
             RepositorySystemSession session,
             List<RemoteRepository> remoteRepositories) {
-        return new PurgingSink(output, mode, enforceOrigin, system, session, remoteRepositories);
+        return new PurgingSink(mode, enforceOrigin, system, session, remoteRepositories);
     }
 
     /**
@@ -86,7 +82,6 @@ public final class PurgingSink implements ArtifactSink {
         WHOLE
     }
 
-    private final Output output;
     private final Mode mode;
     private final boolean enforceOrigin;
     private final AtomicBoolean perform;
@@ -95,15 +90,14 @@ public final class PurgingSink implements ArtifactSink {
     private final List<RemoteRepository> remoteRepositories;
     private final ArrayList<Artifact> artifacts;
     private final Predicate<Artifact> artifactMatcher;
+    private final AtomicInteger purgedArtifacts;
 
     private PurgingSink(
-            Output output,
             Mode mode,
             boolean enforceOrigin,
             RepositorySystem system,
             RepositorySystemSession session,
             List<RemoteRepository> remoteRepositories) {
-        this.output = requireNonNull(output, "output");
         this.mode = requireNonNull(mode, "mode");
         this.enforceOrigin = enforceOrigin;
         this.perform = new AtomicBoolean(true);
@@ -111,6 +105,7 @@ public final class PurgingSink implements ArtifactSink {
         this.session = requireNonNull(session, "session");
         this.remoteRepositories = requireNonNull(remoteRepositories, "remoteRepositories");
         this.artifacts = new ArrayList<>();
+        this.purgedArtifacts = new AtomicInteger(-1);
 
         // Note: delimiters, while MAY look superfluous, are actually required differentiate a.b:c.d and a.b.c:d
         switch (mode) {
@@ -154,13 +149,15 @@ public final class PurgingSink implements ArtifactSink {
     public void close() throws IOException {
         if (perform.get()) {
             int artifactCount = 0;
-            output.verbose(
-                    "Purging {} artifacts from local repository {}...", artifacts.size(), session.getLocalRepository());
             for (Artifact artifact : artifacts) {
                 artifactCount += purgeArtifact(artifact) ? 1 : 0;
             }
-            output.normal("Purged {} artifacts from local repository...", artifactCount);
+            purgedArtifacts.set(artifactCount);
         }
+    }
+
+    public int getPurgedArtifactsCount() {
+        return purgedArtifacts.get();
     }
 
     private boolean purgeArtifact(Artifact artifact) throws IOException {

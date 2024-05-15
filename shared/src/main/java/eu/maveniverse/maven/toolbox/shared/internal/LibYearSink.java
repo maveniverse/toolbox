@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.BiFunction;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
@@ -95,7 +96,7 @@ public final class LibYearSink implements ArtifactSink {
     private final boolean quiet;
     private final boolean allowSnapshots;
     private final BiFunction<Artifact, List<Version>, String> versionSelector;
-    private final CopyOnWriteArrayList<Artifact> artifacts;
+    private final CopyOnWriteArraySet<Artifact> artifacts;
 
     private LibYearSink(
             Output output,
@@ -112,7 +113,7 @@ public final class LibYearSink implements ArtifactSink {
         this.quiet = quiet;
         this.allowSnapshots = allowSnapshots;
         this.versionSelector = requireNonNull(versionSelector);
-        this.artifacts = new CopyOnWriteArrayList<>();
+        this.artifacts = new CopyOnWriteArraySet<>();
     }
 
     @SuppressWarnings("unchecked")
@@ -148,7 +149,7 @@ public final class LibYearSink implements ArtifactSink {
     public void close() throws DeploymentException {
         float totalLibYears = 0;
         int totalLibOutdated = 0;
-        TreeMap<Float, String> timedOnes = new TreeMap<>(Collections.reverseOrder());
+        TreeMap<Float, List<String>> timedOnes = new TreeMap<>(Collections.reverseOrder());
         TreeSet<String> outdated = new TreeSet<>();
         if (!quiet) {
             for (Artifact artifact : artifacts) {
@@ -174,9 +175,9 @@ public final class LibYearSink implements ArtifactSink {
                         long libWeeksOutdated = ChronoUnit.WEEKS.between(currentVersionDate, latestVersionDate);
                         float libYearsOutdated = libWeeksOutdated / 52f;
                         totalLibYears += libYearsOutdated;
-                        timedOnes.put(
-                                libYearsOutdated,
-                                String.format(
+                        timedOnes
+                                .computeIfAbsent(libYearsOutdated, k -> new CopyOnWriteArrayList<>())
+                                .add(String.format(
                                         "%.2f years from %s %s (%s) => %s (%s)",
                                         libYearsOutdated,
                                         ArtifactIdUtils.toVersionlessId(artifact),
@@ -199,7 +200,7 @@ public final class LibYearSink implements ArtifactSink {
         if (!timedOnes.isEmpty()) {
             output.normal("{}Outdated versions with known age", indent);
         }
-        timedOnes.values().forEach(l -> output.normal("{}{}", indent, l));
+        timedOnes.values().stream().flatMap(Collection::stream).forEach(l -> output.normal("{}{}", indent, l));
         output.normal("{}", indent);
         if (!outdated.isEmpty()) {
             output.normal("{}Outdated versions", indent);

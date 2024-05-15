@@ -51,7 +51,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -80,7 +79,6 @@ import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.util.listener.ChainedRepositoryListener;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
-import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
 import org.slf4j.Logger;
@@ -812,13 +810,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean allowSnapshots,
             Output output)
             throws Exception {
-        BiFunction<Artifact, List<Version>, Version> versionSelector = (a, l) -> {
-            try {
-                return l.isEmpty() ? new GenericVersionScheme().parseVersion(a.getVersion()) : l.get(l.size() - 1);
-            } catch (InvalidVersionSpecificationException e) {
-                throw new IllegalStateException(e); // this is unexpected
-            }
-        };
         for (ResolutionRoot resolutionRoot : resolutionRoots) {
             doResolveTransitive(
                     resolutionScope,

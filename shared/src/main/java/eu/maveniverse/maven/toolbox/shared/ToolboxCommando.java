@@ -190,4 +190,14 @@ public interface ToolboxCommando {
     boolean search(RemoteRepository remoteRepository, String expression, Output output) throws IOException;
 
     boolean verify(RemoteRepository remoteRepository, String gav, String sha1, Output output) throws IOException;
+
+    // Various
+
+    boolean libYear(
+            ResolutionScope resolutionScope,
+            Collection<ResolutionRoot> resolutionRoots,
+            boolean quiet,
+            boolean allowSnapshots,
+            Output output)
+            throws Exception;
 }

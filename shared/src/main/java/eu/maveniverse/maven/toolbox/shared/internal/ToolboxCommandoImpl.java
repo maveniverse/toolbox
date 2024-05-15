@@ -510,62 +510,76 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         try (ArtifactSink artifactSink =
                 ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, false, output))) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
-                output.verbose("Resolving {}", resolutionRoot.getArtifact());
-                resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
-                DependencyResult dependencyResult = toolboxResolver.resolve(
+                doResolveTransitive(
                         resolutionScope,
-                        resolutionRoot.getArtifact(),
-                        resolutionRoot.getDependencies(),
-                        resolutionRoot.getManagedDependencies());
-                List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
-                        ? dependencyResult.getArtifactResults()
-                        : dependencyResult
-                                .getArtifactResults()
-                                .subList(
-                                        1, dependencyResult.getArtifactResults().size() - 1);
-
-                try (ArtifactSink batchSink = ArtifactSinks.teeArtifactSink(
-                        nonClosingArtifactSink(artifactSink), ArtifactSinks.statArtifactSink(1, true, output))) {
-                    batchSink.accept(adjustedResults.stream()
-                            .map(ArtifactResult::getArtifact)
-                            .collect(Collectors.toList()));
-
-                    if (sources || javadoc || signature) {
-                        HashSet<Artifact> subartifacts = new HashSet<>();
-                        adjustedResults.stream()
-                                .map(ArtifactResult::getArtifact)
-                                .forEach(a -> {
-                                    if (sources && a.getClassifier().isEmpty()) {
-                                        subartifacts.add(new SubArtifact(a, "sources", "jar"));
-                                    }
-                                    if (javadoc && a.getClassifier().isEmpty()) {
-                                        subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
-                                    }
-                                    if (signature && !a.getExtension().endsWith(".asc")) {
-                                        subartifacts.add(new SubArtifact(a, "*", "*.asc"));
-                                    }
-                                });
-                        if (!subartifacts.isEmpty()) {
-                            output.verbose("Resolving (best effort) {}", subartifacts);
-                            try {
-                                List<ArtifactResult> subartifactResults =
-                                        toolboxResolver.resolveArtifacts(subartifacts);
-                                batchSink.accept(subartifactResults.stream()
-                                        .map(ArtifactResult::getArtifact)
-                                        .collect(Collectors.toList()));
-                            } catch (ArtifactResolutionException e) {
-                                // ignore, this is "best effort"
-                                batchSink.accept(e.getResults().stream()
-                                        .filter(ArtifactResult::isResolved)
-                                        .map(ArtifactResult::getArtifact)
-                                        .collect(Collectors.toList()));
-                            }
-                        }
-                    }
-                }
+                        resolutionRoot,
+                        sources,
+                        javadoc,
+                        signature,
+                        ArtifactSinks.teeArtifactSink(
+                                nonClosingArtifactSink(artifactSink), ArtifactSinks.statArtifactSink(1, true, output)),
+                        output);
             }
             return !resolutionRoots.isEmpty();
         }
+    }
+
+    private boolean doResolveTransitive(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean sources,
+            boolean javadoc,
+            boolean signature,
+            ArtifactSink sink,
+            Output output)
+            throws Exception {
+        try (ArtifactSink artifactSink = sink) {
+            output.verbose("Resolving {}", resolutionRoot.getArtifact());
+            resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
+            DependencyResult dependencyResult = toolboxResolver.resolve(
+                    resolutionScope,
+                    resolutionRoot.getArtifact(),
+                    resolutionRoot.getDependencies(),
+                    resolutionRoot.getManagedDependencies());
+            List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
+                    ? dependencyResult.getArtifactResults()
+                    : dependencyResult
+                            .getArtifactResults()
+                            .subList(1, dependencyResult.getArtifactResults().size() - 1);
+            artifactSink.accept(
+                    adjustedResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
+
+            if (sources || javadoc || signature) {
+                HashSet<Artifact> subartifacts = new HashSet<>();
+                adjustedResults.stream().map(ArtifactResult::getArtifact).forEach(a -> {
+                    if (sources && a.getClassifier().isEmpty()) {
+                        subartifacts.add(new SubArtifact(a, "sources", "jar"));
+                    }
+                    if (javadoc && a.getClassifier().isEmpty()) {
+                        subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
+                    }
+                    if (signature && !a.getExtension().endsWith(".asc")) {
+                        subartifacts.add(new SubArtifact(a, "*", "*.asc"));
+                    }
+                });
+                if (!subartifacts.isEmpty()) {
+                    output.verbose("Resolving (best effort) {}", subartifacts);
+                    try {
+                        List<ArtifactResult> subartifactResults = toolboxResolver.resolveArtifacts(subartifacts);
+                        artifactSink.accept(subartifactResults.stream()
+                                .map(ArtifactResult::getArtifact)
+                                .collect(Collectors.toList()));
+                    } catch (ArtifactResolutionException e) {
+                        // ignore, this is "best effort"
+                        artifactSink.accept(e.getResults().stream()
+                                .filter(ArtifactResult::isResolved)
+                                .map(ArtifactResult::getArtifact)
+                                .collect(Collectors.toList()));
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     @Override
@@ -776,6 +790,36 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             output.normal("Artifact SHA1({})={}: {}", artifact, sha1, verified ? "MATCHED" : "NOT MATCHED");
             return verified;
         }
+    }
+
+    // Various
+
+    @Override
+    public boolean libYear(
+            ResolutionScope resolutionScope,
+            Collection<ResolutionRoot> resolutionRoots,
+            boolean quiet,
+            boolean allowSnapshots,
+            Output output)
+            throws Exception {
+        for (ResolutionRoot resolutionRoot : resolutionRoots) {
+            doResolveTransitive(
+                    resolutionScope,
+                    resolutionRoot,
+                    false,
+                    false,
+                    false,
+                    LibYearSink.libYear(
+                            output,
+                            context,
+                            toolboxResolver,
+                            toolboxSearchApi,
+                            quiet,
+                            allowSnapshots,
+                            (a, l) -> l.get(l.size() - 1)),
+                    output);
+        }
+        return !resolutionRoots.isEmpty();
     }
 
     // Utils

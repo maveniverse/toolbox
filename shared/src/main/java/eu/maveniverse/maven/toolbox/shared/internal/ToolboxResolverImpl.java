@@ -372,6 +372,31 @@ public class ToolboxResolverImpl {
         }
     }
 
+    public List<Version> findNewerVersions(Artifact artifact, boolean allowSnapshots)
+            throws VersionRangeResolutionException {
+        VersionRangeRequest rangeRequest = new VersionRangeRequest();
+        rangeRequest.setArtifact(new DefaultArtifact(
+                artifact.getGroupId(),
+                artifact.getArtifactId(),
+                artifact.getClassifier(),
+                artifact.getExtension(),
+                artifact.getVersion().contains(",") ? artifact.getVersion() : "[" + artifact.getVersion() + ",)"));
+        rangeRequest.setRepositories(remoteRepositories);
+        rangeRequest.setRequestContext(CTX_TOOLBOX);
+        VersionRangeResult result = repositorySystem.resolveVersionRange(session, rangeRequest);
+        if (allowSnapshots) {
+            return result.getVersions();
+        } else {
+            ArrayList<Version> versions = new ArrayList<>(result.getVersions().size());
+            for (Version version : result.getVersions()) {
+                if (!version.toString().endsWith("SNAPSHOT")) {
+                    versions.add(version);
+                }
+            }
+            return versions;
+        }
+    }
+
     public List<Artifact> listAvailablePlugins(Collection<String> groupIds) throws Exception {
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
         session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_ALWAYS);

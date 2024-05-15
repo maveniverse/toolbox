@@ -810,22 +810,24 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean allowSnapshots,
             Output output)
             throws Exception {
-        for (ResolutionRoot resolutionRoot : resolutionRoots) {
-            doResolveTransitive(
-                    resolutionScope,
-                    resolutionRoot,
-                    false,
-                    false,
-                    false,
-                    LibYearSink.libYear(
-                            output,
-                            context,
-                            toolboxResolver,
-                            toolboxSearchApi,
-                            quiet,
-                            allowSnapshots,
-                            ArtifactVersionSelector.last()),
-                    output);
+        try (ArtifactSink sink = LibYearSink.libYear(
+                output,
+                context,
+                toolboxResolver,
+                toolboxSearchApi,
+                quiet,
+                allowSnapshots,
+                ArtifactVersionSelector.last())) {
+            for (ResolutionRoot resolutionRoot : resolutionRoots) {
+                doResolveTransitive(
+                        resolutionScope,
+                        resolutionRoot,
+                        false,
+                        false,
+                        false,
+                        ArtifactSinks.nonClosingArtifactSink(sink),
+                        output);
+            }
         }
         return true;
     }

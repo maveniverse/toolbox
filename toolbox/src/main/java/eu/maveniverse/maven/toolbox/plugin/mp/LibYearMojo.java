@@ -12,7 +12,7 @@ import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.Collections;
+import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -50,7 +50,12 @@ public class LibYearMojo extends MPMojoSupport {
         ResolutionRoot project = projectAsResolutionRoot();
         return toolboxCommando.libYear(
                 ResolutionScope.parse(scope),
-                Collections.singleton(projectAsResolutionRoot()),
+                projectAsResolutionRoot().getDependencies().stream()
+                        .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
+                        .map(d -> ResolutionRoot.ofLoaded(d.getArtifact())
+                                .withManagedDependencies(project.getManagedDependencies())
+                                .build())
+                        .collect(Collectors.toList()),
                 quiet,
                 allowSnapshots,
                 output);

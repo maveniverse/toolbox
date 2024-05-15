@@ -33,10 +33,26 @@ public class LibYearMojo extends MPMojoSupport {
     @Parameter(property = "depSpec", defaultValue = "any()")
     private String depSpec;
 
+    /**
+     * Make libyear quiet.
+     */
+    @Parameter(property = "quiet", defaultValue = "false")
+    private boolean quiet;
+
+    /**
+     * Make libyear allow to take into account snapshots.
+     */
+    @Parameter(property = "allowSnapshots", defaultValue = "false")
+    private boolean allowSnapshots;
+
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         ResolutionRoot project = projectAsResolutionRoot();
         return toolboxCommando.libYear(
-                ResolutionScope.parse(scope), Collections.singleton(projectAsResolutionRoot()), false, false, output);
+                ResolutionScope.parse(scope),
+                Collections.singleton(projectAsResolutionRoot()),
+                quiet,
+                allowSnapshots,
+                output);
     }
 }

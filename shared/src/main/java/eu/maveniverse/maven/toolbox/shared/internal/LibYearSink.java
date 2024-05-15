@@ -86,7 +86,7 @@ public final class LibYearSink implements ArtifactSink {
             ToolboxSearchApiImpl toolboxSearchApi,
             boolean quiet,
             boolean allowSnapshots,
-            BiFunction<Artifact, List<Version>, Version> versionSelector) {
+            BiFunction<Artifact, List<Version>, String> versionSelector) {
         return new LibYearSink(
                 output, context, toolboxResolver, toolboxSearchApi, quiet, allowSnapshots, versionSelector);
     }
@@ -97,7 +97,7 @@ public final class LibYearSink implements ArtifactSink {
     private final ToolboxSearchApiImpl toolboxSearchApi;
     private final boolean quiet;
     private final boolean allowSnapshots;
-    private final BiFunction<Artifact, List<Version>, Version> versionSelector;
+    private final BiFunction<Artifact, List<Version>, String> versionSelector;
     private final ConcurrentMap<Artifact, LibYear> libYear;
 
     private LibYearSink(
@@ -107,7 +107,7 @@ public final class LibYearSink implements ArtifactSink {
             ToolboxSearchApiImpl toolboxSearchApi,
             boolean quiet,
             boolean allowSnapshots,
-            BiFunction<Artifact, List<Version>, Version> versionSelector) {
+            BiFunction<Artifact, List<Version>, String> versionSelector) {
         this.output = requireNonNull(output, "output");
         this.context = requireNonNull(context, "context");
         this.toolboxResolver = requireNonNull(toolboxResolver, "toolboxResolver");
@@ -132,9 +132,8 @@ public final class LibYearSink implements ArtifactSink {
             Instant latestVersionInstant = null;
             try {
                 currentVersionInstant = artifactPublishDate(artifact);
-                latestVersion = versionSelector
-                        .apply(artifact, toolboxResolver.findNewerVersions(artifact, allowSnapshots))
-                        .toString();
+                latestVersion =
+                        versionSelector.apply(artifact, toolboxResolver.findNewerVersions(artifact, allowSnapshots));
                 latestVersionInstant = artifactPublishDate(artifact.setVersion(latestVersion));
             } catch (VersionRangeResolutionException e) {
                 // ignore

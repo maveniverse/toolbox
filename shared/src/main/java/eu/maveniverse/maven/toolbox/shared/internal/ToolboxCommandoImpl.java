@@ -25,6 +25,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
@@ -826,7 +827,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     false,
                     false,
                     LibYearSink.libYear(
-                            output, context, toolboxResolver, toolboxSearchApi, quiet, allowSnapshots, versionSelector),
+                            output,
+                            context,
+                            toolboxResolver,
+                            toolboxSearchApi,
+                            quiet,
+                            allowSnapshots,
+                            ArtifactVersionSelector.last()),
                     output);
         }
         return true;

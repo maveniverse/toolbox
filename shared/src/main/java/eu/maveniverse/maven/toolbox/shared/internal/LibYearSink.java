@@ -13,6 +13,7 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -123,20 +124,22 @@ public final class LibYearSink implements ArtifactSink {
     public void accept(Artifact artifact) throws IOException {
         requireNonNull(artifact, "artifact");
         libYear.computeIfAbsent(artifact, a -> {
+            String currentVersion = artifact.getVersion();
+            Instant currentVersionInstant = null;
+            String latestVersion = currentVersion;
+            Instant latestVersionInstant = null;
             try {
-                String currentVersion = artifact.getVersion();
-                Instant currentVersionInstant = artifactPublishDate(artifact);
-                String latestVersion = currentVersion;
-                Instant latestVersionInstant = null;
+                currentVersionInstant = artifactPublishDate(artifact);
                 latestVersion = versionSelector
                         .apply(artifact, toolboxResolver.findNewerVersions(artifact, allowSnapshots))
                         .toString();
                 latestVersionInstant = artifactPublishDate(artifact.setVersion(latestVersion));
-                return new LibYear(currentVersion, currentVersionInstant, latestVersion, latestVersionInstant);
-            } catch (IOException | VersionRangeResolutionException e) {
+            } catch (VersionRangeResolutionException e) {
                 // ignore
-                return null;
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
+            return new LibYear(currentVersion, currentVersionInstant, latestVersion, latestVersionInstant);
         });
     }
 

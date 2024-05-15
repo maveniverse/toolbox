@@ -19,7 +19,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 /**
  * Resolves transitively selected dependencies.
  */
-@Mojo(name = "resolve-transitive", requiresProject = false, threadSafe = true)
+@Mojo(name = "resolve-transitive", threadSafe = true)
 public class ResolveTransitiveMojo extends MPMojoSupport {
     /**
      * The resolution scope to resolve, accepted values are "runtime", "compile", "test", etc.
@@ -30,7 +30,7 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
     /**
      * The dependency matcher spec.
      */
-    @Parameter(property = "depSpec", required = true)
+    @Parameter(property = "depSpec", defaultValue = "any()")
     private String depSpec;
 
     /**

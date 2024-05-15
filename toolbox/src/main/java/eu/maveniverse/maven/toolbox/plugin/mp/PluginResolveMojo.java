@@ -21,7 +21,7 @@ import org.eclipse.aether.artifact.Artifact;
 /**
  * Resolves transitively given project build plugin.
  */
-@Mojo(name = "plugin-resolve", requiresProject = false, threadSafe = true)
+@Mojo(name = "plugin-resolve", threadSafe = true)
 public class PluginResolveMojo extends MPPluginMojoSupport {
     /**
      * Resolve sources JAR as well (derive coordinates from GAV).

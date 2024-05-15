@@ -18,12 +18,12 @@ import org.eclipse.aether.graph.Dependency;
 /**
  * Resolves selected dependencies.
  */
-@Mojo(name = "resolve", requiresProject = false, threadSafe = true)
+@Mojo(name = "resolve", threadSafe = true)
 public class ResolveMojo extends MPMojoSupport {
     /**
      * The dependency matcher spec.
      */
-    @Parameter(property = "depSpec", required = true)
+    @Parameter(property = "depSpec", defaultValue = "any()")
     private String depSpec;
 
     /**

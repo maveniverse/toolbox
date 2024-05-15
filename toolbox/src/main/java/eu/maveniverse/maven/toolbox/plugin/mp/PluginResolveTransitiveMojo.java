@@ -20,7 +20,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 /**
  * Resolves transitively given project build plugin.
  */
-@Mojo(name = "plugin-resolve-transitive", requiresProject = false, threadSafe = true)
+@Mojo(name = "plugin-resolve-transitive", threadSafe = true)
 public class PluginResolveTransitiveMojo extends MPPluginMojoSupport {
     /**
      * The resolution scope to resolve, accepted values are "runtime", "compile", "test", etc.

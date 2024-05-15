@@ -12,24 +12,17 @@ import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.stream.Collectors;
+import java.util.Collections;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 /**
- * Resolves selected dependencies transitively and copies all of them to target.
+ * Calculates "libyear" for Maven project transitively.
  */
-@Mojo(name = "copy-transitive", threadSafe = true)
-public final class CopyTransitiveMojo extends MPMojoSupport {
-
+@Mojo(name = "libyear", threadSafe = true)
+public class LibYearMojo extends MPMojoSupport {
     /**
-     * The artifact sink spec (default: "null()").
-     */
-    @Parameter(property = "sinkSpec", defaultValue = "null()", required = true)
-    private String sinkSpec;
-
-    /**
-     * The resolution scope to resolve (default is 'runtime').
+     * Resolution scope to resolve (default 'runtime').
      */
     @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
@@ -43,15 +36,7 @@ public final class CopyTransitiveMojo extends MPMojoSupport {
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         ResolutionRoot project = projectAsResolutionRoot();
-        return toolboxCommando.copyTransitive(
-                ResolutionScope.parse(scope),
-                projectAsResolutionRoot().getDependencies().stream()
-                        .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
-                        .map(d -> ResolutionRoot.ofLoaded(d.getArtifact())
-                                .withManagedDependencies(project.getManagedDependencies())
-                                .build())
-                        .collect(Collectors.toList()),
-                toolboxCommando.artifactSink(output, sinkSpec),
-                output);
+        return toolboxCommando.libYear(
+                ResolutionScope.parse(scope), Collections.singleton(projectAsResolutionRoot()), false, false, output);
     }
 }

@@ -25,6 +25,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
@@ -543,9 +544,16 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     resolutionRoot.getManagedDependencies());
             List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
                     ? dependencyResult.getArtifactResults()
-                    : dependencyResult
-                            .getArtifactResults()
-                            .subList(1, dependencyResult.getArtifactResults().size() - 1);
+                    : (dependencyResult.getArtifactResults().size() == 1
+                            ? Collections.emptyList()
+                            : dependencyResult
+                                    .getArtifactResults()
+                                    .subList(
+                                            1,
+                                            dependencyResult
+                                                            .getArtifactResults()
+                                                            .size()
+                                                    - 1));
             artifactSink.accept(
                     adjustedResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
 
@@ -802,24 +810,26 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean allowSnapshots,
             Output output)
             throws Exception {
-        for (ResolutionRoot resolutionRoot : resolutionRoots) {
-            doResolveTransitive(
-                    resolutionScope,
-                    resolutionRoot,
-                    false,
-                    false,
-                    false,
-                    LibYearSink.libYear(
-                            output,
-                            context,
-                            toolboxResolver,
-                            toolboxSearchApi,
-                            quiet,
-                            allowSnapshots,
-                            (a, l) -> l.get(l.size() - 1)),
-                    output);
+        try (ArtifactSink sink = LibYearSink.libYear(
+                output,
+                context,
+                toolboxResolver,
+                toolboxSearchApi,
+                quiet,
+                allowSnapshots,
+                ArtifactVersionSelector.last())) {
+            for (ResolutionRoot resolutionRoot : resolutionRoots) {
+                doResolveTransitive(
+                        resolutionScope,
+                        resolutionRoot,
+                        false,
+                        false,
+                        false,
+                        ArtifactSinks.nonClosingArtifactSink(sink),
+                        output);
+            }
         }
-        return !resolutionRoots.isEmpty();
+        return true;
     }
 
     // Utils

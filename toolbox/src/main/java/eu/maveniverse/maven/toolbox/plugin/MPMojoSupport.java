@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin;
 
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
@@ -54,5 +55,15 @@ public abstract class MPMojoSupport extends MojoSupport {
                     toDependencies(mavenProject.getDependencyManagement().getDependencies()));
         }
         return builder.build();
+    }
+
+    protected boolean isReactorDependency(Dependency dependency) {
+        return mavenSession.getAllProjects().stream()
+                .anyMatch(p -> Objects.equals(
+                                p.getGroupId(), dependency.getArtifact().getGroupId())
+                        && Objects.equals(
+                                p.getArtifactId(), dependency.getArtifact().getArtifactId())
+                        && Objects.equals(
+                                p.getVersion(), dependency.getArtifact().getVersion()));
     }
 }

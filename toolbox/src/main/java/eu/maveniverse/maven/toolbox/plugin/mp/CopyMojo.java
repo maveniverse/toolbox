@@ -30,7 +30,7 @@ public final class CopyMojo extends MPMojoSupport {
     /**
      * The dependency matcher spec.
      */
-    @Parameter(property = "depSpec", required = true)
+    @Parameter(property = "depSpec", defaultValue = "any()")
     private String depSpec;
 
     @Override

@@ -17,19 +17,12 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 /**
- * Resolves selected dependencies transitively and copies all of them to target.
+ * Calculates "libyear" for Maven project transitively.
  */
-@Mojo(name = "copy-transitive", threadSafe = true)
-public final class CopyTransitiveMojo extends MPMojoSupport {
-
+@Mojo(name = "libyear", threadSafe = true)
+public class LibYearMojo extends MPMojoSupport {
     /**
-     * The artifact sink spec (default: "null()").
-     */
-    @Parameter(property = "sinkSpec", defaultValue = "null()", required = true)
-    private String sinkSpec;
-
-    /**
-     * The resolution scope to resolve (default is 'runtime').
+     * Resolution scope to resolve (default 'runtime').
      */
     @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
@@ -40,18 +33,32 @@ public final class CopyTransitiveMojo extends MPMojoSupport {
     @Parameter(property = "depSpec", defaultValue = "any()")
     private String depSpec;
 
+    /**
+     * Make libyear quiet.
+     */
+    @Parameter(property = "quiet", defaultValue = "false")
+    private boolean quiet;
+
+    /**
+     * Make libyear allow to take into account snapshots.
+     */
+    @Parameter(property = "allowSnapshots", defaultValue = "false")
+    private boolean allowSnapshots;
+
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         ResolutionRoot project = projectAsResolutionRoot();
-        return toolboxCommando.copyTransitive(
+        return toolboxCommando.libYear(
                 ResolutionScope.parse(scope),
                 projectAsResolutionRoot().getDependencies().stream()
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
+                        .filter(d -> !isReactorDependency(d))
                         .map(d -> ResolutionRoot.ofLoaded(d.getArtifact())
                                 .withManagedDependencies(project.getManagedDependencies())
                                 .build())
                         .collect(Collectors.toList()),
-                toolboxCommando.artifactSink(output, sinkSpec),
+                quiet,
+                allowSnapshots,
                 output);
     }
 }

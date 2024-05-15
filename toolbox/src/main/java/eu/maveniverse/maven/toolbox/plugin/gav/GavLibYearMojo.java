@@ -48,9 +48,31 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     @Parameter(property = "boms")
     private String boms;
 
+    /**
+     * Make libyear quiet.
+     */
+    @CommandLine.Option(
+            names = {"--quiet"},
+            description = "Make command quiet")
+    @Parameter(property = "quiet", defaultValue = "false")
+    private boolean quiet;
+
+    /**
+     * Make libyear allow to take into account snapshots.
+     */
+    @CommandLine.Option(
+            names = {"--allowSnapshots"},
+            description = "Make libyear allow to take into account snapshots")
+    @Parameter(property = "allowSnapshots", defaultValue = "false")
+    private boolean allowSnapshots;
+
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.libYear(
-                ResolutionScope.parse(scope), toolboxCommando.loadGavs(slurp(gav), slurp(boms)), false, false, output);
+                ResolutionScope.parse(scope),
+                toolboxCommando.loadGavs(slurp(gav), slurp(boms)),
+                quiet,
+                allowSnapshots,
+                output);
     }
 }

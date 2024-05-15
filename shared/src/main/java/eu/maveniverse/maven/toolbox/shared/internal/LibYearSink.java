@@ -194,8 +194,7 @@ public final class LibYearSink implements ArtifactSink {
             }
         }
 
-        String indent = "  ";
-        output.normal("{}", indent);
+        String indent = "";
         output.normal("{}Outdated versions with known age", indent);
         timedOnes.forEach(l -> output.normal("{}{}", indent, l));
         output.normal("{}", indent);

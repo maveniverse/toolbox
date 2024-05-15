@@ -545,9 +545,16 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     resolutionRoot.getManagedDependencies());
             List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
                     ? dependencyResult.getArtifactResults()
-                    : dependencyResult
-                            .getArtifactResults()
-                            .subList(1, dependencyResult.getArtifactResults().size() - 1);
+                    : (dependencyResult.getArtifactResults().size() == 1
+                            ? Collections.emptyList()
+                            : dependencyResult
+                                    .getArtifactResults()
+                                    .subList(
+                                            1,
+                                            dependencyResult
+                                                            .getArtifactResults()
+                                                            .size()
+                                                    - 1));
             artifactSink.accept(
                     adjustedResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
 

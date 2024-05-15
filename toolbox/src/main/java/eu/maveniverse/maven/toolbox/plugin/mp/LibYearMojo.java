@@ -52,6 +52,7 @@ public class LibYearMojo extends MPMojoSupport {
                 ResolutionScope.parse(scope),
                 projectAsResolutionRoot().getDependencies().stream()
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
+                        .filter(d -> !isReactorDependency(d))
                         .map(d -> ResolutionRoot.ofLoaded(d.getArtifact())
                                 .withManagedDependencies(project.getManagedDependencies())
                                 .build())

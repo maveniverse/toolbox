@@ -148,7 +148,7 @@ public final class LibYearSink implements ArtifactSink {
     public void close() throws DeploymentException {
         float totalLibYears = 0;
         int totalLibOutdated = 0;
-        TreeSet<String> timedOnes = new TreeSet<>(Collections.reverseOrder());
+        TreeMap<Float, String> timedOnes = new TreeMap<>(Collections.reverseOrder());
         TreeSet<String> outdated = new TreeSet<>();
         if (!quiet) {
             for (Artifact artifact : artifacts) {
@@ -174,14 +174,16 @@ public final class LibYearSink implements ArtifactSink {
                         long libWeeksOutdated = ChronoUnit.WEEKS.between(currentVersionDate, latestVersionDate);
                         float libYearsOutdated = libWeeksOutdated / 52f;
                         totalLibYears += libYearsOutdated;
-                        timedOnes.add(String.format(
-                                "%.2f years from %s %s (%s) => %s (%s)",
+                        timedOnes.put(
                                 libYearsOutdated,
-                                ArtifactIdUtils.toVersionlessId(artifact),
-                                libYear.getCurrentVersion(),
-                                currentVersionDate,
-                                libYear.getLatestVersion(),
-                                latestVersionDate));
+                                String.format(
+                                        "%.2f years from %s %s (%s) => %s (%s)",
+                                        libYearsOutdated,
+                                        ArtifactIdUtils.toVersionlessId(artifact),
+                                        libYear.getCurrentVersion(),
+                                        currentVersionDate,
+                                        libYear.getLatestVersion(),
+                                        latestVersionDate));
                     } else {
                         outdated.add(String.format(
                                 "%s %s (?) => %s (?)",
@@ -197,7 +199,7 @@ public final class LibYearSink implements ArtifactSink {
         if (!timedOnes.isEmpty()) {
             output.normal("{}Outdated versions with known age", indent);
         }
-        timedOnes.forEach(l -> output.normal("{}{}", indent, l));
+        timedOnes.values().forEach(l -> output.normal("{}{}", indent, l));
         output.normal("{}", indent);
         if (!outdated.isEmpty()) {
             output.normal("{}Outdated versions", indent);

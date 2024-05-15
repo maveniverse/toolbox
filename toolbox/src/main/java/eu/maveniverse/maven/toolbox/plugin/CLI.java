@@ -28,6 +28,7 @@ import picocli.CommandLine;
             GavExistsMojo.class,
             GavIdentifyMojo.class,
             GavInstallMojo.class,
+            GavLibYearMojo.class,
             GavListAvailablePluginsMojo.class,
             GavListMojo.class,
             GavListRepositoriesMojo.class,

@@ -18,9 +18,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
@@ -146,18 +148,17 @@ public final class LibYearSink implements ArtifactSink {
     @Override
     public void close() throws DeploymentException {
         float totalLibYears = 0;
-        int outdated = 0;
-        String indent = "-> ";
+        int totalLibOutdated = 0;
+        TreeSet<String> timedOnes = new TreeSet<>(Collections.reverseOrder());
+        TreeSet<String> outdated = new TreeSet<>();
         if (!quiet) {
-            output.normal("{}------------------------------", indent);
             for (Map.Entry<Artifact, LibYear> entry : getLibYear().entrySet()) {
-                String line = "";
                 if (entry.getValue() != null) {
                     LibYear value = entry.getValue();
                     if (Objects.equals(value.getCurrentVersion(), value.getLatestVersion())) {
                         continue;
                     }
-                    outdated++;
+                    totalLibOutdated++;
 
                     LocalDate currentVersionDate = value.getCurrentVersionInstant() != null
                             ? value.getCurrentVersionInstant()
@@ -174,31 +175,39 @@ public final class LibYearSink implements ArtifactSink {
                         long libWeeksOutdated = ChronoUnit.WEEKS.between(currentVersionDate, latestVersionDate);
                         float libYearsOutdated = libWeeksOutdated / 52f;
                         totalLibYears += libYearsOutdated;
-                        line = String.format(
+                        timedOnes.add(String.format(
                                 "%.2f years from %s %s (%s) => %s (%s)",
                                 libYearsOutdated,
                                 ArtifactIdUtils.toVersionlessId(entry.getKey()),
                                 value.getCurrentVersion(),
                                 currentVersionDate,
                                 value.getLatestVersion(),
-                                latestVersionDate);
+                                latestVersionDate));
                     } else {
-                        line = String.format(
+                        outdated.add(String.format(
                                 "%s %s (?) => %s (?)",
                                 ArtifactIdUtils.toVersionlessId(entry.getKey()),
                                 value.getCurrentVersion(),
-                                value.getLatestVersion());
+                                value.getLatestVersion()));
                     }
-                } else {
-                    line = entry.getKey() + " ?";
                 }
-                output.normal("{}{}", indent, line);
             }
         }
-        output.normal("{}------------------------------", indent);
+
+        String indent = "  ";
+        output.normal("{}", indent);
+        output.normal("{}Outdated versions with known age", indent);
+        timedOnes.forEach(l -> output.normal("{}{}", indent, l));
+        output.normal("{}", indent);
+        output.normal("{}Outdated versions", indent);
+        outdated.forEach(l -> output.normal("{}{}", indent, l));
+        output.normal("{}", indent);
         output.normal(
-                "{} Total of {} years from {} dependencies", indent, String.format("%.2f", totalLibYears), outdated);
-        output.normal("{}------------------------------", indent);
+                "{}Total of {} years from {} outdated dependencies",
+                indent,
+                String.format("%.2f", totalLibYears),
+                totalLibOutdated);
+        output.normal("{}", indent);
     }
 
     private Instant artifactPublishDate(Artifact artifact) throws IOException {

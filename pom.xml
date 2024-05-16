@@ -70,7 +70,7 @@
     <!-- Dependency versions -->
     <version.mima>2.4.12</version.mima>
     <version.maven>3.9.6</version.maven>
-    <version.mavenIndexer>7.1.3-SNAPSHOT</version.mavenIndexer>
+    <version.mavenIndexer>1.0.2</version.mavenIndexer>
     <version.resolver>1.9.20</version.resolver>
     <version.mavenPluginTools>3.13.0</version.mavenPluginTools>
     <version.slf4j>1.7.36</version.slf4j>
@@ -190,17 +190,17 @@
 
       <!-- Maven Indexer -->
       <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
+        <groupId>eu.maveniverse.maven.mase</groupId>
         <artifactId>search-api</artifactId>
         <version>${version.mavenIndexer}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
+        <groupId>eu.maveniverse.maven.mase</groupId>
         <artifactId>search-backend-remoterepository</artifactId>
         <version>${version.mavenIndexer}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
+        <groupId>eu.maveniverse.maven.mase</groupId>
         <artifactId>search-backend-smo</artifactId>
         <version>${version.mavenIndexer}</version>
       </dependency>

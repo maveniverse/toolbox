@@ -247,6 +247,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public ArtifactVersionSelector parseArtifactVersionSelectorSpec(String spec) {
+        return ArtifactVersionSelector.build(context.repositorySystemSession().getConfigProperties(), spec);
+    }
+
+    @Override
     public RemoteRepository parseRemoteRepository(String spec) {
         return toolboxResolver.parseRemoteRepository(spec);
     }
@@ -808,16 +813,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Collection<ResolutionRoot> resolutionRoots,
             boolean quiet,
             boolean allowSnapshots,
+            ArtifactVersionSelector artifactVersionSelector,
             Output output)
             throws Exception {
         try (ArtifactSink sink = LibYearSink.libYear(
-                output,
-                context,
-                toolboxResolver,
-                toolboxSearchApi,
-                quiet,
-                allowSnapshots,
-                ArtifactVersionSelector.last())) {
+                output, context, toolboxResolver, toolboxSearchApi, quiet, allowSnapshots, artifactVersionSelector)) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 try {
                     ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);

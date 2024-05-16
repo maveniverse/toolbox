@@ -75,6 +75,11 @@ public interface ToolboxCommando {
     DependencyMatcher parseDependencyMatcherSpec(String spec);
 
     /**
+     * Parses artifact version selector string into {@link ArtifactVersionSelector}.
+     */
+    ArtifactVersionSelector parseArtifactVersionSelectorSpec(String spec);
+
+    /**
      * Parses remote repository string into {@link RemoteRepository}. It may be {@code url} only, {@code id::url} or
      * {@code id::type::url} form. In first case, repository ID will be {@code "mima"}.
      */
@@ -198,6 +203,7 @@ public interface ToolboxCommando {
             Collection<ResolutionRoot> resolutionRoots,
             boolean quiet,
             boolean allowSnapshots,
+            ArtifactVersionSelector artifactVersionSelector,
             Output output)
             throws Exception;
 }

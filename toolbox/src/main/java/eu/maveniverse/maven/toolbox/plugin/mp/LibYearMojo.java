@@ -32,6 +32,12 @@ public class LibYearMojo extends MPMojoSupport {
     private String depSpec;
 
     /**
+     * Artifact version selector spec.
+     */
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "major()")
+    private String artifactVersionSelectorSpec;
+
+    /**
      * Make libyear quiet.
      */
     @Parameter(property = "quiet", defaultValue = "false")
@@ -52,6 +58,7 @@ public class LibYearMojo extends MPMojoSupport {
                         resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec)),
                 quiet,
                 allowSnapshots,
+                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
                 output);
     }
 }

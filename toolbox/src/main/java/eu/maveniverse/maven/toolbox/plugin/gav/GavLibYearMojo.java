@@ -49,6 +49,16 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     private String boms;
 
     /**
+     * Artifact version selector spec string.
+     */
+    @CommandLine.Option(
+            names = {"--artifactVersionSelectorSpec"},
+            defaultValue = "major()",
+            description = "Artifact version selector spec")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "major()")
+    private String artifactVersionSelectorSpec;
+
+    /**
      * Make libyear quiet.
      */
     @CommandLine.Option(
@@ -73,6 +83,7 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
                 toolboxCommando.loadGavs(slurp(gav), slurp(boms)),
                 quiet,
                 allowSnapshots,
+                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
                 output);
     }
 }

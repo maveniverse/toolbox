@@ -46,7 +46,20 @@ public class ToolboxSearchApiImpl {
         } else if ("nx2".equals(remoteRepository.getContentType())) {
             extractor = new Nx2ResponseExtractor();
         } else {
-            throw new IllegalArgumentException("Unsupported extractor");
+            // TODO: try to figure out?
+            if (ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())
+                    && ContextOverrides.CENTRAL.getUrl().equals(remoteRepository.getUrl())) {
+                extractor = new MavenCentralResponseExtractor();
+            } else if (remoteRepository.getUrl().startsWith("https://repo.maven.apache.org/maven2")
+                    || remoteRepository.getUrl().startsWith("https://repo1.maven.org/maven2/")) {
+                extractor = new MavenCentralResponseExtractor();
+            } else if (remoteRepository.getUrl().startsWith("https://repository.apache.org/")
+                    || remoteRepository.getUrl().startsWith("https://oss.sonatype.org/")
+                    || remoteRepository.getUrl().startsWith("https://s01.oss.sonatype.org/")) {
+                extractor = new Nx2ResponseExtractor();
+            } else {
+                throw new IllegalArgumentException("Unsupported extractor");
+            }
         }
         return RemoteRepositorySearchBackendFactory.create(
                 remoteRepository.getId() + "-rr",

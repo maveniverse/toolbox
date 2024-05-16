@@ -104,9 +104,9 @@ public final class LibYearSink implements ArtifactSink {
         this.searchBackends = new ArrayList<>();
         for (RemoteRepository remoteRepository : context.remoteRepositories()) {
             try {
-                this.searchBackends.add(toolboxSearchApi.getSmoBackend(remoteRepository));
+                this.searchBackends.add(toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository));
             } catch (IllegalArgumentException e) {
-                // most likely not SMO service (remote repo is not CENTRAL); ignore
+                // most likely cannot figure out what extractor to use; ignore
             }
         }
     }
@@ -224,7 +224,7 @@ public final class LibYearSink implements ArtifactSink {
 
     private Instant artifactPublishDate(Artifact artifact) throws IOException {
         for (SearchBackend backend : searchBackends) {
-            SearchRequest searchRequest = new SearchRequest(toolboxSearchApi.toSmoQuery(artifact));
+            SearchRequest searchRequest = new SearchRequest(toolboxSearchApi.toRrQuery(artifact));
             SearchResponse searchResponse = backend.search(searchRequest);
             if (searchResponse.getCurrentHits() > 0) {
                 Long lastUpdated = searchResponse.getPage().iterator().next().getLastUpdated();

@@ -7,7 +7,9 @@
  */
 package eu.maveniverse.maven.toolbox.plugin;
 
+import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -55,6 +57,19 @@ public abstract class MPMojoSupport extends MojoSupport {
                     toDependencies(mavenProject.getDependencyManagement().getDependencies()));
         }
         return builder.build();
+    }
+
+    protected List<ResolutionRoot> projectDependenciesAsResolutionRoots(
+            ResolutionScope scope, DependencyMatcher dependencyMatcher) {
+        ResolutionRoot project = projectAsResolutionRoot();
+        return project.getDependencies().stream()
+                .filter(d -> !isReactorDependency(d))
+                .filter(d -> scope.getDirectInclude().contains(d.getScope()))
+                .filter(dependencyMatcher)
+                .map(d -> ResolutionRoot.ofLoaded(d.getArtifact())
+                        .withManagedDependencies(project.getManagedDependencies())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     protected boolean isReactorDependency(Dependency dependency) {

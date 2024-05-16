@@ -39,9 +39,9 @@ public class PluginTreeMojo extends MPPluginMojoSupport {
             return toolboxCommando.tree(ResolutionScope.parse(scope), root, verboseTree, output);
         } else {
             boolean result = true;
-            for (ResolutionRoot rersolutionRoot : allPluginsAsResolutionRoots(toolboxCommando)) {
+            for (ResolutionRoot resolutionRoot : allPluginsAsResolutionRoots(toolboxCommando)) {
                 result = result
-                        && toolboxCommando.tree(ResolutionScope.parse(scope), rersolutionRoot, verboseTree, output);
+                        && toolboxCommando.tree(ResolutionScope.parse(scope), resolutionRoot, verboseTree, output);
             }
             return result;
         }

@@ -184,10 +184,12 @@ public final class LibYearSink implements ArtifactSink {
                                             latestVersionDate));
                         } else {
                             withoutLibyear.add(String.format(
-                                    "%s %s (?) => %s (?)",
+                                    "%s %s (%s) => %s (%s)",
                                     ArtifactIdUtils.toVersionlessId(artifact),
                                     libYear.currentVersion,
-                                    libYear.latestVersion));
+                                    currentVersionDate == null ? "?" : currentVersionDate,
+                                    libYear.latestVersion,
+                                    latestVersionDate == null ? "?" : latestVersionDate));
                         }
                     }
                 }

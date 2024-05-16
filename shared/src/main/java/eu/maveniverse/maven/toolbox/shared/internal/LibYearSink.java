@@ -82,6 +82,8 @@ public final class LibYearSink implements ArtifactSink {
     private final BiFunction<Artifact, List<Version>, String> versionSelector;
     private final CopyOnWriteArraySet<Artifact> artifacts;
 
+    private final List<SearchBackend> searchBackends;
+
     private LibYearSink(
             Output output,
             Context context,
@@ -98,6 +100,15 @@ public final class LibYearSink implements ArtifactSink {
         this.allowSnapshots = allowSnapshots;
         this.versionSelector = requireNonNull(versionSelector);
         this.artifacts = new CopyOnWriteArraySet<>();
+
+        this.searchBackends = new ArrayList<>();
+        for (RemoteRepository remoteRepository : context.remoteRepositories()) {
+            try {
+                this.searchBackends.add(toolboxSearchApi.getSmoBackend(remoteRepository));
+            } catch (IllegalArgumentException e) {
+                // most likely not SMO service (remote repo is not CENTRAL); ignore
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -131,88 +142,93 @@ public final class LibYearSink implements ArtifactSink {
 
     @Override
     public void close() throws DeploymentException {
-        float totalLibYears = 0;
-        TreeMap<Float, List<String>> withLibyear = new TreeMap<>(Collections.reverseOrder());
-        TreeSet<String> withoutLibyear = new TreeSet<>();
-        if (!quiet) {
-            for (Artifact artifact : artifacts) {
-                LibYear libYear = getLibYear().get(artifact);
-                if (libYear != null) {
-                    if (Objects.equals(libYear.currentVersion, libYear.latestVersion)) {
-                        continue;
-                    }
-
-                    LocalDate currentVersionDate = libYear.currentVersionInstant != null
-                            ? libYear.currentVersionInstant
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                            : null;
-                    LocalDate latestVersionDate = libYear.latestVersionInstant != null
-                            ? libYear.latestVersionInstant
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                            : null;
-
-                    if (currentVersionDate != null && latestVersionDate != null) {
-                        long libWeeksOutdated = ChronoUnit.WEEKS.between(currentVersionDate, latestVersionDate);
-                        if (libWeeksOutdated < 0) {
+        try {
+            float totalLibYears = 0;
+            TreeMap<Float, List<String>> withLibyear = new TreeMap<>(Collections.reverseOrder());
+            TreeSet<String> withoutLibyear = new TreeSet<>();
+            if (!quiet) {
+                for (Artifact artifact : artifacts) {
+                    LibYear libYear = getLibYear().get(artifact);
+                    if (libYear != null) {
+                        if (Objects.equals(libYear.currentVersion, libYear.latestVersion)) {
                             continue;
                         }
-                        float libYearsOutdated = libWeeksOutdated / 52f;
-                        totalLibYears += libYearsOutdated;
-                        withLibyear
-                                .computeIfAbsent(libYearsOutdated, k -> new CopyOnWriteArrayList<>())
-                                .add(String.format(
-                                        "%.2f years from %s %s (%s) => %s (%s)",
-                                        libYearsOutdated,
-                                        ArtifactIdUtils.toVersionlessId(artifact),
-                                        libYear.currentVersion,
-                                        currentVersionDate,
-                                        libYear.latestVersion,
-                                        latestVersionDate));
-                    } else {
-                        withoutLibyear.add(String.format(
-                                "%s %s (?) => %s (?)",
-                                ArtifactIdUtils.toVersionlessId(artifact),
-                                libYear.currentVersion,
-                                libYear.latestVersion));
+
+                        LocalDate currentVersionDate = libYear.currentVersionInstant != null
+                                ? libYear.currentVersionInstant
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+                                : null;
+                        LocalDate latestVersionDate = libYear.latestVersionInstant != null
+                                ? libYear.latestVersionInstant
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+                                : null;
+
+                        if (currentVersionDate != null && latestVersionDate != null) {
+                            long libWeeksOutdated = ChronoUnit.WEEKS.between(currentVersionDate, latestVersionDate);
+                            if (libWeeksOutdated < 0) {
+                                continue;
+                            }
+                            float libYearsOutdated = libWeeksOutdated / 52f;
+                            totalLibYears += libYearsOutdated;
+                            withLibyear
+                                    .computeIfAbsent(libYearsOutdated, k -> new CopyOnWriteArrayList<>())
+                                    .add(String.format(
+                                            "%.2f years from %s %s (%s) => %s (%s)",
+                                            libYearsOutdated,
+                                            ArtifactIdUtils.toVersionlessId(artifact),
+                                            libYear.currentVersion,
+                                            currentVersionDate,
+                                            libYear.latestVersion,
+                                            latestVersionDate));
+                        } else {
+                            withoutLibyear.add(String.format(
+                                    "%s %s (?) => %s (?)",
+                                    ArtifactIdUtils.toVersionlessId(artifact),
+                                    libYear.currentVersion,
+                                    libYear.latestVersion));
+                        }
                     }
                 }
             }
-        }
 
-        String indent = "";
-        if (!withLibyear.isEmpty()) {
-            output.normal("{}Outdated versions with known age", indent);
+            String indent = "";
+            if (!withLibyear.isEmpty()) {
+                output.normal("{}Outdated versions with known age", indent);
+            }
+            withLibyear.values().stream().flatMap(Collection::stream).forEach(l -> output.normal("{}{}", indent, l));
+            output.normal("{}", indent);
+            if (!withoutLibyear.isEmpty()) {
+                output.normal("{}Outdated versions", indent);
+            }
+            withoutLibyear.forEach(l -> output.normal("{}{}", indent, l));
+            output.normal("{}", indent);
+            output.normal(
+                    "{}Total of {} years from {} outdated dependencies",
+                    indent,
+                    String.format("%.2f", totalLibYears),
+                    withLibyear.size() + withoutLibyear.size());
+        } finally {
+            searchBackends.forEach(b -> {
+                try {
+                    b.close();
+                } catch (Exception e) {
+                    output.warn("Could not close SearchBackend", e);
+                }
+            });
         }
-        withLibyear.values().stream().flatMap(Collection::stream).forEach(l -> output.normal("{}{}", indent, l));
-        output.normal("{}", indent);
-        if (!withoutLibyear.isEmpty()) {
-            output.normal("{}Outdated versions", indent);
-        }
-        withoutLibyear.forEach(l -> output.normal("{}{}", indent, l));
-        output.normal("{}", indent);
-        output.normal(
-                "{}Total of {} years from {} outdated dependencies",
-                indent,
-                String.format("%.2f", totalLibYears),
-                withLibyear.size() + withoutLibyear.size());
     }
 
     private Instant artifactPublishDate(Artifact artifact) throws IOException {
-        for (RemoteRepository remoteRepository : context.remoteRepositories()) {
-            try (SearchBackend backend = toolboxSearchApi.getSmoBackend(remoteRepository)) {
-                SearchRequest searchRequest = new SearchRequest(toolboxSearchApi.toSmoQuery(artifact));
-                SearchResponse searchResponse = backend.search(searchRequest);
-                if (searchResponse.getCurrentHits() > 0) {
-                    Long lastUpdated =
-                            searchResponse.getPage().iterator().next().getLastUpdated();
-                    if (lastUpdated != null) {
-                        return Instant.ofEpochMilli(lastUpdated);
-                    }
+        for (SearchBackend backend : searchBackends) {
+            SearchRequest searchRequest = new SearchRequest(toolboxSearchApi.toSmoQuery(artifact));
+            SearchResponse searchResponse = backend.search(searchRequest);
+            if (searchResponse.getCurrentHits() > 0) {
+                Long lastUpdated = searchResponse.getPage().iterator().next().getLastUpdated();
+                if (lastUpdated != null) {
+                    return Instant.ofEpochMilli(lastUpdated);
                 }
-            } catch (IllegalArgumentException e) {
-                // most likely not SMO service (remote repo is not CENTRAL); ignore
             }
         }
         return null;

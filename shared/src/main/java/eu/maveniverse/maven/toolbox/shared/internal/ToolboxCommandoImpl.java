@@ -819,14 +819,31 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 allowSnapshots,
                 ArtifactVersionSelector.last())) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
-                doResolveTransitive(
-                        resolutionScope,
-                        resolutionRoot,
-                        false,
-                        false,
-                        false,
-                        ArtifactSinks.nonClosingArtifactSink(sink),
-                        output);
+                try {
+                    ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+                    CollectResult collectResult = toolboxResolver.collect(
+                            resolutionScope,
+                            root.getArtifact(),
+                            root.getDependencies(),
+                            root.getManagedDependencies(),
+                            false);
+                    ArrayList<Artifact> artifacts = new ArrayList<>();
+                    collectResult.getRoot().accept(new DependencyVisitor() {
+                        @Override
+                        public boolean visitEnter(DependencyNode node) {
+                            artifacts.add(node.getArtifact());
+                            return true;
+                        }
+
+                        @Override
+                        public boolean visitLeave(DependencyNode node) {
+                            return true;
+                        }
+                    });
+                    sink.accept(artifacts);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
         return true;

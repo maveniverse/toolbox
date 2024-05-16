@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.IOException;
@@ -30,6 +29,7 @@ import org.apache.maven.search.api.SearchRequest;
 import org.apache.maven.search.api.SearchResponse;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.deployment.DeploymentException;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.version.Version;
@@ -102,16 +102,13 @@ public final class LibYearSink implements ArtifactSink {
         this.artifacts = new CopyOnWriteArraySet<>();
 
         this.searchBackends = new ArrayList<>();
-        // hack: using central only to see it in action
-        this.searchBackends.add(toolboxSearchApi.getRemoteRepositoryBackend(toolboxResolver.parseRemoteRepository(
-                ContextOverrides.CENTRAL.getId() + "::central::" + ContextOverrides.CENTRAL.getUrl())));
-        //        for (RemoteRepository remoteRepository : context.remoteRepositories()) {
-        //            try {
-        //                this.searchBackends.add(toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository));
-        //            } catch (IllegalArgumentException e) {
-        //                // most likely not SMO service (remote repo is not CENTRAL); ignore
-        //            }
-        //        }
+        for (RemoteRepository remoteRepository : context.remoteRepositories()) {
+            try {
+                this.searchBackends.add(toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository));
+            } catch (IllegalArgumentException e) {
+                // most likely cannot figure out what extractor to use; ignore
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")

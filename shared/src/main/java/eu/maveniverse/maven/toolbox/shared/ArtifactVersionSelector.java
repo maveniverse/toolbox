@@ -25,7 +25,7 @@ import org.eclipse.aether.version.Version;
  */
 public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Version>, String> {
     /**
-     * Selector that returns artifact version.
+     * Selector that returns artifact version. This is the "fallback" selector as well.
      */
     static ArtifactVersionSelector identity() {
         return new ArtifactVersionSelector() {
@@ -44,7 +44,7 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
                 return versions.isEmpty()
-                        ? artifact.getVersion()
+                        ? identity().apply(artifact, versions)
                         : versions.get(versions.size() - 1).toString();
             }
         };
@@ -57,9 +57,10 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
         return new ArtifactVersionSelector() {
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
-                int firstDot = artifact.getVersion().indexOf('.');
+                String ver = artifact.getVersion();
+                int firstDot = ver.indexOf('.');
                 if (firstDot > 0) {
-                    String prefix = artifact.getVersion().substring(0, firstDot);
+                    String prefix = ver.substring(0, firstDot);
                     for (int i = versions.size() - 1; i >= 0; i--) {
                         String version = versions.get(i).toString();
                         if (version.startsWith(prefix)) {
@@ -67,7 +68,7 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                         }
                     }
                 }
-                return artifact.getVersion();
+                return identity().apply(artifact, versions);
             }
         };
     }
@@ -79,11 +80,12 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
         return new ArtifactVersionSelector() {
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
-                int firstDot = artifact.getVersion().indexOf('.');
+                String ver = artifact.getVersion();
+                int firstDot = ver.indexOf('.');
                 if (firstDot > 0) {
-                    int secondDot = artifact.getVersion().indexOf('.', firstDot + 1);
+                    int secondDot = ver.indexOf('.', firstDot + 1);
                     if (secondDot > firstDot) {
-                        String prefix = artifact.getVersion().substring(0, secondDot);
+                        String prefix = ver.substring(0, secondDot);
                         for (int i = versions.size() - 1; i >= 0; i--) {
                             String version = versions.get(i).toString();
                             if (version.startsWith(prefix)) {
@@ -92,7 +94,7 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                         }
                     }
                 }
-                return artifact.getVersion();
+                return identity().apply(artifact, versions);
             }
         };
     }
@@ -100,13 +102,15 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
     /**
      * A version selector that filters the candidates out of version list.
      */
-    static ArtifactVersionSelector filteredVersion(Predicate<Version> filter, ArtifactVersionSelector selector) {
+    static ArtifactVersionSelector filteredVersion(Predicate<String> filter, ArtifactVersionSelector selector) {
         requireNonNull(filter, "filter");
         requireNonNull(selector, "selector");
         return new ArtifactVersionSelector() {
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
-                return selector.apply(artifact, versions.stream().filter(filter).collect(Collectors.toList()));
+                return selector.apply(
+                        artifact,
+                        versions.stream().filter(v -> filter.test(v.toString())).collect(Collectors.toList()));
             }
         };
     }
@@ -115,7 +119,7 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
      * A version selector that prevents selection of "preview" versions.
      */
     static ArtifactVersionSelector noPreviews(ArtifactVersionSelector selector) {
-        return filteredVersion(v -> !isPreviewVersion(v.toString()), selector);
+        return filteredVersion(v -> !isPreviewVersion(v), selector);
     }
 
     /**

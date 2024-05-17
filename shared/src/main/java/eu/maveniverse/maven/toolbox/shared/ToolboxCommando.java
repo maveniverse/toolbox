@@ -29,7 +29,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
  * This instance manages {@link Context}, corresponding resolver and search API
  * and maps one-to-one onto commands. Can be considered something like "high level" API of Toolbox.
  * <p>
- * Note on error handling: each "commando" method is marked to throw and return a {@link boolean}.
+ * Note on error handling: each "commando" method is marked to throw and return a {@code boolean}.
  * If method cleanly returns, the result shows the "logical success" of the command (think about it {@code false} means
  * "this execution was no-op"). If method throws, {@link RuntimeException} instances (for example NPE, IAEx, ISEx)
  * mark "bad input", or configuration related errors. The checked exception instances on the other hand come from

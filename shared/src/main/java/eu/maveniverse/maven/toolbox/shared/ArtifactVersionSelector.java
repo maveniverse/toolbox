@@ -127,7 +127,7 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
      *
      * @see <a href="https://maven.apache.org/resolver-archives/resolver-2.0.0-alpha-11/apidocs/org/eclipse/aether/util/version/package-summary.html">Resolver Generic Version spec</a>
      */
-    private static boolean isPreviewVersion(String version) {
+    static boolean isPreviewVersion(String version) {
         // most trivial "preview" version is 'a1'
         if (version.length() > 1) {
             String ver = version.toLowerCase(Locale.ENGLISH);

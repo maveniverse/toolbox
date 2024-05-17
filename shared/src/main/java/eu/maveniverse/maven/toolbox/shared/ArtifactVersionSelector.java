@@ -17,7 +17,8 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.Version;
 
 /**
- * Selector that selects artifact version.
+ * Selector that selects artifact version. The <em>assumption is that {@code List<Version>} is sorted ascending</em>
+ * (same way as resolver sorts versions).
  */
 public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Version>, String> {
     /**

@@ -32,9 +32,9 @@ public class LibYearMojo extends MPMojoSupport {
     private String depSpec;
 
     /**
-     * Artifact version selector spec.
+     * Artifact version selector spec (default is 'noPreviews(major())').
      */
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "major()")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "noPreviews(major())")
     private String artifactVersionSelectorSpec;
 
     /**

@@ -31,8 +31,15 @@ public class ArtifactVersionSelectorTest {
         }
     }
 
-    private final List<Version> versions =
-            Arrays.asList(version("2.0.0"), version("3.0.1"), version("3.1.0"), version("4.0.0"));
+    private final List<Version> versions = Arrays.asList(
+            version("2.0.0"),
+            version("3.0.1"),
+            version("3.0.2-alpha"),
+            version("3.1.0M1"),
+            version("3.1.0"),
+            version("3.1.1M1"),
+            version("4.0.0RC"),
+            version("4.0.0"));
 
     @Test
     void identity() {
@@ -50,16 +57,40 @@ public class ArtifactVersionSelectorTest {
 
     @Test
     void sameMajor() {
-        assertEquals("3.1.0", ArtifactVersionSelector.major().apply(new DefaultArtifact("g:a:3.0.0"), versions));
+        assertEquals("3.1.1M1", ArtifactVersionSelector.major().apply(new DefaultArtifact("g:a:3.0.0"), versions));
         assertEquals(
                 "v1", ArtifactVersionSelector.major().apply(new DefaultArtifact("g:a:v1"), Collections.emptyList()));
     }
 
     @Test
     void sameMinor() {
-        assertEquals("3.0.1", ArtifactVersionSelector.minor().apply(new DefaultArtifact("g:a:3.0.0"), versions));
+        assertEquals("3.0.2-alpha", ArtifactVersionSelector.minor().apply(new DefaultArtifact("g:a:3.0.0"), versions));
         assertEquals(
                 "v1", ArtifactVersionSelector.minor().apply(new DefaultArtifact("g:a:v1"), Collections.emptyList()));
+    }
+
+    @Test
+    void sameMajorNoPreviews() {
+        assertEquals(
+                "3.1.0",
+                ArtifactVersionSelector.noPreviews(ArtifactVersionSelector.major())
+                        .apply(new DefaultArtifact("g:a:3.0.0"), versions));
+        assertEquals(
+                "v1",
+                ArtifactVersionSelector.noPreviews(ArtifactVersionSelector.major())
+                        .apply(new DefaultArtifact("g:a:v1"), Collections.emptyList()));
+    }
+
+    @Test
+    void sameMinorNoPreviews() {
+        assertEquals(
+                "3.0.1",
+                ArtifactVersionSelector.noPreviews(ArtifactVersionSelector.minor())
+                        .apply(new DefaultArtifact("g:a:3.0.0"), versions));
+        assertEquals(
+                "v1",
+                ArtifactVersionSelector.noPreviews(ArtifactVersionSelector.minor())
+                        .apply(new DefaultArtifact("g:a:v1"), Collections.emptyList()));
     }
 
     @Test
@@ -74,10 +105,18 @@ public class ArtifactVersionSelectorTest {
                 "4.0.0",
                 ArtifactVersionSelector.build(Collections.emptyMap(), "last()").apply(artifact, versions));
         assertEquals(
-                "3.1.0",
+                "3.1.1M1",
                 ArtifactVersionSelector.build(Collections.emptyMap(), "major()").apply(artifact, versions));
         assertEquals(
-                "3.0.1",
+                "3.0.2-alpha",
                 ArtifactVersionSelector.build(Collections.emptyMap(), "minor()").apply(artifact, versions));
+        assertEquals(
+                "3.1.0",
+                ArtifactVersionSelector.build(Collections.emptyMap(), "noPreviews(major())")
+                        .apply(artifact, versions));
+        assertEquals(
+                "3.0.1",
+                ArtifactVersionSelector.build(Collections.emptyMap(), "noPreviews(minor())")
+                        .apply(artifact, versions));
     }
 }

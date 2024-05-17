@@ -11,8 +11,11 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.internal.SpecParser;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.Version;
 
@@ -22,7 +25,7 @@ import org.eclipse.aether.version.Version;
  */
 public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Version>, String> {
     /**
-     * Selector that returns artifact version.
+     * Selector that returns artifact version. This is the "fallback" selector as well.
      */
     static ArtifactVersionSelector identity() {
         return new ArtifactVersionSelector() {
@@ -41,7 +44,7 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
                 return versions.isEmpty()
-                        ? artifact.getVersion()
+                        ? identity().apply(artifact, versions)
                         : versions.get(versions.size() - 1).toString();
             }
         };
@@ -54,9 +57,10 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
         return new ArtifactVersionSelector() {
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
-                int firstDot = artifact.getVersion().indexOf('.');
+                String ver = artifact.getVersion();
+                int firstDot = ver.indexOf('.');
                 if (firstDot > 0) {
-                    String prefix = artifact.getVersion().substring(0, firstDot);
+                    String prefix = ver.substring(0, firstDot);
                     for (int i = versions.size() - 1; i >= 0; i--) {
                         String version = versions.get(i).toString();
                         if (version.startsWith(prefix)) {
@@ -64,7 +68,7 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                         }
                     }
                 }
-                return artifact.getVersion();
+                return identity().apply(artifact, versions);
             }
         };
     }
@@ -76,11 +80,12 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
         return new ArtifactVersionSelector() {
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
-                int firstDot = artifact.getVersion().indexOf('.');
+                String ver = artifact.getVersion();
+                int firstDot = ver.indexOf('.');
                 if (firstDot > 0) {
-                    int secondDot = artifact.getVersion().indexOf('.', firstDot + 1);
+                    int secondDot = ver.indexOf('.', firstDot + 1);
                     if (secondDot > firstDot) {
-                        String prefix = artifact.getVersion().substring(0, secondDot);
+                        String prefix = ver.substring(0, secondDot);
                         for (int i = versions.size() - 1; i >= 0; i--) {
                             String version = versions.get(i).toString();
                             if (version.startsWith(prefix)) {
@@ -89,9 +94,62 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                         }
                     }
                 }
-                return artifact.getVersion();
+                return identity().apply(artifact, versions);
             }
         };
+    }
+
+    /**
+     * A version selector that filters the candidates out of version list.
+     */
+    static ArtifactVersionSelector filteredVersion(Predicate<String> filter, ArtifactVersionSelector selector) {
+        requireNonNull(filter, "filter");
+        requireNonNull(selector, "selector");
+        return new ArtifactVersionSelector() {
+            @Override
+            public String apply(Artifact artifact, List<Version> versions) {
+                return selector.apply(
+                        artifact,
+                        versions.stream().filter(v -> filter.test(v.toString())).collect(Collectors.toList()));
+            }
+        };
+    }
+
+    /**
+     * A version selector that prevents selection of "preview" versions.
+     */
+    static ArtifactVersionSelector noPreviews(ArtifactVersionSelector selector) {
+        return filteredVersion(v -> !isPreviewVersion(v), selector);
+    }
+
+    /**
+     * Helper method: tells is a version string a "preview" version or not, as per Resolver version spec.
+     *
+     * @see <a href="https://maven.apache.org/resolver-archives/resolver-2.0.0-alpha-11/apidocs/org/eclipse/aether/util/version/package-summary.html">Resolver Generic Version spec</a>
+     */
+    static boolean isPreviewVersion(String version) {
+        // most trivial "preview" version is 'a1'
+        if (version.length() > 1) {
+            String ver = version.toLowerCase(Locale.ENGLISH);
+            // simple case: contains any of these
+            if (ver.contains("alpha")
+                    || ver.contains("beta")
+                    || ver.contains("milestone")
+                    || ver.contains("rc")
+                    || ver.contains("cr")) {
+                return true;
+            }
+            // complex case: contains 'a', 'b' or 'm' followed immediately by number
+            for (char ch : new char[] {'a', 'b', 'm'}) {
+                int idx = ver.lastIndexOf(ch);
+                if (idx > -1 && ver.length() > idx + 1) {
+                    if (Character.isDigit(ver.charAt(idx + 1))) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     static ArtifactVersionSelector build(Map<String, ?> properties, String spec) {
@@ -123,9 +181,19 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                 case "minor":
                     params.add(minor());
                     break;
+                case "noPreviews":
+                    params.add(noPreviews(artifactVersionSelectorParam(node.getValue())));
+                    break;
                 default:
                     throw new IllegalArgumentException("unknown op " + node.getValue());
             }
+        }
+
+        private ArtifactVersionSelector artifactVersionSelectorParam(String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return (ArtifactVersionSelector) params.remove(params.size() - 1);
         }
 
         public ArtifactVersionSelector build() {

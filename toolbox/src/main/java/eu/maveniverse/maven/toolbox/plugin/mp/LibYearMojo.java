@@ -15,14 +15,14 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 /**
- * Calculates "libyear" for Maven project transitively.
+ * Calculates "libyear" for Maven Projects (for direct dependencies or transitively).
  */
 @Mojo(name = "libyear", threadSafe = true)
 public class LibYearMojo extends MPMojoSupport {
     /**
-     * Resolution scope to resolve (default 'runtime').
+     * Resolution scope to resolve (default 'test').
      */
-    @Parameter(property = "scope", defaultValue = "runtime", required = true)
+    @Parameter(property = "scope", defaultValue = "test", required = true)
     private String scope;
 
     /**
@@ -36,6 +36,12 @@ public class LibYearMojo extends MPMojoSupport {
      */
     @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "major()")
     private String artifactVersionSelectorSpec;
+
+    /**
+     * Make libyear transitive, in which case it will calculate it for whole transitive hull.
+     */
+    @Parameter(property = "transitive", defaultValue = "false")
+    private boolean transitive;
 
     /**
      * Make libyear quiet.
@@ -56,6 +62,7 @@ public class LibYearMojo extends MPMojoSupport {
                 resolutionScope,
                 projectDependenciesAsResolutionRoots(
                         resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec)),
+                transitive,
                 quiet,
                 allowSnapshots,
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),

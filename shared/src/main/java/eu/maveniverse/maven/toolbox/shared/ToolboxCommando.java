@@ -201,6 +201,7 @@ public interface ToolboxCommando {
     boolean libYear(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
+            boolean transitive,
             boolean quiet,
             boolean allowSnapshots,
             ArtifactVersionSelector artifactVersionSelector,

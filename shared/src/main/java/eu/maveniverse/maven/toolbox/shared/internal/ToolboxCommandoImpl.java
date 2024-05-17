@@ -811,6 +811,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public boolean libYear(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
+            boolean transitive,
             boolean quiet,
             boolean allowSnapshots,
             ArtifactVersionSelector artifactVersionSelector,
@@ -821,26 +822,30 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 try {
                     ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
-                    CollectResult collectResult = toolboxResolver.collect(
-                            resolutionScope,
-                            root.getArtifact(),
-                            root.getDependencies(),
-                            root.getManagedDependencies(),
-                            false);
-                    ArrayList<Artifact> artifacts = new ArrayList<>();
-                    collectResult.getRoot().accept(new DependencyVisitor() {
-                        @Override
-                        public boolean visitEnter(DependencyNode node) {
-                            artifacts.add(node.getArtifact());
-                            return true;
-                        }
+                    if (transitive) {
+                        CollectResult collectResult = toolboxResolver.collect(
+                                resolutionScope,
+                                root.getArtifact(),
+                                root.getDependencies(),
+                                root.getManagedDependencies(),
+                                false);
+                        ArrayList<Artifact> artifacts = new ArrayList<>();
+                        collectResult.getRoot().accept(new DependencyVisitor() {
+                            @Override
+                            public boolean visitEnter(DependencyNode node) {
+                                artifacts.add(node.getArtifact());
+                                return true;
+                            }
 
-                        @Override
-                        public boolean visitLeave(DependencyNode node) {
-                            return true;
-                        }
-                    });
-                    sink.accept(artifacts);
+                            @Override
+                            public boolean visitLeave(DependencyNode node) {
+                                return true;
+                            }
+                        });
+                        sink.accept(artifacts);
+                    } else {
+                        sink.accept(root.getArtifact());
+                    }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

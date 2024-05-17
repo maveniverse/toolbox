@@ -16,7 +16,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import picocli.CommandLine;
 
 /**
- * Calculates "libyear" for Maven Artifacts transitively.
+ * Calculates "libyear" for Maven Artifacts (for direct dependencies or transitively).
  */
 @CommandLine.Command(name = "libyear", description = "Calculates libyear for artifacts.")
 @Mojo(name = "gav-libyear", requiresProject = false, threadSafe = true)
@@ -29,13 +29,13 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     private String gav;
 
     /**
-     * Resolution scope to resolve (default 'runtime').
+     * Resolution scope to resolve (default 'test').
      */
     @CommandLine.Option(
             names = {"--scope"},
-            defaultValue = "runtime",
-            description = "Resolution scope to resolve (default 'runtime')")
-    @Parameter(property = "scope", defaultValue = "runtime", required = true)
+            defaultValue = "test",
+            description = "Resolution scope to resolve (default 'test')")
+    @Parameter(property = "scope", defaultValue = "test", required = true)
     private String scope;
 
     /**
@@ -57,6 +57,15 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
             description = "Artifact version selector spec")
     @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "major()")
     private String artifactVersionSelectorSpec;
+
+    /**
+     * Make libyear transitive, in which case it will calculate for whole transitive hull.
+     */
+    @CommandLine.Option(
+            names = {"--transitive"},
+            description = "Make command transitive")
+    @Parameter(property = "transitive", defaultValue = "false")
+    private boolean transitive;
 
     /**
      * Make libyear quiet.
@@ -81,6 +90,7 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
         return toolboxCommando.libYear(
                 ResolutionScope.parse(scope),
                 toolboxCommando.loadGavs(slurp(gav), slurp(boms)),
+                transitive,
                 quiet,
                 allowSnapshots,
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),

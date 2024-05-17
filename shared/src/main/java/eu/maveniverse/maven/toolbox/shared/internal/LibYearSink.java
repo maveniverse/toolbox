@@ -166,6 +166,9 @@ public final class LibYearSink implements ArtifactSink {
                                 : null;
 
                         if (currentVersionDate != null && latestVersionDate != null) {
+                            if (currentVersionDate.isAfter(latestVersionDate)) {
+                                continue;
+                            }
                             long libWeeksOutdated = ChronoUnit.WEEKS.between(currentVersionDate, latestVersionDate);
                             if (libWeeksOutdated < 0) {
                                 continue;
@@ -210,7 +213,7 @@ public final class LibYearSink implements ArtifactSink {
                     "{}Total of {} years from {} outdated dependencies",
                     indent,
                     String.format("%.2f", totalLibYears),
-                    withLibyear.size() + withoutLibyear.size());
+                    withLibyear.values().stream().mapToInt(List::size).sum() + withoutLibyear.size());
         } finally {
             searchBackends.forEach(b -> {
                 try {

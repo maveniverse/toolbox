@@ -49,13 +49,13 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     private String boms;
 
     /**
-     * Artifact version selector spec string.
+     * Artifact version selector spec string, default is 'noPreviews(major())'.
      */
     @CommandLine.Option(
             names = {"--artifactVersionSelectorSpec"},
-            defaultValue = "major()",
-            description = "Artifact version selector spec")
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "major()")
+            defaultValue = "noPreviews(major())",
+            description = "Artifact version selector spec (default 'noPreviews(major())')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "noPreviews(major())")
     private String artifactVersionSelectorSpec;
 
     /**

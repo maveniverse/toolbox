@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Predicate;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
@@ -99,6 +100,13 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
     }
 
     /**
+     * A version matcher that filters out "snapshot" versions.
+     */
+    static ArtifactVersionMatcher noSnapshots() {
+        return v -> !isSnapshotVersion(v.toString());
+    }
+
+    /**
      * Helper method: tells is a version string a "preview" version or not, as per Resolver version spec.
      *
      * @see <a href="https://maven.apache.org/resolver-archives/resolver-2.0.0-alpha-11/apidocs/org/eclipse/aether/util/version/package-summary.html">Resolver Generic Version spec</a>
@@ -128,6 +136,17 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
         return false;
     }
 
+    /**
+     * Helper method: tells is a version string a "snapshot" version or not.
+     */
+    static boolean isSnapshotVersion(String version) {
+        try {
+            return new DefaultArtifact("g:a:" + version).isSnapshot();
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     static ArtifactVersionMatcher build(Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
@@ -152,6 +171,9 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
                     break;
                 case "noPreviews":
                     params.add(noPreviews());
+                    break;
+                case "noSnapshots":
+                    params.add(noSnapshots());
                     break;
                 case "not": {
                     params.add(not(artifactVersionMatcherParam(node.getValue())));

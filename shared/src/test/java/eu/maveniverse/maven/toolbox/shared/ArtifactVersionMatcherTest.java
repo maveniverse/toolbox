@@ -101,5 +101,16 @@ public class ArtifactVersionMatcherTest {
                 versions.stream()
                         .filter(ArtifactVersionMatcher.build(Collections.emptyMap(), "and(lte(3.1.0),noPreviews())"))
                         .collect(Collectors.toList()));
+
+        assertEquals(
+                Arrays.asList(version("2.0.0"), version("3.0.0")),
+                Arrays.asList(
+                                version("2.0.0-SNAPSHOT"),
+                                version("2.0.0"),
+                                version("3.0.0-20240524.224522-1"),
+                                version("3.0.0"))
+                        .stream()
+                        .filter(ArtifactVersionMatcher.build(Collections.emptyMap(), "noSnapshots()"))
+                        .collect(Collectors.toList()));
     }
 }

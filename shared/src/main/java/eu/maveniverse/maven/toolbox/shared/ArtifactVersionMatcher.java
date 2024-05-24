@@ -76,19 +76,19 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
     }
 
     static ArtifactVersionMatcher gt(Version version) {
-        return v -> version.compareTo(v) > 0;
-    }
-
-    static ArtifactVersionMatcher gte(Version version) {
-        return v -> version.compareTo(v) >= 0;
-    }
-
-    static ArtifactVersionMatcher lt(Version version) {
         return v -> version.compareTo(v) < 0;
     }
 
-    static ArtifactVersionMatcher lte(Version version) {
+    static ArtifactVersionMatcher gte(Version version) {
         return v -> version.compareTo(v) <= 0;
+    }
+
+    static ArtifactVersionMatcher lt(Version version) {
+        return v -> version.compareTo(v) > 0;
+    }
+
+    static ArtifactVersionMatcher lte(Version version) {
+        return v -> version.compareTo(v) >= 0;
     }
 
     /**
@@ -204,7 +204,7 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
         private List<ArtifactVersionMatcher> artifactVersionMatcherParams(String op) {
             ArrayList<ArtifactVersionMatcher> result = new ArrayList<>();
             while (!params.isEmpty()) {
-                if (params.get(params.size() - 1) instanceof ArtifactMatcher) {
+                if (params.get(params.size() - 1) instanceof ArtifactVersionMatcher) {
                     result.add(artifactVersionMatcherParam(op));
                 } else {
                     break;

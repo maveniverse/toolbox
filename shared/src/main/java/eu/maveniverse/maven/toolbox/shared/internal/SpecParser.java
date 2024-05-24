@@ -17,6 +17,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.eclipse.aether.util.version.GenericVersionScheme;
+import org.eclipse.aether.version.InvalidVersionSpecificationException;
+import org.eclipse.aether.version.Version;
+import org.eclipse.aether.version.VersionScheme;
 
 /**
  * Simple spec parser. Parses input string, and produces a tree of {@link Op} and {@link Literal}s. Root must
@@ -56,6 +60,7 @@ public final class SpecParser {
     public abstract static class Builder implements Visitor {
         protected final ArrayList<Object> params = new ArrayList<>();
         protected final Map<String, ?> properties;
+        private final VersionScheme versionScheme = new GenericVersionScheme();
 
         public Builder() {
             this.properties = null;
@@ -135,6 +140,40 @@ public final class SpecParser {
                 throw new IllegalArgumentException("bad parameter count for " + op);
             }
             return Integer.parseInt((String) params.remove(params.size() - 1));
+        }
+
+        protected Version versionParam(String op) {
+            try {
+                return versionScheme.parseVersion(stringParam(op));
+            } catch (InvalidVersionSpecificationException e) {
+                throw new IllegalArgumentException("invalid version parameter for " + op, e);
+            }
+        }
+
+        protected <T> T typedParam(Class<T> clazz, String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return clazz.cast(params.remove(params.size() - 1));
+        }
+
+        protected <T> List<T> typedParams(Class<T> clazz, String op) {
+            ArrayList<T> result = new ArrayList<>();
+            while (!params.isEmpty()) {
+                if (clazz.isInstance(params.get(params.size() - 1))) {
+                    result.add(typedParam(clazz, op));
+                } else {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        public <T> T build(Class<T> clazz) {
+            if (params.size() != 1) {
+                throw new IllegalArgumentException("bad spec");
+            }
+            return clazz.cast(params.get(0));
         }
     }
 

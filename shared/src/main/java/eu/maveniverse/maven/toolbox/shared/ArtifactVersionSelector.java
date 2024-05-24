@@ -151,25 +151,15 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                     params.add(minor());
                     break;
                 case "noPreviews":
-                    params.add(noPreviews(artifactVersionSelectorParam(node.getValue())));
+                    params.add(noPreviews(typedParam(ArtifactVersionSelector.class, node.getValue())));
                     break;
                 default:
                     throw new IllegalArgumentException("unknown op " + node.getValue());
             }
         }
 
-        private ArtifactVersionSelector artifactVersionSelectorParam(String op) {
-            if (params.isEmpty()) {
-                throw new IllegalArgumentException("bad parameter count for " + op);
-            }
-            return (ArtifactVersionSelector) params.remove(params.size() - 1);
-        }
-
         public ArtifactVersionSelector build() {
-            if (params.size() != 1) {
-                throw new IllegalArgumentException("bad spec");
-            }
-            return (ArtifactVersionSelector) params.get(0);
+            return build(ArtifactVersionSelector.class);
         }
     }
 }

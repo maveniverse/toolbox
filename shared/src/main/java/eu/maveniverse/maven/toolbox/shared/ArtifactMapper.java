@@ -10,10 +10,8 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.internal.SpecParser;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
@@ -180,7 +178,7 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
                     break;
                 }
                 case "compose": {
-                    params.add(compose(artifactMapperParams(node.getValue())));
+                    params.add(compose(typedParams(ArtifactMapper.class, node.getValue())));
                     break;
                 }
                 default:
@@ -188,30 +186,8 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
             }
         }
 
-        private ArtifactMapper artifactMapperParam(String op) {
-            if (params.isEmpty()) {
-                throw new IllegalArgumentException("bad parameter count for " + op);
-            }
-            return (ArtifactMapper) params.remove(params.size() - 1);
-        }
-
-        private List<ArtifactMapper> artifactMapperParams(String op) {
-            ArrayList<ArtifactMapper> result = new ArrayList<>();
-            while (!params.isEmpty()) {
-                if (params.get(params.size() - 1) instanceof ArtifactMapper) {
-                    result.add(artifactMapperParam(op));
-                } else {
-                    break;
-                }
-            }
-            return result;
-        }
-
         public ArtifactMapper build() {
-            if (params.size() != 1) {
-                throw new IllegalArgumentException("bad spec");
-            }
-            return (ArtifactMapper) params.get(0);
+            return build(ArtifactMapper.class);
         }
     }
 }

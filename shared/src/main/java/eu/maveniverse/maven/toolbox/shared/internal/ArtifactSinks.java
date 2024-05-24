@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
@@ -82,11 +81,11 @@ public final class ArtifactSinks {
                     break;
                 }
                 case "tee": {
-                    params.add(teeArtifactSink(artifactSinkParams(node.getValue())));
+                    params.add(teeArtifactSink(typedParams(ArtifactSink.class, node.getValue())));
                     break;
                 }
                 case "nonClosing": {
-                    params.add(nonClosingArtifactSink(artifactSinkParam(node.getValue())));
+                    params.add(nonClosingArtifactSink(typedParam(ArtifactSink.class, node.getValue())));
                     break;
                 }
                 case "flat": {
@@ -228,30 +227,8 @@ public final class ArtifactSinks {
             }
         }
 
-        private ArtifactSink artifactSinkParam(String op) {
-            if (params.isEmpty()) {
-                throw new IllegalArgumentException("bad parameter count for " + op);
-            }
-            return (ArtifactSink) params.remove(params.size() - 1);
-        }
-
-        private List<ArtifactSink> artifactSinkParams(String op) {
-            ArrayList<ArtifactSink> result = new ArrayList<>();
-            while (!params.isEmpty()) {
-                if (params.get(params.size() - 1) instanceof ArtifactSink) {
-                    result.add(artifactSinkParam(op));
-                } else {
-                    break;
-                }
-            }
-            return result;
-        }
-
         public ArtifactSink build() {
-            if (params.size() != 1) {
-                throw new IllegalArgumentException("bad spec");
-            }
-            return (ArtifactSink) params.get(0);
+            return build(ArtifactSink.class);
         }
     }
 

@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
@@ -104,12 +105,11 @@ public class ArtifactVersionMatcherTest {
 
         assertEquals(
                 Arrays.asList(version("2.0.0"), version("3.0.0")),
-                Arrays.asList(
+                Stream.of(
                                 version("2.0.0-SNAPSHOT"),
                                 version("2.0.0"),
                                 version("3.0.0-20240524.224522-1"),
                                 version("3.0.0"))
-                        .stream()
                         .filter(ArtifactVersionMatcher.build(Collections.emptyMap(), "noSnapshots()"))
                         .collect(Collectors.toList()));
     }

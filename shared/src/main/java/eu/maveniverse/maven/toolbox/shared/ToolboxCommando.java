@@ -18,10 +18,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
+import org.eclipse.aether.version.Version;
 
 /**
  * The Toolbox Commando, that implements all the commands that are exposed via Mojos or CLI.
@@ -73,6 +75,11 @@ public interface ToolboxCommando {
      * Parses dependency matcher string into {@link DependencyMatcher}.
      */
     DependencyMatcher parseDependencyMatcherSpec(String spec);
+
+    /**
+     * Parses artifact version matcher string into {@link ArtifactVersionMatcher}.
+     */
+    ArtifactVersionMatcher parseArtifactVersionMatcherSpec(String spec);
 
     /**
      * Parses artifact version selector string into {@link ArtifactVersionSelector}.
@@ -206,5 +213,9 @@ public interface ToolboxCommando {
             boolean allowSnapshots,
             ArtifactVersionSelector artifactVersionSelector,
             Output output)
+            throws Exception;
+
+    boolean versions(
+            Collection<Artifact> artifacts, boolean allowSnapshots, Predicate<Version> versionPredicate, Output output)
             throws Exception;
 }

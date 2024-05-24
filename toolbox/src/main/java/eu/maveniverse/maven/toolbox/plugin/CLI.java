@@ -38,7 +38,8 @@ import picocli.CommandLine;
             GavResolveTransitiveMojo.class,
             GavSearchMojo.class,
             GavTreeMojo.class,
-            GavVerifyMojo.class
+            GavVerifyMojo.class,
+            GavVersionsMojo.class
         },
         versionProvider = CLI.class,
         description = "Toolbox CLI",

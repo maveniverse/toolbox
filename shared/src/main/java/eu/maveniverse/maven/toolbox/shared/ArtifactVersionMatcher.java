@@ -10,20 +10,85 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.internal.SpecParser;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Predicate;
+import org.eclipse.aether.util.version.GenericVersionScheme;
+import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
+import org.eclipse.aether.version.VersionScheme;
 
 /**
  * Filter that matches artifact versions.
  */
 public interface ArtifactVersionMatcher extends Predicate<Version> {
-    /**
-     * A version matcher "any".
-     */
     static ArtifactVersionMatcher any() {
         return v -> true;
+    }
+
+    static ArtifactVersionMatcher not(ArtifactVersionMatcher matcher) {
+        return new ArtifactVersionMatcher() {
+            @Override
+            public boolean test(Version version) {
+                return !matcher.test(version);
+            }
+        };
+    }
+
+    static ArtifactVersionMatcher and(ArtifactVersionMatcher... matchers) {
+        return and(Arrays.asList(matchers));
+    }
+
+    static ArtifactVersionMatcher and(Collection<ArtifactVersionMatcher> matchers) {
+        return new ArtifactVersionMatcher() {
+            @Override
+            public boolean test(Version version) {
+                for (ArtifactVersionMatcher matcher : matchers) {
+                    if (!matcher.test(version)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        };
+    }
+
+    static ArtifactVersionMatcher or(ArtifactVersionMatcher... matchers) {
+        return or(Arrays.asList(matchers));
+    }
+
+    static ArtifactVersionMatcher or(Collection<ArtifactVersionMatcher> matchers) {
+        return new ArtifactVersionMatcher() {
+            @Override
+            public boolean test(Version version) {
+                for (ArtifactVersionMatcher matcher : matchers) {
+                    if (matcher.test(version)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+    }
+
+    static ArtifactVersionMatcher gt(Version version) {
+        return v -> version.compareTo(v) > 0;
+    }
+
+    static ArtifactVersionMatcher gte(Version version) {
+        return v -> version.compareTo(v) >= 0;
+    }
+
+    static ArtifactVersionMatcher lt(Version version) {
+        return v -> version.compareTo(v) < 0;
+    }
+
+    static ArtifactVersionMatcher lte(Version version) {
+        return v -> version.compareTo(v) <= 0;
     }
 
     /**
@@ -72,8 +137,11 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
     }
 
     class ArtifactVersionMatcherBuilder extends SpecParser.Builder {
+        private final VersionScheme versionScheme;
+
         public ArtifactVersionMatcherBuilder(Map<String, ?> properties) {
             super(properties);
+            this.versionScheme = new GenericVersionScheme();
         }
 
         @Override
@@ -85,9 +153,64 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
                 case "noPreviews":
                     params.add(noPreviews());
                     break;
+                case "not": {
+                    params.add(not(artifactVersionMatcherParam(node.getValue())));
+                    break;
+                }
+                case "and": {
+                    params.add(and(artifactVersionMatcherParams(node.getValue())));
+                    break;
+                }
+                case "or": {
+                    params.add(or(artifactVersionMatcherParams(node.getValue())));
+                    break;
+                }
+                case "gt": {
+                    params.add(gt(versionParam(node.getValue())));
+                    break;
+                }
+                case "gte": {
+                    params.add(gte(versionParam(node.getValue())));
+                    break;
+                }
+                case "lt": {
+                    params.add(lt(versionParam(node.getValue())));
+                    break;
+                }
+                case "lte": {
+                    params.add(lte(versionParam(node.getValue())));
+                    break;
+                }
                 default:
                     throw new IllegalArgumentException("unknown op " + node.getValue());
             }
+        }
+
+        private Version versionParam(String op) {
+            try {
+                return versionScheme.parseVersion(stringParam(op));
+            } catch (InvalidVersionSpecificationException e) {
+                throw new IllegalArgumentException("invalid version parameter for " + op, e);
+            }
+        }
+
+        private ArtifactVersionMatcher artifactVersionMatcherParam(String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return (ArtifactVersionMatcher) params.remove(params.size() - 1);
+        }
+
+        private List<ArtifactVersionMatcher> artifactVersionMatcherParams(String op) {
+            ArrayList<ArtifactVersionMatcher> result = new ArrayList<>();
+            while (!params.isEmpty()) {
+                if (params.get(params.size() - 1) instanceof ArtifactMatcher) {
+                    result.add(artifactVersionMatcherParam(op));
+                } else {
+                    break;
+                }
+            }
+            return result;
         }
 
         public ArtifactVersionMatcher build() {

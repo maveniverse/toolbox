@@ -25,6 +25,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.Output;
@@ -73,12 +74,14 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.ChecksumUtils;
+import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.util.listener.ChainedRepositoryListener;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
+import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
 import org.slf4j.Logger;
@@ -244,6 +247,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public DependencyMatcher parseDependencyMatcherSpec(String spec) {
         return DependencyMatcher.build(context.repositorySystemSession().getConfigProperties(), spec);
+    }
+
+    @Override
+    public ArtifactVersionMatcher parseArtifactVersionMatcherSpec(String spec) {
+        return ArtifactVersionMatcher.build(context.repositorySystemSession().getConfigProperties(), spec);
     }
 
     @Override
@@ -850,6 +858,18 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     throw new RuntimeException(e);
                 }
             }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean versions(
+            Collection<Artifact> artifacts, boolean allowSnapshots, Predicate<Version> versionPredicate, Output output)
+            throws Exception {
+        for (Artifact artifact : artifacts) {
+            List<Version> versions = toolboxResolver.findNewerVersions(artifact, allowSnapshots);
+            output.normal("Available newer versions for {}:", ArtifactIdUtils.toId(artifact));
+            versions.stream().filter(versionPredicate).forEach(version -> output.normal("* {}", version));
         }
         return true;
     }

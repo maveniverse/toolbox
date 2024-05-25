@@ -7,24 +7,22 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
-import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.Output;
-import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.Collections;
+import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.*;
+import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 /**
- * Calculates "libyear" for Maven Projects (for direct dependencies or transitively).
+ * Calculates "libyear" for Maven Project (for plugins or transitively).
  */
-@Mojo(name = "libyear", threadSafe = true)
-public class LibYearMojo extends MPMojoSupport {
+@Mojo(name = "plugin-libyear", threadSafe = true)
+public class PluginLibYearMojo extends MPPluginMojoSupport {
     /**
-     * Resolution scope to resolve (default 'test').
+     * The plugin matcher spec.
      */
-    @Parameter(property = "scope", defaultValue = "test", required = true)
-    private String scope;
+    @Parameter(property = "artifactMatcherSpec", defaultValue = "any()")
+    private String artifactMatcherSpec;
 
     /**
      * Artifact version selector spec (default is 'noPreviews(major())').
@@ -52,9 +50,12 @@ public class LibYearMojo extends MPMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+        ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
         return toolboxCommando.libYear(
-                ResolutionScope.parse(scope),
-                Collections.singleton(projectAsResolutionRoot()),
+                ResolutionScope.RUNTIME,
+                allPluginsAsResolutionRoots(toolboxCommando).stream()
+                        .filter(r -> artifactMatcher.test(r.getArtifact()))
+                        .collect(Collectors.toList()),
                 transitive,
                 quiet,
                 allowSnapshots,

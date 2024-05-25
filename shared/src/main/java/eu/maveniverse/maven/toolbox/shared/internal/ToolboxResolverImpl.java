@@ -380,7 +380,7 @@ public class ToolboxResolverImpl {
                 artifact.getArtifactId(),
                 artifact.getClassifier(),
                 artifact.getExtension(),
-                artifact.getVersion().contains(",") ? artifact.getVersion() : "[" + artifact.getVersion() + ",)"));
+                artifact.getVersion().contains(",") ? artifact.getVersion() : "(" + artifact.getVersion() + ",)"));
         rangeRequest.setRepositories(remoteRepositories);
         rangeRequest.setRequestContext(CTX_TOOLBOX);
         VersionRangeResult result = repositorySystem.resolveVersionRange(session, rangeRequest);

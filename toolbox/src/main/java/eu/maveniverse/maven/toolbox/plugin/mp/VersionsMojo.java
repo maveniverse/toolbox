@@ -5,53 +5,55 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.plugin.gav;
+package eu.maveniverse.maven.toolbox.plugin.mp;
 
-import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import picocli.CommandLine;
 
 /**
- * Lists available versions Maven Artifacts.
+ * Lists available versions of Maven Project dependencies.
  */
-@CommandLine.Command(name = "versions", description = "Lists available versions for artifacts.")
-@Mojo(name = "gav-versions", requiresProject = false, threadSafe = true)
-public class GavVersionsMojo extends GavMojoSupport {
+@Mojo(name = "versions", threadSafe = true)
+public class VersionsMojo extends MPMojoSupport {
     /**
-     * The comma separated GAVs.
+     * Resolution scope to resolve (default 'test').
      */
-    @CommandLine.Parameters(index = "0", description = "The comma separated GAVs", arity = "1")
-    @Parameter(property = "gav", required = true)
-    private String gav;
+    @Parameter(property = "scope", defaultValue = "test", required = true)
+    private String scope;
+
+    /**
+     * The dependency matcher spec.
+     */
+    @Parameter(property = "depSpec", defaultValue = "any()")
+    private String depSpec;
 
     /**
      * Allow to take into account snapshots.
      */
-    @CommandLine.Option(
-            names = {"--allowSnapshots"},
-            description = "Allow to take into account snapshots")
     @Parameter(property = "allowSnapshots", defaultValue = "false")
     private boolean allowSnapshots;
 
     /**
      * Artifact version matcher spec string, default is 'noPreviews()'.
      */
-    @CommandLine.Option(
-            names = {"--artifactVersionMatcherSpec"},
-            defaultValue = "noPreviews()",
-            description = "Artifact version matcher spec (default 'noPreviews()')")
     @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noPreviews()")
     private String artifactVersionMatcherSpec;
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+        ResolutionScope resolutionScope = ResolutionScope.parse(scope);
         return toolboxCommando.versions(
-                slurp(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
+                projectDependenciesAsResolutionRoots(
+                                resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec))
+                        .stream()
+                        .map(ResolutionRoot::getArtifact)
+                        .collect(Collectors.toList()),
                 allowSnapshots,
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 output);

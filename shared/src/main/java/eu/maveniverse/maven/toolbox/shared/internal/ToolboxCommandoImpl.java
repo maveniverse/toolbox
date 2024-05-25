@@ -65,6 +65,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.deployment.DeployRequest;
+import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.installation.InstallRequest;
@@ -830,6 +831,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 try {
                     ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+                    ArrayList<Artifact> artifacts = new ArrayList<>();
                     if (transitive) {
                         CollectResult collectResult = toolboxResolver.collect(
                                 resolutionScope,
@@ -837,7 +839,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                                 root.getDependencies(),
                                 root.getManagedDependencies(),
                                 false);
-                        ArrayList<Artifact> artifacts = new ArrayList<>();
                         collectResult.getRoot().accept(new DependencyVisitor() {
                             @Override
                             public boolean visitEnter(DependencyNode node) {
@@ -850,10 +851,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                                 return true;
                             }
                         });
-                        sink.accept(artifacts);
                     } else {
-                        sink.accept(root.getArtifact());
+                        artifacts.addAll(root.getDependencies().stream()
+                                .map(Dependency::getArtifact)
+                                .collect(Collectors.toList()));
                     }
+                    sink.accept(artifacts);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -868,8 +871,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             throws Exception {
         for (Artifact artifact : artifacts) {
             List<Version> versions = toolboxResolver.findNewerVersions(artifact, allowSnapshots);
-            output.normal("Available newer versions for {}:", ArtifactIdUtils.toId(artifact));
-            versions.stream().filter(versionPredicate).forEach(version -> output.normal("* {}", version));
+            List<Version> newer = versions.stream().filter(versionPredicate).collect(Collectors.toList());
+            if (!newer.isEmpty()) {
+                output.normal("Available newer versions for {}:", ArtifactIdUtils.toId(artifact));
+                newer.forEach(version -> output.normal("* {}", version));
+            }
         }
         return true;
     }

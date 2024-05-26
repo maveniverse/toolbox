@@ -64,7 +64,7 @@
     <!--
     Build time: latest Maven and LTS Java.
     -->
-    <requireBuildtimeMavenVersion.version>[3.9.6,)</requireBuildtimeMavenVersion.version>
+    <requireBuildtimeMavenVersion.version>[3.6.3,)</requireBuildtimeMavenVersion.version>
     <requireBuildtimeJavaVersion.version>[11.0.2,)</requireBuildtimeJavaVersion.version>
 
     <!-- Dependency versions -->

@@ -113,8 +113,13 @@ public final class LibYearSink implements ArtifactSink {
 
     @SuppressWarnings("unchecked")
     public ConcurrentMap<Artifact, LibYear> getLibYear() {
-        return (ConcurrentMap<Artifact, LibYear>)
-                context.repositorySystemSession().getData().computeIfAbsent(LibYear.class, ConcurrentHashMap::new);
+        ConcurrentMap<Artifact, LibYear> result = (ConcurrentMap<Artifact, LibYear>)
+                context.repositorySystemSession().getData().get(LibYear.class);
+        if (result == null) {
+            result = new ConcurrentHashMap<>();
+            context.repositorySystemSession().getData().set(LibYear.class, result);
+        }
+        return result;
     }
 
     @Override

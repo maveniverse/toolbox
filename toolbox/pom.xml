@@ -77,16 +77,6 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>eu.maveniverse.maven.mima.runtime</groupId>
-      <artifactId>standalone-static-uber</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
       <scope>runtime</scope>
@@ -102,13 +92,7 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
-      <scope>compile</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
@@ -150,7 +134,7 @@
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-util</artifactId>
-      <scope>provided</scope>
+      <scope>compile</scope>
     </dependency>
 
     <!-- Search -->
@@ -184,10 +168,6 @@
           <goalPrefix>toolbox</goalPrefix>
           <requiredMavenVersion>${prerequisiteMaven}</requiredMavenVersion>
           <requiredJavaVersion>${prerequisiteJava}</requiredJavaVersion>
-          <expectedProvidedScopeExclusions>
-            <!-- Is needed in compile scope to have it included in CLI Uber JAR as well -->
-            <expectedProvidedScopeExclusion>org.apache.maven:maven-plugin-api</expectedProvidedScopeExclusion>
-          </expectedProvidedScopeExclusions>
         </configuration>
         <executions>
           <execution>
@@ -238,10 +218,16 @@
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <shadedArtifactAttached>true</shadedArtifactAttached>
               <shadedClassifierName>cli</shadedClassifierName>
+              <extraArtifacts>
+                <extraArtifact>org.slf4j:slf4j-simple:${version.slf4j}</extraArtifact>
+                <extraArtifact>eu.maveniverse.maven.mima.runtime:standalone-static-uber:${version.mima}</extraArtifact>
+                <extraArtifact>org.apache.maven:maven-plugin-api:${version.maven}</extraArtifact>
+              </extraArtifacts>
               <artifactSet>
                 <!-- These are already provided by runtime -->
                 <excludes>
                   <exclude>eu.maveniverse.maven.mima.runtime:embedded-maven</exclude>
+                  <exclude>org.apache.maven.resolver:maven-resolver-util</exclude>
                   <exclude>commons-codec:commons-codec</exclude>
                   <exclude>org.apache.commons:commons-lang3</exclude>
                 </excludes>
@@ -274,10 +260,6 @@
                   </excludes>
                 </filter>
               </filters>
-              <entryPoints>
-                <entryPoint>${mainClass}</entryPoint>
-              </entryPoints>
-              <minimizeJar>true</minimizeJar>
             </configuration>
           </execution>
         </executions>

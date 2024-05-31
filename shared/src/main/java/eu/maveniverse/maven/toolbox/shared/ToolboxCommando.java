@@ -211,6 +211,7 @@ public interface ToolboxCommando {
             boolean transitive,
             boolean quiet,
             boolean allowSnapshots,
+            boolean upToDate,
             ArtifactVersionSelector artifactVersionSelector,
             Output output)
             throws Exception;

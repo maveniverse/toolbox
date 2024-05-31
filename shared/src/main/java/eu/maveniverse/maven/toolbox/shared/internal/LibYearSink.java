@@ -43,16 +43,19 @@ public final class LibYearSink implements ArtifactSink {
     public static final class LibYear {
         public final String currentVersion;
         public final Instant currentVersionInstant;
+        public final List<Version> allVersions;
         public final String latestVersion;
         public final Instant latestVersionInstant;
 
         private LibYear(
                 String currentVersion,
                 Instant currentVersionInstant,
+                List<Version> allVersions,
                 String latestVersion,
                 Instant latestVersionInstant) {
             this.currentVersion = currentVersion;
             this.currentVersionInstant = currentVersionInstant;
+            this.allVersions = allVersions;
             this.latestVersion = latestVersion;
             this.latestVersionInstant = latestVersionInstant;
         }
@@ -68,9 +71,10 @@ public final class LibYearSink implements ArtifactSink {
             ToolboxSearchApiImpl toolboxSearchApi,
             boolean quiet,
             boolean allowSnapshots,
+            boolean upToDate,
             BiFunction<Artifact, List<Version>, String> versionSelector) {
         return new LibYearSink(
-                output, context, toolboxResolver, toolboxSearchApi, quiet, allowSnapshots, versionSelector);
+                output, context, toolboxResolver, toolboxSearchApi, quiet, allowSnapshots, upToDate, versionSelector);
     }
 
     private final Output output;
@@ -79,7 +83,9 @@ public final class LibYearSink implements ArtifactSink {
     private final ToolboxSearchApiImpl toolboxSearchApi;
     private final boolean quiet;
     private final boolean allowSnapshots;
+    private final boolean upToDate;
     private final BiFunction<Artifact, List<Version>, String> versionSelector;
+    private final LocalDate now;
     private final CopyOnWriteArraySet<Artifact> artifacts;
 
     private final List<SearchBackend> searchBackends;
@@ -91,6 +97,7 @@ public final class LibYearSink implements ArtifactSink {
             ToolboxSearchApiImpl toolboxSearchApi,
             boolean quiet,
             boolean allowSnapshots,
+            boolean upToDate,
             BiFunction<Artifact, List<Version>, String> versionSelector) {
         this.output = requireNonNull(output, "output");
         this.context = requireNonNull(context, "context");
@@ -98,7 +105,9 @@ public final class LibYearSink implements ArtifactSink {
         this.toolboxSearchApi = requireNonNull(toolboxSearchApi, "toolboxSearchApi");
         this.quiet = quiet;
         this.allowSnapshots = allowSnapshots;
+        this.upToDate = upToDate;
         this.versionSelector = requireNonNull(versionSelector);
+        this.now = Instant.now().atZone(ZoneId.systemDefault()).toLocalDate();
         this.artifacts = new CopyOnWriteArraySet<>();
 
         this.searchBackends = new ArrayList<>();
@@ -128,19 +137,22 @@ public final class LibYearSink implements ArtifactSink {
         getLibYear().computeIfAbsent(artifact, a -> {
             String currentVersion = artifact.getVersion();
             Instant currentVersionInstant = null;
+            List<Version> allVersions = null;
             String latestVersion = currentVersion;
             Instant latestVersionInstant = null;
             try {
                 currentVersionInstant = artifactPublishDate(artifact);
-                latestVersion =
-                        versionSelector.apply(artifact, toolboxResolver.findNewerVersions(artifact, allowSnapshots));
-                latestVersionInstant = artifactPublishDate(artifact.setVersion(latestVersion));
+                allVersions = toolboxResolver.findNewerVersions(artifact, allowSnapshots);
+                latestVersion = versionSelector.apply(artifact, allVersions);
+                latestVersionInstant = Objects.equals(currentVersion, latestVersion)
+                        ? currentVersionInstant
+                        : artifactPublishDate(artifact.setVersion(latestVersion));
             } catch (VersionRangeResolutionException e) {
                 // ignore
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            return new LibYear(currentVersion, currentVersionInstant, latestVersion, latestVersionInstant);
+            return new LibYear(currentVersion, currentVersionInstant, allVersions, latestVersion, latestVersionInstant);
         });
         artifacts.add(artifact);
     }
@@ -149,16 +161,13 @@ public final class LibYearSink implements ArtifactSink {
     public void close() throws DeploymentException {
         try {
             float totalLibYears = 0;
-            TreeMap<Float, List<String>> withLibyear = new TreeMap<>(Collections.reverseOrder());
-            TreeSet<String> withoutLibyear = new TreeSet<>();
+            TreeMap<Float, List<String>> outdatedWithLibyear = new TreeMap<>(Collections.reverseOrder());
+            TreeSet<String> outdatedWithoutLibyear = new TreeSet<>();
+            TreeSet<String> upToDateByAge = new TreeSet<>();
             if (!quiet) {
                 for (Artifact artifact : artifacts) {
                     LibYear libYear = getLibYear().get(artifact);
                     if (libYear != null) {
-                        if (Objects.equals(libYear.currentVersion, libYear.latestVersion)) {
-                            continue;
-                        }
-
                         LocalDate currentVersionDate = libYear.currentVersionInstant != null
                                 ? libYear.currentVersionInstant
                                         .atZone(ZoneId.systemDefault())
@@ -170,28 +179,49 @@ public final class LibYearSink implements ArtifactSink {
                                         .toLocalDate()
                                 : null;
 
-                        if (currentVersionDate != null && latestVersionDate != null) {
+                        if (Objects.equals(libYear.currentVersion, libYear.latestVersion)) {
+                            long libCurrentWeeksAge =
+                                    currentVersionDate != null ? ChronoUnit.WEEKS.between(currentVersionDate, now) : -1;
+                            float libCurrentYearsAge = libCurrentWeeksAge != -1 ? libCurrentWeeksAge / 52f : -1;
+                            if (libCurrentYearsAge != -1) {
+                                upToDateByAge.add(String.format(
+                                        "%s %s (%s) [age %.2f years]",
+                                        ArtifactIdUtils.toVersionlessId(artifact),
+                                        libYear.currentVersion,
+                                        currentVersionDate,
+                                        libCurrentYearsAge));
+                            } else {
+                                upToDateByAge.add(String.format(
+                                        "%s %s (%s) [age unknown]",
+                                        ArtifactIdUtils.toVersionlessId(artifact),
+                                        libYear.currentVersion,
+                                        currentVersionDate == null ? "?" : currentVersionDate));
+                            }
+                        } else if (currentVersionDate != null && latestVersionDate != null) {
                             if (currentVersionDate.isAfter(latestVersionDate)) {
                                 continue;
                             }
+                            long libLatestWeeksAge = ChronoUnit.WEEKS.between(latestVersionDate, now);
                             long libWeeksOutdated = ChronoUnit.WEEKS.between(currentVersionDate, latestVersionDate);
                             if (libWeeksOutdated < 0) {
                                 continue;
                             }
+                            float libLatestYearsAge = libLatestWeeksAge / 52f;
                             float libYearsOutdated = libWeeksOutdated / 52f;
                             totalLibYears += libYearsOutdated;
-                            withLibyear
+                            outdatedWithLibyear
                                     .computeIfAbsent(libYearsOutdated, k -> new CopyOnWriteArrayList<>())
                                     .add(String.format(
-                                            "%.2f years from %s %s (%s) => %s (%s)",
+                                            "%.2f years from %s %s (%s) => %s (%s) [age %.2f years]",
                                             libYearsOutdated,
                                             ArtifactIdUtils.toVersionlessId(artifact),
                                             libYear.currentVersion,
                                             currentVersionDate,
                                             libYear.latestVersion,
-                                            latestVersionDate));
+                                            latestVersionDate,
+                                            libLatestYearsAge));
                         } else {
-                            withoutLibyear.add(String.format(
+                            outdatedWithoutLibyear.add(String.format(
                                     "%s %s (%s) => %s (%s)",
                                     ArtifactIdUtils.toVersionlessId(artifact),
                                     libYear.currentVersion,
@@ -204,21 +234,30 @@ public final class LibYearSink implements ArtifactSink {
             }
 
             String indent = "";
-            if (!withLibyear.isEmpty()) {
+            if (!outdatedWithLibyear.isEmpty()) {
                 output.normal("{}Outdated versions with known age", indent);
             }
-            withLibyear.values().stream().flatMap(Collection::stream).forEach(l -> output.normal("{}{}", indent, l));
+            outdatedWithLibyear.values().stream()
+                    .flatMap(Collection::stream)
+                    .forEach(l -> output.normal("{}{}", indent, l));
             output.normal("{}", indent);
-            if (!withoutLibyear.isEmpty()) {
+            if (!outdatedWithoutLibyear.isEmpty()) {
                 output.normal("{}Outdated versions", indent);
             }
-            withoutLibyear.forEach(l -> output.normal("{}{}", indent, l));
+            outdatedWithoutLibyear.forEach(l -> output.normal("{}{}", indent, l));
             output.normal("{}", indent);
             output.normal(
                     "{}Total of {} years from {} outdated dependencies",
                     indent,
                     String.format("%.2f", totalLibYears),
-                    withLibyear.values().stream().mapToInt(List::size).sum() + withoutLibyear.size());
+                    outdatedWithLibyear.values().stream().mapToInt(List::size).sum() + outdatedWithoutLibyear.size());
+            output.normal("{}", indent);
+            if (upToDate) {
+                if (!upToDateByAge.isEmpty()) {
+                    output.normal("{}Up to date versions", indent);
+                }
+                upToDateByAge.forEach(l -> output.normal("{}{}", indent, l));
+            }
         } finally {
             searchBackends.forEach(b -> {
                 try {

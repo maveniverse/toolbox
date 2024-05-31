@@ -85,6 +85,15 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     @Parameter(property = "allowSnapshots", defaultValue = "false")
     private boolean allowSnapshots;
 
+    /**
+     * Make libyear show up-to-date libraries with age as well.
+     */
+    @CommandLine.Option(
+            names = {"--upToDate"},
+            description = "Make libyear show up-to-date libraries with age as well")
+    @Parameter(property = "upToDate", defaultValue = "false")
+    private boolean upToDate;
+
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.libYear(
@@ -93,6 +102,7 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
                 transitive,
                 quiet,
                 allowSnapshots,
+                upToDate,
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
                 output);
     }

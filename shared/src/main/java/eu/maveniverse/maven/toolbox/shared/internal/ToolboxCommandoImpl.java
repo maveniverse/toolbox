@@ -823,11 +823,19 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean transitive,
             boolean quiet,
             boolean allowSnapshots,
+            boolean upToDate,
             ArtifactVersionSelector artifactVersionSelector,
             Output output)
             throws Exception {
         try (ArtifactSink sink = LibYearSink.libYear(
-                output, context, toolboxResolver, toolboxSearchApi, quiet, allowSnapshots, artifactVersionSelector)) {
+                output,
+                context,
+                toolboxResolver,
+                toolboxSearchApi,
+                quiet,
+                allowSnapshots,
+                upToDate,
+                artifactVersionSelector)) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 try {
                     ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);

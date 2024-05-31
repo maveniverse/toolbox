@@ -260,10 +260,6 @@
                   </excludes>
                 </filter>
               </filters>
-              <entryPoints>
-                <entryPoint>${mainClass}</entryPoint>
-              </entryPoints>
-              <minimizeJar>false</minimizeJar>
             </configuration>
           </execution>
         </executions>

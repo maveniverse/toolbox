@@ -48,6 +48,12 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
     @Parameter(property = "allowSnapshots", defaultValue = "false")
     private boolean allowSnapshots;
 
+    /**
+     * Make libyear show up-to-date libraries with age as well.
+     */
+    @Parameter(property = "upToDate", defaultValue = "false")
+    private boolean upToDate;
+
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
@@ -59,6 +65,7 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
                 transitive,
                 quiet,
                 allowSnapshots,
+                upToDate,
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
                 output);
     }

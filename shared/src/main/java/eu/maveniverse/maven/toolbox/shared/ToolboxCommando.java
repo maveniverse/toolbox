@@ -176,6 +176,14 @@ public interface ToolboxCommando {
     boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output)
             throws Exception;
 
+    boolean treeFind(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean verbose,
+            ArtifactMatcher artifactMatcher,
+            Output output)
+            throws Exception;
+
     // Search API related commands: they target one single RemoteRepository
 
     /**

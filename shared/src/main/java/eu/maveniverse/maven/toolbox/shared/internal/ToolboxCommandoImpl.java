@@ -66,6 +66,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.deployment.DeployRequest;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.installation.InstallRequest;
@@ -77,6 +78,7 @@ import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.ChecksumUtils;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.util.artifact.SubArtifact;
+import org.eclipse.aether.util.graph.visitor.PathRecordingDependencyVisitor;
 import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.util.listener.ChainedRepositoryListener;
@@ -618,6 +620,49 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     root.getManagedDependencies(),
                     verbose);
             collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean treeFind(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean verbose,
+            ArtifactMatcher artifactMatcher,
+            Output output) {
+        try {
+            output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
+            ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+            output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
+            CollectResult collectResult = toolboxResolver.collect(
+                    resolutionScope,
+                    root.getArtifact(),
+                    root.getDependencies(),
+                    root.getManagedDependencies(),
+                    verbose);
+            PathRecordingDependencyVisitor pathRecordingDependencyVisitor =
+                    new PathRecordingDependencyVisitor(new DependencyFilter() {
+                        @Override
+                        public boolean accept(DependencyNode node, List<DependencyNode> parents) {
+                            return node.getArtifact() != null && artifactMatcher.test(node.getArtifact());
+                        }
+                    });
+            collectResult.getRoot().accept(pathRecordingDependencyVisitor);
+            if (!pathRecordingDependencyVisitor.getPaths().isEmpty()) {
+                output.normal("Paths");
+                for (List<DependencyNode> path : pathRecordingDependencyVisitor.getPaths()) {
+                    String indent = "";
+                    for (DependencyNode node : path) {
+                        output.normal("{}-> {}", indent, node.getArtifact());
+                        indent += "  ";
+                    }
+                }
+            } else {
+                output.normal("No paths found.");
+            }
             return true;
         } catch (Exception e) {
             throw new RuntimeException(e);

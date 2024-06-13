@@ -16,15 +16,21 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 /**
- * Collects project given plugin and output its dependency tree.
+ * Collects paths to matched artifact from plugins, if exists.
  */
-@Mojo(name = "plugin-tree", threadSafe = true)
-public class PluginTreeMojo extends MPPluginMojoSupport {
+@Mojo(name = "plugin-tree-find", threadSafe = true)
+public class PluginTreeFindMojo extends MPPluginMojoSupport {
     /**
      * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
      */
     @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
+
+    /**
+     * The artifact matcher spec.
+     */
+    @Parameter(property = "artifactMatcherSpec", required = true)
+    private String artifactMatcherSpec;
 
     /**
      * Set it {@code true} for verbose tree.
@@ -36,12 +42,22 @@ public class PluginTreeMojo extends MPPluginMojoSupport {
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
         if (root != null) {
-            return toolboxCommando.tree(ResolutionScope.parse(scope), root, verboseTree, output);
+            return toolboxCommando.treeFind(
+                    ResolutionScope.parse(scope),
+                    root,
+                    verboseTree,
+                    toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec),
+                    output);
         } else {
             boolean result = true;
             for (ResolutionRoot resolutionRoot : allPluginsAsResolutionRoots(toolboxCommando)) {
                 result = result
-                        && toolboxCommando.tree(ResolutionScope.parse(scope), resolutionRoot, verboseTree, output);
+                        && toolboxCommando.treeFind(
+                                ResolutionScope.parse(scope),
+                                resolutionRoot,
+                                verboseTree,
+                                toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec),
+                                output);
                 output.normal("");
             }
             return result;

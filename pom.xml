@@ -75,7 +75,7 @@
     <version.mavenPluginTools>3.13.1</version.mavenPluginTools>
     <version.slf4j>2.0.13</version.slf4j>
     <version.picocli>4.7.6</version.picocli>
-    <version.jline>3.26.1</version.jline>
+    <version.jline>3.26.2</version.jline>
   </properties>
 
   <dependencyManagement>

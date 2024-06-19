@@ -29,6 +29,7 @@ import org.apache.maven.search.backend.remoterepository.ResponseExtractor;
 import org.apache.maven.search.backend.remoterepository.extractor.MavenCentralResponseExtractor;
 import org.apache.maven.search.backend.remoterepository.extractor.Nx2ResponseExtractor;
 import org.apache.maven.search.backend.smo.SmoSearchBackendFactory;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.slf4j.Logger;
@@ -39,7 +40,8 @@ public class ToolboxSearchApiImpl {
 
     public ToolboxSearchApiImpl() {}
 
-    public SearchBackend getRemoteRepositoryBackend(RemoteRepository remoteRepository) {
+    public SearchBackend getRemoteRepositoryBackend(
+            RepositorySystemSession session, RemoteRepository remoteRepository) {
         final ResponseExtractor extractor;
         if ("central".equals(remoteRepository.getContentType())) {
             extractor = new MavenCentralResponseExtractor();
@@ -65,11 +67,13 @@ public class ToolboxSearchApiImpl {
                 remoteRepository.getId() + "-rr",
                 remoteRepository.getId(),
                 remoteRepository.getUrl(),
-                new Java11HttpClientTransport(),
+                new Java11HttpClientTransport(
+                        Java11HttpClientFactory.DEFAULT_TIMEOUT,
+                        Java11HttpClientFactory.buildHttpClient(session, remoteRepository)),
                 extractor);
     }
 
-    public SearchBackend getSmoBackend(RemoteRepository remoteRepository) {
+    public SearchBackend getSmoBackend(RepositorySystemSession session, RemoteRepository remoteRepository) {
         if (!ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())) {
             throw new IllegalArgumentException("The SMO service is offered for Central only");
         }
@@ -77,7 +81,9 @@ public class ToolboxSearchApiImpl {
                 remoteRepository.getId() + "-smo",
                 remoteRepository.getId(),
                 "https://search.maven.org/solrsearch/select",
-                new Java11HttpClientTransport());
+                new Java11HttpClientTransport(
+                        Java11HttpClientFactory.DEFAULT_TIMEOUT,
+                        Java11HttpClientFactory.buildHttpClient(session, remoteRepository)));
     }
 
     public void renderPage(List<Record> page, Predicate<String> versionPredicate, Output output) {

@@ -541,7 +541,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }
     }
 
-    private boolean doResolveTransitive(
+    private void doResolveTransitive(
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
             boolean sources,
@@ -603,7 +603,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 }
             }
         }
-        return true;
     }
 
     @Override
@@ -687,7 +686,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             throws IOException {
         ArrayList<Artifact> missingOnes = new ArrayList<>();
         ArrayList<Artifact> existingOnes = new ArrayList<>();
-        try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository)) {
+        try (SearchBackend backend =
+                toolboxSearchApi.getRemoteRepositoryBackend(context.repositorySystemSession(), remoteRepository)) {
             Artifact artifact = new DefaultArtifact(gav);
             boolean exists = toolboxSearchApi.exists(backend, artifact);
             if (!exists) {
@@ -770,7 +770,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             sha1 = target;
         }
         output.verbose("Identifying artifact with SHA1={}", sha1);
-        try (SearchBackend backend = toolboxSearchApi.getSmoBackend(remoteRepository)) {
+        try (SearchBackend backend =
+                toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
             SearchRequest searchRequest = new SearchRequest(fieldQuery(MAVEN.SHA1, sha1));
             SearchResponse searchResponse = backend.search(searchRequest);
 
@@ -786,7 +787,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean list(RemoteRepository remoteRepository, String gavoid, Output output) throws IOException {
-        try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository)) {
+        try (SearchBackend backend =
+                toolboxSearchApi.getRemoteRepositoryBackend(context.repositorySystemSession(), remoteRepository)) {
             String[] elements = gavoid.split(":");
             if (elements.length < 1 || elements.length > 3) {
                 throw new IllegalArgumentException("Invalid gavoid");
@@ -828,7 +830,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean search(RemoteRepository remoteRepository, String expression, Output output) throws IOException {
-        try (SearchBackend backend = toolboxSearchApi.getSmoBackend(remoteRepository)) {
+        try (SearchBackend backend =
+                toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
             Query query;
             try {
                 query = toolboxSearchApi.toSmoQuery(new DefaultArtifact(expression));
@@ -851,7 +854,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public boolean verify(RemoteRepository remoteRepository, String gav, String sha1, Output output)
             throws IOException {
-        try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository)) {
+        try (SearchBackend backend =
+                toolboxSearchApi.getRemoteRepositoryBackend(context.repositorySystemSession(), remoteRepository)) {
             Artifact artifact = new DefaultArtifact(gav);
             boolean verified = toolboxSearchApi.verify(backend, new DefaultArtifact(gav), sha1);
             output.normal("Artifact SHA1({})={}: {}", artifact, sha1, verified ? "MATCHED" : "NOT MATCHED");

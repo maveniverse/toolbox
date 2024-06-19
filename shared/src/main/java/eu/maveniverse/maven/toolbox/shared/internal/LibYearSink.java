@@ -113,7 +113,8 @@ public final class LibYearSink implements ArtifactSink {
         this.searchBackends = new ArrayList<>();
         for (RemoteRepository remoteRepository : context.remoteRepositories()) {
             try {
-                this.searchBackends.add(toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository));
+                this.searchBackends.add(toolboxSearchApi.getRemoteRepositoryBackend(
+                        context.repositorySystemSession(), remoteRepository));
             } catch (IllegalArgumentException e) {
                 // most likely cannot figure out what extractor to use; ignore
             }

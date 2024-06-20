@@ -42,26 +42,37 @@ public class ToolboxSearchApiImpl {
 
     public SearchBackend getRemoteRepositoryBackend(
             RepositorySystemSession session, RemoteRepository remoteRepository) {
+        String type = (String) session.getConfigProperties().get("toolbox.search.backend.type");
+        if (type == null) {
+            if ("central".equals(remoteRepository.getContentType())) {
+                type = "central";
+            } else if ("nx2".equals(remoteRepository.getContentType())) {
+                type = "nx2";
+            } else {
+                // Some heuristics trying to figure out (probably not ideal)
+                if (ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())
+                        && ContextOverrides.CENTRAL.getUrl().equals(remoteRepository.getUrl())) {
+                    type = "central";
+                } else if (remoteRepository.getUrl().startsWith("https://repo.maven.apache.org/maven2")
+                        || remoteRepository.getUrl().startsWith("https://repo1.maven.org/maven2/")) {
+                    type = "central";
+                } else if (remoteRepository.getUrl().startsWith("https://repository.apache.org/")
+                        || remoteRepository.getUrl().startsWith("https://oss.sonatype.org/")
+                        || remoteRepository.getUrl().startsWith("https://s01.oss.sonatype.org/")) {
+                    type = "nx2";
+                } else if (remoteRepository.getUrl().contains("/content/groups/")
+                        || remoteRepository.getUrl().contains("/content/repositories/")) {
+                    type = "nx2";
+                }
+            }
+        }
         final ResponseExtractor extractor;
-        if ("central".equals(remoteRepository.getContentType())) {
+        if ("central".equalsIgnoreCase(type)) {
             extractor = new MavenCentralResponseExtractor();
-        } else if ("nx2".equals(remoteRepository.getContentType())) {
+        } else if ("nx2".equalsIgnoreCase(type)) {
             extractor = new Nx2ResponseExtractor();
         } else {
-            // TODO: try to figure out?
-            if (ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())
-                    && ContextOverrides.CENTRAL.getUrl().equals(remoteRepository.getUrl())) {
-                extractor = new MavenCentralResponseExtractor();
-            } else if (remoteRepository.getUrl().startsWith("https://repo.maven.apache.org/maven2")
-                    || remoteRepository.getUrl().startsWith("https://repo1.maven.org/maven2/")) {
-                extractor = new MavenCentralResponseExtractor();
-            } else if (remoteRepository.getUrl().startsWith("https://repository.apache.org/")
-                    || remoteRepository.getUrl().startsWith("https://oss.sonatype.org/")
-                    || remoteRepository.getUrl().startsWith("https://s01.oss.sonatype.org/")) {
-                extractor = new Nx2ResponseExtractor();
-            } else {
-                throw new IllegalArgumentException("Unsupported extractor");
-            }
+            throw new IllegalArgumentException("Unsupported extractor");
         }
         return RemoteRepositorySearchBackendFactory.create(
                 remoteRepository.getId() + "-rr",

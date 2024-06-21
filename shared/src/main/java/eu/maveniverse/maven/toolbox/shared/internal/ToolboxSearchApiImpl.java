@@ -90,7 +90,8 @@ public class ToolboxSearchApiImpl {
         } else if ("nx2".equalsIgnoreCase(repositoryVendor)) {
             extractor = new Nx2ResponseExtractor();
         } else {
-            throw new IllegalArgumentException("Unsupported extractor");
+            throw new IllegalArgumentException(
+                    "Unsupported Search RR extractor: '" + repositoryVendor + "'; (supported are 'central', 'nx2')");
         }
         return RemoteRepositorySearchBackendFactory.create(
                 remoteRepository.getId() + "-rr",

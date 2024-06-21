@@ -41,7 +41,14 @@ public abstract class MPMojoSupport extends MojoSupport {
      * heuristics will be applied to figure out.
      */
     @Parameter(property = "toolbox.search.backend.type")
-    protected String repositoryVendor;
+    private String repositoryVendor;
+
+    protected String getRepositoryVendor() {
+        if (repositoryVendor != null) {
+            return repositoryVendor;
+        }
+        return mavenProject.getProperties().getProperty("toolbox.search.backend.type");
+    }
 
     protected List<Dependency> toDependencies(List<org.apache.maven.model.Dependency> dependencies) {
         ArtifactTypeRegistry artifactTypeRegistry =

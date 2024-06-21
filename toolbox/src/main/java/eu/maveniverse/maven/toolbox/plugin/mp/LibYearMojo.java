@@ -66,6 +66,7 @@ public class LibYearMojo extends MPMojoSupport {
                 allowSnapshots,
                 upToDate,
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
+                getRepositoryVendor(),
                 output);
     }
 }

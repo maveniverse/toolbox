@@ -200,16 +200,19 @@ public interface ToolboxCommando {
             boolean javadoc,
             boolean signature,
             boolean allRequired,
+            String repositoryVendor,
             Output output)
             throws IOException;
 
     boolean identify(RemoteRepository remoteRepository, String target, Output output) throws IOException;
 
-    boolean list(RemoteRepository remoteRepository, String gavoid, Output output) throws IOException;
+    boolean list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Output output)
+            throws IOException;
 
     boolean search(RemoteRepository remoteRepository, String expression, Output output) throws IOException;
 
-    boolean verify(RemoteRepository remoteRepository, String gav, String sha1, Output output) throws IOException;
+    boolean verify(RemoteRepository remoteRepository, String gav, String sha1, String repositoryVendor, Output output)
+            throws IOException;
 
     // Various
 
@@ -221,6 +224,7 @@ public interface ToolboxCommando {
             boolean allowSnapshots,
             boolean upToDate,
             ArtifactVersionSelector artifactVersionSelector,
+            String repositoryVendor,
             Output output)
             throws Exception;
 

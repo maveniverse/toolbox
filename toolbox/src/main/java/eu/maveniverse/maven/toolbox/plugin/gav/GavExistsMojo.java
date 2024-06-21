@@ -78,6 +78,6 @@ public class GavExistsMojo extends GavSearchMojoSupport {
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws IOException {
         return toolboxCommando.exists(
-                getRemoteRepository(toolboxCommando), gav, pom, sources, javadoc, signature, allRequired, output);
+                getRemoteRepository(toolboxCommando), gav, pom, sources, javadoc, signature, allRequired, null, output);
     }
 }

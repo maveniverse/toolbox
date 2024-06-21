@@ -39,7 +39,7 @@ public abstract class GavSearchMojoSupport extends GavMojoSupport {
             names = {"--repositoryVendor"},
             description = "The vendor of the remote repository")
     @Parameter(property = "repositoryVendor")
-    private String repositoryVendor;
+    protected String repositoryVendor;
 
     protected RemoteRepository getRemoteRepository(ToolboxCommando toolboxCommando) {
         RemoteRepository remoteRepository =

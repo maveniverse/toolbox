@@ -29,7 +29,6 @@ import org.apache.maven.search.api.SearchRequest;
 import org.apache.maven.search.api.SearchResponse;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.deployment.DeploymentException;
-import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.version.Version;
@@ -72,9 +71,18 @@ public final class LibYearSink implements ArtifactSink {
             boolean quiet,
             boolean allowSnapshots,
             boolean upToDate,
-            BiFunction<Artifact, List<Version>, String> versionSelector) {
+            BiFunction<Artifact, List<Version>, String> versionSelector,
+            List<SearchBackend> searchBackends) {
         return new LibYearSink(
-                output, context, toolboxResolver, toolboxSearchApi, quiet, allowSnapshots, upToDate, versionSelector);
+                output,
+                context,
+                toolboxResolver,
+                toolboxSearchApi,
+                quiet,
+                allowSnapshots,
+                upToDate,
+                versionSelector,
+                searchBackends);
     }
 
     private final Output output;
@@ -98,7 +106,8 @@ public final class LibYearSink implements ArtifactSink {
             boolean quiet,
             boolean allowSnapshots,
             boolean upToDate,
-            BiFunction<Artifact, List<Version>, String> versionSelector) {
+            BiFunction<Artifact, List<Version>, String> versionSelector,
+            List<SearchBackend> searchBackends) {
         this.output = requireNonNull(output, "output");
         this.context = requireNonNull(context, "context");
         this.toolboxResolver = requireNonNull(toolboxResolver, "toolboxResolver");
@@ -109,16 +118,7 @@ public final class LibYearSink implements ArtifactSink {
         this.versionSelector = requireNonNull(versionSelector);
         this.now = Instant.now().atZone(ZoneId.systemDefault()).toLocalDate();
         this.artifacts = new CopyOnWriteArraySet<>();
-
-        this.searchBackends = new ArrayList<>();
-        for (RemoteRepository remoteRepository : context.remoteRepositories()) {
-            try {
-                this.searchBackends.add(toolboxSearchApi.getRemoteRepositoryBackend(
-                        context.repositorySystemSession(), remoteRepository));
-            } catch (IllegalArgumentException e) {
-                // most likely cannot figure out what extractor to use; ignore
-            }
-        }
+        this.searchBackends = requireNonNull(searchBackends);
     }
 
     @SuppressWarnings("unchecked")

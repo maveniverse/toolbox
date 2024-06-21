@@ -16,7 +16,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 
 /**
- * Support class for "project aware" Mojos.
+ * Support class for "project aware" Mojos dealing with plugins.
  */
 public abstract class MPPluginMojoSupport extends MPMojoSupport {
     /**

@@ -39,6 +39,6 @@ public class GavVerifyMojo extends GavSearchMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws IOException {
-        return toolboxCommando.verify(getRemoteRepository(toolboxCommando), gav, sha1, output);
+        return toolboxCommando.verify(getRemoteRepository(toolboxCommando), gav, sha1, null, output);
     }
 }

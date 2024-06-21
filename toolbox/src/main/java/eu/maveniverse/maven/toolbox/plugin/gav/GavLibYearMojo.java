@@ -104,6 +104,7 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
                 allowSnapshots,
                 upToDate,
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
+                repositoryVendor,
                 output);
     }
 }

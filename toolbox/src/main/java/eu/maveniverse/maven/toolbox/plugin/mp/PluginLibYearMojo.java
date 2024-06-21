@@ -67,6 +67,7 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
                 allowSnapshots,
                 upToDate,
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
+                repositoryVendor,
                 output);
     }
 }

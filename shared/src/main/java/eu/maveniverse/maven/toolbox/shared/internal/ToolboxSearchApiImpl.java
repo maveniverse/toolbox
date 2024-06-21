@@ -40,36 +40,54 @@ public class ToolboxSearchApiImpl {
 
     public ToolboxSearchApiImpl() {}
 
+    /**
+     * Creates RR search backend: it may be explicitly selected by using parameter {@code repositoryVendor}. The logic:
+     * <ul>
+     *     <li>if {@code repositoryVendor} is non-{@code null}, use it</li>
+     *     <li>check {@code toolbox.search.backend.type} session config property</li>
+     *     <li>check {@link RemoteRepository#getContentType()}</li>
+     *     <li>finally, if none above, try some "heuristics"</li>
+     * </ul>
+     * This is all about the Search API RR backend extractor selection. Note: in some use cases "extractor" is not
+     * used, so forcing any value in those cases is perfectly fine.
+     *
+     * @param session The session, must not be {@code null}.
+     * @param remoteRepository The repository to create RR backend for, must not be {@code null}.
+     * @param repositoryVendor The "override" type, or may be {@code null}, in which case logic above will be applied.
+     *                         Basically determines extractor to be used with it.
+     */
     public SearchBackend getRemoteRepositoryBackend(
-            RepositorySystemSession session, RemoteRepository remoteRepository) {
-        String type = (String) session.getConfigProperties().get("toolbox.search.backend.type");
-        if (type == null) {
-            if ("central".equals(remoteRepository.getContentType())) {
-                type = "central";
-            } else if ("nx2".equals(remoteRepository.getContentType())) {
-                type = "nx2";
-            } else {
-                // Some heuristics trying to figure out (probably not ideal)
-                if (ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())
-                        && ContextOverrides.CENTRAL.getUrl().equals(remoteRepository.getUrl())) {
-                    type = "central";
-                } else if (remoteRepository.getUrl().startsWith("https://repo.maven.apache.org/maven2")
-                        || remoteRepository.getUrl().startsWith("https://repo1.maven.org/maven2/")) {
-                    type = "central";
-                } else if (remoteRepository.getUrl().startsWith("https://repository.apache.org/")
-                        || remoteRepository.getUrl().startsWith("https://oss.sonatype.org/")
-                        || remoteRepository.getUrl().startsWith("https://s01.oss.sonatype.org/")) {
-                    type = "nx2";
-                } else if (remoteRepository.getUrl().contains("/content/groups/")
-                        || remoteRepository.getUrl().contains("/content/repositories/")) {
-                    type = "nx2";
+            RepositorySystemSession session, RemoteRepository remoteRepository, String repositoryVendor) {
+        if (repositoryVendor == null) {
+            repositoryVendor = (String) session.getConfigProperties().get("toolbox.search.backend.type");
+            if (repositoryVendor == null) {
+                if ("central".equals(remoteRepository.getContentType())) {
+                    repositoryVendor = "central";
+                } else if ("nx2".equals(remoteRepository.getContentType())) {
+                    repositoryVendor = "nx2";
+                } else {
+                    // Some heuristics trying to figure out (probably not ideal)
+                    if (ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())
+                            && ContextOverrides.CENTRAL.getUrl().equals(remoteRepository.getUrl())) {
+                        repositoryVendor = "central";
+                    } else if (remoteRepository.getUrl().startsWith("https://repo.maven.apache.org/maven2")
+                            || remoteRepository.getUrl().startsWith("https://repo1.maven.org/maven2/")) {
+                        repositoryVendor = "central";
+                    } else if (remoteRepository.getUrl().startsWith("https://repository.apache.org/")
+                            || remoteRepository.getUrl().startsWith("https://oss.sonatype.org/")
+                            || remoteRepository.getUrl().startsWith("https://s01.oss.sonatype.org/")) {
+                        repositoryVendor = "nx2";
+                    } else if (remoteRepository.getUrl().contains("/content/groups/")
+                            || remoteRepository.getUrl().contains("/content/repositories/")) {
+                        repositoryVendor = "nx2";
+                    }
                 }
             }
         }
         final ResponseExtractor extractor;
-        if ("central".equalsIgnoreCase(type)) {
+        if ("central".equalsIgnoreCase(repositoryVendor)) {
             extractor = new MavenCentralResponseExtractor();
-        } else if ("nx2".equalsIgnoreCase(type)) {
+        } else if ("nx2".equalsIgnoreCase(repositoryVendor)) {
             extractor = new Nx2ResponseExtractor();
         } else {
             throw new IllegalArgumentException("Unsupported extractor");
@@ -84,6 +102,9 @@ public class ToolboxSearchApiImpl {
                 extractor);
     }
 
+    /**
+     * Creates SMO search backend: it works only for Maven Central, obviously.
+     */
     public SearchBackend getSmoBackend(RepositorySystemSession session, RemoteRepository remoteRepository) {
         if (!ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())) {
             throw new IllegalArgumentException("The SMO service is offered for Central only");

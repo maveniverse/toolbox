@@ -30,6 +30,7 @@ public enum ResolutionScope {
      */
     NONE(
             false,
+            "none",
             Collections.emptySet(),
             Arrays.asList(
                     JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME, JavaScopes.PROVIDED, JavaScopes.TEST)),
@@ -38,6 +39,7 @@ public enum ResolutionScope {
      */
     COMPILE(
             false,
+            "compile",
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM),
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
     /**
@@ -45,6 +47,7 @@ public enum ResolutionScope {
      */
     COMPILE_PLUS_RUNTIME(
             false,
+            "compile+runtime",
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME),
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
     /**
@@ -52,6 +55,7 @@ public enum ResolutionScope {
      */
     RUNTIME(
             true,
+            "runtime",
             Arrays.asList(JavaScopes.COMPILE, JavaScopes.RUNTIME),
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
     /**
@@ -59,6 +63,7 @@ public enum ResolutionScope {
      */
     RUNTIME_PLUS_SYSTEM(
             true,
+            "runtime+system",
             Arrays.asList(JavaScopes.COMPILE, JavaScopes.RUNTIME, JavaScopes.SYSTEM),
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST)),
     /**
@@ -66,16 +71,23 @@ public enum ResolutionScope {
      */
     TEST(
             false,
+            "test",
             Arrays.asList(
                     JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME, JavaScopes.PROVIDED, JavaScopes.TEST),
             Arrays.asList(JavaScopes.PROVIDED, JavaScopes.TEST));
 
     private final boolean eliminateTest;
+    private final String classpathType;
     private final Set<String> directInclude;
     private final Set<String> transitiveExclude;
 
-    ResolutionScope(boolean eliminateTest, Collection<String> directInclude, Collection<String> transitiveExclude) {
+    ResolutionScope(
+            boolean eliminateTest,
+            String classpathType,
+            Collection<String> directInclude,
+            Collection<String> transitiveExclude) {
         this.eliminateTest = eliminateTest;
+        this.classpathType = classpathType;
         this.directInclude = new HashSet<>(directInclude);
         this.transitiveExclude = new HashSet<>(transitiveExclude);
     }
@@ -93,7 +105,7 @@ public enum ResolutionScope {
     }
 
     public DependencyFilter getDependencyFilter() {
-        return DependencyFilterUtils.classpathFilter(directInclude);
+        return DependencyFilterUtils.classpathFilter(classpathType);
     }
 
     public static ResolutionScope parse(String value) throws IllegalArgumentException {

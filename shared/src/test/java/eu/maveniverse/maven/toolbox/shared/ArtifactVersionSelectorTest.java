@@ -118,5 +118,17 @@ public class ArtifactVersionSelectorTest {
                 "3.0.1",
                 ArtifactVersionSelector.build(Collections.emptyMap(), "noPreviews(minor())")
                         .apply(artifact, versions));
+        assertEquals(
+                "3.0.1",
+                ArtifactVersionSelector.build(Collections.emptyMap(), "filtered(eq(3.0.1), last())")
+                        .apply(artifact, versions));
+        assertEquals(
+                "4.0.0",
+                ArtifactVersionSelector.build(Collections.emptyMap(), "noSnapshotsAndPreviews(last())")
+                        .apply(artifact, versions));
+        assertEquals(
+                "3.1.0",
+                ArtifactVersionSelector.build(Collections.emptyMap(), "noSnapshotsAndPreviews(major())")
+                        .apply(artifact, versions));
     }
 }

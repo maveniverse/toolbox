@@ -102,6 +102,9 @@ public class ArtifactVersionSelectorTest {
                 ArtifactVersionSelector.build(Collections.emptyMap(), "identity()")
                         .apply(artifact, versions));
         assertEquals(
+                "2.0.0",
+                ArtifactVersionSelector.build(Collections.emptyMap(), "first()").apply(artifact, versions));
+        assertEquals(
                 "4.0.0",
                 ArtifactVersionSelector.build(Collections.emptyMap(), "last()").apply(artifact, versions));
         assertEquals(

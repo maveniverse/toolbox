@@ -50,6 +50,20 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
     }
 
     /**
+     * Selector that return first version.
+     */
+    static ArtifactVersionSelector first() {
+        return new ArtifactVersionSelector() {
+            @Override
+            public String apply(Artifact artifact, List<Version> versions) {
+                return versions.isEmpty()
+                        ? identity().apply(artifact, versions)
+                        : versions.get(0).toString();
+            }
+        };
+    }
+
+    /**
      * Selector that return last version with same "major" as artifact.
      */
     static ArtifactVersionSelector major() {
@@ -161,6 +175,9 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
             switch (node.getValue()) {
                 case "identity":
                     params.add(identity());
+                    break;
+                case "first":
+                    params.add(first());
                     break;
                 case "last":
                     params.add(last());

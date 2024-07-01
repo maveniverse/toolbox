@@ -71,6 +71,10 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
         };
     }
 
+    static ArtifactVersionMatcher eq(Version version) {
+        return version::equals;
+    }
+
     static ArtifactVersionMatcher gt(Version version) {
         return v -> version.compareTo(v) < 0;
     }
@@ -88,17 +92,17 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
     }
 
     /**
-     * A version matcher that filters out "preview" versions.
+     * A version matcher that matches "preview" versions.
      */
-    static ArtifactVersionMatcher noPreviews() {
-        return v -> !isPreviewVersion(v.toString());
+    static ArtifactVersionMatcher preview() {
+        return ArtifactVersionMatcher::isPreviewVersion;
     }
 
     /**
-     * A version matcher that filters out "snapshot" versions.
+     * A version matcher that matches "snapshot" versions.
      */
-    static ArtifactVersionMatcher noSnapshots() {
-        return v -> !isSnapshotVersion(v.toString());
+    static ArtifactVersionMatcher snapshot() {
+        return ArtifactVersionMatcher::isSnapshotVersion;
     }
 
     /**
@@ -106,7 +110,11 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
      *
      * @see <a href="https://maven.apache.org/resolver-archives/resolver-2.0.0-alpha-11/apidocs/org/eclipse/aether/util/version/package-summary.html">Resolver Generic Version spec</a>
      */
-    static boolean isPreviewVersion(String version) {
+    static boolean isPreviewVersion(Version version) {
+        return isPreviewVersion(version.toString());
+    }
+
+    private static boolean isPreviewVersion(String version) {
         // most trivial "preview" version is 'a1'
         if (version.length() > 1) {
             String ver = version.toLowerCase(Locale.ENGLISH);
@@ -134,7 +142,11 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
     /**
      * Helper method: tells is a version string a "snapshot" version or not.
      */
-    static boolean isSnapshotVersion(String version) {
+    static boolean isSnapshotVersion(Version version) {
+        return isSnapshotVersion(version.toString());
+    }
+
+    private static boolean isSnapshotVersion(String version) {
         try {
             return new DefaultArtifact("g:a:" + version).isSnapshot();
         } catch (IllegalArgumentException e) {
@@ -161,36 +173,33 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
                 case "any":
                     params.add(any());
                     break;
-                case "noPreviews":
-                    params.add(noPreviews());
+                case "preview":
+                    params.add(preview());
                     break;
-                case "noSnapshots":
-                    params.add(noSnapshots());
+                case "snapshot":
+                    params.add(snapshot());
                     break;
-                case "not": {
+                case "not":
                     params.add(not(typedParam(ArtifactVersionMatcher.class, node.getValue())));
                     break;
-                }
-                case "and": {
+                case "and":
                     params.add(and(typedParams(ArtifactVersionMatcher.class, node.getValue())));
                     break;
-                }
-                case "or": {
+                case "or":
                     params.add(or(typedParams(ArtifactVersionMatcher.class, node.getValue())));
                     break;
-                }
-                case "gt": {
+                case "eq":
+                    params.add(eq(versionParam(node.getValue())));
+                    break;
+                case "gt":
                     params.add(gt(versionParam(node.getValue())));
                     break;
-                }
-                case "gte": {
+                case "gte":
                     params.add(gte(versionParam(node.getValue())));
                     break;
-                }
-                case "lt": {
+                case "lt":
                     params.add(lt(versionParam(node.getValue())));
                     break;
-                }
                 case "lte": {
                     params.add(lte(versionParam(node.getValue())));
                     break;

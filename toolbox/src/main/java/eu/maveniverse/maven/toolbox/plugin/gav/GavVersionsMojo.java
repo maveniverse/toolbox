@@ -39,13 +39,13 @@ public class GavVersionsMojo extends GavMojoSupport {
     private boolean allowSnapshots;
 
     /**
-     * Artifact version matcher spec string, default is 'noPreviews()'.
+     * Artifact version matcher spec string, default is 'not(preview())'.
      */
     @CommandLine.Option(
             names = {"--artifactVersionMatcherSpec"},
-            defaultValue = "noPreviews()",
-            description = "Artifact version matcher spec (default 'noPreviews()')")
-    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noPreviews()")
+            defaultValue = "not(preview())",
+            description = "Artifact version matcher spec (default 'not(preview())')")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "not(preview())")
     private String artifactVersionMatcherSpec;
 
     @Override

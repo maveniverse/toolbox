@@ -50,6 +50,20 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
     }
 
     /**
+     * Selector that return first version.
+     */
+    static ArtifactVersionSelector first() {
+        return new ArtifactVersionSelector() {
+            @Override
+            public String apply(Artifact artifact, List<Version> versions) {
+                return versions.isEmpty()
+                        ? identity().apply(artifact, versions)
+                        : versions.get(0).toString();
+            }
+        };
+    }
+
+    /**
      * Selector that return last version with same "major" as artifact.
      */
     static ArtifactVersionSelector major() {
@@ -99,26 +113,42 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
     }
 
     /**
-     * A version selector that filters the candidates out of version list.
+     * A version selector that filters the candidates out of version list and applies delegated selector.
      */
-    static ArtifactVersionSelector filteredVersion(Predicate<String> filter, ArtifactVersionSelector selector) {
+    static ArtifactVersionSelector filtered(Predicate<Version> filter, ArtifactVersionSelector selector) {
         requireNonNull(filter, "filter");
         requireNonNull(selector, "selector");
         return new ArtifactVersionSelector() {
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
-                return selector.apply(
-                        artifact,
-                        versions.stream().filter(v -> filter.test(v.toString())).collect(Collectors.toList()));
+                return selector.apply(artifact, versions.stream().filter(filter).collect(Collectors.toList()));
             }
         };
     }
 
     /**
-     * A version selector that prevents selection of "preview" versions.
+     * A version selector that prevents selection of "preview" versions. Shorthand for "filtered(not(preview()), $selector)".
      */
     static ArtifactVersionSelector noPreviews(ArtifactVersionSelector selector) {
-        return filteredVersion(v -> !ArtifactVersionMatcher.isPreviewVersion(v), selector);
+        return filtered(ArtifactVersionMatcher.not(ArtifactVersionMatcher.preview()), selector);
+    }
+
+    /**
+     * A version selector that prevents selection of "snapshot" versions. Shorthand for "filtered(not(snapshot()), $selector)".
+     */
+    static ArtifactVersionSelector noSnapshots(ArtifactVersionSelector selector) {
+        return filtered(ArtifactVersionMatcher.not(ArtifactVersionMatcher.snapshot()), selector);
+    }
+
+    /**
+     * A version selector that prevents selection of "snapshot" and "preview" versions. Shorthand for "filtered(and(not(snapshot()), not(preview()), $selector)".
+     */
+    static ArtifactVersionSelector noSnapshotsAndPreviews(ArtifactVersionSelector selector) {
+        return filtered(
+                ArtifactVersionMatcher.and(
+                        ArtifactVersionMatcher.not(ArtifactVersionMatcher.snapshot()),
+                        ArtifactVersionMatcher.not(ArtifactVersionMatcher.preview())),
+                selector);
     }
 
     static ArtifactVersionSelector build(Map<String, ?> properties, String spec) {
@@ -136,10 +166,18 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
         }
 
         @Override
+        public boolean visitEnter(SpecParser.Node node) {
+            return super.visitEnter(node) && !"filtered".equals(node.getValue());
+        }
+
+        @Override
         protected void processOp(SpecParser.Node node) {
             switch (node.getValue()) {
                 case "identity":
                     params.add(identity());
+                    break;
+                case "first":
+                    params.add(first());
                     break;
                 case "last":
                     params.add(last());
@@ -150,8 +188,29 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                 case "minor":
                     params.add(minor());
                     break;
+                case "filtered":
+                    if (node.getChildren().size() != 2) {
+                        throw new IllegalArgumentException("op filtered accepts only 2 argument");
+                    }
+                    ArtifactVersionSelector.ArtifactVersionSelectorBuilder selectorBuilder =
+                            new ArtifactVersionSelector.ArtifactVersionSelectorBuilder(properties);
+                    node.getChildren().get(1).accept(selectorBuilder);
+                    ArtifactVersionSelector selector = selectorBuilder.build();
+                    ArtifactVersionMatcher.ArtifactVersionMatcherBuilder matcherBuilder =
+                            new ArtifactVersionMatcher.ArtifactVersionMatcherBuilder(properties);
+                    node.getChildren().get(0).accept(matcherBuilder);
+                    ArtifactVersionMatcher matcher = matcherBuilder.build();
+                    node.getChildren().clear();
+                    params.add(filtered(matcher, selector));
+                    break;
                 case "noPreviews":
                     params.add(noPreviews(typedParam(ArtifactVersionSelector.class, node.getValue())));
+                    break;
+                case "noSnapshots":
+                    params.add(noSnapshots(typedParam(ArtifactVersionSelector.class, node.getValue())));
+                    break;
+                case "noSnapshotsAndPreviews":
+                    params.add(noSnapshotsAndPreviews(typedParam(ArtifactVersionSelector.class, node.getValue())));
                     break;
                 default:
                     throw new IllegalArgumentException("unknown op " + node.getValue());

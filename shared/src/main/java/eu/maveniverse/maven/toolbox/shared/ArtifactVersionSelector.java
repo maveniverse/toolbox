@@ -130,7 +130,11 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
      * A version selector that prevents selection of "snapshot" and "preview" versions. Shorthand for "filtered(and(not(snapshot()), not(preview()), $selector)".
      */
     static ArtifactVersionSelector noSnapshotsAndPreviews(ArtifactVersionSelector selector) {
-        return filtered(ArtifactVersionMatcher.and(ArtifactVersionMatcher.not(ArtifactVersionMatcher.snapshot()), ArtifactVersionMatcher.not(ArtifactVersionMatcher.preview())), selector);
+        return filtered(
+                ArtifactVersionMatcher.and(
+                        ArtifactVersionMatcher.not(ArtifactVersionMatcher.snapshot()),
+                        ArtifactVersionMatcher.not(ArtifactVersionMatcher.preview())),
+                selector);
     }
 
     static ArtifactVersionSelector build(Map<String, ?> properties, String spec) {

@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.version.VersionScheme;
 
 /**
  * Artifact matcher. Supports {@code "*"} pattern as "any", and {@code "xxx*"} as "starts with" and
@@ -109,17 +110,17 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         };
     }
 
-    static ArtifactMatcher build(Map<String, ?> properties, String spec) {
+    static ArtifactMatcher build(VersionScheme versionScheme, Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
-        ArtifactMatcherBuilder builder = new ArtifactMatcherBuilder(properties);
+        ArtifactMatcherBuilder builder = new ArtifactMatcherBuilder(versionScheme, properties);
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
 
     class ArtifactMatcherBuilder extends SpecParser.Builder {
-        public ArtifactMatcherBuilder(Map<String, ?> properties) {
-            super(properties);
+        public ArtifactMatcherBuilder(VersionScheme versionScheme, Map<String, ?> properties) {
+            super(versionScheme, properties);
         }
 
         @Override
@@ -155,7 +156,7 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
                         throw new IllegalArgumentException("op uniqueBy accepts only 1 argument");
                     }
                     ArtifactNameMapper.ArtifactNameMapperBuilder nameMapper =
-                            new ArtifactNameMapper.ArtifactNameMapperBuilder(properties);
+                            new ArtifactNameMapper.ArtifactNameMapperBuilder(versionScheme, properties);
                     node.getChildren().get(0).accept(nameMapper);
                     params.add(uniqueBy(nameMapper.build()));
                     node.getChildren().clear();

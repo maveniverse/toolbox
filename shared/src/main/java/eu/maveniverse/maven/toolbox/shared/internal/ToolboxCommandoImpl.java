@@ -76,6 +76,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyResult;
+import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.util.ChecksumUtils;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.util.artifact.SubArtifact;
@@ -95,6 +96,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Runtime runtime;
     private final Context context;
+    private final VersionScheme versionScheme;
     private final ToolboxSearchApiImpl toolboxSearchApi;
     private final ArtifactRecorderImpl artifactRecorder;
     private final ToolboxResolverImpl toolboxResolver;
@@ -104,13 +106,14 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public ToolboxCommandoImpl(Runtime runtime, Context context) {
         this.runtime = requireNonNull(runtime, "runtime");
         this.context = requireNonNull(context, "context");
+        this.versionScheme = new GenericVersionScheme();
         this.toolboxSearchApi = new ToolboxSearchApiImpl();
         this.artifactRecorder = new ArtifactRecorderImpl();
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
         session.setRepositoryListener(
                 ChainedRepositoryListener.newInstance(session.getRepositoryListener(), artifactRecorder));
-        this.toolboxResolver =
-                new ToolboxResolverImpl(context.repositorySystem(), session, context.remoteRepositories());
+        this.toolboxResolver = new ToolboxResolverImpl(
+                context.repositorySystem(), session, context.remoteRepositories(), versionScheme);
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());
     }
 
@@ -235,32 +238,38 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public ArtifactMapper parseArtifactMapperSpec(String spec) {
-        return ArtifactMapper.build(context.repositorySystemSession().getConfigProperties(), spec);
+        return ArtifactMapper.build(
+                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
     }
 
     @Override
     public ArtifactMatcher parseArtifactMatcherSpec(String spec) {
-        return ArtifactMatcher.build(context.repositorySystemSession().getConfigProperties(), spec);
+        return ArtifactMatcher.build(
+                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
     }
 
     @Override
     public ArtifactNameMapper parseArtifactNameMapperSpec(String spec) {
-        return ArtifactNameMapper.build(context.repositorySystemSession().getConfigProperties(), spec);
+        return ArtifactNameMapper.build(
+                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
     }
 
     @Override
     public DependencyMatcher parseDependencyMatcherSpec(String spec) {
-        return DependencyMatcher.build(context.repositorySystemSession().getConfigProperties(), spec);
+        return DependencyMatcher.build(
+                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
     }
 
     @Override
     public ArtifactVersionMatcher parseArtifactVersionMatcherSpec(String spec) {
-        return ArtifactVersionMatcher.build(context.repositorySystemSession().getConfigProperties(), spec);
+        return ArtifactVersionMatcher.build(
+                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
     }
 
     @Override
     public ArtifactVersionSelector parseArtifactVersionSelectorSpec(String spec) {
-        return ArtifactVersionSelector.build(context.repositorySystemSession().getConfigProperties(), spec);
+        return ArtifactVersionSelector.build(
+                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
     }
 
     @Override
@@ -270,12 +279,25 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public ArtifactSink artifactSink(Output output, String spec) throws IOException {
-        return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
+        return ArtifactSinks.build(
+                versionScheme, context.repositorySystemSession().getConfigProperties(), this, spec);
     }
 
     @Override
-    public ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException {
+    public ResolutionRoot loadGav(String gav, Collection<String> boms)
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
         return toolboxResolver.loadGav(gav, boms);
+    }
+
+    @Override
+    public Artifact toArtifact(Dependency dependency) {
+        try {
+            // TODO: this is how Maven behaves, make it configurable?
+            return toolboxResolver.mayResolveArtifactVersion(dependency.getArtifact(), ArtifactVersionSelector.last());
+        } catch (InvalidVersionSpecificationException | VersionRangeResolutionException e) {
+            logger.warn("Could not resolve artifact version: {}", dependency.getArtifact(), e);
+            return dependency.getArtifact();
+        }
     }
 
     @Override
@@ -802,7 +824,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 query = and(query, fieldQuery(MAVEN.ARTIFACT_ID, elements[1]));
             }
 
-            VersionScheme versionScheme = new GenericVersionScheme();
             Predicate<String> versionPredicate = null;
             if (elements.length > 2) {
                 try {
@@ -899,9 +920,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 searchBackends)) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 try {
-                    ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
                     ArrayList<Artifact> artifacts = new ArrayList<>();
                     if (transitive) {
+                        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
                         CollectResult collectResult = toolboxResolver.collect(
                                 resolutionScope,
                                 root.getArtifact(),
@@ -921,8 +942,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                             }
                         });
                     } else {
-                        artifacts.addAll(root.getDependencies().stream()
-                                .map(Dependency::getArtifact)
+                        artifacts.addAll(resolutionRoot.getDependencies().stream()
+                                .map(this::toArtifact)
                                 .collect(Collectors.toList()));
                     }
                     sink.accept(artifacts);

@@ -81,7 +81,7 @@ public abstract class MPMojoSupport extends MojoSupport {
                 .filter(d -> !isReactorDependency(d))
                 .filter(d -> scope.getDirectInclude().contains(d.getScope()))
                 .filter(dependencyMatcher)
-                .map(d -> ResolutionRoot.ofLoaded(d.getArtifact())
+                .map(d -> ResolutionRoot.ofLoaded(getToolboxCommando().toArtifact(d))
                         .withManagedDependencies(project.getManagedDependencies())
                         .build())
                 .collect(Collectors.toList());

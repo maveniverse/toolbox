@@ -13,7 +13,6 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.eclipse.aether.graph.Dependency;
 
 /**
  * Resolves selected dependencies.
@@ -55,7 +54,7 @@ public class ResolveMojo extends MPMojoSupport {
         return toolboxCommando.resolve(
                 projectAsResolutionRoot().getDependencies().stream()
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
-                        .map(Dependency::getArtifact)
+                        .map(toolboxCommando::toArtifact)
                         .collect(Collectors.toList()),
                 sources,
                 javadoc,

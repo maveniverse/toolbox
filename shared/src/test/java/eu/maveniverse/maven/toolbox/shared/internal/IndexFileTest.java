@@ -7,8 +7,6 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,6 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -33,15 +32,15 @@ public class IndexFileTest {
                     new DefaultArtifact("g:a2:1").setFile(content.toFile())));
         }
 
-        assertTrue(Files.isRegularFile(indexFile));
+        Assertions.assertTrue(Files.isRegularFile(indexFile));
         List<String> lines = Files.readAllLines(indexFile);
-        assertSame(lines.size(), 2);
-        assertTrue(lines.contains("g:a1:jar:1 >> g/a1/1/a1-1.jar"));
-        assertTrue(lines.contains("g:a2:jar:1 >> g/a2/1/a2-1.jar"));
+        Assertions.assertSame(lines.size(), 2);
+        Assertions.assertTrue(lines.contains("g:a1:jar:1 >> g/a1/1/a1-1.jar"));
+        Assertions.assertTrue(lines.contains("g:a2:jar:1 >> g/a2/1/a2-1.jar"));
 
         try (DirectorySource source = DirectorySource.directory(target)) {
             List<Artifact> artifacts = source.get().collect(Collectors.toList());
-            assertEquals(2, artifacts.size());
+            Assertions.assertEquals(2, artifacts.size());
         }
     }
 
@@ -51,25 +50,25 @@ public class IndexFileTest {
         Path indexFile;
         try (DirectorySink sink = DirectorySink.repository(target)) {
             indexFile = sink.getIndexFile();
-            assertFalse(Files.isRegularFile(indexFile));
+            Assertions.assertFalse(Files.isRegularFile(indexFile));
             sink.accept(Arrays.asList(
                     new DefaultArtifact("g:a1:1").setFile(content.toFile()),
                     new DefaultArtifact("g:a2:1").setFile(content.toFile())));
         }
-        assertTrue(Files.isRegularFile(indexFile));
+        Assertions.assertTrue(Files.isRegularFile(indexFile));
         try (DirectorySink sink = DirectorySink.repository(target)) {
             sink.accept(Arrays.asList(
                     new DefaultArtifact("g:a3:1").setFile(content.toFile()),
                     new DefaultArtifact("g:a4:1").setFile(content.toFile())));
         }
-        assertTrue(Files.isRegularFile(indexFile));
+        Assertions.assertTrue(Files.isRegularFile(indexFile));
 
         List<String> lines = Files.readAllLines(indexFile);
-        assertSame(lines.size(), 4);
-        assertTrue(lines.contains("g:a1:jar:1 >> g/a1/1/a1-1.jar"));
-        assertTrue(lines.contains("g:a2:jar:1 >> g/a2/1/a2-1.jar"));
-        assertTrue(lines.contains("g:a3:jar:1 >> g/a3/1/a3-1.jar"));
-        assertTrue(lines.contains("g:a4:jar:1 >> g/a4/1/a4-1.jar"));
+        Assertions.assertSame(lines.size(), 4);
+        Assertions.assertTrue(lines.contains("g:a1:jar:1 >> g/a1/1/a1-1.jar"));
+        Assertions.assertTrue(lines.contains("g:a2:jar:1 >> g/a2/1/a2-1.jar"));
+        Assertions.assertTrue(lines.contains("g:a3:jar:1 >> g/a3/1/a3-1.jar"));
+        Assertions.assertTrue(lines.contains("g:a4:jar:1 >> g/a4/1/a4-1.jar"));
     }
 
     @Test
@@ -78,23 +77,23 @@ public class IndexFileTest {
         Path indexFile;
         try (DirectorySink sink = DirectorySink.repository(target)) {
             indexFile = sink.getIndexFile();
-            assertFalse(Files.isRegularFile(indexFile));
+            Assertions.assertFalse(Files.isRegularFile(indexFile));
             sink.accept(Arrays.asList(
                     new DefaultArtifact("g:a1:1").setFile(content.toFile()),
                     new DefaultArtifact("g:a2:1").setFile(content.toFile())));
         }
-        assertTrue(Files.isRegularFile(indexFile));
+        Assertions.assertTrue(Files.isRegularFile(indexFile));
         try (DirectorySink sink = DirectorySink.repository(target)) {
             sink.accept(Arrays.asList(
                     new DefaultArtifact("g:a3:1").setFile(content.toFile()),
                     new DefaultArtifact("g:a4:1").setFile(content.toFile())));
             sink.cleanup(new IOException("boo"));
         }
-        assertTrue(Files.isRegularFile(indexFile));
+        Assertions.assertTrue(Files.isRegularFile(indexFile));
 
         List<String> lines = Files.readAllLines(indexFile);
-        assertSame(lines.size(), 2);
-        assertTrue(lines.contains("g:a1:jar:1 >> g/a1/1/a1-1.jar"));
-        assertTrue(lines.contains("g:a2:jar:1 >> g/a2/1/a2-1.jar"));
+        Assertions.assertSame(lines.size(), 2);
+        Assertions.assertTrue(lines.contains("g:a1:jar:1 >> g/a1/1/a1-1.jar"));
+        Assertions.assertTrue(lines.contains("g:a2:jar:1 >> g/a2/1/a2-1.jar"));
     }
 }

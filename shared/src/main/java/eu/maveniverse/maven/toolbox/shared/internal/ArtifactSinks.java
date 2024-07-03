@@ -32,6 +32,7 @@ import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.LocalRepositoryManager;
+import org.eclipse.aether.version.VersionScheme;
 
 /**
  * Various utility sink implementations.
@@ -39,11 +40,12 @@ import org.eclipse.aether.repository.LocalRepositoryManager;
 public final class ArtifactSinks {
     private ArtifactSinks() {}
 
-    public static ArtifactSink build(Map<String, ?> properties, ToolboxCommandoImpl tc, String spec) {
+    public static ArtifactSink build(
+            VersionScheme versionScheme, Map<String, ?> properties, ToolboxCommandoImpl tc, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(tc, "tc");
         requireNonNull(spec, "spec");
-        ArtifactSinkBuilder builder = new ArtifactSinkBuilder(properties, tc);
+        ArtifactSinkBuilder builder = new ArtifactSinkBuilder(versionScheme, properties, tc);
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
@@ -51,8 +53,8 @@ public final class ArtifactSinks {
     static class ArtifactSinkBuilder extends SpecParser.Builder {
         private final ToolboxCommandoImpl tc;
 
-        public ArtifactSinkBuilder(Map<String, ?> properties, ToolboxCommandoImpl tc) {
-            super(properties);
+        public ArtifactSinkBuilder(VersionScheme versionScheme, Map<String, ?> properties, ToolboxCommandoImpl tc) {
+            super(versionScheme, properties);
             this.tc = tc;
         }
 
@@ -94,7 +96,7 @@ public final class ArtifactSinks {
                         Path p0;
                         if (node.getChildren().size() == 2) {
                             ArtifactNameMapper.ArtifactNameMapperBuilder mapperBuilder =
-                                    new ArtifactNameMapper.ArtifactNameMapperBuilder(properties);
+                                    new ArtifactNameMapper.ArtifactNameMapperBuilder(versionScheme, properties);
                             node.getChildren().get(1).accept(mapperBuilder);
                             p1 = mapperBuilder.build();
                             p0 = tc.getContext()
@@ -172,7 +174,7 @@ public final class ArtifactSinks {
                             params.add(UnpackSink.unpack(p0, ArtifactNameMapper.ACVE(), true));
                         } else if (node.getChildren().size() == 2) {
                             ArtifactNameMapper.ArtifactNameMapperBuilder mapperBuilder =
-                                    new ArtifactNameMapper.ArtifactNameMapperBuilder(properties);
+                                    new ArtifactNameMapper.ArtifactNameMapperBuilder(versionScheme, properties);
                             node.getChildren().get(1).accept(mapperBuilder);
                             ArtifactNameMapper p1 = mapperBuilder.build();
                             Path p0 = tc.getContext()
@@ -193,10 +195,10 @@ public final class ArtifactSinks {
                         throw new IllegalArgumentException("op matching accepts only 2 argument");
                     }
                     ArtifactMatcher.ArtifactMatcherBuilder matcherBuilder =
-                            new ArtifactMatcher.ArtifactMatcherBuilder(properties);
+                            new ArtifactMatcher.ArtifactMatcherBuilder(versionScheme, properties);
                     node.getChildren().get(0).accept(matcherBuilder);
                     ArtifactMatcher matcher = matcherBuilder.build();
-                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc);
+                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(versionScheme, properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);
                     ArtifactSink delegate = sinkBuilder.build();
                     params.add(matchingArtifactSink(matcher, delegate));
@@ -208,10 +210,10 @@ public final class ArtifactSinks {
                         throw new IllegalArgumentException("op mapping accepts only 2 argument");
                     }
                     ArtifactMapper.ArtifactMapperBuilder mapperBuilder =
-                            new ArtifactMapper.ArtifactMapperBuilder(properties);
+                            new ArtifactMapper.ArtifactMapperBuilder(versionScheme, properties);
                     node.getChildren().get(0).accept(mapperBuilder);
                     ArtifactMapper mapper = mapperBuilder.build();
-                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc);
+                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(versionScheme, properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);
                     ArtifactSink delegate = sinkBuilder.build();
                     params.add(mappingArtifactSink(mapper, delegate));

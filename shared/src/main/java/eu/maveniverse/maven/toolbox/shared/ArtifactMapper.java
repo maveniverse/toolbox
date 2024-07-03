@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.version.VersionScheme;
 
 /**
  * Mapper that maps artifact to artifact.
@@ -132,17 +133,17 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
         };
     }
 
-    static ArtifactMapper build(Map<String, ?> properties, String spec) {
+    static ArtifactMapper build(VersionScheme versionScheme, Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
-        ArtifactMapperBuilder builder = new ArtifactMapperBuilder(properties);
+        ArtifactMapperBuilder builder = new ArtifactMapperBuilder(versionScheme, properties);
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
 
     class ArtifactMapperBuilder extends SpecParser.Builder {
-        public ArtifactMapperBuilder(Map<String, ?> properties) {
-            super(properties);
+        public ArtifactMapperBuilder(VersionScheme versionScheme, Map<String, ?> properties) {
+            super(versionScheme, properties);
         }
 
         @Override

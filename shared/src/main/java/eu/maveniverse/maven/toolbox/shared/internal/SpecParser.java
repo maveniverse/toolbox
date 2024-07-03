@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionScheme;
@@ -59,14 +58,11 @@ public final class SpecParser {
 
     public abstract static class Builder implements Visitor {
         protected final ArrayList<Object> params = new ArrayList<>();
+        protected final VersionScheme versionScheme;
         protected final Map<String, ?> properties;
-        private final VersionScheme versionScheme = new GenericVersionScheme();
 
-        public Builder() {
-            this.properties = null;
-        }
-
-        public Builder(Map<String, ?> properties) {
+        public Builder(VersionScheme versionScheme, Map<String, ?> properties) {
+            this.versionScheme = requireNonNull(versionScheme);
             this.properties = new HashMap<>(properties);
         }
 

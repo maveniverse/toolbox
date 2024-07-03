@@ -5,10 +5,18 @@
     <artifactId>libyear</artifactId>
     <version>1.0.0</version>
     <dependencies>
+        <!-- A "live" dependency that is outdated, as of this change 5.10.3 is latest -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- A "dead" dependency but is added only to use range -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>[4.13.2,)</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

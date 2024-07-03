@@ -1,0 +1,1 @@
+assert new File(basedir, 'build.log').text.contains("org.apache.maven:maven-core:3.6.3")

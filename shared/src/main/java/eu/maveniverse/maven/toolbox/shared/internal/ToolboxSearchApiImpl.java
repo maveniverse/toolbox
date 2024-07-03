@@ -130,9 +130,6 @@ public class ToolboxSearchApiImpl {
             if (record.hasField(MAVEN.ARTIFACT_ID)) {
                 sb.append(":").append(record.getValue(MAVEN.ARTIFACT_ID));
             }
-            if (record.hasField(MAVEN.VERSION)) {
-                sb.append(":").append(record.getValue(MAVEN.VERSION));
-            }
             if (record.hasField(MAVEN.PACKAGING)) {
                 if (record.hasField(MAVEN.CLASSIFIER)) {
                     sb.append(":").append(record.getValue(MAVEN.CLASSIFIER));
@@ -143,6 +140,9 @@ public class ToolboxSearchApiImpl {
                     sb.append(":").append(record.getValue(MAVEN.CLASSIFIER));
                 }
                 sb.append(":").append(record.getValue(MAVEN.FILE_EXTENSION));
+            }
+            if (record.hasField(MAVEN.VERSION)) {
+                sb.append(":").append(record.getValue(MAVEN.VERSION));
             }
 
             List<String> remarks = new ArrayList<>();

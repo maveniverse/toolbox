@@ -16,6 +16,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionScheme;
 
@@ -185,8 +186,11 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
     }
 
     class ArtifactVersionMatcherBuilder extends SpecParser.Builder {
+        private final VersionScheme versionScheme;
+
         public ArtifactVersionMatcherBuilder(VersionScheme versionScheme, Map<String, ?> properties) {
-            super(versionScheme, properties);
+            super(properties);
+            this.versionScheme = versionScheme;
         }
 
         @Override
@@ -236,6 +240,14 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
                     break;
                 default:
                     throw new IllegalArgumentException("unknown op " + node.getValue());
+            }
+        }
+
+        protected Version versionParam(String op) {
+            try {
+                return versionScheme.parseVersion(stringParam(op));
+            } catch (InvalidVersionSpecificationException e) {
+                throw new IllegalArgumentException("invalid version parameter for " + op, e);
             }
         }
 

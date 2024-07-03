@@ -17,9 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.eclipse.aether.version.InvalidVersionSpecificationException;
-import org.eclipse.aether.version.Version;
-import org.eclipse.aether.version.VersionScheme;
 
 /**
  * Simple spec parser. Parses input string, and produces a tree of {@link Op} and {@link Literal}s. Root must
@@ -58,11 +55,9 @@ public final class SpecParser {
 
     public abstract static class Builder implements Visitor {
         protected final ArrayList<Object> params = new ArrayList<>();
-        protected final VersionScheme versionScheme;
         protected final Map<String, ?> properties;
 
-        public Builder(VersionScheme versionScheme, Map<String, ?> properties) {
-            this.versionScheme = requireNonNull(versionScheme);
+        public Builder(Map<String, ?> properties) {
             this.properties = new HashMap<>(properties);
         }
 
@@ -84,9 +79,6 @@ public final class SpecParser {
         protected void processLiteral(Node node) {
             String value = node.getValue();
             if (value.startsWith("${") && value.endsWith("}")) {
-                if (properties == null) {
-                    throw new IllegalStateException("reference used without properties defined");
-                }
                 Object referenced = properties.get(value.substring(2, value.length() - 1));
                 if (referenced == null) {
                     referenced = "";
@@ -136,14 +128,6 @@ public final class SpecParser {
                 throw new IllegalArgumentException("bad parameter count for " + op);
             }
             return Integer.parseInt((String) params.remove(params.size() - 1));
-        }
-
-        protected Version versionParam(String op) {
-            try {
-                return versionScheme.parseVersion(stringParam(op));
-            } catch (InvalidVersionSpecificationException e) {
-                throw new IllegalArgumentException("invalid version parameter for " + op, e);
-            }
         }
 
         protected <T> T typedParam(Class<T> clazz, String op) {

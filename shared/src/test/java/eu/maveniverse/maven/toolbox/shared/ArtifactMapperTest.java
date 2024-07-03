@@ -12,8 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.HashMap;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.util.version.GenericVersionScheme;
-import org.eclipse.aether.version.VersionScheme;
 import org.junit.jupiter.api.Test;
 
 public class ArtifactMapperTest {
@@ -40,22 +38,19 @@ public class ArtifactMapperTest {
         properties.put("groupId", "org.some.group");
         Artifact artifact = new DefaultArtifact("g:a:jar:classifier:1.0-20240322.090900-12");
 
-        VersionScheme versionScheme = new GenericVersionScheme();
         Artifact mapped;
 
-        mapped = ArtifactMapper.build(versionScheme, properties, "omitClassifier()")
-                .apply(artifact);
+        mapped = ArtifactMapper.build(properties, "omitClassifier()").apply(artifact);
         assertEquals(new DefaultArtifact("g:a:jar:1.0-20240322.090900-12"), mapped);
 
-        mapped =
-                ArtifactMapper.build(versionScheme, properties, "baseVersion()").apply(artifact);
+        mapped = ArtifactMapper.build(properties, "baseVersion()").apply(artifact);
         assertEquals(new DefaultArtifact("g:a:jar:classifier:1.0-SNAPSHOT"), mapped);
 
-        mapped = ArtifactMapper.build(versionScheme, properties, "compose(omitClassifier(), baseVersion())")
+        mapped = ArtifactMapper.build(properties, "compose(omitClassifier(), baseVersion())")
                 .apply(artifact);
         assertEquals(new DefaultArtifact("g:a:jar:1.0-SNAPSHOT"), mapped);
 
-        mapped = ArtifactMapper.build(versionScheme, properties, "rename(${groupId},artifact,3.2.1)")
+        mapped = ArtifactMapper.build(properties, "rename(${groupId},artifact,3.2.1)")
                 .apply(artifact);
         assertEquals(new DefaultArtifact("org.some.group:artifact:jar:classifier:3.2.1"), mapped);
     }

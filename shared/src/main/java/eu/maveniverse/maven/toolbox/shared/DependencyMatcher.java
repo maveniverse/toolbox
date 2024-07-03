@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.version.VersionScheme;
 
 /**
  * Dependency matcher.
@@ -102,17 +101,17 @@ public interface DependencyMatcher extends Predicate<Dependency> {
         };
     }
 
-    static DependencyMatcher build(VersionScheme versionScheme, Map<String, ?> properties, String spec) {
+    static DependencyMatcher build(Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
-        DependencyMatcherBuilder builder = new DependencyMatcherBuilder(versionScheme, properties);
+        DependencyMatcherBuilder builder = new DependencyMatcherBuilder(properties);
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
 
     class DependencyMatcherBuilder extends SpecParser.Builder {
-        public DependencyMatcherBuilder(VersionScheme versionScheme, Map<String, ?> properties) {
-            super(versionScheme, properties);
+        public DependencyMatcherBuilder(Map<String, ?> properties) {
+            super(properties);
         }
 
         @Override
@@ -144,7 +143,7 @@ public interface DependencyMatcher extends Predicate<Dependency> {
                         throw new IllegalArgumentException("op artifact accepts only 1 argument");
                     }
                     ArtifactMatcher.ArtifactMatcherBuilder matcher =
-                            new ArtifactMatcher.ArtifactMatcherBuilder(versionScheme, properties);
+                            new ArtifactMatcher.ArtifactMatcherBuilder(properties);
                     node.accept(matcher);
                     params.add(artifact(matcher.build()));
                     node.getChildren().clear();

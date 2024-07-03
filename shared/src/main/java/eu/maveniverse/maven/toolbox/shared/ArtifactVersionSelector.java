@@ -162,8 +162,11 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
     }
 
     class ArtifactVersionSelectorBuilder extends SpecParser.Builder {
+        private final VersionScheme versionScheme;
+
         public ArtifactVersionSelectorBuilder(VersionScheme versionScheme, Map<String, ?> properties) {
-            super(versionScheme, properties);
+            super(properties);
+            this.versionScheme = requireNonNull(versionScheme);
         }
 
         @Override

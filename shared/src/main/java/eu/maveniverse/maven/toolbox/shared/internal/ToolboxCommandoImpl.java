@@ -238,26 +238,22 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public ArtifactMapper parseArtifactMapperSpec(String spec) {
-        return ArtifactMapper.build(
-                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
+        return ArtifactMapper.build(context.repositorySystemSession().getConfigProperties(), spec);
     }
 
     @Override
     public ArtifactMatcher parseArtifactMatcherSpec(String spec) {
-        return ArtifactMatcher.build(
-                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
+        return ArtifactMatcher.build(context.repositorySystemSession().getConfigProperties(), spec);
     }
 
     @Override
     public ArtifactNameMapper parseArtifactNameMapperSpec(String spec) {
-        return ArtifactNameMapper.build(
-                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
+        return ArtifactNameMapper.build(context.repositorySystemSession().getConfigProperties(), spec);
     }
 
     @Override
     public DependencyMatcher parseDependencyMatcherSpec(String spec) {
-        return DependencyMatcher.build(
-                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
+        return DependencyMatcher.build(context.repositorySystemSession().getConfigProperties(), spec);
     }
 
     @Override
@@ -279,8 +275,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public ArtifactSink artifactSink(Output output, String spec) throws IOException {
-        return ArtifactSinks.build(
-                versionScheme, context.repositorySystemSession().getConfigProperties(), this, spec);
+        return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
     }
 
     @Override

@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.version.VersionScheme;
 
 /**
  * Mapper that maps artifact onto a string (usually file system friendly).
@@ -301,17 +300,17 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
         };
     }
 
-    static ArtifactNameMapper build(VersionScheme versionScheme, Map<String, ?> properties, String spec) {
+    static ArtifactNameMapper build(Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
-        ArtifactNameMapperBuilder builder = new ArtifactNameMapperBuilder(versionScheme, properties);
+        ArtifactNameMapperBuilder builder = new ArtifactNameMapperBuilder(properties);
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
 
     class ArtifactNameMapperBuilder extends SpecParser.Builder {
-        public ArtifactNameMapperBuilder(VersionScheme versionScheme, Map<String, ?> properties) {
-            super(versionScheme, properties);
+        public ArtifactNameMapperBuilder(Map<String, ?> properties) {
+            super(properties);
         }
 
         @Override

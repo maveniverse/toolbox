@@ -18,12 +18,18 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
 import org.apache.maven.search.api.SearchResponse;
@@ -69,8 +75,8 @@ public final class LibYearSink implements ArtifactSink {
             ToolboxResolverImpl toolboxResolver,
             ToolboxSearchApiImpl toolboxSearchApi,
             boolean quiet,
-            boolean allowSnapshots,
             boolean upToDate,
+            Predicate<Version> versionFilter,
             BiFunction<Artifact, List<Version>, String> versionSelector,
             List<SearchBackend> searchBackends) {
         return new LibYearSink(
@@ -79,8 +85,8 @@ public final class LibYearSink implements ArtifactSink {
                 toolboxResolver,
                 toolboxSearchApi,
                 quiet,
-                allowSnapshots,
                 upToDate,
+                versionFilter,
                 versionSelector,
                 searchBackends);
     }
@@ -90,8 +96,8 @@ public final class LibYearSink implements ArtifactSink {
     private final ToolboxResolverImpl toolboxResolver;
     private final ToolboxSearchApiImpl toolboxSearchApi;
     private final boolean quiet;
-    private final boolean allowSnapshots;
     private final boolean upToDate;
+    private final Predicate<Version> versionFilter;
     private final BiFunction<Artifact, List<Version>, String> versionSelector;
     private final LocalDate now;
     private final CopyOnWriteArraySet<Artifact> artifacts;
@@ -104,8 +110,8 @@ public final class LibYearSink implements ArtifactSink {
             ToolboxResolverImpl toolboxResolver,
             ToolboxSearchApiImpl toolboxSearchApi,
             boolean quiet,
-            boolean allowSnapshots,
             boolean upToDate,
+            Predicate<Version> versionFilter,
             BiFunction<Artifact, List<Version>, String> versionSelector,
             List<SearchBackend> searchBackends) {
         this.output = requireNonNull(output, "output");
@@ -113,8 +119,8 @@ public final class LibYearSink implements ArtifactSink {
         this.toolboxResolver = requireNonNull(toolboxResolver, "toolboxResolver");
         this.toolboxSearchApi = requireNonNull(toolboxSearchApi, "toolboxSearchApi");
         this.quiet = quiet;
-        this.allowSnapshots = allowSnapshots;
         this.upToDate = upToDate;
+        this.versionFilter = requireNonNull(versionFilter);
         this.versionSelector = requireNonNull(versionSelector);
         this.now = Instant.now().atZone(ZoneId.systemDefault()).toLocalDate();
         this.artifacts = new CopyOnWriteArraySet<>();
@@ -143,7 +149,7 @@ public final class LibYearSink implements ArtifactSink {
             Instant latestVersionInstant = null;
             try {
                 currentVersionInstant = artifactPublishDate(artifact);
-                allVersions = toolboxResolver.findNewerVersions(artifact, allowSnapshots);
+                allVersions = toolboxResolver.findNewerVersions(artifact, versionFilter);
                 latestVersion = versionSelector.apply(artifact, allVersions);
                 latestVersionInstant = Objects.equals(currentVersion, latestVersion)
                         ? currentVersionInstant

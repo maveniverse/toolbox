@@ -30,29 +30,19 @@ public class GavVersionsMojo extends GavMojoSupport {
     private String gav;
 
     /**
-     * Allow to take into account snapshots.
-     */
-    @CommandLine.Option(
-            names = {"--allowSnapshots"},
-            description = "Allow to take into account snapshots")
-    @Parameter(property = "allowSnapshots", defaultValue = "false")
-    private boolean allowSnapshots;
-
-    /**
-     * Artifact version matcher spec string, default is 'not(preview())'.
+     * Artifact version matcher spec string to filter version candidates, default is 'noSnapshotsAndPreviews()'.
      */
     @CommandLine.Option(
             names = {"--artifactVersionMatcherSpec"},
-            defaultValue = "not(preview())",
-            description = "Artifact version matcher spec (default 'not(preview())')")
-    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "not(preview())")
+            defaultValue = "noSnapshotsAndPreviews()",
+            description = "Artifact version matcher spec (default 'noSnapshotsAndPreviews()')")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
     private String artifactVersionMatcherSpec;
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.versions(
                 slurp(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
-                allowSnapshots,
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 output);
     }

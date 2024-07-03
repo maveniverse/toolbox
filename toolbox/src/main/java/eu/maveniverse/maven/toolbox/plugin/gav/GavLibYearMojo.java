@@ -49,13 +49,23 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     private String boms;
 
     /**
-     * Artifact version selector spec string, default is 'noPreviews(major())'.
+     * Artifact version matcher spec string to filter version candidates, default is 'noSnapshotsAndPreviews()'.
+     */
+    @CommandLine.Option(
+            names = {"--artifactVersionMatcherSpec"},
+            defaultValue = "noSnapshotsAndPreviews()",
+            description = "Artifact version matcher spec (default 'noSnapshotsAndPreviews()')")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
+    private String artifactVersionMatcherSpec;
+
+    /**
+     * Artifact version selector spec string to select "latest", default is 'major()'.
      */
     @CommandLine.Option(
             names = {"--artifactVersionSelectorSpec"},
-            defaultValue = "noPreviews(major())",
-            description = "Artifact version selector spec (default 'noPreviews(major())')")
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "noPreviews(major())")
+            defaultValue = "major()",
+            description = "Artifact version selector spec (default 'major()')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "major()")
     private String artifactVersionSelectorSpec;
 
     /**
@@ -77,15 +87,6 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     private boolean quiet;
 
     /**
-     * Make libyear allow to take into account snapshots.
-     */
-    @CommandLine.Option(
-            names = {"--allowSnapshots"},
-            description = "Make libyear allow to take into account snapshots")
-    @Parameter(property = "allowSnapshots", defaultValue = "false")
-    private boolean allowSnapshots;
-
-    /**
      * Make libyear show up-to-date libraries with age as well.
      */
     @CommandLine.Option(
@@ -101,8 +102,8 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
                 toolboxCommando.loadGavs(slurp(gav), slurp(boms)),
                 transitive,
                 quiet,
-                allowSnapshots,
                 upToDate,
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
                 repositoryVendor,
                 output);

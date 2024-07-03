@@ -52,6 +52,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -874,9 +875,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Collection<ResolutionRoot> resolutionRoots,
             boolean transitive,
             boolean quiet,
-            boolean allowSnapshots,
             boolean upToDate,
-            ArtifactVersionSelector artifactVersionSelector,
+            Predicate<Version> versionPredicate,
+            BiFunction<Artifact, List<Version>, String> artifactVersionSelector,
             String repositoryVendor,
             Output output)
             throws Exception {
@@ -892,8 +893,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 toolboxResolver,
                 toolboxSearchApi,
                 quiet,
-                allowSnapshots,
                 upToDate,
+                versionPredicate,
                 artifactVersionSelector,
                 searchBackends)) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
@@ -934,12 +935,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean versions(
-            Collection<Artifact> artifacts, boolean allowSnapshots, Predicate<Version> versionPredicate, Output output)
+    public boolean versions(Collection<Artifact> artifacts, Predicate<Version> versionPredicate, Output output)
             throws Exception {
         for (Artifact artifact : artifacts) {
-            List<Version> versions = toolboxResolver.findNewerVersions(artifact, allowSnapshots);
-            List<Version> newer = versions.stream().filter(versionPredicate).collect(Collectors.toList());
+            List<Version> newer = toolboxResolver.findNewerVersions(artifact, versionPredicate);
             if (!newer.isEmpty()) {
                 output.normal("Available newer versions for {}:", ArtifactIdUtils.toId(artifact));
                 newer.forEach(version -> output.normal("* {}", version));

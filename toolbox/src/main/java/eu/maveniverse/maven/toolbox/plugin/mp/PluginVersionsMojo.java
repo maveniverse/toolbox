@@ -19,21 +19,15 @@ import org.apache.maven.plugins.annotations.Parameter;
 @Mojo(name = "plugin-versions", threadSafe = true)
 public class PluginVersionsMojo extends MPPluginMojoSupport {
     /**
-     * Allow to take into account snapshots.
-     */
-    @Parameter(property = "allowSnapshots", defaultValue = "false")
-    private boolean allowSnapshots;
-
-    /**
      * The plugin matcher spec.
      */
     @Parameter(property = "artifactMatcherSpec", defaultValue = "any()")
     private String artifactMatcherSpec;
 
     /**
-     * Artifact version matcher spec string, default is 'not(preview())'.
+     * Artifact version matcher spec string, default is 'noSnapshotsAndPreviews()'.
      */
-    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "not(preview())")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
     private String artifactVersionMatcherSpec;
 
     @Override
@@ -44,7 +38,6 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher)
                         .collect(Collectors.toList()),
-                allowSnapshots,
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 output);
     }

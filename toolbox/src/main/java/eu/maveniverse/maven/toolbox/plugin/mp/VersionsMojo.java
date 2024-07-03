@@ -34,12 +34,6 @@ public class VersionsMojo extends MPMojoSupport {
     private String depSpec;
 
     /**
-     * Allow to take into account snapshots.
-     */
-    @Parameter(property = "allowSnapshots", defaultValue = "false")
-    private boolean allowSnapshots;
-
-    /**
      * Artifact version matcher spec string, default is 'not(preview())'.
      */
     @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "not(preview())")
@@ -54,7 +48,6 @@ public class VersionsMojo extends MPMojoSupport {
                         .stream()
                         .map(ResolutionRoot::getArtifact)
                         .collect(Collectors.toList()),
-                allowSnapshots,
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 output);
     }

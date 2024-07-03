@@ -27,9 +27,15 @@ public class LibYearMojo extends MPMojoSupport {
     private String scope;
 
     /**
-     * Artifact version selector spec (default is 'noPreviews(major())').
+     * Artifact version matcher spec string to filter version candidates, default is 'noSnapshotsAndPreviews()'.
      */
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "noPreviews(major())")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
+    private String artifactVersionMatcherSpec;
+
+    /**
+     * Artifact version selector spec string to select "latest", default is 'major()'.
+     */
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "major()")
     private String artifactVersionSelectorSpec;
 
     /**
@@ -45,12 +51,6 @@ public class LibYearMojo extends MPMojoSupport {
     private boolean quiet;
 
     /**
-     * Make libyear allow to take into account snapshots.
-     */
-    @Parameter(property = "allowSnapshots", defaultValue = "false")
-    private boolean allowSnapshots;
-
-    /**
      * Make libyear show up-to-date libraries with age as well.
      */
     @Parameter(property = "upToDate", defaultValue = "false")
@@ -63,8 +63,8 @@ public class LibYearMojo extends MPMojoSupport {
                 Collections.singleton(projectAsResolutionRoot()),
                 transitive,
                 quiet,
-                allowSnapshots,
                 upToDate,
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
                 getRepositoryVendor(),
                 output);

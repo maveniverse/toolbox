@@ -106,6 +106,27 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
     }
 
     /**
+     * A version matcher shorthand, that prevents matching of "preview" versions. Shorthand for "not(preview())".
+     */
+    static ArtifactVersionMatcher noPreviews() {
+        return not(preview());
+    }
+
+    /**
+     * A version matcher shorthand, that prevents matching of "snapshot" versions. Shorthand for "not(snapshot())".
+     */
+    static ArtifactVersionMatcher noSnapshots() {
+        return not(snapshot());
+    }
+
+    /**
+     * A version matcher shorthand, that prevents matching of "snapshot" and "preview" versions. Shorthand for "and(not(snapshot()), not(preview())".
+     */
+    static ArtifactVersionMatcher noSnapshotsAndPreviews() {
+        return and(noPreviews(), noSnapshots());
+    }
+
+    /**
      * Helper method: tells is a version string a "preview" version or not, as per Resolver version spec.
      *
      * @see <a href="https://maven.apache.org/resolver-archives/resolver-2.0.0-alpha-11/apidocs/org/eclipse/aether/util/version/package-summary.html">Resolver Generic Version spec</a>
@@ -200,10 +221,18 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
                 case "lt":
                     params.add(lt(versionParam(node.getValue())));
                     break;
-                case "lte": {
+                case "lte":
                     params.add(lte(versionParam(node.getValue())));
                     break;
-                }
+                case "noPreviews":
+                    params.add(noPreviews());
+                    break;
+                case "noSnapshots":
+                    params.add(noSnapshots());
+                    break;
+                case "noSnapshotsAndPreviews":
+                    params.add(noSnapshotsAndPreviews());
+                    break;
                 default:
                     throw new IllegalArgumentException("unknown op " + node.getValue());
             }

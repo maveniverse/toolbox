@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import java.io.InputStream;
@@ -18,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -347,7 +349,8 @@ public class ToolboxResolverImpl {
         return repositorySystem.resolveArtifacts(session, artifactRequests);
     }
 
-    public Version findNewestVersion(Artifact artifact, boolean allowSnapshots) throws VersionRangeResolutionException {
+    public Version findNewestVersion(Artifact artifact, Predicate<Version> filter)
+            throws VersionRangeResolutionException {
         VersionRangeRequest rangeRequest = new VersionRangeRequest();
         rangeRequest.setArtifact(new DefaultArtifact(
                 artifact.getGroupId(),
@@ -359,12 +362,12 @@ public class ToolboxResolverImpl {
         rangeRequest.setRequestContext(CTX_TOOLBOX);
         VersionRangeResult result = repositorySystem.resolveVersionRange(session, rangeRequest);
         Version highest = result.getHighestVersion();
-        if (allowSnapshots || !highest.toString().endsWith("SNAPSHOT")) {
+        if (filter.test(highest)) {
             return highest;
         } else {
             for (int idx = result.getVersions().size() - 1; idx >= 0; idx--) {
                 highest = result.getVersions().get(idx);
-                if (!highest.toString().endsWith("SNAPSHOT")) {
+                if (filter.test(highest)) {
                     return highest;
                 }
             }
@@ -372,7 +375,7 @@ public class ToolboxResolverImpl {
         }
     }
 
-    public List<Version> findNewerVersions(Artifact artifact, boolean allowSnapshots)
+    public List<Version> findNewerVersions(Artifact artifact, Predicate<Version> filter)
             throws VersionRangeResolutionException {
         VersionRangeRequest rangeRequest = new VersionRangeRequest();
         rangeRequest.setArtifact(new DefaultArtifact(
@@ -384,17 +387,7 @@ public class ToolboxResolverImpl {
         rangeRequest.setRepositories(remoteRepositories);
         rangeRequest.setRequestContext(CTX_TOOLBOX);
         VersionRangeResult result = repositorySystem.resolveVersionRange(session, rangeRequest);
-        if (allowSnapshots) {
-            return result.getVersions();
-        } else {
-            ArrayList<Version> versions = new ArrayList<>(result.getVersions().size());
-            for (Version version : result.getVersions()) {
-                if (!version.toString().endsWith("SNAPSHOT")) {
-                    versions.add(version);
-                }
-            }
-            return versions;
-        }
+        return result.getVersions().stream().filter(filter).collect(Collectors.toList());
     }
 
     public List<Artifact> listAvailablePlugins(Collection<String> groupIds) throws Exception {
@@ -430,7 +423,8 @@ public class ToolboxResolverImpl {
                         if (processedGAs.add(metadata.getGroupId() + ":" + plugin.getArtifactId())) {
                             Artifact blueprint =
                                     new DefaultArtifact(metadata.getGroupId(), plugin.getArtifactId(), "jar", "0");
-                            Version newestVersion = findNewestVersion(blueprint, false);
+                            Version newestVersion = findNewestVersion(
+                                    blueprint, ArtifactVersionMatcher.not(ArtifactVersionMatcher.snapshot()));
                             if (newestVersion != null) {
                                 result.add(new DefaultArtifact(
                                         blueprint.getGroupId(),

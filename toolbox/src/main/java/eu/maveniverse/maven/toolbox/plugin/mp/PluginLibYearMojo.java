@@ -25,9 +25,15 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
     private String artifactMatcherSpec;
 
     /**
-     * Artifact version selector spec (default is 'noPreviews(major())').
+     * Artifact version matcher spec string to filter version candidates, default is 'noSnapshotsAndPreviews()'.
      */
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "noPreviews(major())")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
+    private String artifactVersionMatcherSpec;
+
+    /**
+     * Artifact version selector spec string to select "latest", default is 'major()'.
+     */
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "major()")
     private String artifactVersionSelectorSpec;
 
     /**
@@ -41,12 +47,6 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
      */
     @Parameter(property = "quiet", defaultValue = "false")
     private boolean quiet;
-
-    /**
-     * Make libyear allow to take into account snapshots.
-     */
-    @Parameter(property = "allowSnapshots", defaultValue = "false")
-    private boolean allowSnapshots;
 
     /**
      * Make libyear show up-to-date libraries with age as well.
@@ -64,8 +64,8 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
                         .collect(Collectors.toList()),
                 transitive,
                 quiet,
-                allowSnapshots,
                 upToDate,
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
                 getRepositoryVendor(),
                 output);

@@ -40,9 +40,9 @@ public class VersionsMojo extends MPMojoSupport {
     private boolean allowSnapshots;
 
     /**
-     * Artifact version matcher spec string, default is 'noPreviews()'.
+     * Artifact version matcher spec string, default is 'not(preview())'.
      */
-    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noPreviews()")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "not(preview())")
     private String artifactVersionMatcherSpec;
 
     @Override

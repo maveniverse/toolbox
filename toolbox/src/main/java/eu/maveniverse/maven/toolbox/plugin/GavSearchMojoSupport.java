@@ -38,7 +38,7 @@ public abstract class GavSearchMojoSupport extends GavMojoSupport {
     @CommandLine.Option(
             names = {"--repositoryVendor"},
             description = "The vendor of the remote repository")
-    @Parameter(property = "repositoryVendor")
+    @Parameter(property = "repositoryVendor", alias = "toolbox.search.backend.type")
     protected String repositoryVendor;
 
     protected RemoteRepository getRemoteRepository(ToolboxCommando toolboxCommando) {

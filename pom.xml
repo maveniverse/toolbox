@@ -23,6 +23,7 @@
   <packaging>pom</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
+  <description>Toolbox Maven Plugin and CLI in one.</description>
 
   <url>https://www.maveniverse.eu/toolbox</url>
 

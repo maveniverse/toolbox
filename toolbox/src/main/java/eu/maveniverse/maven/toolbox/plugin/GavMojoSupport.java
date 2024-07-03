@@ -16,6 +16,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+/**
+ * Support class for "project unaware" Mojos (not needing project).
+ */
 public abstract class GavMojoSupport extends MojoSupport {
     /**
      * Splits comma separated string into elements.

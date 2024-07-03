@@ -12,6 +12,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.repository.RemoteRepository;
 import picocli.CommandLine;
 
+/**
+ * Support class for "project unaware" search Mojos.
+ */
 public abstract class GavSearchMojoSupport extends GavMojoSupport {
     /**
      * A repository ID. Maybe a "well known" one, or if all repository data given, a new one.

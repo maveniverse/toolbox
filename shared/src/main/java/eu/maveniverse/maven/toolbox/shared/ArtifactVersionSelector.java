@@ -17,6 +17,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.Version;
+import org.eclipse.aether.version.VersionScheme;
 
 /**
  * Selector that selects artifact version. The <em>assumption is that {@code List<Version>} is sorted ascending</em>
@@ -151,18 +152,18 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                 selector);
     }
 
-    static ArtifactVersionSelector build(Map<String, ?> properties, String spec) {
+    static ArtifactVersionSelector build(VersionScheme versionScheme, Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         ArtifactVersionSelector.ArtifactVersionSelectorBuilder builder =
-                new ArtifactVersionSelector.ArtifactVersionSelectorBuilder(properties);
+                new ArtifactVersionSelector.ArtifactVersionSelectorBuilder(versionScheme, properties);
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
 
     class ArtifactVersionSelectorBuilder extends SpecParser.Builder {
-        public ArtifactVersionSelectorBuilder(Map<String, ?> properties) {
-            super(properties);
+        public ArtifactVersionSelectorBuilder(VersionScheme versionScheme, Map<String, ?> properties) {
+            super(versionScheme, properties);
         }
 
         @Override
@@ -193,11 +194,11 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                         throw new IllegalArgumentException("op filtered accepts only 2 argument");
                     }
                     ArtifactVersionSelector.ArtifactVersionSelectorBuilder selectorBuilder =
-                            new ArtifactVersionSelector.ArtifactVersionSelectorBuilder(properties);
+                            new ArtifactVersionSelector.ArtifactVersionSelectorBuilder(versionScheme, properties);
                     node.getChildren().get(1).accept(selectorBuilder);
                     ArtifactVersionSelector selector = selectorBuilder.build();
                     ArtifactVersionMatcher.ArtifactVersionMatcherBuilder matcherBuilder =
-                            new ArtifactVersionMatcher.ArtifactVersionMatcherBuilder(properties);
+                            new ArtifactVersionMatcher.ArtifactVersionMatcherBuilder(versionScheme, properties);
                     node.getChildren().get(0).accept(matcherBuilder);
                     ArtifactVersionMatcher matcher = matcherBuilder.build();
                     node.getChildren().clear();

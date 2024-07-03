@@ -14,6 +14,8 @@ import java.util.List;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
+import org.eclipse.aether.resolution.VersionRangeResolutionException;
+import org.eclipse.aether.version.InvalidVersionSpecificationException;
 
 /**
  * Support class for "project aware" Mojos dealing with plugins.
@@ -71,7 +73,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
     }
 
     protected List<ResolutionRoot> allPluginsAsResolutionRoots(ToolboxCommando toolboxCommando)
-            throws ArtifactDescriptorException {
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
         List<ResolutionRoot> roots = new ArrayList<>();
         for (Plugin plugin : mavenProject.getBuildPlugins()) {
             ResolutionRoot root = toolboxCommando.loadGav(

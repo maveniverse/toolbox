@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector.last;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
@@ -19,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
@@ -56,7 +58,10 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.graph.manager.DependencyManagerUtils;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
 import org.eclipse.aether.util.repository.SimpleArtifactDescriptorPolicy;
+import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
+import org.eclipse.aether.version.VersionConstraint;
+import org.eclipse.aether.version.VersionScheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,14 +71,17 @@ public class ToolboxResolverImpl {
     private final RepositorySystem repositorySystem;
     private final RepositorySystemSession session;
     private final List<RemoteRepository> remoteRepositories;
+    private final VersionScheme versionScheme;
 
     public ToolboxResolverImpl(
             RepositorySystem repositorySystem,
             RepositorySystemSession session,
-            List<RemoteRepository> remoteRepositories) {
+            List<RemoteRepository> remoteRepositories,
+            VersionScheme versionScheme) {
         this.repositorySystem = requireNonNull(repositorySystem, "repositorySystem");
         this.session = requireNonNull(session, "session");
         this.remoteRepositories = requireNonNull(remoteRepositories, "remoteRepositories");
+        this.versionScheme = requireNonNull(versionScheme, "versionScheme");
     }
 
     public RepositorySystem getRepositorySystem() {
@@ -153,7 +161,8 @@ public class ToolboxResolverImpl {
         return repositorySystem.newDeploymentRepository(session, new RemoteRepository.Builder(id, type, url).build());
     }
 
-    public ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException {
+    public ResolutionRoot loadGav(String gav, Collection<String> boms)
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
         List<Dependency> managedDependency = importBOMs(boms);
         Artifact artifact = parseGav(gav, managedDependency);
         return loadRoot(ResolutionRoot.ofLoaded(artifact)
@@ -161,18 +170,29 @@ public class ToolboxResolverImpl {
                 .build());
     }
 
-    public ResolutionRoot loadRoot(ResolutionRoot resolutionRoot) throws ArtifactDescriptorException {
+    public ResolutionRoot loadRoot(ResolutionRoot resolutionRoot)
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
         if (resolutionRoot.isPrepared()) {
             return resolutionRoot;
         }
         if (resolutionRoot.isLoad()) {
-            ArtifactDescriptorResult artifactDescriptorResult = readArtifactDescriptor(resolutionRoot.getArtifact());
-            resolutionRoot = ResolutionRoot.ofLoaded(resolutionRoot.getArtifact())
+            Artifact resolvedVersionArtifact = mayResolveArtifactVersion(resolutionRoot.getArtifact(), last());
+            ArtifactDescriptorResult artifactDescriptorResult = readArtifactDescriptor(resolvedVersionArtifact);
+            resolutionRoot = ResolutionRoot.ofLoaded(resolvedVersionArtifact)
                     .withDependencies(
                             mergeDeps(resolutionRoot.getDependencies(), artifactDescriptorResult.getDependencies()))
                     .withManagedDependencies(mergeDeps(
                             resolutionRoot.getManagedDependencies(), artifactDescriptorResult.getManagedDependencies()))
                     .build();
+        } else {
+            if (versionScheme
+                            .parseVersionConstraint(resolutionRoot.getArtifact().getVersion())
+                            .getRange()
+                    != null) {
+                throw new IllegalArgumentException(
+                        "non-loaded resolution root artifact version must be simple version but is range: "
+                                + resolutionRoot.getArtifact());
+            }
         }
         return resolutionRoot.prepared();
     }
@@ -347,6 +367,21 @@ public class ToolboxResolverImpl {
         List<ArtifactRequest> artifactRequests = new ArrayList<>();
         artifacts.forEach(a -> artifactRequests.add(new ArtifactRequest(a, remoteRepositories, null)));
         return repositorySystem.resolveArtifacts(session, artifactRequests);
+    }
+
+    public Artifact mayResolveArtifactVersion(
+            Artifact artifact, BiFunction<Artifact, List<Version>, String> artifactVersionSelector)
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException {
+        String version;
+        VersionConstraint versionConstraint = versionScheme.parseVersionConstraint(artifact.getVersion());
+        if (versionConstraint.getRange() != null) {
+            VersionRangeResult versionRangeResult = repositorySystem.resolveVersionRange(
+                    session, new VersionRangeRequest(artifact, remoteRepositories, CTX_TOOLBOX));
+            version = artifactVersionSelector.apply(artifact, versionRangeResult.getVersions());
+        } else {
+            version = versionConstraint.getVersion().toString();
+        }
+        return artifact.setVersion(version);
     }
 
     public Version findNewestVersion(Artifact artifact, Predicate<Version> filter)

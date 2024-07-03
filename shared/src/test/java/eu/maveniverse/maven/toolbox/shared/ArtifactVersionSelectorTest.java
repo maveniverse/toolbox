@@ -99,39 +99,43 @@ public class ArtifactVersionSelectorTest {
 
         assertEquals(
                 artifact.getVersion(),
-                ArtifactVersionSelector.build(Collections.emptyMap(), "identity()")
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "identity()")
                         .apply(artifact, versions));
         assertEquals(
                 "2.0.0",
-                ArtifactVersionSelector.build(Collections.emptyMap(), "first()").apply(artifact, versions));
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "first()")
+                        .apply(artifact, versions));
         assertEquals(
                 "4.0.0",
-                ArtifactVersionSelector.build(Collections.emptyMap(), "last()").apply(artifact, versions));
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "last()")
+                        .apply(artifact, versions));
         assertEquals(
                 "3.1.1M1",
-                ArtifactVersionSelector.build(Collections.emptyMap(), "major()").apply(artifact, versions));
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "major()")
+                        .apply(artifact, versions));
         assertEquals(
                 "3.0.2-alpha",
-                ArtifactVersionSelector.build(Collections.emptyMap(), "minor()").apply(artifact, versions));
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "minor()")
+                        .apply(artifact, versions));
         assertEquals(
                 "3.1.0",
-                ArtifactVersionSelector.build(Collections.emptyMap(), "noPreviews(major())")
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "noPreviews(major())")
                         .apply(artifact, versions));
         assertEquals(
                 "3.0.1",
-                ArtifactVersionSelector.build(Collections.emptyMap(), "noPreviews(minor())")
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "noPreviews(minor())")
                         .apply(artifact, versions));
         assertEquals(
                 "3.0.1",
-                ArtifactVersionSelector.build(Collections.emptyMap(), "filtered(eq(3.0.1), last())")
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "filtered(eq(3.0.1), last())")
                         .apply(artifact, versions));
         assertEquals(
                 "4.0.0",
-                ArtifactVersionSelector.build(Collections.emptyMap(), "noSnapshotsAndPreviews(last())")
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "noSnapshotsAndPreviews(last())")
                         .apply(artifact, versions));
         assertEquals(
                 "3.1.0",
-                ArtifactVersionSelector.build(Collections.emptyMap(), "noSnapshotsAndPreviews(major())")
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "noSnapshotsAndPreviews(major())")
                         .apply(artifact, versions));
     }
 }

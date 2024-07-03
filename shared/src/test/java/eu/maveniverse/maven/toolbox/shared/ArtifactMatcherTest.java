@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.util.version.GenericVersionScheme;
+import org.eclipse.aether.version.VersionScheme;
 import org.junit.jupiter.api.Test;
 
 public class ArtifactMatcherTest {
@@ -84,61 +86,62 @@ public class ArtifactMatcherTest {
         Artifact artifact2 = new DefaultArtifact("g2:a:jar:1.0-20240322.113300-3");
         Artifact artifact3 = new DefaultArtifact("g2:a:jar:1.1");
 
+        VersionScheme versionScheme = new GenericVersionScheme();
         Map<String, Object> properties = new HashMap<>();
         properties.put("groupId", "g2");
         ArtifactMatcher parsed;
 
-        parsed = ArtifactMatcher.build(properties, "any()");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "any()");
         assertTrue(parsed.test(artifact1));
         assertTrue(parsed.test(artifact2));
         assertTrue(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "not(any())");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "not(any())");
         assertFalse(parsed.test(artifact1));
         assertFalse(parsed.test(artifact2));
         assertFalse(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "or(not(any()),any())");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "or(not(any()),any())");
         assertTrue(parsed.test(artifact1));
         assertTrue(parsed.test(artifact2));
         assertTrue(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "withoutClassifier()");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "withoutClassifier()");
         assertFalse(parsed.test(artifact1));
         assertTrue(parsed.test(artifact2));
         assertTrue(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "snapshot()");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "snapshot()");
         assertTrue(parsed.test(artifact1));
         assertTrue(parsed.test(artifact2));
         assertFalse(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "artifact(*)");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "artifact(*)");
         assertTrue(parsed.test(artifact1));
         assertTrue(parsed.test(artifact2));
         assertTrue(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "artifact(*:a:*)");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "artifact(*:a:*)");
         assertTrue(parsed.test(artifact1));
         assertTrue(parsed.test(artifact2));
         assertTrue(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "artifact(*:*:*:jar:*)");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "artifact(*:*:*:jar:*)");
         assertFalse(parsed.test(artifact1));
         assertTrue(parsed.test(artifact2));
         assertTrue(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "artifact(g1)");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "artifact(g1)");
         assertTrue(parsed.test(artifact1));
         assertFalse(parsed.test(artifact2));
         assertFalse(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "artifact(${groupId})");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "artifact(${groupId})");
         assertFalse(parsed.test(artifact1));
         assertTrue(parsed.test(artifact2));
         assertTrue(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "unique()");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "unique()");
         assertTrue(parsed.test(artifact1));
         assertTrue(parsed.test(artifact2));
         assertTrue(parsed.test(artifact3));
@@ -146,15 +149,7 @@ public class ArtifactMatcherTest {
         assertFalse(parsed.test(artifact2));
         assertFalse(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "uniqueBy(GAKey())");
-        assertTrue(parsed.test(artifact1));
-        assertTrue(parsed.test(artifact2));
-        assertFalse(parsed.test(artifact3));
-        assertFalse(parsed.test(artifact1));
-        assertFalse(parsed.test(artifact2));
-        assertFalse(parsed.test(artifact3));
-
-        parsed = ArtifactMatcher.build(properties, "uniqueBy(G())");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "uniqueBy(GAKey())");
         assertTrue(parsed.test(artifact1));
         assertTrue(parsed.test(artifact2));
         assertFalse(parsed.test(artifact3));
@@ -162,7 +157,15 @@ public class ArtifactMatcherTest {
         assertFalse(parsed.test(artifact2));
         assertFalse(parsed.test(artifact3));
 
-        parsed = ArtifactMatcher.build(properties, "uniqueBy(GACEVKey())");
+        parsed = ArtifactMatcher.build(versionScheme, properties, "uniqueBy(G())");
+        assertTrue(parsed.test(artifact1));
+        assertTrue(parsed.test(artifact2));
+        assertFalse(parsed.test(artifact3));
+        assertFalse(parsed.test(artifact1));
+        assertFalse(parsed.test(artifact2));
+        assertFalse(parsed.test(artifact3));
+
+        parsed = ArtifactMatcher.build(versionScheme, properties, "uniqueBy(GACEVKey())");
         assertTrue(parsed.test(artifact1));
         assertTrue(parsed.test(artifact2));
         assertTrue(parsed.test(artifact3));

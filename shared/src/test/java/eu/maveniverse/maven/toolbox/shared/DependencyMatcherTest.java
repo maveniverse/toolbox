@@ -14,9 +14,12 @@ import java.util.HashMap;
 import java.util.Map;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.util.version.GenericVersionScheme;
+import org.eclipse.aether.version.VersionScheme;
 import org.junit.jupiter.api.Test;
 
 public class DependencyMatcherTest {
+    private final VersionScheme versionScheme = new GenericVersionScheme();
     private final Dependency dependency1 = new Dependency(new DefaultArtifact("g:a:1.0"), "compile", false);
     private final Dependency dependency2 =
             new Dependency(new DefaultArtifact("g:a:jar:classifier:1.0-20240322.113300-2"), "runtime", true);
@@ -42,39 +45,40 @@ public class DependencyMatcherTest {
         properties.put("groupId", "g2");
         DependencyMatcher parsed;
 
-        parsed = DependencyMatcher.build(properties, "any()");
+        parsed = DependencyMatcher.build(versionScheme, properties, "any()");
         assertTrue(parsed.test(dependency1));
         assertTrue(parsed.test(dependency2));
 
-        parsed = DependencyMatcher.build(properties, "scopeIncluded(compile, runtime)");
+        parsed = DependencyMatcher.build(versionScheme, properties, "scopeIncluded(compile, runtime)");
         assertTrue(parsed.test(dependency1));
         assertTrue(parsed.test(dependency2));
 
-        parsed = DependencyMatcher.build(properties, "scopeIncluded(compile)");
+        parsed = DependencyMatcher.build(versionScheme, properties, "scopeIncluded(compile)");
         assertTrue(parsed.test(dependency1));
         assertFalse(parsed.test(dependency2));
 
-        parsed = DependencyMatcher.build(properties, "scopeExcluded(runtime)");
+        parsed = DependencyMatcher.build(versionScheme, properties, "scopeExcluded(runtime)");
         assertTrue(parsed.test(dependency1));
         assertFalse(parsed.test(dependency2));
 
-        parsed = DependencyMatcher.build(properties, "or(scopeIncluded(compile),scopeIncluded(runtime))");
+        parsed =
+                DependencyMatcher.build(versionScheme, properties, "or(scopeIncluded(compile),scopeIncluded(runtime))");
         assertTrue(parsed.test(dependency1));
         assertTrue(parsed.test(dependency2));
 
-        parsed = DependencyMatcher.build(properties, "optional(true)");
+        parsed = DependencyMatcher.build(versionScheme, properties, "optional(true)");
         assertFalse(parsed.test(dependency1));
         assertTrue(parsed.test(dependency2));
 
-        parsed = DependencyMatcher.build(properties, "optional(false)");
+        parsed = DependencyMatcher.build(versionScheme, properties, "optional(false)");
         assertTrue(parsed.test(dependency1));
         assertFalse(parsed.test(dependency2));
 
-        parsed = DependencyMatcher.build(properties, "artifact(*)");
+        parsed = DependencyMatcher.build(versionScheme, properties, "artifact(*)");
         assertTrue(parsed.test(dependency1));
         assertTrue(parsed.test(dependency2));
 
-        parsed = DependencyMatcher.build(properties, "artifact(*:*:classifier:*:*)");
+        parsed = DependencyMatcher.build(versionScheme, properties, "artifact(*:*:classifier:*:*)");
         assertFalse(parsed.test(dependency1));
         assertTrue(parsed.test(dependency2));
     }

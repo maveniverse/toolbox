@@ -22,8 +22,11 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
+import org.eclipse.aether.resolution.VersionRangeResolutionException;
+import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 
 /**
@@ -103,26 +106,36 @@ public interface ToolboxCommando {
     /**
      * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact.
      */
-    default ResolutionRoot loadGav(String gav) throws ArtifactDescriptorException {
+    default ResolutionRoot loadGav(String gav)
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
         return loadGav(gav, Collections.emptyList());
     }
 
     /**
      * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact and BOMs.
      */
-    ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException;
+    ResolutionRoot loadGav(String gav, Collection<String> boms)
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException;
 
     /**
      * Shorthand method, creates collection {@link ResolutionRoot}s out of passed in artifacts and BOMs.
      */
     default Collection<ResolutionRoot> loadGavs(Collection<String> gav, Collection<String> boms)
-            throws ArtifactDescriptorException {
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
         List<ResolutionRoot> result = new ArrayList<>(gav.size());
         for (String gavEntry : gav) {
             result.add(loadGav(gavEntry, boms));
         }
         return result;
     }
+
+    /**
+     * Converts a dependency into artifact. This may be trivial, but may involve resolving of version range, if
+     * dependency uses them.
+     */
+    Artifact toArtifact(Dependency dependency);
+
+    // Commands
 
     boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) throws Exception;
 

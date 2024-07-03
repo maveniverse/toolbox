@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.version.Version;
+import org.eclipse.aether.version.VersionScheme;
 
 /**
  * Filter that matches artifact versions.
@@ -175,17 +176,17 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
         }
     }
 
-    static ArtifactVersionMatcher build(Map<String, ?> properties, String spec) {
+    static ArtifactVersionMatcher build(VersionScheme versionScheme, Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
-        ArtifactVersionMatcherBuilder builder = new ArtifactVersionMatcherBuilder(properties);
+        ArtifactVersionMatcherBuilder builder = new ArtifactVersionMatcherBuilder(versionScheme, properties);
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
 
     class ArtifactVersionMatcherBuilder extends SpecParser.Builder {
-        public ArtifactVersionMatcherBuilder(Map<String, ?> properties) {
-            super(properties);
+        public ArtifactVersionMatcherBuilder(VersionScheme versionScheme, Map<String, ?> properties) {
+            super(versionScheme, properties);
         }
 
         @Override

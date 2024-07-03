@@ -13,6 +13,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.util.version.GenericVersionScheme;
+import org.eclipse.aether.version.VersionScheme;
 import org.junit.jupiter.api.Test;
 
 public class ArtifactNameMapperTest {
@@ -37,43 +39,44 @@ public class ArtifactNameMapperTest {
 
     @Test
     void parse() {
+        VersionScheme versionScheme = new GenericVersionScheme();
         ArtifactNameMapper artifactNameMapper;
         String mapped;
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "fixed(zoo)");
+        artifactNameMapper = ArtifactNameMapper.build(versionScheme, Collections.emptyMap(), "fixed(zoo)");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals("zoo", mapped);
 
-        artifactNameMapper =
-                ArtifactNameMapper.build(Collections.emptyMap(), "compose(G(), fixed(:), A(), fixed(:), V())");
+        artifactNameMapper = ArtifactNameMapper.build(
+                versionScheme, Collections.emptyMap(), "compose(G(), fixed(:), A(), fixed(:), V())");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals("g:a:1.0-20240322.113300-2", mapped);
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "repositoryDefault()");
+        artifactNameMapper = ArtifactNameMapper.build(versionScheme, Collections.emptyMap(), "repositoryDefault()");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals("g/a/1.0-SNAPSHOT/a-1.0-20240322.113300-2-classifier.jar", mapped);
 
         HashMap<String, Object> properties = new HashMap<>();
         properties.put("fs", "--this-is-a-separator--");
-        artifactNameMapper = ArtifactNameMapper.build(properties, "repository(${fs})");
+        artifactNameMapper = ArtifactNameMapper.build(versionScheme, properties, "repository(${fs})");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals(
                 "g--this-is-a-separator--a--this-is-a-separator--1.0-SNAPSHOT--this-is-a-separator--a-1.0-20240322.113300-2-classifier.jar",
                 mapped);
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GAKey()");
+        artifactNameMapper = ArtifactNameMapper.build(versionScheme, Collections.emptyMap(), "GAKey()");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals("g:a", mapped);
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GAVKey()");
+        artifactNameMapper = ArtifactNameMapper.build(versionScheme, Collections.emptyMap(), "GAVKey()");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals("g:a:1.0-20240322.113300-2", mapped);
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GAbVKey()");
+        artifactNameMapper = ArtifactNameMapper.build(versionScheme, Collections.emptyMap(), "GAbVKey()");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals("g:a:1.0-SNAPSHOT", mapped);
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GACEVKey()");
+        artifactNameMapper = ArtifactNameMapper.build(versionScheme, Collections.emptyMap(), "GACEVKey()");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals(artifact.toString(), mapped);
     }

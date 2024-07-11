@@ -19,7 +19,7 @@
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
   <artifactId>toolbox</artifactId>
-  <version>0.1.31-SNAPSHOT</version>
+  <version>0.1.31</version>
   <packaging>pom</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
@@ -42,7 +42,7 @@
   <scm>
     <connection>scm:git:git@github.com:maveniverse/toolbox.git</connection>
     <developerConnection>scm:git:git@github.com:maveniverse/toolbox.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>release-0.1.31</tag>
     <url>https://github.com/maveniverse/toolbox</url>
   </scm>
 
@@ -57,7 +57,7 @@
   </ciManagement>
 
   <properties>
-    <project.build.outputTimestamp>2024-07-03T14:19:47Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2024-07-11T11:31:28Z</project.build.outputTimestamp>
 
     <!-- Maven Indexer needs 11+ -->
     <maven.compiler.release>11</maven.compiler.release>

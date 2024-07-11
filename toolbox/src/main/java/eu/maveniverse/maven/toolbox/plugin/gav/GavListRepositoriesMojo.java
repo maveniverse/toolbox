@@ -19,7 +19,7 @@ import picocli.CommandLine;
  * Lists repositories used to resolve given GAV.
  */
 @CommandLine.Command(name = "list-repositories", description = "Lists repositories used to resolve given GAV")
-@Mojo(name = "gav-list-repositories", threadSafe = true)
+@Mojo(name = "gav-list-repositories", requiresProject = false, threadSafe = true)
 public final class GavListRepositoriesMojo extends GavMojoSupport {
     /**
      * The GAV to list repositories for.

@@ -2,9 +2,9 @@
 
 The Toolbox project started with manifold aims:
 * replace `MIMA CLI`, provide drop-in replacement, but also continue improving it.
-* provide replacement for `maven-dependency-plugin`, offering similar (sub)set of Mojos
-* showcase how MIMA helps to write reusable Resolver code that runs in Maven (as Mojos) but also outside of Maven as well
-* was birthplace of Resolver 2.x `ScopeManager` (that is now part of Resolver 2.x, while Resolver 1.x circumvention is present in Toolbox that supports Maven 3.6+), fixing MNG-8041
+* provide alternative for `maven-dependency-plugin`, offering similar (sub)set of Mojos
+* showcase MIMA, demonstrate how it helps to write reusable Resolver code that runs embedded in Maven (as Mojos or Extensions), but also outside of Maven as CLI
+* to experiment: was birthplace of Resolver 2.x `ScopeManager` (that is now part of Resolver 2.x, while Resolver 1.x circumvention is present in Toolbox that supports Maven 3.6+), fixing MNG-8041
 
 Structure of the project:
 * Module "shared" is a reusable library module, that depends on MIMA `Context` only (and Resolver APIs), and implements all the logic.

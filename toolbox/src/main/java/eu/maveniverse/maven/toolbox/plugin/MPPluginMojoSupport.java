@@ -97,15 +97,13 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
             throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
         List<ResolutionRoot> roots = new ArrayList<>();
         Model model = mavenProject.getModel();
+        String modelId = model.getGroupId() + ":" + model.getArtifactId() + ":" + model.getVersion();
         if (model.getBuild() != null && model.getBuild().getPluginManagement() != null) {
             for (Plugin plugin : model.getBuild().getPluginManagement().getPlugins()) {
                 InputLocation location = plugin.getLocation("");
                 if (location != null) {
                     InputSource source = location.getSource();
-                    if (source != null
-                            && !Objects.equals(
-                                    source.getModelId(),
-                                    model.getGroupId() + ":" + model.getArtifactId() + ":" + model.getVersion())) {
+                    if (source != null && !Objects.equals(source.getModelId(), modelId)) {
                         continue;
                     }
                 }

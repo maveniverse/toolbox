@@ -957,7 +957,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         if (artifacts.isEmpty()) {
             return true;
         }
-        output.normal("Available newest versions of {}", context);
+        output.normal("Checking newest versions of {} ({})", context, artifacts.size());
         for (Artifact artifact : artifacts) {
             List<Version> newer = toolboxResolver.findNewerVersions(artifact, versionPredicate);
             if (!newer.isEmpty()) {

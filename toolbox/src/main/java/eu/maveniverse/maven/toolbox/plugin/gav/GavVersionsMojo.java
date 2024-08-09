@@ -42,6 +42,7 @@ public class GavVersionsMojo extends GavMojoSupport {
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.versions(
+                "GAV",
                 slurp(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 output);

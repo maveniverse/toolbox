@@ -242,6 +242,6 @@ public interface ToolboxCommando {
             Output output)
             throws Exception;
 
-    boolean versions(Collection<Artifact> artifacts, Predicate<Version> versionPredicate, Output output)
+    boolean versions(String context, Collection<Artifact> artifacts, Predicate<Version> versionPredicate, Output output)
             throws Exception;
 }

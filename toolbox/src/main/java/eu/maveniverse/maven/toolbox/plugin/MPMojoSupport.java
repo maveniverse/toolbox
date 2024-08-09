@@ -87,6 +87,18 @@ public abstract class MPMojoSupport extends MojoSupport {
                 .collect(Collectors.toList());
     }
 
+    protected List<ResolutionRoot> projectManagedDependenciesAsResolutionRoots(
+            ResolutionScope scope, DependencyMatcher dependencyMatcher) {
+        ResolutionRoot project = projectAsResolutionRoot();
+        return project.getManagedDependencies().stream()
+                .filter(d -> !isReactorDependency(d))
+                .filter(d -> scope.getDirectInclude().contains(d.getScope()))
+                .filter(dependencyMatcher)
+                .map(d -> ResolutionRoot.ofLoaded(getToolboxCommando().toArtifact(d))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     protected boolean isReactorDependency(Dependency dependency) {
         return mavenSession.getAllProjects().stream()
                 .anyMatch(p -> Objects.equals(

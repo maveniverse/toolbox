@@ -36,12 +36,22 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
-        return toolboxCommando.versions(
+        toolboxCommando.versions(
+                "managed plugins",
+                allManagedPluginsAsResolutionRoots(toolboxCommando).stream()
+                        .map(ResolutionRoot::getArtifact)
+                        .filter(artifactMatcher)
+                        .collect(Collectors.toList()),
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
+                output);
+        toolboxCommando.versions(
+                "plugins",
                 allPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher)
                         .collect(Collectors.toList()),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 output);
+        return true;
     }
 }

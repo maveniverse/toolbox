@@ -951,13 +951,22 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean versions(Collection<Artifact> artifacts, Predicate<Version> versionPredicate, Output output)
+    public boolean versions(
+            String context, Collection<Artifact> artifacts, Predicate<Version> versionPredicate, Output output)
             throws Exception {
+        if (artifacts.isEmpty()) {
+            return true;
+        }
+        output.normal("Available newest versions of {}", context);
         for (Artifact artifact : artifacts) {
             List<Version> newer = toolboxResolver.findNewerVersions(artifact, versionPredicate);
             if (!newer.isEmpty()) {
-                output.normal("Available newer versions for {}:", ArtifactIdUtils.toId(artifact));
-                newer.forEach(version -> output.normal("* {}", version));
+                Version latest = newer.get(newer.size() - 1);
+                String all = newer.stream().map(Object::toString).collect(Collectors.joining(", "));
+                output.normal("* {} -> {}", ArtifactIdUtils.toId(artifact), latest);
+                output.normal("  Available: {}", all);
+            } else {
+                output.normal("* {} is up to date", ArtifactIdUtils.toId(artifact));
             }
         }
         return true;

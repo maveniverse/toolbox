@@ -34,15 +34,25 @@ public class VersionsMojo extends MPMojoSupport {
     private String depSpec;
 
     /**
-     * Artifact version matcher spec string, default is 'not(preview())'.
+     * Artifact version matcher spec string, default is 'noSnapshotsAndPreviews()'.
      */
-    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "not(preview())")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
     private String artifactVersionMatcherSpec;
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         ResolutionScope resolutionScope = ResolutionScope.parse(scope);
-        return toolboxCommando.versions(
+        toolboxCommando.versions(
+                "managed dependencies",
+                projectManagedDependenciesAsResolutionRoots(
+                                resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec))
+                        .stream()
+                        .map(ResolutionRoot::getArtifact)
+                        .collect(Collectors.toList()),
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
+                output);
+        toolboxCommando.versions(
+                "dependencies",
                 projectDependenciesAsResolutionRoots(
                                 resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec))
                         .stream()
@@ -50,5 +60,6 @@ public class VersionsMojo extends MPMojoSupport {
                         .collect(Collectors.toList()),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 output);
+        return true;
     }
 }

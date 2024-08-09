@@ -85,7 +85,9 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                 ResolutionRoot root = toolboxCommando.loadGav(
                         plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion());
                 if (!plugin.getDependencies().isEmpty()) {
-                    root.getDependencies().addAll(toDependencies(plugin.getDependencies()));
+                    root = root.builder()
+                            .withDependencies(toDependencies(plugin.getDependencies()))
+                            .build();
                 }
                 roots.add(root);
             }
@@ -110,7 +112,9 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                 ResolutionRoot root = toolboxCommando.loadGav(
                         plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion());
                 if (!plugin.getDependencies().isEmpty()) {
-                    root.getDependencies().addAll(toDependencies(plugin.getDependencies()));
+                    root = root.builder()
+                            .withDependencies(toDependencies(plugin.getDependencies()))
+                            .build();
                 }
                 roots.add(root);
             }

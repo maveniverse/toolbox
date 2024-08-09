@@ -966,7 +966,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 output.normal("* {} -> {}", ArtifactIdUtils.toId(artifact), latest);
                 output.normal("  Available: {}", all);
             } else {
-                output.normal("* {} is up to date", ArtifactIdUtils.toId(artifact));
+                output.verbose("* {} is up to date", ArtifactIdUtils.toId(artifact));
             }
         }
         return true;

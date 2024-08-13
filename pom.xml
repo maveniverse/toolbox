@@ -59,14 +59,12 @@
   <properties>
     <project.build.outputTimestamp>2024-08-09T16:22:56Z</project.build.outputTimestamp>
 
-    <!-- Maven Indexer needs 11+ -->
-    <maven.compiler.release>11</maven.compiler.release>
-
     <!--
     Build time: latest Maven and LTS Java.
     -->
-    <requireBuildtimeMavenVersion.version>[3.6.3,)</requireBuildtimeMavenVersion.version>
-    <requireBuildtimeJavaVersion.version>[11.0.2,)</requireBuildtimeJavaVersion.version>
+    <maven.compiler.release>21</maven.compiler.release>
+    <requireBuildtimeMavenVersion.version>[3.9.8,)</requireBuildtimeMavenVersion.version>
+    <requireBuildtimeJavaVersion.version>[21.0.3,)</requireBuildtimeJavaVersion.version>
 
     <!-- Dependency versions -->
     <version.mima>2.4.15</version.mima>

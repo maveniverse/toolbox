@@ -10,11 +10,9 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.internal.SpecParser;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -164,15 +162,15 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
                     break;
                 }
                 case "not": {
-                    params.add(not(artifactMatcherParam(node.getValue())));
+                    params.add(not(typedParam(ArtifactMatcher.class, node.getValue())));
                     break;
                 }
                 case "and": {
-                    params.add(and(artifactMatcherParams(node.getValue())));
+                    params.add(and(typedParams(ArtifactMatcher.class, node.getValue())));
                     break;
                 }
                 case "or": {
-                    params.add(or(artifactMatcherParams(node.getValue())));
+                    params.add(or(typedParams(ArtifactMatcher.class, node.getValue())));
                     break;
                 }
                 default:
@@ -180,30 +178,8 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
             }
         }
 
-        private ArtifactMatcher artifactMatcherParam(String op) {
-            if (params.isEmpty()) {
-                throw new IllegalArgumentException("bad parameter count for " + op);
-            }
-            return (ArtifactMatcher) params.remove(params.size() - 1);
-        }
-
-        private List<ArtifactMatcher> artifactMatcherParams(String op) {
-            ArrayList<ArtifactMatcher> result = new ArrayList<>();
-            while (!params.isEmpty()) {
-                if (params.get(params.size() - 1) instanceof ArtifactMatcher) {
-                    result.add(artifactMatcherParam(op));
-                } else {
-                    break;
-                }
-            }
-            return result;
-        }
-
         public ArtifactMatcher build() {
-            if (params.size() != 1) {
-                throw new IllegalArgumentException("bad spec");
-            }
-            return (ArtifactMatcher) params.get(0);
+            return build(ArtifactMatcher.class);
         }
     }
 

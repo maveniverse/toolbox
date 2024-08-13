@@ -10,10 +10,8 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.internal.SpecParser;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
@@ -23,9 +21,6 @@ import org.eclipse.aether.artifact.DefaultArtifact;
  * Mapper that maps artifact to artifact.
  */
 public interface ArtifactMapper extends Function<Artifact, Artifact> {
-    @Override
-    Artifact apply(Artifact artifact);
-
     static ArtifactMapper compose(ArtifactMapper... mappers) {
         return compose(Arrays.asList(mappers));
     }
@@ -42,6 +37,34 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
         };
     }
 
+    static ArtifactMapper identity() {
+        return new ArtifactMapper() {
+            @Override
+            public Artifact apply(Artifact artifact) {
+                return artifact;
+            }
+        };
+    }
+
+    static ArtifactMapper versionSuffix(String suffix) {
+        if (suffix == null || suffix.isEmpty()) {
+            throw new IllegalArgumentException("suffix must not be null or empty");
+        }
+        return new ArtifactMapper() {
+            @Override
+            public Artifact apply(Artifact artifact) {
+                return new DefaultArtifact(
+                        artifact.getGroupId(),
+                        artifact.getArtifactId(),
+                        artifact.getClassifier(),
+                        artifact.getExtension(),
+                        artifact.getVersion() + suffix,
+                        artifact.getProperties(),
+                        artifact.getFile());
+            }
+        };
+    }
+
     static ArtifactMapper baseVersion() {
         return new ArtifactMapper() {
             @Override
@@ -52,6 +75,25 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
                         artifact.getClassifier(),
                         artifact.getExtension(),
                         artifact.getBaseVersion(),
+                        artifact.getProperties(),
+                        artifact.getFile());
+            }
+        };
+    }
+
+    static ArtifactMapper baseVersionSuffix(String suffix) {
+        if (suffix == null || suffix.isEmpty()) {
+            throw new IllegalArgumentException("suffix must not be null or empty");
+        }
+        return new ArtifactMapper() {
+            @Override
+            public Artifact apply(Artifact artifact) {
+                return new DefaultArtifact(
+                        artifact.getGroupId(),
+                        artifact.getArtifactId(),
+                        artifact.getClassifier(),
+                        artifact.getExtension(),
+                        artifact.getBaseVersion() + suffix,
                         artifact.getProperties(),
                         artifact.getFile());
             }
@@ -106,8 +148,22 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
         @Override
         protected void processOp(SpecParser.Node node) {
             switch (node.getValue()) {
+                case "identity": {
+                    params.add(identity());
+                    break;
+                }
                 case "baseVersion": {
                     params.add(baseVersion());
+                    break;
+                }
+                case "versionSuffix": {
+                    String p0 = stringParam(node.getValue());
+                    params.add(versionSuffix(p0));
+                    break;
+                }
+                case "baseVersionSuffix": {
+                    String p0 = stringParam(node.getValue());
+                    params.add(baseVersionSuffix(p0));
                     break;
                 }
                 case "omitClassifier": {
@@ -122,7 +178,7 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
                     break;
                 }
                 case "compose": {
-                    params.add(compose(artifactMapperParams(node.getValue())));
+                    params.add(compose(typedParams(ArtifactMapper.class, node.getValue())));
                     break;
                 }
                 default:
@@ -130,30 +186,8 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
             }
         }
 
-        private ArtifactMapper artifactMapperParam(String op) {
-            if (params.isEmpty()) {
-                throw new IllegalArgumentException("bad parameter count for " + op);
-            }
-            return (ArtifactMapper) params.remove(params.size() - 1);
-        }
-
-        private List<ArtifactMapper> artifactMapperParams(String op) {
-            ArrayList<ArtifactMapper> result = new ArrayList<>();
-            while (!params.isEmpty()) {
-                if (params.get(params.size() - 1) instanceof ArtifactMapper) {
-                    result.add(artifactMapperParam(op));
-                } else {
-                    break;
-                }
-            }
-            return result;
-        }
-
         public ArtifactMapper build() {
-            if (params.size() != 1) {
-                throw new IllegalArgumentException("bad spec");
-            }
-            return (ArtifactMapper) params.get(0);
+            return build(ArtifactMapper.class);
         }
     }
 }

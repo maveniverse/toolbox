@@ -7,7 +7,10 @@
  */
 package eu.maveniverse.maven.toolbox.shared;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
@@ -16,6 +19,8 @@ import org.eclipse.aether.graph.Dependency;
  * Resolution root, that directs what we want to resolve (or collect).
  * <p>
  * To circumvent Resolver 1.x issue manifested with wrong Runtime graph building.
+ * <p>
+ * This class once constructed is immutable.
  */
 public final class ResolutionRoot {
     private final Artifact artifact;
@@ -33,8 +38,11 @@ public final class ResolutionRoot {
         this.artifact = artifact;
         this.load = load;
         this.prepared = prepared;
-        this.dependencies = dependencies;
-        this.managedDependencies = managedDependencies;
+        this.dependencies =
+                dependencies.isEmpty() ? Collections.emptyList() : Collections.unmodifiableList(dependencies);
+        this.managedDependencies = managedDependencies.isEmpty()
+                ? Collections.emptyList()
+                : Collections.unmodifiableList(managedDependencies);
     }
 
     /**
@@ -68,27 +76,30 @@ public final class ResolutionRoot {
     }
 
     /**
-     * Explicitly specified direct dependencies.
+     * Explicitly specified direct dependencies (as immutable list).
      * <p>
      * If {@link #isLoad()} is {@code true}, these dependencies will be merged with loaded POM dependencies as
      * "dominant" ones. Otherwise, only these dependencies will be considered.
-     * <p>
-     * Returns {@code null} if not specified and {@link #isLoad()} is {@code true}.
      */
     public List<Dependency> getDependencies() {
         return dependencies;
     }
 
     /**
-     * Explicitly specified dependency management.
+     * Explicitly specified dependency management (as immutable list).
      * <p>
      * If {@link #isLoad()} is {@code true}, these dependency management entries will be merged with loaded POM
      * dependency management as "dominant" ones. Otherwise, only these dependency management entries will be considered.
-     * <p>
-     * Returns {@code null} if not specified.
      */
     public List<Dependency> getManagedDependencies() {
         return managedDependencies;
+    }
+
+    /**
+     * Returns new instance of {@link Builder} initialized with this instance, never {@code null}.
+     */
+    public Builder builder() {
+        return new Builder(artifact, load, dependencies, managedDependencies);
     }
 
     /**
@@ -108,12 +119,20 @@ public final class ResolutionRoot {
 
     public static final class Builder {
         private final Artifact artifact;
-        private boolean load = false;
-        private List<Dependency> dependencies = null;
-        private List<Dependency> managedDependencies = null;
+        private boolean load;
+        private List<Dependency> dependencies;
+        private List<Dependency> managedDependencies;
 
         private Builder(Artifact artifact) {
-            this.artifact = artifact;
+            this(artifact, false, Collections.emptyList(), Collections.emptyList());
+        }
+
+        private Builder(
+                Artifact artifact, boolean load, List<Dependency> dependencies, List<Dependency> managedDependencies) {
+            this.artifact = requireNonNull(artifact, "artifact");
+            this.load = load;
+            this.dependencies = requireNonNull(dependencies, "dependencies");
+            this.managedDependencies = requireNonNull(managedDependencies, "managedDependencies");
         }
 
         public Builder load() {
@@ -137,7 +156,7 @@ public final class ResolutionRoot {
         }
 
         public ResolutionRoot build() {
-            if (!load && dependencies == null) {
+            if (!load && dependencies.isEmpty()) {
                 throw new IllegalStateException("must specify dependencies for non-loaded artifacts");
             }
             return new ResolutionRoot(artifact, load, false, dependencies, managedDependencies);

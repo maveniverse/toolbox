@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -33,7 +34,17 @@ public class PluginTreeMojo extends MPPluginMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.tree(
-                ResolutionScope.parse(scope), pluginAsResolutionRoot(toolboxCommando), verboseTree, output);
+        ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
+        if (root != null) {
+            return toolboxCommando.tree(ResolutionScope.parse(scope), root, verboseTree, output);
+        } else {
+            boolean result = true;
+            for (ResolutionRoot resolutionRoot : allPluginsAsResolutionRoots(toolboxCommando)) {
+                result = result
+                        && toolboxCommando.tree(ResolutionScope.parse(scope), resolutionRoot, verboseTree, output);
+                output.normal("");
+            }
+            return result;
+        }
     }
 }

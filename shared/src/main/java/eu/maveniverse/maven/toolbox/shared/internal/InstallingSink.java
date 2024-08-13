@@ -5,10 +5,11 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared;
+package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import java.util.Collection;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -29,17 +30,15 @@ public final class InstallingSink implements ArtifactSink {
     /**
      * Creates installing sink that installs into passed in session local repository.
      */
-    public static InstallingSink installing(Output output, RepositorySystem system, RepositorySystemSession session) {
-        return new InstallingSink(output, system, session);
+    public static InstallingSink installing(RepositorySystem system, RepositorySystemSession session) {
+        return new InstallingSink(system, session);
     }
 
-    private final Output output;
     private final RepositorySystem system;
     private final RepositorySystemSession session;
     private final InstallRequest installRequest;
 
-    private InstallingSink(Output output, RepositorySystem system, RepositorySystemSession session) {
-        this.output = requireNonNull(output, "output");
+    private InstallingSink(RepositorySystem system, RepositorySystemSession session) {
         this.system = requireNonNull(system, "system");
         this.session = requireNonNull(session, "session");
         this.installRequest = new InstallRequest();
@@ -64,8 +63,6 @@ public final class InstallingSink implements ArtifactSink {
 
     @Override
     public void close() throws InstallationException {
-        output.normal(
-                "Installing {} artifacts...", installRequest.getArtifacts().size());
         system.install(session, installRequest);
     }
 }

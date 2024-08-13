@@ -57,10 +57,6 @@ public final class SpecParser {
         protected final ArrayList<Object> params = new ArrayList<>();
         protected final Map<String, ?> properties;
 
-        public Builder() {
-            this.properties = null;
-        }
-
         public Builder(Map<String, ?> properties) {
             this.properties = new HashMap<>(properties);
         }
@@ -83,9 +79,6 @@ public final class SpecParser {
         protected void processLiteral(Node node) {
             String value = node.getValue();
             if (value.startsWith("${") && value.endsWith("}")) {
-                if (properties == null) {
-                    throw new IllegalStateException("reference used without properties defined");
-                }
                 Object referenced = properties.get(value.substring(2, value.length() - 1));
                 if (referenced == null) {
                     referenced = "";
@@ -135,6 +128,32 @@ public final class SpecParser {
                 throw new IllegalArgumentException("bad parameter count for " + op);
             }
             return Integer.parseInt((String) params.remove(params.size() - 1));
+        }
+
+        protected <T> T typedParam(Class<T> clazz, String op) {
+            if (params.isEmpty()) {
+                throw new IllegalArgumentException("bad parameter count for " + op);
+            }
+            return clazz.cast(params.remove(params.size() - 1));
+        }
+
+        protected <T> List<T> typedParams(Class<T> clazz, String op) {
+            ArrayList<T> result = new ArrayList<>();
+            while (!params.isEmpty()) {
+                if (clazz.isInstance(params.get(params.size() - 1))) {
+                    result.add(typedParam(clazz, op));
+                } else {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        public <T> T build(Class<T> clazz) {
+            if (params.size() != 1) {
+                throw new IllegalArgumentException("bad spec");
+            }
+            return clazz.cast(params.get(0));
         }
     }
 
@@ -220,6 +239,8 @@ public final class SpecParser {
                         || ':' == ch
                         || '.' == ch
                         || '-' == ch
+                        || '/' == ch
+                        || '\\' == ch
                         || '$' == ch
                         || '{' == ch
                         || '}' == ch) {

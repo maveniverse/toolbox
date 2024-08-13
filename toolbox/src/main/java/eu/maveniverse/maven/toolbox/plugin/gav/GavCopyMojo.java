@@ -39,7 +39,7 @@ public final class GavCopyMojo extends GavMojoSupport {
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.copy(
-                csv(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
+                slurp(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
                 toolboxCommando.artifactSink(output, sinkSpec),
                 output);
     }

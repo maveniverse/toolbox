@@ -12,6 +12,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.repository.RemoteRepository;
 import picocli.CommandLine;
 
+/**
+ * Support class for "project unaware" search Mojos.
+ */
 public abstract class GavSearchMojoSupport extends GavMojoSupport {
     /**
      * A repository ID. Maybe a "well known" one, or if all repository data given, a new one.
@@ -38,8 +41,8 @@ public abstract class GavSearchMojoSupport extends GavMojoSupport {
     @CommandLine.Option(
             names = {"--repositoryVendor"},
             description = "The vendor of the remote repository")
-    @Parameter(property = "repositoryVendor")
-    private String repositoryVendor;
+    @Parameter(property = "repositoryVendor", alias = "toolbox.search.backend.type")
+    protected String repositoryVendor;
 
     protected RemoteRepository getRemoteRepository(ToolboxCommando toolboxCommando) {
         RemoteRepository remoteRepository =

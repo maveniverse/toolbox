@@ -19,12 +19,19 @@ import org.jline.console.SystemRegistry;
 import org.jline.console.impl.Builtins;
 import org.jline.console.impl.SystemRegistryImpl;
 import org.jline.keymap.KeyMap;
-import org.jline.reader.*;
+import org.jline.reader.Binding;
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.MaskingCallback;
+import org.jline.reader.Parser;
+import org.jline.reader.Reference;
+import org.jline.reader.UserInterruptException;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
-import org.jline.terminal.impl.jansi.JansiTerminalProvider;
+import org.jline.terminal.impl.jni.JniTerminalProvider;
 import org.jline.widget.TailTipWidgets;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
@@ -34,7 +41,7 @@ import picocli.shell.jline3.PicocliCommands;
 public class GavReplMojo extends GavMojoSupport {
     @Override
     public boolean doExecute(Output output, ToolboxCommando toolboxCommando) {
-        Class<?> tp = JansiTerminalProvider.class;
+        Class<?> tp = JniTerminalProvider.class;
         Context context = getContext();
 
         toolboxCommando.dump(false, output);
@@ -83,6 +90,8 @@ public class GavReplMojo extends GavMojoSupport {
                     // Ignore
                 } catch (EndOfFileException e) {
                     return true;
+                } catch (SystemRegistryImpl.UnknownCommandException e) {
+                    output.error("REPL Failure: " + e.getMessage());
                 } catch (Exception e) {
                     systemRegistry.trace(e);
                     return false;

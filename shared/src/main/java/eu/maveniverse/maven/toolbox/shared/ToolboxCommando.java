@@ -18,10 +18,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
+import org.eclipse.aether.resolution.VersionRangeResolutionException;
+import org.eclipse.aether.version.InvalidVersionSpecificationException;
+import org.eclipse.aether.version.Version;
 
 /**
  * The Toolbox Commando, that implements all the commands that are exposed via Mojos or CLI.
@@ -29,7 +35,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
  * This instance manages {@link Context}, corresponding resolver and search API
  * and maps one-to-one onto commands. Can be considered something like "high level" API of Toolbox.
  * <p>
- * Note on error handling: each "commando" method is marked to throw and return a {@link boolean}.
+ * Note on error handling: each "commando" method is marked to throw and return a {@code boolean}.
  * If method cleanly returns, the result shows the "logical success" of the command (think about it {@code false} means
  * "this execution was no-op"). If method throws, {@link RuntimeException} instances (for example NPE, IAEx, ISEx)
  * mark "bad input", or configuration related errors. The checked exception instances on the other hand come from
@@ -75,6 +81,16 @@ public interface ToolboxCommando {
     DependencyMatcher parseDependencyMatcherSpec(String spec);
 
     /**
+     * Parses artifact version matcher string into {@link ArtifactVersionMatcher}.
+     */
+    ArtifactVersionMatcher parseArtifactVersionMatcherSpec(String spec);
+
+    /**
+     * Parses artifact version selector string into {@link ArtifactVersionSelector}.
+     */
+    ArtifactVersionSelector parseArtifactVersionSelectorSpec(String spec);
+
+    /**
      * Parses remote repository string into {@link RemoteRepository}. It may be {@code url} only, {@code id::url} or
      * {@code id::type::url} form. In first case, repository ID will be {@code "mima"}.
      */
@@ -84,34 +100,42 @@ public interface ToolboxCommando {
 
     /**
      * Provides {@link ArtifactSink} according to spec.
-     *
-     * TODO: consider using here URI, like "proto" + "path" (if proto needs it) and "?opt=value" etc.
      */
     ArtifactSink artifactSink(Output output, String spec) throws IOException;
 
     /**
      * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact.
      */
-    default ResolutionRoot loadGav(String gav) throws ArtifactDescriptorException {
+    default ResolutionRoot loadGav(String gav)
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
         return loadGav(gav, Collections.emptyList());
     }
 
     /**
      * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact and BOMs.
      */
-    ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException;
+    ResolutionRoot loadGav(String gav, Collection<String> boms)
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException;
 
     /**
      * Shorthand method, creates collection {@link ResolutionRoot}s out of passed in artifacts and BOMs.
      */
     default Collection<ResolutionRoot> loadGavs(Collection<String> gav, Collection<String> boms)
-            throws ArtifactDescriptorException {
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
         List<ResolutionRoot> result = new ArrayList<>(gav.size());
         for (String gavEntry : gav) {
             result.add(loadGav(gavEntry, boms));
         }
         return result;
     }
+
+    /**
+     * Converts a dependency into artifact. This may be trivial, but may involve resolving of version range, if
+     * dependency uses them.
+     */
+    Artifact toArtifact(Dependency dependency);
+
+    // Commands
 
     boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) throws Exception;
 
@@ -124,10 +148,12 @@ public interface ToolboxCommando {
             Output output)
             throws Exception;
 
-    boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output)
+    boolean copyAllRecorded(ArtifactSink sink, boolean stopRecording, Output output) throws Exception;
+
+    boolean deploy(RemoteRepository remoteRepository, Supplier<Collection<Artifact>> artifactSupplier, Output output)
             throws Exception;
 
-    boolean deployAllRecorded(String remoteRepositorySpec, boolean stopRecording, Output output) throws Exception;
+    boolean deployAllRecorded(RemoteRepository remoteRepository, boolean stopRecording, Output output) throws Exception;
 
     boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output) throws Exception;
 
@@ -164,6 +190,14 @@ public interface ToolboxCommando {
     boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output)
             throws Exception;
 
+    boolean treeFind(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean verbose,
+            ArtifactMatcher artifactMatcher,
+            Output output)
+            throws Exception;
+
     // Search API related commands: they target one single RemoteRepository
 
     /**
@@ -180,14 +214,34 @@ public interface ToolboxCommando {
             boolean javadoc,
             boolean signature,
             boolean allRequired,
+            String repositoryVendor,
             Output output)
             throws IOException;
 
     boolean identify(RemoteRepository remoteRepository, String target, Output output) throws IOException;
 
-    boolean list(RemoteRepository remoteRepository, String gavoid, Output output) throws IOException;
+    boolean list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Output output)
+            throws IOException;
 
     boolean search(RemoteRepository remoteRepository, String expression, Output output) throws IOException;
 
-    boolean verify(RemoteRepository remoteRepository, String gav, String sha1, Output output) throws IOException;
+    boolean verify(RemoteRepository remoteRepository, String gav, String sha1, String repositoryVendor, Output output)
+            throws IOException;
+
+    // Various
+
+    boolean libYear(
+            ResolutionScope resolutionScope,
+            Collection<ResolutionRoot> resolutionRoots,
+            boolean transitive,
+            boolean quiet,
+            boolean upToDate,
+            Predicate<Version> versionPredicate,
+            BiFunction<Artifact, List<Version>, String> artifactVersionSelector,
+            String repositoryVendor,
+            Output output)
+            throws Exception;
+
+    boolean versions(String context, Collection<Artifact> artifacts, Predicate<Version> versionPredicate, Output output)
+            throws Exception;
 }

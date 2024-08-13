@@ -38,7 +38,6 @@ public class ArtifactMapperTest {
         properties.put("groupId", "org.some.group");
         Artifact artifact = new DefaultArtifact("g:a:jar:classifier:1.0-20240322.090900-12");
 
-        ArtifactMapper artifactMapper;
         Artifact mapped;
 
         mapped = ArtifactMapper.build(properties, "omitClassifier()").apply(artifact);

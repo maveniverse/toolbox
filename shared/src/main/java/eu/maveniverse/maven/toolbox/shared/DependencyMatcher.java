@@ -10,11 +10,9 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.internal.SpecParser;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.eclipse.aether.graph.Dependency;
@@ -152,15 +150,15 @@ public interface DependencyMatcher extends Predicate<Dependency> {
                     break;
                 }
                 case "not": {
-                    params.add(not(dependencyMatcherParam(node.getValue())));
+                    params.add(not(typedParam(DependencyMatcher.class, node.getValue())));
                     break;
                 }
                 case "and": {
-                    params.add(and(dependencyMatcherParams(node.getValue())));
+                    params.add(and(typedParams(DependencyMatcher.class, node.getValue())));
                     break;
                 }
                 case "or": {
-                    params.add(or(dependencyMatcherParams(node.getValue())));
+                    params.add(or(typedParams(DependencyMatcher.class, node.getValue())));
                     break;
                 }
                 default:
@@ -168,30 +166,8 @@ public interface DependencyMatcher extends Predicate<Dependency> {
             }
         }
 
-        private DependencyMatcher dependencyMatcherParam(String op) {
-            if (params.isEmpty()) {
-                throw new IllegalArgumentException("bad parameter count for " + op);
-            }
-            return (DependencyMatcher) params.remove(params.size() - 1);
-        }
-
-        private List<DependencyMatcher> dependencyMatcherParams(String op) {
-            ArrayList<DependencyMatcher> result = new ArrayList<>();
-            while (!params.isEmpty()) {
-                if (params.get(params.size() - 1) instanceof DependencyMatcher) {
-                    result.add(dependencyMatcherParam(op));
-                } else {
-                    break;
-                }
-            }
-            return result;
-        }
-
         public DependencyMatcher build() {
-            if (params.size() != 1) {
-                throw new IllegalArgumentException("bad spec");
-            }
-            return (DependencyMatcher) params.get(0);
+            return build(DependencyMatcher.class);
         }
     }
 }

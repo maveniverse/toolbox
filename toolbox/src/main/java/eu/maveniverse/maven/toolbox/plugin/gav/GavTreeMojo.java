@@ -51,12 +51,16 @@ public class GavTreeMojo extends GavMojoSupport {
     /**
      * Set it {@code true} for verbose tree.
      */
+    @CommandLine.Option(
+            names = {"--verboseTree"},
+            defaultValue = "false",
+            description = "Make it true for verbose tree")
     @Parameter(property = "verboseTree", defaultValue = "false", required = true)
     private boolean verboseTree;
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.tree(
-                ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, csv(boms)), verboseTree, output);
+                ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)), verboseTree, output);
     }
 }

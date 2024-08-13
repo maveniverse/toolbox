@@ -13,17 +13,16 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.eclipse.aether.graph.Dependency;
 
 /**
  * Resolves selected dependencies.
  */
-@Mojo(name = "resolve", requiresProject = false, threadSafe = true)
+@Mojo(name = "resolve", threadSafe = true)
 public class ResolveMojo extends MPMojoSupport {
     /**
      * The dependency matcher spec.
      */
-    @Parameter(property = "depSpec", required = true)
+    @Parameter(property = "depSpec", defaultValue = "any()")
     private String depSpec;
 
     /**
@@ -45,9 +44,9 @@ public class ResolveMojo extends MPMojoSupport {
     private boolean signature;
 
     /**
-     * The artifact sink spec (default: "null:").
+     * The artifact sink spec (default: "null()").
      */
-    @Parameter(property = "sinkSpec", defaultValue = "null:", required = true)
+    @Parameter(property = "sinkSpec", defaultValue = "null()", required = true)
     private String sinkSpec;
 
     @Override
@@ -55,7 +54,7 @@ public class ResolveMojo extends MPMojoSupport {
         return toolboxCommando.resolve(
                 projectAsResolutionRoot().getDependencies().stream()
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
-                        .map(Dependency::getArtifact)
+                        .map(toolboxCommando::toArtifact)
                         .collect(Collectors.toList()),
                 sources,
                 javadoc,

@@ -5,10 +5,12 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared;
+package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +34,8 @@ import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.aether.artifact.Artifact;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Construction to accept collection of artifacts and unpack them.
@@ -40,7 +44,6 @@ public final class UnpackSink implements ArtifactSink {
     /**
      * Creates plain unpack sink where unpacking happens according to supplied parameters.
      *
-     * @param output The output.
      * @param path The root where unpack happens.
      * @param artifactRootMapper The artifact root mapper, that decides where is root of unpacking for given artifact.
      *                           To achieve "overlay", one can use {@code fixed(.)} mapper that will map roots into
@@ -48,10 +51,8 @@ public final class UnpackSink implements ArtifactSink {
      * @param allowEntryOverwrite Does this sink allow entry overlap (among unpacked archives) or not?
      */
     public static UnpackSink unpack(
-            Output output, Path path, Function<Artifact, String> artifactRootMapper, boolean allowEntryOverwrite)
-            throws IOException {
+            Path path, Function<Artifact, String> artifactRootMapper, boolean allowEntryOverwrite) throws IOException {
         return new UnpackSink(
-                output,
                 path,
                 ArtifactMatcher.unique(),
                 false,
@@ -62,7 +63,7 @@ public final class UnpackSink implements ArtifactSink {
                 allowEntryOverwrite);
     }
 
-    private final Output output;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Path directory;
     private final boolean directoryCreated;
     private final Predicate<Artifact> artifactMatcher;
@@ -76,7 +77,6 @@ public final class UnpackSink implements ArtifactSink {
     /**
      * Creates a directory sink.
      *
-     * @param output The output.
      * @param directory The directory, if not existing, will be created.
      * @param artifactMatcher The matcher, that decides is this sink accepting artifact or not.
      * @param artifactMapper The artifact mapper, that may re-map artifact.
@@ -88,7 +88,6 @@ public final class UnpackSink implements ArtifactSink {
      * @throws IOException In case of IO problem.
      */
     private UnpackSink(
-            Output output,
             Path directory,
             Predicate<Artifact> artifactMatcher,
             boolean failIfUnmatched,
@@ -98,7 +97,6 @@ public final class UnpackSink implements ArtifactSink {
             boolean allowRootOverwrite,
             boolean allowEntryOverwrite)
             throws IOException {
-        this.output = requireNonNull(output, "output");
         this.directory = requireNonNull(directory, "directory").toAbsolutePath();
         if (Files.exists(directory) && !Files.isDirectory(directory)) {
             throw new IllegalArgumentException("directory must not exists, or must be a directory");
@@ -127,11 +125,11 @@ public final class UnpackSink implements ArtifactSink {
     @Override
     public void accept(Artifact artifact) throws IOException {
         requireNonNull(artifact, "artifact");
-        output.verbose("Accept artifact {}", artifact);
+        logger.debug("Accept artifact {}", artifact);
         if (artifactMatcher.test(artifact)) {
-            output.verbose("  matched");
+            logger.debug("  matched");
             String targetName = artifactRootMapper.apply(artifactMapper.apply(artifact));
-            output.verbose("  mapped to name {}", targetName);
+            logger.debug("  mapped to name {}", targetName);
             Path target = directory.resolve(targetName).toAbsolutePath();
             if (!target.startsWith(directory)) {
                 throw new IOException("Path escape prevented; check mappings");
@@ -168,8 +166,6 @@ public final class UnpackSink implements ArtifactSink {
         } else {
             if (failIfUnmatched) {
                 throw new IllegalArgumentException("not matched");
-            } else {
-                output.verbose("  not matched");
             }
         }
     }
@@ -179,7 +175,7 @@ public final class UnpackSink implements ArtifactSink {
             TarArchiveEntry entry;
             while ((entry = tar.getNextEntry()) != null) {
                 if (!tar.canReadEntryData(entry)) {
-                    output.warn("Cannot read entry {}", entry.getName());
+                    logger.warn("Cannot read entry {}", entry.getName());
                     continue;
                 }
                 Path f = mapToOutput(target, entry.getName());
@@ -200,7 +196,7 @@ public final class UnpackSink implements ArtifactSink {
             while (zipArchiveEntryEnumeration.hasMoreElements()) {
                 entry = zipArchiveEntryEnumeration.nextElement();
                 if (!zip.canReadEntryData(entry)) {
-                    output.warn("Cannot read entry {}", entry.getName());
+                    logger.warn("Cannot read entry {}", entry.getName());
                     continue;
                 }
                 Path f = mapToOutput(target, entry.getName());
@@ -220,7 +216,7 @@ public final class UnpackSink implements ArtifactSink {
             JarArchiveEntry entry;
             while ((entry = jar.getNextEntry()) != null) {
                 if (!jar.canReadEntryData(entry)) {
-                    output.warn("Cannot read entry {}", entry.getName());
+                    logger.warn("Cannot read entry {}", entry.getName());
                     continue;
                 }
                 Path f = mapToOutput(target, entry.getName());
@@ -256,18 +252,17 @@ public final class UnpackSink implements ArtifactSink {
 
     @Override
     public void cleanup(Exception e) {
-        output.error("Cleaning up: {}", directory);
         writtenPaths.forEach(p -> {
             try (Stream<Path> stream = Files.walk(p).sorted(Comparator.reverseOrder())) {
                 stream.forEach(f -> {
                     try {
                         Files.delete(f);
                     } catch (IOException ioex) {
-                        output.warn("Could not delete {}", p, ioex);
+                        logger.warn("Could not delete {}", p, ioex);
                     }
                 });
             } catch (IOException ioex) {
-                output.warn("Could not walk {}", p, ioex);
+                logger.warn("Could not walk {}", p, ioex);
             }
         });
         if (directoryCreated) {

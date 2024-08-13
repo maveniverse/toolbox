@@ -9,17 +9,15 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Output;
-import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  * Resolves transitively selected dependencies.
  */
-@Mojo(name = "resolve-transitive", requiresProject = false, threadSafe = true)
+@Mojo(name = "resolve-transitive", threadSafe = true)
 public class ResolveTransitiveMojo extends MPMojoSupport {
     /**
      * The resolution scope to resolve, accepted values are "runtime", "compile", "test", etc.
@@ -30,7 +28,7 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
     /**
      * The dependency matcher spec.
      */
-    @Parameter(property = "depSpec", required = true)
+    @Parameter(property = "depSpec", defaultValue = "any()")
     private String depSpec;
 
     /**
@@ -52,22 +50,18 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
     private boolean signature;
 
     /**
-     * The artifact sink spec (default: "null:").
+     * The artifact sink spec (default: "null()").
      */
-    @Parameter(property = "sinkSpec", defaultValue = "null:", required = true)
+    @Parameter(property = "sinkSpec", defaultValue = "null()", required = true)
     private String sinkSpec;
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        ResolutionRoot project = projectAsResolutionRoot();
+        ResolutionScope resolutionScope = ResolutionScope.parse(scope);
         return toolboxCommando.resolveTransitive(
-                ResolutionScope.parse(scope),
-                projectAsResolutionRoot().getDependencies().stream()
-                        .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
-                        .map(d -> ResolutionRoot.ofLoaded(d.getArtifact())
-                                .withManagedDependencies(project.getManagedDependencies())
-                                .build())
-                        .collect(Collectors.toList()),
+                resolutionScope,
+                projectDependenciesAsResolutionRoots(
+                        resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec)),
                 sources,
                 javadoc,
                 signature,

@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.ArtifactSinks.nonClosingArtifactSink;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.maven.search.api.request.BooleanQuery.and;
@@ -24,24 +25,18 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSinks;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
-import eu.maveniverse.maven.toolbox.shared.DeployingSink;
-import eu.maveniverse.maven.toolbox.shared.DirectorySink;
-import eu.maveniverse.maven.toolbox.shared.InstallingSink;
-import eu.maveniverse.maven.toolbox.shared.ModuleDescriptorExtractingSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
-import eu.maveniverse.maven.toolbox.shared.PurgingSink;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.UnpackSink;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -57,7 +52,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -71,23 +66,27 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.deployment.DeployRequest;
+import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.installation.InstallRequest;
-import org.eclipse.aether.repository.LocalRepository;
-import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyResult;
+import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.util.ChecksumUtils;
+import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.util.artifact.SubArtifact;
+import org.eclipse.aether.util.graph.visitor.PathRecordingDependencyVisitor;
 import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.util.listener.ChainedRepositoryListener;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
+import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
 import org.slf4j.Logger;
@@ -97,6 +96,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Runtime runtime;
     private final Context context;
+    private final VersionScheme versionScheme;
     private final ToolboxSearchApiImpl toolboxSearchApi;
     private final ArtifactRecorderImpl artifactRecorder;
     private final ToolboxResolverImpl toolboxResolver;
@@ -106,14 +106,23 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public ToolboxCommandoImpl(Runtime runtime, Context context) {
         this.runtime = requireNonNull(runtime, "runtime");
         this.context = requireNonNull(context, "context");
+        this.versionScheme = new GenericVersionScheme();
         this.toolboxSearchApi = new ToolboxSearchApiImpl();
         this.artifactRecorder = new ArtifactRecorderImpl();
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
         session.setRepositoryListener(
                 ChainedRepositoryListener.newInstance(session.getRepositoryListener(), artifactRecorder));
-        this.toolboxResolver =
-                new ToolboxResolverImpl(context.repositorySystem(), session, context.remoteRepositories());
+        this.toolboxResolver = new ToolboxResolverImpl(
+                context.repositorySystem(), session, context.remoteRepositories(), versionScheme);
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());
+    }
+
+    public Context getContext() {
+        return context;
+    }
+
+    public ToolboxResolverImpl getToolboxResolver() {
+        return toolboxResolver;
     }
 
     protected Map<String, RemoteRepository> createKnownSearchRemoteRepositories() {
@@ -248,101 +257,49 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public ArtifactVersionMatcher parseArtifactVersionMatcherSpec(String spec) {
+        return ArtifactVersionMatcher.build(
+                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
+    }
+
+    @Override
+    public ArtifactVersionSelector parseArtifactVersionSelectorSpec(String spec) {
+        return ArtifactVersionSelector.build(
+                versionScheme, context.repositorySystemSession().getConfigProperties(), spec);
+    }
+
+    @Override
     public RemoteRepository parseRemoteRepository(String spec) {
         return toolboxResolver.parseRemoteRepository(spec);
     }
 
     @Override
     public ArtifactSink artifactSink(Output output, String spec) throws IOException {
-        // This is to honor paths like "C:/..." (so we check for "prefix" longer than 3 chars)
-        String prefix = spec.indexOf(':') > 3 ? spec.substring(0, spec.indexOf(":")) : "flatImplied";
-        String path;
-        switch (prefix) {
-            case "flatImplied":
-            case "flat": {
-                path = "flatImplied".equals(prefix) ? spec : spec.substring(prefix.length() + 1);
-                ArtifactNameMapper artifactNameMapper = ArtifactNameMapper.AbVCE();
-                if (path.contains("?artifactNameMapperSpec=")) {
-                    String artifactNameMapperSpec = path.substring(path.indexOf('=') + 1);
-                    artifactNameMapper = parseArtifactNameMapperSpec(artifactNameMapperSpec);
-                    path = path.substring(0, path.indexOf('?'));
-                }
-                return DirectorySink.flat(output, context.basedir().resolve(path), artifactNameMapper);
-            }
-            case "repository":
-                return DirectorySink.repository(output, context.basedir().resolve(spec.substring(prefix.length() + 1)));
-            case "install": {
-                path = spec.substring(prefix.length() + 1);
-                if (!path.trim().isEmpty()) {
-                    Path altLocalRepository = context.basedir().resolve(path);
-                    LocalRepository localRepository = new LocalRepository(altLocalRepository.toFile());
-                    LocalRepositoryManager lrm = context.repositorySystem()
-                            .newLocalRepositoryManager(context.repositorySystemSession(), localRepository);
-                    DefaultRepositorySystemSession session =
-                            new DefaultRepositorySystemSession(context.repositorySystemSession());
-                    session.setLocalRepositoryManager(lrm);
-                    return InstallingSink.installing(output, context.repositorySystem(), session);
-                } else {
-                    return InstallingSink.installing(
-                            output, context.repositorySystem(), context.repositorySystemSession());
-                }
-            }
-            case "deploy":
-                return DeployingSink.deploying(
-                        output,
-                        context.repositorySystem(),
-                        context.repositorySystemSession(),
-                        toolboxResolver.parseRemoteRepository(spec.substring(prefix.length() + 1)));
-            case "purge": {
-                path = spec.substring(prefix.length() + 1);
-                if (!path.trim().isEmpty()) {
-                    Path altLocalRepository = context.basedir().resolve(path);
-                    LocalRepository localRepository = new LocalRepository(altLocalRepository.toFile());
-                    LocalRepositoryManager lrm = context.repositorySystem()
-                            .newLocalRepositoryManager(context.repositorySystemSession(), localRepository);
-                    DefaultRepositorySystemSession session =
-                            new DefaultRepositorySystemSession(context.repositorySystemSession());
-                    session.setLocalRepositoryManager(lrm);
-                    return PurgingSink.purging(
-                            output, context.repositorySystem(), session, context.remoteRepositories());
-                } else {
-                    return PurgingSink.purging(
-                            output,
-                            context.repositorySystem(),
-                            context.repositorySystemSession(),
-                            context.remoteRepositories());
-                }
-            }
-            case "unpack": {
-                // overlay: "unpack:rel/path?artifactNameMapperSpec=fixed(.)"
-                // unpack each-by-each: "unpack:rel/path" (and will name root dirs ACVE)
-                path = spec.substring(prefix.length() + 1);
-                ArtifactNameMapper artifactNameMapper = ArtifactNameMapper.ACVE();
-                boolean allowEntryOverwrite = true;
-                if (path.contains("?artifactNameMapperSpec=")) {
-                    String artifactNameMapperSpec = path.substring(path.indexOf('=') + 1);
-                    artifactNameMapper = parseArtifactNameMapperSpec(artifactNameMapperSpec);
-                    path = path.substring(0, path.indexOf('?'));
-                }
-                return UnpackSink.unpack(
-                        output, context.basedir().resolve(path), artifactNameMapper, allowEntryOverwrite);
-            }
-            case "null":
-                return ArtifactSinks.nullArtifactSink();
-            default:
-                throw new IllegalArgumentException("unknown artifact sink spec");
-        }
+        return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
     }
 
     @Override
-    public ResolutionRoot loadGav(String gav, Collection<String> boms) throws ArtifactDescriptorException {
+    public ResolutionRoot loadGav(String gav, Collection<String> boms)
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
         return toolboxResolver.loadGav(gav, boms);
+    }
+
+    @Override
+    public Artifact toArtifact(Dependency dependency) {
+        try {
+            // TODO: this is how Maven behaves, make it configurable?
+            return toolboxResolver.mayResolveArtifactVersion(dependency.getArtifact(), ArtifactVersionSelector.last());
+        } catch (InvalidVersionSpecificationException | VersionRangeResolutionException e) {
+            logger.warn("Could not resolve artifact version: {}", dependency.getArtifact(), e);
+            return dependency.getArtifact();
+        }
     }
 
     @Override
     public boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output)
             throws Exception {
         output.verbose("Resolving {}", resolutionRoot.getArtifact());
+        resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
         DependencyResult dependencyResult = toolboxResolver.resolve(
                 resolutionScope,
                 resolutionRoot.getArtifact(),
@@ -379,6 +336,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ArrayList<ArtifactResult> artifactResults = new ArrayList<>();
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 output.verbose("Resolving {}", resolutionRoot.getArtifact());
+                resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
                 DependencyResult dependencyResult = toolboxResolver.resolve(
                         resolutionScope,
                         resolutionRoot.getArtifact(),
@@ -399,10 +357,20 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean deploy(String remoteRepositorySpec, Supplier<Collection<Artifact>> artifactSupplier, Output output)
+    public boolean copyAllRecorded(ArtifactSink sink, boolean stopRecording, Output output) throws Exception {
+        artifactRecorder.setActive(!stopRecording);
+        try (sink) {
+            List<Artifact> artifacts = artifactRecorder.getAllArtifacts();
+            sink.accept(artifacts);
+            return !artifacts.isEmpty();
+        }
+    }
+
+    @Override
+    public boolean deploy(
+            RemoteRepository remoteRepository, Supplier<Collection<Artifact>> artifactSupplier, Output output)
             throws Exception {
         Collection<Artifact> artifacts = artifactSupplier.get();
-        RemoteRepository remoteRepository = toolboxResolver.parseRemoteRepository(remoteRepositorySpec);
         DeployRequest deployRequest = new DeployRequest();
         deployRequest.setRepository(remoteRepository);
         artifacts.forEach(deployRequest::addArtifact);
@@ -413,10 +381,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean deployAllRecorded(String remoteRepositorySpec, boolean stopRecording, Output output)
+    public boolean deployAllRecorded(RemoteRepository remoteRepository, boolean stopRecording, Output output)
             throws Exception {
         artifactRecorder.setActive(!stopRecording);
-        return deploy(remoteRepositorySpec, () -> new HashSet<>(artifactRecorder.getAllArtifacts()), output);
+        return deploy(remoteRepository, () -> new HashSet<>(artifactRecorder.getAllArtifacts()), output);
     }
 
     @Override
@@ -457,10 +425,29 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 return true;
             }
         }));
-        AtomicInteger counter = new AtomicInteger(0);
-        repositories.forEach((k, v) -> {
-            output.normal("{}. {}", counter.incrementAndGet(), k.toString());
-            output.normal("   First introduced on {}", v == sentinel ? "root" : v);
+        if (repositories.isEmpty()) {
+            output.normal("No remote repository is used by this build.");
+            return true;
+        }
+
+        Map<Boolean, List<RemoteRepository>> repoGroupByMirrors = repositories.keySet().stream()
+                .collect(Collectors.groupingBy(
+                        repo -> repo.getMirroredRepositories().isEmpty()));
+        repoGroupByMirrors.getOrDefault(Boolean.TRUE, Collections.emptyList()).forEach(r -> {
+            output.normal(" * {}", r);
+            Artifact firstIntroduced = repositories.get(r);
+            output.normal("   First introduced on {}", firstIntroduced == sentinel ? "root" : firstIntroduced);
+        });
+
+        Map<RemoteRepository, RemoteRepository> mirrorMap = new HashMap<>();
+        repoGroupByMirrors
+                .getOrDefault(Boolean.FALSE, Collections.emptyList())
+                .forEach(repo -> repo.getMirroredRepositories().forEach(mrepo -> mirrorMap.put(mrepo, repo)));
+        mirrorMap.forEach((r, mirror) -> {
+            output.normal(" * {}", r);
+            Artifact firstIntroduced = repositories.get(mirror);
+            output.normal("   First introduced on {}", firstIntroduced == sentinel ? "root" : firstIntroduced);
+            output.normal("   Mirrored by {}", mirror);
         });
         return !repositories.isEmpty();
     }
@@ -485,7 +472,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         output.normal(
                 "Recorder is {}; recorded {} artifacts so far",
                 artifactRecorder.isActive() ? "started" : "stopped",
-                artifactRecorder.getAllArtifacts().size());
+                artifactRecorder.recordedCount());
         return true;
     }
 
@@ -493,9 +480,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public boolean recordStop(Output output) {
         output.verbose("Stopping recorder...");
         boolean result = artifactRecorder.setActive(false);
-        output.normal(
-                "Stopped recorder, recorded {} artifacts",
-                artifactRecorder.getAllArtifacts().size());
+        output.normal("Stopped recorder, recorded {} artifacts", artifactRecorder.recordedCount());
         return result;
     }
 
@@ -509,10 +494,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Output output)
             throws Exception {
         output.verbose("Resolving {}", artifacts);
-        ArtifactSinks.SizingArtifactSink sizingArtifactSink = ArtifactSinks.sizingArtifactSink();
-        ArtifactSinks.CountingArtifactSink countingArtifactSink = ArtifactSinks.countingArtifactSink();
         try (ArtifactSink artifactSink =
-                ArtifactSinks.teeArtifactSink(true, sink, sizingArtifactSink, countingArtifactSink)) {
+                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, output))) {
             List<ArtifactResult> artifactResults = toolboxResolver.resolveArtifacts(artifacts);
             artifactSink.accept(
                     artifactResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
@@ -545,10 +528,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     }
                 }
             }
-            output.normal(
-                    "Resolved {} artifacts (size: {})",
-                    countingArtifactSink.count(),
-                    humanReadableByteCountBin(sizingArtifactSink.size()));
             return !artifacts.isEmpty();
         }
     }
@@ -563,103 +542,84 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ArtifactSink sink,
             Output output)
             throws Exception {
-        ArtifactSinks.CountingArtifactSink totalCount = ArtifactSinks.countingArtifactSink();
-        ArtifactSinks.SizingArtifactSink totalSize = ArtifactSinks.sizingArtifactSink();
-        ModuleDescriptorExtractingSink moduleNameSource = new ModuleDescriptorExtractingSink();
         try (ArtifactSink artifactSink =
-                ArtifactSinks.teeArtifactSink(true, sink, totalSize, totalCount, moduleNameSource)) {
+                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, false, output))) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
-                output.verbose("Resolving {}", resolutionRoot.getArtifact());
-                DependencyResult dependencyResult = toolboxResolver.resolve(
+                doResolveTransitive(
                         resolutionScope,
-                        resolutionRoot.getArtifact(),
-                        resolutionRoot.getDependencies(),
-                        resolutionRoot.getManagedDependencies());
-                List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
-                        ? dependencyResult.getArtifactResults()
-                        : dependencyResult
-                                .getArtifactResults()
-                                .subList(
-                                        1, dependencyResult.getArtifactResults().size() - 1);
-
-                ArtifactSinks.CountingArtifactSink subCount = ArtifactSinks.countingArtifactSink();
-                ArtifactSinks.SizingArtifactSink subSize = ArtifactSinks.sizingArtifactSink();
-                ArtifactSink batchSink = ArtifactSinks.teeArtifactSink(false, artifactSink, subCount, subSize);
-
-                batchSink.accept(adjustedResults.stream()
-                        .map(ArtifactResult::getArtifact)
-                        .collect(Collectors.toList()));
-
-                for (ArtifactResult artifactResult : adjustedResults) {
-                    ModuleDescriptorExtractingSink.ModuleDescriptor moduleDescriptor =
-                            moduleNameSource.getModuleDescriptor(artifactResult.getArtifact());
-                    String moduleInfo = "";
-                    if (moduleDescriptor != null) {
-                        moduleInfo = "-- module " + moduleDescriptor.name();
-                        if (moduleDescriptor.automatic()) {
-                            if ("MANIFEST".equals(moduleDescriptor.moduleNameSource())) {
-                                moduleInfo += " [auto]";
-                            } else {
-                                moduleInfo += " (auto)";
-                            }
-                        }
-                    }
-                    if (output.isVerbose()) {
-                        output.verbose(
-                                "{} {} -> {}",
-                                artifactResult.getArtifact(),
-                                moduleInfo,
-                                artifactResult.getArtifact().getFile());
-                    } else {
-                        output.normal("{} {}", artifactResult.getArtifact(), moduleInfo);
-                    }
-                }
-
-                if (sources || javadoc || signature) {
-                    HashSet<Artifact> subartifacts = new HashSet<>();
-                    adjustedResults.stream().map(ArtifactResult::getArtifact).forEach(a -> {
-                        if (sources && a.getClassifier().isEmpty()) {
-                            subartifacts.add(new SubArtifact(a, "sources", "jar"));
-                        }
-                        if (javadoc && a.getClassifier().isEmpty()) {
-                            subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
-                        }
-                        if (signature && !a.getExtension().endsWith(".asc")) {
-                            subartifacts.add(new SubArtifact(a, "*", "*.asc"));
-                        }
-                    });
-                    if (!subartifacts.isEmpty()) {
-                        output.verbose("Resolving (best effort) {}", subartifacts);
-                        try {
-                            List<ArtifactResult> subartifactResults = toolboxResolver.resolveArtifacts(subartifacts);
-                            batchSink.accept(subartifactResults.stream()
-                                    .map(ArtifactResult::getArtifact)
-                                    .collect(Collectors.toList()));
-                        } catch (ArtifactResolutionException e) {
-                            // ignore, this is "best effort"
-                            batchSink.accept(e.getResults().stream()
-                                    .filter(ArtifactResult::isResolved)
-                                    .map(ArtifactResult::getArtifact)
-                                    .collect(Collectors.toList()));
-                        }
-                    }
-                }
-
-                output.normal("--------------------");
-                output.normal(
-                        "Resolved artifact: {} (artifact count: {}, artifact size: {})",
-                        resolutionRoot.getArtifact(),
-                        subCount.count(),
-                        humanReadableByteCountBin(subSize.size()));
-                output.normal("");
+                        resolutionRoot,
+                        sources,
+                        javadoc,
+                        signature,
+                        ArtifactSinks.teeArtifactSink(
+                                nonClosingArtifactSink(artifactSink), ArtifactSinks.statArtifactSink(1, true, output)),
+                        output);
             }
-            output.normal("====================");
-            output.normal(
-                    "Total resolved roots: {} (artifact count: {}, artifact size: {})",
-                    resolutionRoots.size(),
-                    totalCount.count(),
-                    humanReadableByteCountBin(totalSize.size()));
             return !resolutionRoots.isEmpty();
+        }
+    }
+
+    private void doResolveTransitive(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean sources,
+            boolean javadoc,
+            boolean signature,
+            ArtifactSink sink,
+            Output output)
+            throws Exception {
+        try (ArtifactSink artifactSink = sink) {
+            output.verbose("Resolving {}", resolutionRoot.getArtifact());
+            resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
+            DependencyResult dependencyResult = toolboxResolver.resolve(
+                    resolutionScope,
+                    resolutionRoot.getArtifact(),
+                    resolutionRoot.getDependencies(),
+                    resolutionRoot.getManagedDependencies());
+            List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
+                    ? dependencyResult.getArtifactResults()
+                    : (dependencyResult.getArtifactResults().size() == 1
+                            ? Collections.emptyList()
+                            : dependencyResult
+                                    .getArtifactResults()
+                                    .subList(
+                                            1,
+                                            dependencyResult
+                                                            .getArtifactResults()
+                                                            .size()
+                                                    - 1));
+            artifactSink.accept(
+                    adjustedResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
+
+            if (sources || javadoc || signature) {
+                HashSet<Artifact> subartifacts = new HashSet<>();
+                adjustedResults.stream().map(ArtifactResult::getArtifact).forEach(a -> {
+                    if (sources && a.getClassifier().isEmpty()) {
+                        subartifacts.add(new SubArtifact(a, "sources", "jar"));
+                    }
+                    if (javadoc && a.getClassifier().isEmpty()) {
+                        subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
+                    }
+                    if (signature && !a.getExtension().endsWith(".asc")) {
+                        subartifacts.add(new SubArtifact(a, "*", "*.asc"));
+                    }
+                });
+                if (!subartifacts.isEmpty()) {
+                    output.verbose("Resolving (best effort) {}", subartifacts);
+                    try {
+                        List<ArtifactResult> subartifactResults = toolboxResolver.resolveArtifacts(subartifacts);
+                        artifactSink.accept(subartifactResults.stream()
+                                .map(ArtifactResult::getArtifact)
+                                .collect(Collectors.toList()));
+                    } catch (ArtifactResolutionException e) {
+                        // ignore, this is "best effort"
+                        artifactSink.accept(e.getResults().stream()
+                                .filter(ArtifactResult::isResolved)
+                                .map(ArtifactResult::getArtifact)
+                                .collect(Collectors.toList()));
+                    }
+                }
+            }
         }
     }
 
@@ -684,6 +644,49 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public boolean treeFind(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean verbose,
+            ArtifactMatcher artifactMatcher,
+            Output output) {
+        try {
+            output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
+            ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+            output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
+            CollectResult collectResult = toolboxResolver.collect(
+                    resolutionScope,
+                    root.getArtifact(),
+                    root.getDependencies(),
+                    root.getManagedDependencies(),
+                    verbose);
+            PathRecordingDependencyVisitor pathRecordingDependencyVisitor =
+                    new PathRecordingDependencyVisitor(new DependencyFilter() {
+                        @Override
+                        public boolean accept(DependencyNode node, List<DependencyNode> parents) {
+                            return node.getArtifact() != null && artifactMatcher.test(node.getArtifact());
+                        }
+                    });
+            collectResult.getRoot().accept(pathRecordingDependencyVisitor);
+            if (!pathRecordingDependencyVisitor.getPaths().isEmpty()) {
+                output.normal("Paths");
+                for (List<DependencyNode> path : pathRecordingDependencyVisitor.getPaths()) {
+                    String indent = "";
+                    for (DependencyNode node : path) {
+                        output.normal("{}-> {}", indent, node.getArtifact());
+                        indent += "  ";
+                    }
+                }
+            } else {
+                output.normal("No paths found.");
+            }
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public Map<String, RemoteRepository> getKnownSearchRemoteRepositories() {
         return knownSearchRemoteRepositories;
     }
@@ -697,11 +700,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean javadoc,
             boolean signature,
             boolean allRequired,
+            String repositoryVendor,
             Output output)
             throws IOException {
         ArrayList<Artifact> missingOnes = new ArrayList<>();
         ArrayList<Artifact> existingOnes = new ArrayList<>();
-        try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository)) {
+        try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(
+                context.repositorySystemSession(), remoteRepository, repositoryVendor)) {
             Artifact artifact = new DefaultArtifact(gav);
             boolean exists = toolboxSearchApi.exists(backend, artifact);
             if (!exists) {
@@ -784,7 +789,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             sha1 = target;
         }
         output.verbose("Identifying artifact with SHA1={}", sha1);
-        try (SearchBackend backend = toolboxSearchApi.getSmoBackend(remoteRepository)) {
+        try (SearchBackend backend =
+                toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
             SearchRequest searchRequest = new SearchRequest(fieldQuery(MAVEN.SHA1, sha1));
             SearchResponse searchResponse = backend.search(searchRequest);
 
@@ -799,8 +805,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean list(RemoteRepository remoteRepository, String gavoid, Output output) throws IOException {
-        try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository)) {
+    public boolean list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Output output)
+            throws IOException {
+        try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(
+                context.repositorySystemSession(), remoteRepository, repositoryVendor)) {
             String[] elements = gavoid.split(":");
             if (elements.length < 1 || elements.length > 3) {
                 throw new IllegalArgumentException("Invalid gavoid");
@@ -811,7 +819,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 query = and(query, fieldQuery(MAVEN.ARTIFACT_ID, elements[1]));
             }
 
-            VersionScheme versionScheme = new GenericVersionScheme();
             Predicate<String> versionPredicate = null;
             if (elements.length > 2) {
                 try {
@@ -842,7 +849,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean search(RemoteRepository remoteRepository, String expression, Output output) throws IOException {
-        try (SearchBackend backend = toolboxSearchApi.getSmoBackend(remoteRepository)) {
+        try (SearchBackend backend =
+                toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
             Query query;
             try {
                 query = toolboxSearchApi.toSmoQuery(new DefaultArtifact(expression));
@@ -863,14 +871,105 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean verify(RemoteRepository remoteRepository, String gav, String sha1, Output output)
+    public boolean verify(
+            RemoteRepository remoteRepository, String gav, String sha1, String repositoryVendor, Output output)
             throws IOException {
-        try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(remoteRepository)) {
+        try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(
+                context.repositorySystemSession(), remoteRepository, repositoryVendor)) {
             Artifact artifact = new DefaultArtifact(gav);
             boolean verified = toolboxSearchApi.verify(backend, new DefaultArtifact(gav), sha1);
             output.normal("Artifact SHA1({})={}: {}", artifact, sha1, verified ? "MATCHED" : "NOT MATCHED");
             return verified;
         }
+    }
+
+    // Various
+
+    @Override
+    public boolean libYear(
+            ResolutionScope resolutionScope,
+            Collection<ResolutionRoot> resolutionRoots,
+            boolean transitive,
+            boolean quiet,
+            boolean upToDate,
+            Predicate<Version> versionPredicate,
+            BiFunction<Artifact, List<Version>, String> artifactVersionSelector,
+            String repositoryVendor,
+            Output output)
+            throws Exception {
+        ArrayList<SearchBackend> searchBackends = new ArrayList<>();
+        for (RemoteRepository remoteRepository : context.remoteRepositories()) {
+            searchBackends.add(toolboxSearchApi.getRemoteRepositoryBackend(
+                    context.repositorySystemSession(), remoteRepository, repositoryVendor));
+        }
+
+        try (ArtifactSink sink = LibYearSink.libYear(
+                output,
+                context,
+                toolboxResolver,
+                toolboxSearchApi,
+                quiet,
+                upToDate,
+                versionPredicate,
+                artifactVersionSelector,
+                searchBackends)) {
+            for (ResolutionRoot resolutionRoot : resolutionRoots) {
+                try {
+                    ArrayList<Artifact> artifacts = new ArrayList<>();
+                    if (transitive) {
+                        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+                        CollectResult collectResult = toolboxResolver.collect(
+                                resolutionScope,
+                                root.getArtifact(),
+                                root.getDependencies(),
+                                root.getManagedDependencies(),
+                                false);
+                        collectResult.getRoot().accept(new DependencyVisitor() {
+                            @Override
+                            public boolean visitEnter(DependencyNode node) {
+                                artifacts.add(node.getArtifact());
+                                return true;
+                            }
+
+                            @Override
+                            public boolean visitLeave(DependencyNode node) {
+                                return true;
+                            }
+                        });
+                    } else {
+                        artifacts.addAll(resolutionRoot.getDependencies().stream()
+                                .map(this::toArtifact)
+                                .collect(Collectors.toList()));
+                    }
+                    sink.accept(artifacts);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean versions(
+            String context, Collection<Artifact> artifacts, Predicate<Version> versionPredicate, Output output)
+            throws Exception {
+        if (artifacts.isEmpty()) {
+            return true;
+        }
+        output.normal("Checking newest versions of {} ({})", context, artifacts.size());
+        for (Artifact artifact : artifacts) {
+            List<Version> newer = toolboxResolver.findNewerVersions(artifact, versionPredicate);
+            if (!newer.isEmpty()) {
+                Version latest = newer.get(newer.size() - 1);
+                String all = newer.stream().map(Object::toString).collect(Collectors.joining(", "));
+                output.normal("* {} -> {}", ArtifactIdUtils.toId(artifact), latest);
+                output.normal("  Available: {}", all);
+            } else {
+                output.verbose("* {} is up to date", ArtifactIdUtils.toId(artifact));
+            }
+        }
+        return true;
     }
 
     // Utils

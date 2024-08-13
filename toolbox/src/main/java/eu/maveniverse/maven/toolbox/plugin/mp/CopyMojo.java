@@ -13,7 +13,6 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.eclipse.aether.graph.Dependency;
 
 /**
  * Resolves selected dependencies and copies resulting artifacts to target.
@@ -22,15 +21,15 @@ import org.eclipse.aether.graph.Dependency;
 public final class CopyMojo extends MPMojoSupport {
 
     /**
-     * The artifact sink spec (default: "null:").
+     * The artifact sink spec (default: "null()").
      */
-    @Parameter(property = "sinkSpec", defaultValue = "null:", required = true)
+    @Parameter(property = "sinkSpec", defaultValue = "null()", required = true)
     private String sinkSpec;
 
     /**
      * The dependency matcher spec.
      */
-    @Parameter(property = "depSpec", required = true)
+    @Parameter(property = "depSpec", defaultValue = "any()")
     private String depSpec;
 
     @Override
@@ -38,7 +37,7 @@ public final class CopyMojo extends MPMojoSupport {
         return toolboxCommando.copy(
                 projectAsResolutionRoot().getDependencies().stream()
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
-                        .map(Dependency::getArtifact)
+                        .map(toolboxCommando::toArtifact)
                         .collect(Collectors.toList()),
                 toolboxCommando.artifactSink(output, sinkSpec),
                 output);

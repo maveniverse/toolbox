@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
@@ -27,9 +26,6 @@ import org.eclipse.aether.artifact.Artifact;
  * they are more key-producing oriented mappers.
  */
 public interface ArtifactNameMapper extends Function<Artifact, String> {
-    @Override
-    String apply(Artifact artifact);
-
     static ArtifactNameMapper compose(ArtifactNameMapper... mappers) {
         return compose(Arrays.asList(mappers));
     }
@@ -407,13 +403,13 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
                     params.add(fixed(stringParam(node.getValue())));
                     break;
                 case "optionalPrefix": {
-                    ArtifactNameMapper p1 = artifactNameMapperParam(node.getValue());
+                    ArtifactNameMapper p1 = typedParam(ArtifactNameMapper.class, node.getValue());
                     String p0 = stringParam(node.getValue());
                     params.add(optionalPrefix(p0, p1));
                     break;
                 }
                 case "optionalSuffix": {
-                    ArtifactNameMapper p1 = artifactNameMapperParam(node.getValue());
+                    ArtifactNameMapper p1 = typedParam(ArtifactNameMapper.class, node.getValue());
                     String p0 = stringParam(node.getValue());
                     params.add(optionalSuffix(p0, p1));
                     break;
@@ -425,7 +421,8 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
                     params.add(repository(stringParam(node.getValue())));
                     break;
                 case "compose":
-                    ArrayList<ArtifactNameMapper> mappers = new ArrayList<>(artifactNameMapperParams(node.getValue()));
+                    ArrayList<ArtifactNameMapper> mappers =
+                            new ArrayList<>(typedParams(ArtifactNameMapper.class, node.getValue()));
                     Collections.reverse(mappers);
                     params.add(compose(mappers));
                     break;
@@ -434,30 +431,8 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
             }
         }
 
-        private ArtifactNameMapper artifactNameMapperParam(String op) {
-            if (params.isEmpty()) {
-                throw new IllegalArgumentException("bad parameter count for " + op);
-            }
-            return (ArtifactNameMapper) params.remove(params.size() - 1);
-        }
-
-        private List<ArtifactNameMapper> artifactNameMapperParams(String op) {
-            ArrayList<ArtifactNameMapper> result = new ArrayList<>();
-            while (!params.isEmpty()) {
-                if (params.get(params.size() - 1) instanceof ArtifactNameMapper) {
-                    result.add(artifactNameMapperParam(op));
-                } else {
-                    break;
-                }
-            }
-            return result;
-        }
-
         public ArtifactNameMapper build() {
-            if (params.size() != 1) {
-                throw new IllegalArgumentException("bad spec");
-            }
-            return (ArtifactNameMapper) params.get(0);
+            return build(ArtifactNameMapper.class);
         }
     }
 }

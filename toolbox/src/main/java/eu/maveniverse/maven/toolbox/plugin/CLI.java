@@ -7,7 +7,28 @@
  */
 package eu.maveniverse.maven.toolbox.plugin;
 
-import eu.maveniverse.maven.toolbox.plugin.gav.*;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavClasspathMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyRecordedMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyTransitiveMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavDeployMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavDeployRecordedMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavDumpMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavExistsMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavIdentifyMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavInstallMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavLibYearMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavListAvailablePluginsMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavListMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavListRepositoriesMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavRecordMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavReplMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavResolveMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavResolveTransitiveMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavSearchMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavTreeMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavVerifyMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavVersionsMojo;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import picocli.CommandLine;
@@ -20,6 +41,7 @@ import picocli.CommandLine;
         subcommands = {
             GavClasspathMojo.class,
             GavCopyMojo.class,
+            GavCopyRecordedMojo.class,
             GavCopyTransitiveMojo.class,
             GavDeployMojo.class,
             GavDeployRecordedMojo.class,
@@ -27,8 +49,9 @@ import picocli.CommandLine;
             GavExistsMojo.class,
             GavIdentifyMojo.class,
             GavInstallMojo.class,
-            GavListMojo.class,
+            GavLibYearMojo.class,
             GavListAvailablePluginsMojo.class,
+            GavListMojo.class,
             GavListRepositoriesMojo.class,
             GavRecordMojo.class,
             GavReplMojo.class,
@@ -36,7 +59,8 @@ import picocli.CommandLine;
             GavResolveTransitiveMojo.class,
             GavSearchMojo.class,
             GavTreeMojo.class,
-            GavVerifyMojo.class
+            GavVerifyMojo.class,
+            GavVersionsMojo.class
         },
         versionProvider = CLI.class,
         description = "Toolbox CLI",

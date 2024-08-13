@@ -11,13 +11,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 
 /**
  * Artifact recorder.
  */
-public interface ArtifactRecorder {
+public interface ArtifactRecorder extends ArtifactSource {
     /**
      * The "sentinel" remote repository that recorder assigns when there is no remote repository available. This
      * means that artifact was either installed locally. To check for "sentinel" remote repository use instance
@@ -36,6 +37,11 @@ public interface ArtifactRecorder {
     boolean setActive(boolean active);
 
     /**
+     * Returns the count of recorded artifacts.
+     */
+    int recordedCount();
+
+    /**
      * Clears the recorder buffer.
      */
     void clear();
@@ -46,9 +52,15 @@ public interface ArtifactRecorder {
      */
     Map<RemoteRepository, List<Artifact>> getRecordedArtifacts();
 
+    @Override
+    default Stream<Artifact> get() {
+        return getRecordedArtifacts().values().stream().flatMap(Collection::stream);
+    }
+
+    @Override
     default List<Artifact> getAllArtifacts() {
-        return getRecordedArtifacts().values().stream()
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+        try (Stream<Artifact> stream = get()) {
+            return stream.collect(Collectors.toList());
+        }
     }
 }

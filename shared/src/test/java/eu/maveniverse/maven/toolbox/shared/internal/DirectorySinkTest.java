@@ -5,11 +5,12 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared;
+package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,7 +23,7 @@ import org.junit.jupiter.api.io.TempDir;
 public class DirectorySinkTest {
     @Test
     void flat(@TempDir Path source, @TempDir Path target) throws IOException {
-        try (DirectorySink sink = DirectorySink.flat(new NullOutput(), target, ArtifactNameMapper.GACE())) {
+        try (DirectorySink sink = DirectorySink.flat(target, ArtifactNameMapper.GACE())) {
             Path a1 = source.resolve("a1");
             Path a2 = source.resolve("a2");
             Files.writeString(a1, "one", StandardCharsets.UTF_8);
@@ -42,7 +43,7 @@ public class DirectorySinkTest {
 
     @Test
     void repository(@TempDir Path source, @TempDir Path target) throws IOException {
-        try (DirectorySink sink = DirectorySink.repository(new NullOutput(), target)) {
+        try (DirectorySink sink = DirectorySink.repository(target)) {
             Path a1 = source.resolve("a1");
             Path a2 = source.resolve("a2");
             Files.writeString(a1, "one", StandardCharsets.UTF_8);
@@ -62,13 +63,12 @@ public class DirectorySinkTest {
 
     @Test
     void flatSameADifferentGAccepted(@TempDir Path source, @TempDir Path target) throws IOException {
-        sameADifferentGAccepted(
-                source, target, DirectorySink.flat(new NullOutput(), target, ArtifactNameMapper.GACE()));
+        sameADifferentGAccepted(source, target, DirectorySink.flat(target, ArtifactNameMapper.GACE()));
     }
 
     @Test
     void repositorySameADifferentGAccepted(@TempDir Path source, @TempDir Path target) throws IOException {
-        sameADifferentGAccepted(source, target, DirectorySink.repository(new NullOutput(), target));
+        sameADifferentGAccepted(source, target, DirectorySink.repository(target));
     }
 
     private void sameADifferentGAccepted(Path source, Path target, DirectorySink sink) throws IOException {

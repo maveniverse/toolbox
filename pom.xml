@@ -14,15 +14,16 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>10</version>
+    <version>16</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
   <artifactId>toolbox</artifactId>
-  <version>0.1.4-SNAPSHOT</version>
+  <version>0.1.33-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
+  <description>Toolbox Maven Plugin and CLI in one.</description>
 
   <url>https://www.maveniverse.eu/toolbox</url>
 
@@ -56,7 +57,7 @@
   </ciManagement>
 
   <properties>
-    <project.build.outputTimestamp>2024-03-28T15:38:09Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2024-08-09T16:22:56Z</project.build.outputTimestamp>
 
     <!-- Maven Indexer needs 11+ -->
     <maven.compiler.release>11</maven.compiler.release>
@@ -64,18 +65,18 @@
     <!--
     Build time: latest Maven and LTS Java.
     -->
-    <requireBuildtimeMavenVersion.version>[3.9.6,)</requireBuildtimeMavenVersion.version>
+    <requireBuildtimeMavenVersion.version>[3.6.3,)</requireBuildtimeMavenVersion.version>
     <requireBuildtimeJavaVersion.version>[11.0.2,)</requireBuildtimeJavaVersion.version>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.9</version.mima>
-    <version.maven>3.9.6</version.maven>
-    <version.mavenIndexer>7.1.2</version.mavenIndexer>
-    <version.resolver>1.9.18</version.resolver>
-    <version.mavenPluginTools>3.11.0</version.mavenPluginTools>
-    <version.slf4j>1.7.36</version.slf4j>
-    <version.picocli>4.7.5</version.picocli>
-    <version.jline>3.25.1</version.jline>
+    <version.mima>2.4.15</version.mima>
+    <version.maven>3.9.8</version.maven>
+    <version.mavenIndexer>7.1.4</version.mavenIndexer>
+    <version.resolver>1.9.20</version.resolver>
+    <version.mavenPluginTools>3.13.1</version.mavenPluginTools>
+    <version.slf4j>2.0.16</version.slf4j>
+    <version.picocli>4.7.6</version.picocli>
+    <version.jline>3.26.3</version.jline>
   </properties>
 
   <dependencyManagement>
@@ -209,12 +210,12 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.26.1</version>
+        <version>1.27.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.14.0</version>
+        <version>3.16.0</version>
       </dependency>
 
       <!-- CLI -->
@@ -238,11 +239,6 @@
         <artifactId>jline</artifactId>
         <version>${version.jline}</version>
       </dependency>
-      <dependency>
-        <groupId>org.fusesource.jansi</groupId>
-        <artifactId>jansi</artifactId>
-        <version>2.4.1</version>
-      </dependency>
 
       <!-- DI -->
       <dependency>
@@ -253,7 +249,7 @@
       <dependency>
         <groupId>org.eclipse.sisu</groupId>
         <artifactId>org.eclipse.sisu.inject</artifactId>
-        <version>0.9.0.M2</version>
+        <version>0.9.0.M3</version>
       </dependency>
       <dependency>
         <groupId>com.google.inject</groupId>
@@ -265,7 +261,7 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
-        <version>5.10.2</version>
+        <version>5.10.3</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

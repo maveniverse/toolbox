@@ -31,6 +31,6 @@ public class GavListMojo extends GavSearchMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.list(getRemoteRepository(toolboxCommando), gavoid, output);
+        return toolboxCommando.list(getRemoteRepository(toolboxCommando), gavoid, null, output);
     }
 }

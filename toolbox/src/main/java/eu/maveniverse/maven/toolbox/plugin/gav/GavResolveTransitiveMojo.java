@@ -76,20 +76,20 @@ public class GavResolveTransitiveMojo extends GavMojoSupport {
     private boolean signature;
 
     /**
-     * The artifact sink spec (default: "null:").
+     * The artifact sink spec (default: "null()").
      */
     @CommandLine.Option(
             names = {"--sinkSpec"},
-            defaultValue = "null:",
-            description = "The sink spec (default 'null:')")
-    @Parameter(property = "sinkSpec", defaultValue = "null:", required = true)
+            defaultValue = "null()",
+            description = "The sink spec (default 'null()')")
+    @Parameter(property = "sinkSpec", defaultValue = "null()", required = true)
     private String sinkSpec;
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(scope),
-                toolboxCommando.loadGavs(csv(gav), csv(boms)),
+                toolboxCommando.loadGavs(slurp(gav), slurp(boms)),
                 sources,
                 javadoc,
                 signature,

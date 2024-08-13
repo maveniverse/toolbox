@@ -84,6 +84,7 @@ public final class GavDeployMojo extends GavMojoSupport {
         if (javadoc != null) {
             projectArtifacts.addJavadoc(javadoc.toPath());
         }
-        return toolboxCommando.deploy(remoteRepositorySpec, projectArtifacts, output);
+        return toolboxCommando.deploy(
+                toolboxCommando.parseRemoteRepository(remoteRepositorySpec), projectArtifacts, output);
     }
 }

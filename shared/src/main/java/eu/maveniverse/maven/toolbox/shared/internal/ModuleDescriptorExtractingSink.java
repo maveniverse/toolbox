@@ -5,28 +5,32 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared;
+package eu.maveniverse.maven.toolbox.shared.internal;
 
-import java.io.File;
+import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.graph.DependencyVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Sink that extracts module descriptors from artifacts.
  */
-public final class ModuleDescriptorExtractingSink implements ArtifactSink {
+public final class ModuleDescriptorExtractingSink implements ArtifactSink, DependencyVisitor {
     public interface ModuleDescriptor {
         String name();
 
@@ -45,8 +49,21 @@ public final class ModuleDescriptorExtractingSink implements ArtifactSink {
     @Override
     public void accept(Artifact artifact) throws IOException {
         if (artifact.getFile() != null) {
-            moduleDescriptors.computeIfAbsent(artifact, k -> getModuleDescriptor(artifact.getFile()));
+            moduleDescriptors.computeIfAbsent(
+                    artifact, k -> getModuleDescriptor(artifact.getFile().toPath()));
         }
+    }
+
+    public String formatString(ModuleDescriptor moduleDescriptor) {
+        String moduleInfo = "-- module " + moduleDescriptor.name();
+        if (moduleDescriptor.automatic()) {
+            if ("MANIFEST".equals(moduleDescriptor.moduleNameSource())) {
+                moduleInfo += " [auto]";
+            } else {
+                moduleInfo += " (auto)";
+            }
+        }
+        return moduleInfo;
     }
 
     public ModuleDescriptor getModuleDescriptor(Artifact artifact) {
@@ -57,16 +74,14 @@ public final class ModuleDescriptorExtractingSink implements ArtifactSink {
         return Collections.unmodifiableMap(moduleDescriptors);
     }
 
-    private ModuleDescriptor getModuleDescriptor(File artifactFile) {
+    private ModuleDescriptor getModuleDescriptor(Path artifactPath) {
         ModuleDescriptorImpl moduleDescriptor = null;
         try {
             // Use Java9 code to get moduleName, don't try to do it better with own implementation
             Class<?> moduleFinderClass = Class.forName("java.lang.module.ModuleFinder");
 
-            Path path = artifactFile.toPath();
-
             Method ofMethod = moduleFinderClass.getMethod("of", java.nio.file.Path[].class);
-            Object moduleFinderInstance = ofMethod.invoke(null, new Object[] {new java.nio.file.Path[] {path}});
+            Object moduleFinderInstance = ofMethod.invoke(null, new Object[] {new java.nio.file.Path[] {artifactPath}});
 
             Method findAllMethod = moduleFinderClass.getMethod("findAll");
             Set<Object> moduleReferences = (Set<Object>) findAllMethod.invoke(moduleFinderInstance);
@@ -87,8 +102,8 @@ public final class ModuleDescriptorExtractingSink implements ArtifactSink {
                 moduleDescriptor.automatic = (Boolean) isAutomaticMethod.invoke(moduleDescriptorInstance);
 
                 if (moduleDescriptor.automatic) {
-                    if (artifactFile.isFile()) {
-                        try (JarFile jarFile = new JarFile(artifactFile)) {
+                    if (Files.isRegularFile(artifactPath)) {
+                        try (JarFile jarFile = new JarFile(artifactPath.toFile())) {
                             Manifest manifest = jarFile.getManifest();
 
                             if (manifest != null
@@ -114,9 +129,39 @@ public final class ModuleDescriptorExtractingSink implements ArtifactSink {
             while (cause.getCause() != null) {
                 cause = cause.getCause();
             }
-            logger.debug("Can't extract module name from {}:", artifactFile.getName(), cause);
+            logger.debug("Can't extract module name from {}:", artifactPath.getFileName(), cause);
         }
         return moduleDescriptor;
+    }
+
+    @Override
+    public boolean visitEnter(DependencyNode dependencyNode) {
+        if (dependencyNode.getDependency() != null) {
+            try {
+                accept(dependencyNode.getDependency().getArtifact());
+            } catch (IOException e) {
+                logger.warn("IO problem: ", e);
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean visitLeave(DependencyNode dependencyNode) {
+        return true;
+    }
+
+    public Function<DependencyNode, String> decorator() {
+        return node -> {
+            if (node != null && node.getDependency() != null) {
+                ModuleDescriptor moduleDescriptor =
+                        getModuleDescriptor(node.getDependency().getArtifact());
+                if (moduleDescriptor != null) {
+                    return formatString(moduleDescriptor);
+                }
+            }
+            return null;
+        };
     }
 
     private static class ModuleDescriptorImpl implements ModuleDescriptor {

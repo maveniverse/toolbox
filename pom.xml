@@ -239,11 +239,6 @@
         <artifactId>jline</artifactId>
         <version>${version.jline}</version>
       </dependency>
-      <dependency>
-        <groupId>org.fusesource.jansi</groupId>
-        <artifactId>jansi</artifactId>
-        <version>2.4.1</version>
-      </dependency>
 
       <dependency>
         <groupId>org.junit.jupiter</groupId>

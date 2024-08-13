@@ -74,7 +74,6 @@ public abstract class MPMojoSupport extends MojoSupport {
         return builder.build();
     }
 
-
     protected List<ResolutionRoot> projectManagedDependenciesAsResolutionRoots(
             ResolutionScope scope, DependencyMatcher dependencyMatcher) {
         ResolutionRoot project = projectAsResolutionRoot();

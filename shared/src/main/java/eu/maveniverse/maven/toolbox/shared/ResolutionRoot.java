@@ -156,9 +156,6 @@ public final class ResolutionRoot {
         }
 
         public ResolutionRoot build() {
-            if (!load && dependencies.isEmpty()) {
-                throw new IllegalStateException("must specify dependencies for non-loaded artifacts");
-            }
             return new ResolutionRoot(artifact, load, false, dependencies, managedDependencies);
         }
     }

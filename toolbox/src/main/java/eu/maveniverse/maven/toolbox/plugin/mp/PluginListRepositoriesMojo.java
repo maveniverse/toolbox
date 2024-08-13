@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -27,7 +28,11 @@ public final class PluginListRepositoriesMojo extends MPPluginMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.listRepositories(
-                ResolutionScope.parse(scope), pluginAsResolutionRoot(toolboxCommando), output);
+        ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, true);
+        if (root != null) {
+            return toolboxCommando.listRepositories(ResolutionScope.parse(scope), "plugin", root, output);
+        } else {
+            return true;
+        }
     }
 }

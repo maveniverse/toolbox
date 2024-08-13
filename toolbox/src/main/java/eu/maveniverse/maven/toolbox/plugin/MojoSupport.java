@@ -43,6 +43,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
 import org.jline.jansi.Ansi;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 import picocli.CommandLine;
@@ -51,6 +52,8 @@ import picocli.CommandLine;
  * Support class for all Mojos and Commands.
  */
 public abstract class MojoSupport extends AbstractMojo implements Callable<Integer>, CommandLine.IVersionProvider {
+
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     // CLI
 

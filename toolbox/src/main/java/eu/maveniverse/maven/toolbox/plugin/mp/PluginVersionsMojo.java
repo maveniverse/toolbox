@@ -52,7 +52,6 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
                         .collect(Collectors.toList()),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 output);
-        // profile
         return true;
     }
 }

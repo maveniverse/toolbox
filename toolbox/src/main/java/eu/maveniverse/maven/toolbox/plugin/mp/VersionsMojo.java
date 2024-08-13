@@ -61,5 +61,6 @@ public class VersionsMojo extends MPMojoSupport {
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 output);
         return true;
+        // for (Profile profile : mavenProject.getModel().getMa) return true;
     }
 }

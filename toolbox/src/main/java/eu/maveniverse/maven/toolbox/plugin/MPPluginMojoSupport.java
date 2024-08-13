@@ -12,7 +12,10 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.maven.model.InputLocation;
+import org.apache.maven.model.InputLocationTracker;
 import org.apache.maven.model.InputSource;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -33,8 +36,16 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
     @Parameter(property = "pluginKey")
     private String pluginKey;
 
-    protected ResolutionRoot pluginAsResolutionRoot(ToolboxCommando toolboxCommando) throws Exception {
-        return pluginAsResolutionRoot(toolboxCommando, true);
+    protected <T extends InputLocationTracker> Predicate<T> definedInModel(Model model) {
+        String modelId = model.getGroupId() + ":" + model.getArtifactId() + ":" + model.getVersion();
+        return dependency -> {
+            InputLocation location = dependency.getLocation("");
+            if (location != null) {
+                InputSource source = location.getSource();
+                return source != null && !Objects.equals(source.getModelId(), modelId);
+            }
+            return false;
+        };
     }
 
     protected ResolutionRoot pluginAsResolutionRoot(ToolboxCommando toolboxCommando, boolean mandatoryPluginKey)
@@ -66,7 +77,12 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
             }
         }
         if (plugin == null) {
-            throw new IllegalArgumentException("Plugin not found");
+            logger.warn(
+                    "Plugin matching '{}' not found in project {} (packaging={})",
+                    pluginKey,
+                    mavenProject.getId(),
+                    mavenProject.getPackaging());
+            return null;
         }
         ResolutionRoot root =
                 toolboxCommando.loadGav(plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion());
@@ -78,36 +94,42 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
 
     protected List<ResolutionRoot> allPluginsAsResolutionRoots(ToolboxCommando toolboxCommando)
             throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
-        List<ResolutionRoot> roots = new ArrayList<>();
-        Model model = mavenProject.getModel();
-        if (model.getBuild() != null) {
-            for (Plugin plugin : model.getBuild().getPlugins()) {
-                ResolutionRoot root = toolboxCommando.loadGav(
-                        plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion());
-                if (!plugin.getDependencies().isEmpty()) {
-                    root = root.builder()
-                            .withDependencies(toDependencies(plugin.getDependencies()))
-                            .build();
-                }
-                roots.add(root);
-            }
-        }
-        return roots;
+        return pluginResolutionRoots(
+                toolboxCommando,
+                m -> {
+                    if (m.getBuild() != null) {
+                        return m.getBuild().getPlugins();
+                    } else {
+                        return null;
+                    }
+                },
+                definedInModel(mavenProject.getModel()));
     }
 
     protected List<ResolutionRoot> allManagedPluginsAsResolutionRoots(ToolboxCommando toolboxCommando)
             throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
+        return pluginResolutionRoots(
+                toolboxCommando,
+                m -> {
+                    if (m.getBuild() != null && m.getBuild().getPluginManagement() != null) {
+                        return m.getBuild().getPluginManagement().getPlugins();
+                    } else {
+                        return null;
+                    }
+                },
+                definedInModel(mavenProject.getModel()));
+    }
+
+    protected List<ResolutionRoot> pluginResolutionRoots(
+            ToolboxCommando toolboxCommando, Function<Model, List<Plugin>> selector, Predicate<Plugin> pluginPredicate)
+            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
         List<ResolutionRoot> roots = new ArrayList<>();
         Model model = mavenProject.getModel();
-        String modelId = model.getGroupId() + ":" + model.getArtifactId() + ":" + model.getVersion();
-        if (model.getBuild() != null && model.getBuild().getPluginManagement() != null) {
-            for (Plugin plugin : model.getBuild().getPluginManagement().getPlugins()) {
-                InputLocation location = plugin.getLocation("");
-                if (location != null) {
-                    InputSource source = location.getSource();
-                    if (source != null && !Objects.equals(source.getModelId(), modelId)) {
-                        continue;
-                    }
+        List<Plugin> plugins = selector.apply(model);
+        if (plugins != null) {
+            for (Plugin plugin : plugins) {
+                if (!pluginPredicate.test(plugin)) {
+                    continue;
                 }
                 ResolutionRoot root = toolboxCommando.loadGav(
                         plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion());

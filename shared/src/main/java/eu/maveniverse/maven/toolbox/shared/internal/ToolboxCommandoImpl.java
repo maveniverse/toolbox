@@ -212,20 +212,20 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }
 
         if (verbose) {
-            output.verbose("");
-            output.verbose("        USER PROPERTIES");
-            context.contextOverrides().getUserProperties().entrySet().stream()
+            output.normal("");
+            output.normal("        USER PROPERTIES");
+            context.repositorySystemSession().getUserProperties().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> output.verbose("                         {}={}", e.getKey(), e.getValue()));
-            output.verbose("      SYSTEM PROPERTIES");
-            context.contextOverrides().getSystemProperties().entrySet().stream()
+                    .forEach(e -> output.normal("                         {}={}", e.getKey(), e.getValue()));
+            output.normal("      SYSTEM PROPERTIES");
+            context.repositorySystemSession().getSystemProperties().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> output.verbose("                         {}={}", e.getKey(), e.getValue()));
-            output.verbose("      CONFIG PROPERTIES");
-            context.contextOverrides().getConfigProperties().entrySet().stream()
+                    .forEach(e -> output.normal("                         {}={}", e.getKey(), e.getValue()));
+            output.normal("      CONFIG PROPERTIES");
+            context.repositorySystemSession().getConfigProperties().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> output.verbose("                         {}={}", e.getKey(), e.getValue()));
-            output.verbose("");
+                    .forEach(e -> output.normal("                         {}={}", e.getKey(), e.getValue()));
+            output.normal("");
 
             output.normal("OUTPUT TEST:");
             output.verbose("Verbose: {}", "Message", new RuntimeException("runtime"));
@@ -399,57 +399,66 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean listRepositories(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output)
+    public boolean listRepositories(
+            ResolutionScope resolutionScope, Map<String, ResolutionRoot> resolutionRoots, Output output)
             throws Exception {
-        output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
-        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
-        output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
-        CollectResult collectResult = toolboxResolver.collect(
-                resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), false);
-        LinkedHashMap<RemoteRepository, Artifact> repositories = new LinkedHashMap<>();
-        Artifact sentinel = new DefaultArtifact("sentinel:sentinel:sentinel");
-        context.remoteRepositories().forEach(r -> repositories.put(r, sentinel));
-        ArrayDeque<Artifact> path = new ArrayDeque<>();
-        collectResult.getRoot().accept(new TreeDependencyVisitor(new DependencyVisitor() {
-            @Override
-            public boolean visitEnter(DependencyNode node) {
-                Artifact parent = path.peek() == null ? sentinel : path.peek();
-                node.getRepositories().forEach(r -> repositories.putIfAbsent(r, parent));
-                path.push(node.getArtifact());
+        for (Map.Entry<String, ResolutionRoot> entry : resolutionRoots.entrySet()) {
+            String contextName = entry.getKey();
+            ResolutionRoot resolutionRoot = entry.getValue();
+            output.verbose("Loading root of {} {}", contextName, resolutionRoot.getArtifact());
+            ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+            output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
+            CollectResult collectResult = toolboxResolver.collect(
+                    resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), false);
+            LinkedHashMap<RemoteRepository, Dependency> repositories = new LinkedHashMap<>();
+            Dependency sentinel = new Dependency(new DefaultArtifact("sentinel:sentinel:sentinel"), "");
+            context.remoteRepositories().forEach(r -> repositories.put(r, sentinel));
+            ArrayDeque<Dependency> path = new ArrayDeque<>();
+            collectResult.getRoot().accept(new TreeDependencyVisitor(new DependencyVisitor() {
+                @Override
+                public boolean visitEnter(DependencyNode node) {
+                    Dependency parent = path.peek() == null ? sentinel : path.peek();
+                    node.getRepositories().forEach(r -> repositories.putIfAbsent(r, parent));
+                    path.push(node.getDependency() != null ? node.getDependency() : sentinel);
+                    return true;
+                }
+
+                @Override
+                public boolean visitLeave(DependencyNode node) {
+                    path.pop();
+                    return true;
+                }
+            }));
+            if (repositories.isEmpty()) {
+                output.normal("No remote repository is used by {} {}.", contextName, resolutionRoot.getArtifact());
                 return true;
             }
 
-            @Override
-            public boolean visitLeave(DependencyNode node) {
-                path.pop();
-                return true;
-            }
-        }));
-        if (repositories.isEmpty()) {
-            output.normal("No remote repository is used by this build.");
-            return true;
+            output.normal("Remote repositories used by {} {}.", contextName, resolutionRoot.getArtifact());
+            Map<Boolean, List<RemoteRepository>> repoGroupByMirrors = repositories.keySet().stream()
+                    .collect(Collectors.groupingBy(
+                            repo -> repo.getMirroredRepositories().isEmpty()));
+            repoGroupByMirrors
+                    .getOrDefault(Boolean.TRUE, Collections.emptyList())
+                    .forEach(r -> {
+                        output.normal(" * {}", r);
+                        Dependency firstIntroduced = repositories.get(r);
+                        output.normal(
+                                "   First introduced on {}", firstIntroduced == sentinel ? "root" : firstIntroduced);
+                    });
+
+            Map<RemoteRepository, RemoteRepository> mirrorMap = new HashMap<>();
+            repoGroupByMirrors
+                    .getOrDefault(Boolean.FALSE, Collections.emptyList())
+                    .forEach(repo -> repo.getMirroredRepositories().forEach(mrepo -> mirrorMap.put(mrepo, repo)));
+            mirrorMap.forEach((r, mirror) -> {
+                output.normal(" * {}", r);
+                Dependency firstIntroduced = repositories.get(mirror);
+                output.normal("   First introduced on {}", firstIntroduced == sentinel ? "root" : firstIntroduced);
+                output.normal("   Mirrored by {}", mirror);
+            });
         }
-
-        Map<Boolean, List<RemoteRepository>> repoGroupByMirrors = repositories.keySet().stream()
-                .collect(Collectors.groupingBy(
-                        repo -> repo.getMirroredRepositories().isEmpty()));
-        repoGroupByMirrors.getOrDefault(Boolean.TRUE, Collections.emptyList()).forEach(r -> {
-            output.normal(" * {}", r);
-            Artifact firstIntroduced = repositories.get(r);
-            output.normal("   First introduced on {}", firstIntroduced == sentinel ? "root" : firstIntroduced);
-        });
-
-        Map<RemoteRepository, RemoteRepository> mirrorMap = new HashMap<>();
-        repoGroupByMirrors
-                .getOrDefault(Boolean.FALSE, Collections.emptyList())
-                .forEach(repo -> repo.getMirroredRepositories().forEach(mrepo -> mirrorMap.put(mrepo, repo)));
-        mirrorMap.forEach((r, mirror) -> {
-            output.normal(" * {}", r);
-            Artifact firstIntroduced = repositories.get(mirror);
-            output.normal("   First introduced on {}", firstIntroduced == sentinel ? "root" : firstIntroduced);
-            output.normal("   Mirrored by {}", mirror);
-        });
-        return !repositories.isEmpty();
+        return true;
     }
 
     @Override
@@ -887,8 +896,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean libYear(
+            String subject,
             ResolutionScope resolutionScope,
-            Collection<ResolutionRoot> resolutionRoots,
+            ResolutionRoot resolutionRoot,
             boolean transitive,
             boolean quiet,
             boolean upToDate,
@@ -905,6 +915,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
         try (ArtifactSink sink = LibYearSink.libYear(
                 output,
+                subject,
                 context,
                 toolboxResolver,
                 toolboxSearchApi,
@@ -913,38 +924,36 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 versionPredicate,
                 artifactVersionSelector,
                 searchBackends)) {
-            for (ResolutionRoot resolutionRoot : resolutionRoots) {
-                try {
-                    ArrayList<Artifact> artifacts = new ArrayList<>();
-                    if (transitive) {
-                        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
-                        CollectResult collectResult = toolboxResolver.collect(
-                                resolutionScope,
-                                root.getArtifact(),
-                                root.getDependencies(),
-                                root.getManagedDependencies(),
-                                false);
-                        collectResult.getRoot().accept(new DependencyVisitor() {
-                            @Override
-                            public boolean visitEnter(DependencyNode node) {
-                                artifacts.add(node.getArtifact());
-                                return true;
-                            }
+            try {
+                ArrayList<Artifact> artifacts = new ArrayList<>();
+                if (transitive) {
+                    ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+                    CollectResult collectResult = toolboxResolver.collect(
+                            resolutionScope,
+                            root.getArtifact(),
+                            root.getDependencies(),
+                            root.getManagedDependencies(),
+                            false);
+                    collectResult.getRoot().accept(new DependencyVisitor() {
+                        @Override
+                        public boolean visitEnter(DependencyNode node) {
+                            artifacts.add(node.getArtifact());
+                            return true;
+                        }
 
-                            @Override
-                            public boolean visitLeave(DependencyNode node) {
-                                return true;
-                            }
-                        });
-                    } else {
-                        artifacts.addAll(resolutionRoot.getDependencies().stream()
-                                .map(this::toArtifact)
-                                .collect(Collectors.toList()));
-                    }
-                    sink.accept(artifacts);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                        @Override
+                        public boolean visitLeave(DependencyNode node) {
+                            return true;
+                        }
+                    });
+                } else {
+                    artifacts.addAll(resolutionRoot.getDependencies().stream()
+                            .map(this::toArtifact)
+                            .collect(Collectors.toList()));
                 }
+                sink.accept(artifacts);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         return true;

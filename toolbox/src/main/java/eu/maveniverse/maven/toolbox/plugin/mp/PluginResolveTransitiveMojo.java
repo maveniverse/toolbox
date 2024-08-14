@@ -59,7 +59,7 @@ public class PluginResolveTransitiveMojo extends MPPluginMojoSupport {
         if (root != null) {
             roots = Collections.singleton(root);
         } else {
-            roots = allPluginsAsResolutionRoots(toolboxCommando);
+            roots = allProjectPluginsAsResolutionRoots(toolboxCommando);
         }
         return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(scope),

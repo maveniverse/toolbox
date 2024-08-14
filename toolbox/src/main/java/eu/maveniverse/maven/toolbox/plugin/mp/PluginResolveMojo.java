@@ -54,7 +54,7 @@ public class PluginResolveMojo extends MPPluginMojoSupport {
         if (root != null) {
             roots = Collections.singleton(root.getArtifact());
         } else {
-            roots = allPluginsAsResolutionRoots(toolboxCommando).stream()
+            roots = allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
                     .map(ResolutionRoot::getArtifact)
                     .collect(Collectors.toList());
         }

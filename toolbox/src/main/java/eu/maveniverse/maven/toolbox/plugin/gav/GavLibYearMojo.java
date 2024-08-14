@@ -22,9 +22,9 @@ import picocli.CommandLine;
 @Mojo(name = "gav-libyear", requiresProject = false, threadSafe = true)
 public class GavLibYearMojo extends GavSearchMojoSupport {
     /**
-     * The comma separated GAVs to "libyear".
+     * The GAV to calculate libyear for.
      */
-    @CommandLine.Parameters(index = "0", description = "The comma separated GAVs to resolve", arity = "1")
+    @CommandLine.Parameters(index = "0", description = "The GAV to show libyear for", arity = "1")
     @Parameter(property = "gav", required = true)
     private String gav;
 
@@ -98,8 +98,9 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.libYear(
+                "GAV " + gav,
                 ResolutionScope.parse(scope),
-                toolboxCommando.loadGavs(slurp(gav), slurp(boms)),
+                toolboxCommando.loadGav(gav, slurp(boms)),
                 transitive,
                 quiet,
                 upToDate,

@@ -9,7 +9,10 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
@@ -60,17 +63,40 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
-        return toolboxCommando.libYear(
-                ResolutionScope.RUNTIME,
-                allPluginsAsResolutionRoots(toolboxCommando).stream()
-                        .filter(r -> artifactMatcher.test(r.getArtifact()))
-                        .collect(Collectors.toList()),
-                transitive,
-                quiet,
-                upToDate,
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
-                getRepositoryVendor(),
-                output);
+        ArtifactVersionMatcher artifactVersionMatcher =
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec);
+        ArtifactVersionSelector artifactVersionSelector =
+                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
+        for (ResolutionRoot root : allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
+                .filter(r -> artifactMatcher.test(r.getArtifact()))
+                .collect(Collectors.toList())) {
+            toolboxCommando.libYear(
+                    "managed plugin " + root.getArtifact(),
+                    ResolutionScope.RUNTIME,
+                    root,
+                    transitive,
+                    quiet,
+                    upToDate,
+                    artifactVersionMatcher,
+                    artifactVersionSelector,
+                    getRepositoryVendor(),
+                    output);
+        }
+        for (ResolutionRoot root : allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
+                .filter(r -> artifactMatcher.test(r.getArtifact()))
+                .collect(Collectors.toList())) {
+            toolboxCommando.libYear(
+                    "plugin " + root.getArtifact(),
+                    ResolutionScope.RUNTIME,
+                    root,
+                    transitive,
+                    quiet,
+                    upToDate,
+                    artifactVersionMatcher,
+                    artifactVersionSelector,
+                    getRepositoryVendor(),
+                    output);
+        }
+        return true;
     }
 }

@@ -11,7 +11,6 @@ import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.Collections;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -59,8 +58,9 @@ public class LibYearMojo extends MPMojoSupport {
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.libYear(
+                "project " + mavenProject.getId(),
                 ResolutionScope.parse(scope),
-                Collections.singleton(projectAsResolutionRoot()),
+                projectAsResolutionRoot(),
                 transitive,
                 quiet,
                 upToDate,

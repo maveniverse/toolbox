@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -157,7 +158,16 @@ public interface ToolboxCommando {
 
     boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output) throws Exception;
 
-    boolean listRepositories(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output)
+    default boolean listRepositories(
+            ResolutionScope resolutionScope, String context, ResolutionRoot resolutionRoot, Output output)
+            throws Exception {
+        HashMap<String, ResolutionRoot> resolutionRoots = new HashMap<>();
+        resolutionRoots.put(context, resolutionRoot);
+        return listRepositories(resolutionScope, resolutionRoots, output);
+    }
+
+    boolean listRepositories(
+            ResolutionScope resolutionScope, Map<String, ResolutionRoot> resolutionRoots, Output output)
             throws Exception;
 
     boolean listAvailablePlugins(Collection<String> groupIds, Output output) throws Exception;
@@ -231,8 +241,9 @@ public interface ToolboxCommando {
     // Various
 
     boolean libYear(
+            String subject,
             ResolutionScope resolutionScope,
-            Collection<ResolutionRoot> resolutionRoots,
+            ResolutionRoot resolutionRoot,
             boolean transitive,
             boolean quiet,
             boolean upToDate,

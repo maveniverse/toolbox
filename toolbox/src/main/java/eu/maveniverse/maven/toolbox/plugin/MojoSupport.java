@@ -43,6 +43,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
 import org.jline.jansi.Ansi;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 import picocli.CommandLine;
@@ -52,11 +53,14 @@ import picocli.CommandLine;
  */
 public abstract class MojoSupport extends AbstractMojo implements Callable<Integer>, CommandLine.IVersionProvider {
 
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
+
     // CLI
 
     @CommandLine.Option(
             names = {"-v", "--verbose"},
             description = "Be verbose about things happening")
+    @Parameter(property = "verbose")
     private boolean verbose;
 
     @CommandLine.Option(
@@ -431,7 +435,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     // Mojo
 
     private Output createMojoOutput() {
-        return new Slf4jOutput(LoggerFactory.getLogger(getClass()));
+        return new Slf4jOutput(LoggerFactory.getLogger(getClass()), verbose);
     }
 
     @CommandLine.Option(

@@ -913,9 +913,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     context.repositorySystemSession(), remoteRepository, repositoryVendor));
         }
 
-        output.normal("Calculating libyear for {}", subject);
         try (ArtifactSink sink = LibYearSink.libYear(
                 output,
+                subject,
                 context,
                 toolboxResolver,
                 toolboxSearchApi,

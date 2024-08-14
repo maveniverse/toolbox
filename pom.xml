@@ -287,6 +287,19 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.gaul</groupId>
+        <artifactId>modernizer-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>modernizer</id>
+            <goals>
+              <goal>modernizer</goal>
+            </goals>
+            <phase>verify</phase>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>

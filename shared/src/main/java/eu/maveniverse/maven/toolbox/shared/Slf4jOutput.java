@@ -16,14 +16,16 @@ import org.slf4j.Logger;
  */
 public final class Slf4jOutput implements Output {
     private final Logger logger;
+    private final boolean verbose;
 
-    public Slf4jOutput(Logger logger) {
+    public Slf4jOutput(Logger logger, boolean verbose) {
         this.logger = requireNonNull(logger, "logger");
+        this.verbose = verbose;
     }
 
     @Override
     public boolean isVerbose() {
-        return logger.isDebugEnabled();
+        return verbose;
     }
 
     @Override

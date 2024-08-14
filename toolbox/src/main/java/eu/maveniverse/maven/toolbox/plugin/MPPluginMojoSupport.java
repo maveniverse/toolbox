@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.plugin;
 
+import static java.util.Objects.requireNonNull;
+
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.ArrayList;
@@ -14,11 +16,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.apache.maven.model.BuildBase;
 import org.apache.maven.model.InputLocation;
 import org.apache.maven.model.InputLocationTracker;
 import org.apache.maven.model.InputSource;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.Profile;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
@@ -37,19 +41,84 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
     private String pluginKey;
 
     protected <T extends InputLocationTracker> Predicate<T> definedInModel(Model model) {
+        requireNonNull(model, "model");
         String modelId = model.getGroupId() + ":" + model.getArtifactId() + ":" + model.getVersion();
-        return dependency -> {
-            InputLocation location = dependency.getLocation("");
-            if (location != null) {
-                InputSource source = location.getSource();
-                return source != null && !Objects.equals(source.getModelId(), modelId);
+        return tracker -> {
+            if (tracker != null) {
+                InputLocation location = tracker.getLocation("");
+                if (location != null) {
+                    InputSource source = location.getSource();
+                    return source != null && Objects.equals(source.getModelId(), modelId);
+                }
             }
             return false;
         };
     }
 
-    protected ResolutionRoot pluginAsResolutionRoot(ToolboxCommando toolboxCommando, boolean mandatoryPluginKey)
-            throws Exception {
+    protected Function<Model, BuildBase> projectBuildBaseSelector() {
+        return model -> {
+            if (model != null) {
+                return model.getBuild();
+            }
+            return null;
+        };
+    }
+
+    protected Function<Model, BuildBase> profileBuildBaseSelector(String profileId) {
+        requireNonNull(profileId, "profileId");
+        return model -> {
+            if (model != null) {
+                for (Profile profile : model.getProfiles()) {
+                    if (profileId.equals(profile.getId())) {
+                        return profile.getBuild();
+                    }
+                }
+            }
+            return null;
+        };
+    }
+
+    protected Function<BuildBase, List<Plugin>> buildManagedPluginsExtractor() {
+        return build -> {
+            if (build != null && build.getPluginManagement() != null) {
+                return build.getPluginManagement().getPlugins();
+            }
+            return null;
+        };
+    }
+
+    protected Function<BuildBase, List<Plugin>> buildPluginsExtractor() {
+        return build -> {
+            if (build != null) {
+                return build.getPlugins();
+            }
+            return null;
+        };
+    }
+
+    protected Function<Plugin, ResolutionRoot> pluginToResolutionRoot(ToolboxCommando toolboxCommando) {
+        return plugin -> {
+            if (plugin != null) {
+                try {
+                    ResolutionRoot root = toolboxCommando.loadGav(
+                            plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion());
+                    if (!plugin.getDependencies().isEmpty()) {
+                        root = root.builder()
+                                .withDependencies(toDependencies(plugin.getDependencies()))
+                                .build();
+                    }
+                    return root;
+                } catch (InvalidVersionSpecificationException
+                        | VersionRangeResolutionException
+                        | ArtifactDescriptorException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+            return null;
+        };
+    }
+
+    protected ResolutionRoot pluginAsResolutionRoot(ToolboxCommando toolboxCommando, boolean mandatoryPluginKey) {
         Plugin plugin = null;
         if (pluginKey == null || pluginKey.trim().isEmpty()) {
             if (mandatoryPluginKey) {
@@ -84,63 +153,58 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                     mavenProject.getPackaging());
             return null;
         }
-        ResolutionRoot root =
-                toolboxCommando.loadGav(plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion());
-        if (!plugin.getDependencies().isEmpty()) {
-            root.getDependencies().addAll(toDependencies(plugin.getDependencies()));
-        }
-        return root;
+        return pluginToResolutionRoot(toolboxCommando).apply(plugin);
     }
 
-    protected List<ResolutionRoot> allPluginsAsResolutionRoots(ToolboxCommando toolboxCommando)
-            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
+    protected List<ResolutionRoot> allProjectManagedPluginsAsResolutionRoots(ToolboxCommando toolboxCommando) {
         return pluginResolutionRoots(
-                toolboxCommando,
-                m -> {
-                    if (m.getBuild() != null) {
-                        return m.getBuild().getPlugins();
-                    } else {
-                        return null;
-                    }
-                },
-                definedInModel(mavenProject.getModel()));
+                projectBuildBaseSelector(),
+                buildManagedPluginsExtractor(),
+                definedInModel(mavenProject.getModel()),
+                pluginToResolutionRoot(toolboxCommando));
     }
 
-    protected List<ResolutionRoot> allManagedPluginsAsResolutionRoots(ToolboxCommando toolboxCommando)
-            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
+    protected List<ResolutionRoot> allProjectPluginsAsResolutionRoots(ToolboxCommando toolboxCommando) {
         return pluginResolutionRoots(
-                toolboxCommando,
-                m -> {
-                    if (m.getBuild() != null && m.getBuild().getPluginManagement() != null) {
-                        return m.getBuild().getPluginManagement().getPlugins();
-                    } else {
-                        return null;
-                    }
-                },
-                definedInModel(mavenProject.getModel()));
+                projectBuildBaseSelector(),
+                buildPluginsExtractor(),
+                definedInModel(mavenProject.getModel()),
+                pluginToResolutionRoot(toolboxCommando));
     }
 
-    protected List<ResolutionRoot> pluginResolutionRoots(
-            ToolboxCommando toolboxCommando, Function<Model, List<Plugin>> selector, Predicate<Plugin> pluginPredicate)
-            throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
-        List<ResolutionRoot> roots = new ArrayList<>();
-        Model model = mavenProject.getModel();
-        List<Plugin> plugins = selector.apply(model);
+    protected List<ResolutionRoot> allProfileManagedPluginsAsResolutionRoots(
+            ToolboxCommando toolboxCommando, String profileId) {
+        return pluginResolutionRoots(
+                profileBuildBaseSelector(profileId),
+                buildManagedPluginsExtractor(),
+                definedInModel(mavenProject.getModel()),
+                pluginToResolutionRoot(toolboxCommando));
+    }
+
+    protected List<ResolutionRoot> allProfilePluginsAsResolutionRoots(
+            ToolboxCommando toolboxCommando, String profileId) {
+        return pluginResolutionRoots(
+                profileBuildBaseSelector(profileId),
+                buildPluginsExtractor(),
+                definedInModel(mavenProject.getModel()),
+                pluginToResolutionRoot(toolboxCommando));
+    }
+
+    private <T> List<T> pluginResolutionRoots(
+            Function<Model, BuildBase> selector,
+            Function<BuildBase, List<Plugin>> extractor,
+            Predicate<Plugin> predicate,
+            Function<Plugin, T> transformer) {
+        List<T> result = new ArrayList<>();
+        List<Plugin> plugins = extractor.apply(selector.apply(mavenProject.getModel()));
         if (plugins != null) {
             for (Plugin plugin : plugins) {
-                if (!pluginPredicate.test(plugin)) {
+                if (!predicate.test(plugin)) {
                     continue;
                 }
-                ResolutionRoot root = toolboxCommando.loadGav(
-                        plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion());
-                if (!plugin.getDependencies().isEmpty()) {
-                    root = root.builder()
-                            .withDependencies(toDependencies(plugin.getDependencies()))
-                            .build();
-                }
-                roots.add(root);
+                result.add(transformer.apply(plugin));
             }
         }
-        return roots;
+        return result;
     }
 }

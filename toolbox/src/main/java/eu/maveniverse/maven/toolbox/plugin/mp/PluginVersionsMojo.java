@@ -38,7 +38,7 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
         toolboxCommando.versions(
                 "managed plugins",
-                allManagedPluginsAsResolutionRoots(toolboxCommando).stream()
+                allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher)
                         .collect(Collectors.toList()),
@@ -46,7 +46,7 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
                 output);
         toolboxCommando.versions(
                 "plugins",
-                allPluginsAsResolutionRoots(toolboxCommando).stream()
+                allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher)
                         .collect(Collectors.toList()),

@@ -60,6 +60,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     @CommandLine.Option(
             names = {"-v", "--verbose"},
             description = "Be verbose about things happening")
+    @Parameter(property = "verbose")
     private boolean verbose;
 
     @CommandLine.Option(
@@ -434,7 +435,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     // Mojo
 
     private Output createMojoOutput() {
-        return new Slf4jOutput(LoggerFactory.getLogger(getClass()));
+        return new Slf4jOutput(LoggerFactory.getLogger(getClass()), verbose);
     }
 
     @CommandLine.Option(

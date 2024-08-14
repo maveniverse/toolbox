@@ -212,20 +212,20 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }
 
         if (verbose) {
-            output.verbose("");
-            output.verbose("        USER PROPERTIES");
-            context.contextOverrides().getUserProperties().entrySet().stream()
+            output.normal("");
+            output.normal("        USER PROPERTIES");
+            context.repositorySystemSession().getUserProperties().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> output.verbose("                         {}={}", e.getKey(), e.getValue()));
-            output.verbose("      SYSTEM PROPERTIES");
-            context.contextOverrides().getSystemProperties().entrySet().stream()
+                    .forEach(e -> output.normal("                         {}={}", e.getKey(), e.getValue()));
+            output.normal("      SYSTEM PROPERTIES");
+            context.repositorySystemSession().getSystemProperties().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> output.verbose("                         {}={}", e.getKey(), e.getValue()));
-            output.verbose("      CONFIG PROPERTIES");
-            context.contextOverrides().getConfigProperties().entrySet().stream()
+                    .forEach(e -> output.normal("                         {}={}", e.getKey(), e.getValue()));
+            output.normal("      CONFIG PROPERTIES");
+            context.repositorySystemSession().getConfigProperties().entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> output.verbose("                         {}={}", e.getKey(), e.getValue()));
-            output.verbose("");
+                    .forEach(e -> output.normal("                         {}={}", e.getKey(), e.getValue()));
+            output.normal("");
 
             output.normal("OUTPUT TEST:");
             output.verbose("Verbose: {}", "Message", new RuntimeException("runtime"));

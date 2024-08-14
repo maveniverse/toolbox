@@ -71,6 +71,7 @@ public final class LibYearSink implements ArtifactSink {
      */
     public static LibYearSink libYear(
             Output output,
+            String subject,
             Context context,
             ToolboxResolverImpl toolboxResolver,
             ToolboxSearchApiImpl toolboxSearchApi,
@@ -81,6 +82,7 @@ public final class LibYearSink implements ArtifactSink {
             List<SearchBackend> searchBackends) {
         return new LibYearSink(
                 output,
+                subject,
                 context,
                 toolboxResolver,
                 toolboxSearchApi,
@@ -92,6 +94,7 @@ public final class LibYearSink implements ArtifactSink {
     }
 
     private final Output output;
+    private final String subject;
     private final Context context;
     private final ToolboxResolverImpl toolboxResolver;
     private final ToolboxSearchApiImpl toolboxSearchApi;
@@ -106,6 +109,7 @@ public final class LibYearSink implements ArtifactSink {
 
     private LibYearSink(
             Output output,
+            String subject,
             Context context,
             ToolboxResolverImpl toolboxResolver,
             ToolboxSearchApiImpl toolboxSearchApi,
@@ -115,6 +119,7 @@ public final class LibYearSink implements ArtifactSink {
             BiFunction<Artifact, List<Version>, String> versionSelector,
             List<SearchBackend> searchBackends) {
         this.output = requireNonNull(output, "output");
+        this.subject = requireNonNull(subject, "subject");
         this.context = requireNonNull(context, "context");
         this.toolboxResolver = requireNonNull(toolboxResolver, "toolboxResolver");
         this.toolboxSearchApi = requireNonNull(toolboxSearchApi, "toolboxSearchApi");
@@ -125,6 +130,8 @@ public final class LibYearSink implements ArtifactSink {
         this.now = Instant.now().atZone(ZoneId.systemDefault()).toLocalDate();
         this.artifacts = new CopyOnWriteArraySet<>();
         this.searchBackends = requireNonNull(searchBackends);
+
+        output.normal("Calculating libYear for {}", subject);
     }
 
     @SuppressWarnings("unchecked")
@@ -192,14 +199,14 @@ public final class LibYearSink implements ArtifactSink {
                             float libCurrentYearsAge = libCurrentWeeksAge != -1 ? libCurrentWeeksAge / 52f : -1;
                             if (libCurrentYearsAge != -1) {
                                 upToDateByAge.add(String.format(
-                                        "%s %s (%s) [age %.2f years]",
+                                        "%s %s (%s) [latest is %.2f years old]",
                                         ArtifactIdUtils.toVersionlessId(artifact),
                                         libYear.currentVersion,
                                         currentVersionDate,
                                         libCurrentYearsAge));
                             } else {
                                 upToDateByAge.add(String.format(
-                                        "%s %s (%s) [age unknown]",
+                                        "%s %s (%s) [latest age unknown]",
                                         ArtifactIdUtils.toVersionlessId(artifact),
                                         libYear.currentVersion,
                                         currentVersionDate == null ? "?" : currentVersionDate));
@@ -219,7 +226,7 @@ public final class LibYearSink implements ArtifactSink {
                             outdatedWithLibyear
                                     .computeIfAbsent(libYearsOutdated, k -> new CopyOnWriteArrayList<>())
                                     .add(String.format(
-                                            "%.2f years from %s %s (%s) => %s (%s) [age %.2f years]",
+                                            "%.2f years from %s %s (%s) => %s (%s) [latest is %.2f years old]",
                                             libYearsOutdated,
                                             ArtifactIdUtils.toVersionlessId(artifact),
                                             libYear.currentVersion,
@@ -240,31 +247,32 @@ public final class LibYearSink implements ArtifactSink {
                 }
             }
 
-            String indent = "";
+            String indent = "  ";
             if (!outdatedWithLibyear.isEmpty()) {
                 output.normal("{}Outdated versions with known age", indent);
+                outdatedWithLibyear.values().stream()
+                        .flatMap(Collection::stream)
+                        .forEach(l -> output.normal("{}{}", indent, l));
+                output.normal("{}", indent);
             }
-            outdatedWithLibyear.values().stream()
-                    .flatMap(Collection::stream)
-                    .forEach(l -> output.normal("{}{}", indent, l));
-            output.normal("{}", indent);
             if (!outdatedWithoutLibyear.isEmpty()) {
-                output.normal("{}Outdated versions", indent);
+                output.normal("{}Outdated versions without known age", indent);
+                outdatedWithoutLibyear.forEach(l -> output.normal("{}{}", indent, l));
+                output.normal("{}", indent);
             }
-            outdatedWithoutLibyear.forEach(l -> output.normal("{}{}", indent, l));
-            output.normal("{}", indent);
-            output.normal(
-                    "{}Total of {} years from {} outdated dependencies",
-                    indent,
-                    String.format("%.2f", totalLibYears),
-                    outdatedWithLibyear.values().stream().mapToInt(List::size).sum() + outdatedWithoutLibyear.size());
-            output.normal("{}", indent);
             if (upToDate) {
                 if (!upToDateByAge.isEmpty()) {
                     output.normal("{}Up to date versions", indent);
                 }
                 upToDateByAge.forEach(l -> output.normal("{}{}", indent, l));
+                output.normal("{}", indent);
             }
+            output.normal(
+                    "Total of {} years from {} outdated dependencies for {}",
+                    String.format("%.2f", totalLibYears),
+                    outdatedWithLibyear.values().stream().mapToInt(List::size).sum() + outdatedWithoutLibyear.size(),
+                    subject);
+            output.normal("{}", indent);
         } finally {
             searchBackends.forEach(b -> {
                 try {

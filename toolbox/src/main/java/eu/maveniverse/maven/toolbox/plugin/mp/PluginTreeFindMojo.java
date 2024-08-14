@@ -50,7 +50,7 @@ public class PluginTreeFindMojo extends MPPluginMojoSupport {
                     output);
         } else {
             boolean result = true;
-            for (ResolutionRoot resolutionRoot : allPluginsAsResolutionRoots(toolboxCommando)) {
+            for (ResolutionRoot resolutionRoot : allProjectPluginsAsResolutionRoots(toolboxCommando)) {
                 result = result
                         && toolboxCommando.treeFind(
                                 ResolutionScope.parse(scope),

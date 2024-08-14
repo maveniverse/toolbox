@@ -896,8 +896,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean libYear(
+            String subject,
             ResolutionScope resolutionScope,
-            Collection<ResolutionRoot> resolutionRoots,
+            ResolutionRoot resolutionRoot,
             boolean transitive,
             boolean quiet,
             boolean upToDate,
@@ -912,6 +913,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     context.repositorySystemSession(), remoteRepository, repositoryVendor));
         }
 
+        output.normal("Calculating libyear for {}", subject);
         try (ArtifactSink sink = LibYearSink.libYear(
                 output,
                 context,
@@ -922,38 +924,36 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 versionPredicate,
                 artifactVersionSelector,
                 searchBackends)) {
-            for (ResolutionRoot resolutionRoot : resolutionRoots) {
-                try {
-                    ArrayList<Artifact> artifacts = new ArrayList<>();
-                    if (transitive) {
-                        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
-                        CollectResult collectResult = toolboxResolver.collect(
-                                resolutionScope,
-                                root.getArtifact(),
-                                root.getDependencies(),
-                                root.getManagedDependencies(),
-                                false);
-                        collectResult.getRoot().accept(new DependencyVisitor() {
-                            @Override
-                            public boolean visitEnter(DependencyNode node) {
-                                artifacts.add(node.getArtifact());
-                                return true;
-                            }
+            try {
+                ArrayList<Artifact> artifacts = new ArrayList<>();
+                if (transitive) {
+                    ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+                    CollectResult collectResult = toolboxResolver.collect(
+                            resolutionScope,
+                            root.getArtifact(),
+                            root.getDependencies(),
+                            root.getManagedDependencies(),
+                            false);
+                    collectResult.getRoot().accept(new DependencyVisitor() {
+                        @Override
+                        public boolean visitEnter(DependencyNode node) {
+                            artifacts.add(node.getArtifact());
+                            return true;
+                        }
 
-                            @Override
-                            public boolean visitLeave(DependencyNode node) {
-                                return true;
-                            }
-                        });
-                    } else {
-                        artifacts.addAll(resolutionRoot.getDependencies().stream()
-                                .map(this::toArtifact)
-                                .collect(Collectors.toList()));
-                    }
-                    sink.accept(artifacts);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                        @Override
+                        public boolean visitLeave(DependencyNode node) {
+                            return true;
+                        }
+                    });
+                } else {
+                    artifacts.addAll(resolutionRoot.getDependencies().stream()
+                            .map(this::toArtifact)
+                            .collect(Collectors.toList()));
                 }
+                sink.accept(artifacts);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         return true;

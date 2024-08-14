@@ -241,8 +241,9 @@ public interface ToolboxCommando {
     // Various
 
     boolean libYear(
+            String subject,
             ResolutionScope resolutionScope,
-            Collection<ResolutionRoot> resolutionRoots,
+            ResolutionRoot resolutionRoot,
             boolean transitive,
             boolean quiet,
             boolean upToDate,

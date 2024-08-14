@@ -31,7 +31,7 @@
     <mainClass>eu.maveniverse.maven.toolbox.plugin.CLI</mainClass>
 
     <!-- m-p-p workarounds -->
-    <prerequisiteMaven>3.6.3</prerequisiteMaven>
+    <prerequisiteMaven>${requireRuntimeMavenVersion.version}</prerequisiteMaven>
     <prerequisiteJava>${maven.compiler.release}</prerequisiteJava>
   </properties>
 

@@ -69,10 +69,10 @@
     <requireRuntimeMavenVersion.version>[3.6.3,)</requireRuntimeMavenVersion.version>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.15</version.mima>
-    <version.maven>3.9.8</version.maven>
+    <version.mima>2.4.16</version.mima>
+    <version.maven>3.9.9</version.maven>
+    <version.resolver>1.9.22</version.resolver>
     <version.mavenIndexer>7.1.4</version.mavenIndexer>
-    <version.resolver>1.9.20</version.resolver>
     <version.mavenPluginTools>3.13.1</version.mavenPluginTools>
     <version.slf4j>2.0.16</version.slf4j>
     <version.picocli>4.7.6</version.picocli>
@@ -243,7 +243,7 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
-        <version>5.10.3</version>
+        <version>5.11.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -52,6 +52,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -682,9 +683,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean dmList(ResolutionRoot resolutionRoot, boolean verbose, Output output) throws Exception {
-        CollectResult collectResult = toolboxResolver.collectDm(
-                resolutionRoot.getArtifact(), resolutionRoot.getManagedDependencies(), verbose);
-        collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
+        AtomicInteger counter = new AtomicInteger(0);
+        resolutionRoot
+                .getManagedDependencies()
+                .forEach(d -> output.normal(
+                        " {}. {}",
+                        counter.incrementAndGet(),
+                        d.getScope().trim().isEmpty() ? d.getArtifact() : d));
         return true;
     }
 

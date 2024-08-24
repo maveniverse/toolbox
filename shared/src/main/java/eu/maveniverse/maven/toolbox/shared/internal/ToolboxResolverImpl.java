@@ -18,16 +18,12 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
-import org.apache.maven.model.Model;
-import org.apache.maven.repository.internal.ArtifactDescriptorReaderDelegate;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -103,17 +99,7 @@ public class ToolboxResolverImpl {
     public ArtifactDescriptorResult readArtifactDescriptor(Artifact artifact) throws ArtifactDescriptorException {
         ArtifactDescriptorRequest artifactDescriptorRequest =
                 new ArtifactDescriptorRequest(artifact, remoteRepositories, CTX_TOOLBOX);
-        DefaultRepositorySystemSession alteredSession = new DefaultRepositorySystemSession(session);
-        session.getData().set(ArtifactDescriptorReaderDelegate.class, new ArtifactDescriptorReaderDelegate() {
-            @Override
-            public void populateResult(RepositorySystemSession session, ArtifactDescriptorResult result, Model model) {
-                super.populateResult(session, result, model);
-                Map<String, Object> properties = new HashMap<>(result.getProperties());
-                properties.put("model", model);
-                result.setProperties(properties);
-            }
-        });
-        return repositorySystem.readArtifactDescriptor(alteredSession, artifactDescriptorRequest);
+        return repositorySystem.readArtifactDescriptor(session, artifactDescriptorRequest);
     }
 
     public List<Dependency> importBOMs(Collection<String> boms) throws ArtifactDescriptorException {

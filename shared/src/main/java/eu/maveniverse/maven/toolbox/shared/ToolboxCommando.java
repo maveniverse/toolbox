@@ -208,6 +208,10 @@ public interface ToolboxCommando {
             Output output)
             throws Exception;
 
+    boolean dmList(ResolutionRoot resolutionRoot, boolean verbose, Output output) throws Exception;
+
+    boolean dmTree(ResolutionRoot resolutionRoot, boolean verbose, Output output) throws Exception;
+
     // Search API related commands: they target one single RemoteRepository
 
     /**

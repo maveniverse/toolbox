@@ -18,12 +18,16 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
+import org.apache.maven.model.Model;
+import org.apache.maven.repository.internal.ArtifactDescriptorReaderDelegate;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -99,7 +103,17 @@ public class ToolboxResolverImpl {
     public ArtifactDescriptorResult readArtifactDescriptor(Artifact artifact) throws ArtifactDescriptorException {
         ArtifactDescriptorRequest artifactDescriptorRequest =
                 new ArtifactDescriptorRequest(artifact, remoteRepositories, CTX_TOOLBOX);
-        return repositorySystem.readArtifactDescriptor(session, artifactDescriptorRequest);
+        DefaultRepositorySystemSession alteredSession = new DefaultRepositorySystemSession(session);
+        session.getData().set(ArtifactDescriptorReaderDelegate.class, new ArtifactDescriptorReaderDelegate() {
+            @Override
+            public void populateResult(RepositorySystemSession session, ArtifactDescriptorResult result, Model model) {
+                super.populateResult(session, result, model);
+                Map<String, Object> properties = new HashMap<>(result.getProperties());
+                properties.put("model", model);
+                result.setProperties(properties);
+            }
+        });
+        return repositorySystem.readArtifactDescriptor(alteredSession, artifactDescriptorRequest);
     }
 
     public List<Dependency> importBOMs(Collection<String> boms) throws ArtifactDescriptorException {
@@ -244,6 +258,16 @@ public class ToolboxResolverImpl {
         return doCollect(resolutionScope, root, null, dependencies, managedDependencies, remoteRepositories, verbose);
     }
 
+    public CollectResult collectDm(Artifact root, List<Dependency> managedDependencies, boolean verbose)
+            throws DependencyCollectionException {
+        return doCollectDm(null, root, managedDependencies, remoteRepositories, verbose);
+    }
+
+    public CollectResult collectDm(Dependency root, List<Dependency> managedDependencies, boolean verbose)
+            throws DependencyCollectionException {
+        return doCollectDm(root, null, managedDependencies, remoteRepositories, verbose);
+    }
+
     public DependencyResult resolve(
             ResolutionScope resolutionScope,
             Artifact root,
@@ -311,6 +335,41 @@ public class ToolboxResolverImpl {
                 result.getRoot().getChildren().removeAll(childrenToRemove);
             }
         }
+        return result;
+    }
+
+    private CollectResult doCollectDm(
+            Dependency rootDependency,
+            Artifact root,
+            List<Dependency> managedDependencies,
+            List<RemoteRepository> remoteRepositories,
+            boolean verbose)
+            throws DependencyCollectionException {
+        if (rootDependency == null && root == null) {
+            throw new NullPointerException("one of rootDependency or root must be non-null");
+        }
+
+        logger.debug("Collecting depMgt: {}", rootDependency != null ? rootDependency.getArtifact() : root);
+
+        CollectRequest collectRequest = new CollectRequest();
+        if (rootDependency != null) {
+            root = rootDependency.getArtifact();
+        }
+        collectRequest.setRootArtifact(root);
+        collectRequest.setManagedDependencies(managedDependencies);
+        collectRequest.setRepositories(remoteRepositories);
+        collectRequest.setRequestContext(CTX_TOOLBOX);
+        collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
+
+        logger.debug("Collecting {}", collectRequest);
+        CollectResult result = new CollectResult(collectRequest);
+        DefaultDependencyNode rootNode =
+                new DefaultDependencyNode(rootDependency != null ? rootDependency.getArtifact() : root);
+        result.setRoot(rootNode);
+        for (Dependency managedDependency : managedDependencies) {
+            rootNode.getChildren().add(new DefaultDependencyNode(managedDependency));
+        }
+
         return result;
     }
 

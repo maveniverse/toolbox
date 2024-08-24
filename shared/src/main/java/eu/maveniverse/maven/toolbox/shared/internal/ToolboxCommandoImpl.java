@@ -633,23 +633,15 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean tree(
-            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output) {
-        try {
-            output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
-            ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
-            output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
-            CollectResult collectResult = toolboxResolver.collect(
-                    resolutionScope,
-                    root.getArtifact(),
-                    root.getDependencies(),
-                    root.getManagedDependencies(),
-                    verbose);
-            collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output)
+            throws Exception {
+        output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
+        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+        output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
+        CollectResult collectResult = toolboxResolver.collect(
+                resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), verbose);
+        collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
+        return true;
     }
 
     @Override
@@ -658,41 +650,50 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ResolutionRoot resolutionRoot,
             boolean verbose,
             ArtifactMatcher artifactMatcher,
-            Output output) {
-        try {
-            output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
-            ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
-            output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
-            CollectResult collectResult = toolboxResolver.collect(
-                    resolutionScope,
-                    root.getArtifact(),
-                    root.getDependencies(),
-                    root.getManagedDependencies(),
-                    verbose);
-            PathRecordingDependencyVisitor pathRecordingDependencyVisitor =
-                    new PathRecordingDependencyVisitor(new DependencyFilter() {
-                        @Override
-                        public boolean accept(DependencyNode node, List<DependencyNode> parents) {
-                            return node.getArtifact() != null && artifactMatcher.test(node.getArtifact());
-                        }
-                    });
-            collectResult.getRoot().accept(pathRecordingDependencyVisitor);
-            if (!pathRecordingDependencyVisitor.getPaths().isEmpty()) {
-                output.normal("Paths");
-                for (List<DependencyNode> path : pathRecordingDependencyVisitor.getPaths()) {
-                    String indent = "";
-                    for (DependencyNode node : path) {
-                        output.normal("{}-> {}", indent, node.getArtifact());
-                        indent += "  ";
+            Output output)
+            throws Exception {
+        output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
+        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+        output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
+        CollectResult collectResult = toolboxResolver.collect(
+                resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), verbose);
+        PathRecordingDependencyVisitor pathRecordingDependencyVisitor =
+                new PathRecordingDependencyVisitor(new DependencyFilter() {
+                    @Override
+                    public boolean accept(DependencyNode node, List<DependencyNode> parents) {
+                        return node.getArtifact() != null && artifactMatcher.test(node.getArtifact());
                     }
+                });
+        collectResult.getRoot().accept(pathRecordingDependencyVisitor);
+        if (!pathRecordingDependencyVisitor.getPaths().isEmpty()) {
+            output.normal("Paths");
+            for (List<DependencyNode> path : pathRecordingDependencyVisitor.getPaths()) {
+                String indent = "";
+                for (DependencyNode node : path) {
+                    output.normal("{}-> {}", indent, node.getArtifact());
+                    indent += "  ";
                 }
-            } else {
-                output.normal("No paths found.");
             }
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } else {
+            output.normal("No paths found.");
         }
+        return true;
+    }
+
+    @Override
+    public boolean dmList(ResolutionRoot resolutionRoot, boolean verbose, Output output) throws Exception {
+        CollectResult collectResult = toolboxResolver.collectDm(
+                resolutionRoot.getArtifact(), resolutionRoot.getManagedDependencies(), verbose);
+        collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
+        return true;
+    }
+
+    @Override
+    public boolean dmTree(ResolutionRoot resolutionRoot, boolean verbose, Output output) throws Exception {
+        CollectResult collectResult = toolboxResolver.collectDm(
+                resolutionRoot.getArtifact(), resolutionRoot.getManagedDependencies(), verbose);
+        collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
+        return true;
     }
 
     @Override

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.DistributionManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Relocation;
@@ -264,6 +265,24 @@ public class ArtifactDescriptorReaderImpl {
                     rawModel.setArtifactId(modelResult.getEffectiveModel().getArtifactId());
                     rawModel.setVersion(modelResult.getEffectiveModel().getVersion());
                     rawModel.setProperties(modelResult.getEffectiveModel().getProperties());
+
+                    Model current = rawModel;
+                    while (current.getParent() != null) {
+                        String parentId = current.getParent().getGroupId() + ":"
+                                + current.getParent().getArtifactId() + ":"
+                                + current.getParent().getVersion();
+                        Model parent = modelResult.getRawModel(parentId);
+                        if (parent.getDependencyManagement() != null) {
+                            if (rawModel.getDependencyManagement() == null) {
+                                rawModel.setDependencyManagement(new DependencyManagement());
+                            }
+                            parent.getDependencyManagement()
+                                    .getDependencies()
+                                    .forEach(d ->
+                                            rawModel.getDependencyManagement().addDependency(d));
+                        }
+                        current = parent;
+                    }
 
                     return new StringVisitorModelInterpolator()
                             .setPathTranslator(new DefaultPathTranslator())

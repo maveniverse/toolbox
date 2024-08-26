@@ -52,10 +52,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.maven.model.building.ModelBuilder;
+import org.apache.maven.repository.internal.DefaultModelCacheFactory;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
@@ -70,6 +73,8 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
+import org.eclipse.aether.impl.RepositoryEventDispatcher;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
@@ -113,7 +118,17 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         session.setRepositoryListener(
                 ChainedRepositoryListener.newInstance(session.getRepositoryListener(), artifactRecorder));
         this.toolboxResolver = new ToolboxResolverImpl(
-                context.repositorySystem(), session, context.remoteRepositories(), versionScheme);
+                context.repositorySystem(),
+                session,
+                new ToolboxMavenImpl(
+                        context.repositorySystem(),
+                        context.repositorySystemSession(),
+                        context.lookup().lookup(RemoteRepositoryManager.class).orElseThrow(),
+                        context.lookup().lookup(ModelBuilder.class).orElseThrow(),
+                        context.lookup().lookup(RepositoryEventDispatcher.class).orElseThrow(),
+                        new DefaultModelCacheFactory()),
+                context.remoteRepositories(),
+                versionScheme);
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());
     }
 
@@ -633,23 +648,15 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean tree(
-            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output) {
-        try {
-            output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
-            ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
-            output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
-            CollectResult collectResult = toolboxResolver.collect(
-                    resolutionScope,
-                    root.getArtifact(),
-                    root.getDependencies(),
-                    root.getManagedDependencies(),
-                    verbose);
-            collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output)
+            throws Exception {
+        output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
+        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+        output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
+        CollectResult collectResult = toolboxResolver.collect(
+                resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), verbose);
+        collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
+        return true;
     }
 
     @Override
@@ -658,41 +665,56 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ResolutionRoot resolutionRoot,
             boolean verbose,
             ArtifactMatcher artifactMatcher,
-            Output output) {
-        try {
-            output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
-            ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
-            output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
-            CollectResult collectResult = toolboxResolver.collect(
-                    resolutionScope,
-                    root.getArtifact(),
-                    root.getDependencies(),
-                    root.getManagedDependencies(),
-                    verbose);
-            PathRecordingDependencyVisitor pathRecordingDependencyVisitor =
-                    new PathRecordingDependencyVisitor(new DependencyFilter() {
-                        @Override
-                        public boolean accept(DependencyNode node, List<DependencyNode> parents) {
-                            return node.getArtifact() != null && artifactMatcher.test(node.getArtifact());
-                        }
-                    });
-            collectResult.getRoot().accept(pathRecordingDependencyVisitor);
-            if (!pathRecordingDependencyVisitor.getPaths().isEmpty()) {
-                output.normal("Paths");
-                for (List<DependencyNode> path : pathRecordingDependencyVisitor.getPaths()) {
-                    String indent = "";
-                    for (DependencyNode node : path) {
-                        output.normal("{}-> {}", indent, node.getArtifact());
-                        indent += "  ";
+            Output output)
+            throws Exception {
+        output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
+        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+        output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
+        CollectResult collectResult = toolboxResolver.collect(
+                resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), verbose);
+        PathRecordingDependencyVisitor pathRecordingDependencyVisitor =
+                new PathRecordingDependencyVisitor(new DependencyFilter() {
+                    @Override
+                    public boolean accept(DependencyNode node, List<DependencyNode> parents) {
+                        return node.getArtifact() != null && artifactMatcher.test(node.getArtifact());
                     }
+                });
+        collectResult.getRoot().accept(pathRecordingDependencyVisitor);
+        if (!pathRecordingDependencyVisitor.getPaths().isEmpty()) {
+            output.normal("Paths");
+            for (List<DependencyNode> path : pathRecordingDependencyVisitor.getPaths()) {
+                String indent = "";
+                for (DependencyNode node : path) {
+                    output.normal("{}-> {}", indent, node.getArtifact());
+                    indent += "  ";
                 }
-            } else {
-                output.normal("No paths found.");
             }
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } else {
+            output.normal("No paths found.");
         }
+        return true;
+    }
+
+    @Override
+    public boolean dmList(ResolutionRoot resolutionRoot, boolean verbose, Output output) throws Exception {
+        AtomicInteger counter = new AtomicInteger(0);
+        toolboxResolver
+                .loadRoot(resolutionRoot)
+                .getManagedDependencies()
+                .forEach(d -> output.normal(
+                        " {}. {}",
+                        counter.incrementAndGet(),
+                        d.getScope().trim().isEmpty() ? d.getArtifact() : d));
+        return true;
+    }
+
+    @Override
+    public boolean dmTree(ResolutionRoot resolutionRoot, boolean verbose, Output output) throws Exception {
+        resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
+        CollectResult collectResult = toolboxResolver.collectDm(
+                resolutionRoot.getArtifact(), resolutionRoot.getManagedDependencies(), verbose);
+        collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
+        return true;
     }
 
     @Override
@@ -926,8 +948,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 searchBackends)) {
             try {
                 ArrayList<Artifact> artifacts = new ArrayList<>();
+                ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
                 if (transitive) {
-                    ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
                     CollectResult collectResult = toolboxResolver.collect(
                             resolutionScope,
                             root.getArtifact(),

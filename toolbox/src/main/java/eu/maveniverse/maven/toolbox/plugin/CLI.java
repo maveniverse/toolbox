@@ -13,6 +13,8 @@ import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyRecordedMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyTransitiveMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavDeployMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavDeployRecordedMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavDmListMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavDmTreeMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavDumpMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavExistsMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavIdentifyMojo;
@@ -46,6 +48,8 @@ import picocli.CommandLine;
             GavDeployMojo.class,
             GavDeployRecordedMojo.class,
             GavDumpMojo.class,
+            GavDmListMojo.class,
+            GavDmTreeMojo.class,
             GavExistsMojo.class,
             GavIdentifyMojo.class,
             GavInstallMojo.class,

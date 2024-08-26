@@ -18,8 +18,11 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -70,16 +73,19 @@ public class ToolboxResolverImpl {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final RepositorySystem repositorySystem;
     private final RepositorySystemSession session;
+    private final ToolboxMavenImpl toolboxMaven;
     private final List<RemoteRepository> remoteRepositories;
     private final VersionScheme versionScheme;
 
     public ToolboxResolverImpl(
             RepositorySystem repositorySystem,
             RepositorySystemSession session,
+            ToolboxMavenImpl toolboxMaven,
             List<RemoteRepository> remoteRepositories,
             VersionScheme versionScheme) {
         this.repositorySystem = requireNonNull(repositorySystem, "repositorySystem");
         this.session = requireNonNull(session, "session");
+        this.toolboxMaven = requireNonNull(toolboxMaven, "toolboxMaven");
         this.remoteRepositories = requireNonNull(remoteRepositories, "remoteRepositories");
         this.versionScheme = requireNonNull(versionScheme, "versionScheme");
     }
@@ -244,6 +250,16 @@ public class ToolboxResolverImpl {
         return doCollect(resolutionScope, root, null, dependencies, managedDependencies, remoteRepositories, verbose);
     }
 
+    public CollectResult collectDm(Artifact root, List<Dependency> managedDependencies, boolean verbose)
+            throws DependencyCollectionException, ArtifactDescriptorException {
+        return doCollectDm(null, root, managedDependencies, remoteRepositories, verbose);
+    }
+
+    public CollectResult collectDm(Dependency root, List<Dependency> managedDependencies, boolean verbose)
+            throws DependencyCollectionException, ArtifactDescriptorException {
+        return doCollectDm(root, null, managedDependencies, remoteRepositories, verbose);
+    }
+
     public DependencyResult resolve(
             ResolutionScope resolutionScope,
             Artifact root,
@@ -312,6 +328,70 @@ public class ToolboxResolverImpl {
             }
         }
         return result;
+    }
+
+    private CollectResult doCollectDm(
+            Dependency rootDependency,
+            Artifact root,
+            List<Dependency> managedDependencies,
+            List<RemoteRepository> remoteRepositories,
+            boolean verbose)
+            throws DependencyCollectionException, ArtifactDescriptorException {
+        if (rootDependency == null && root == null) {
+            throw new NullPointerException("one of rootDependency or root must be non-null");
+        }
+
+        logger.debug("Collecting depMgt: {}", rootDependency != null ? rootDependency.getArtifact() : root);
+
+        CollectRequest collectRequest = new CollectRequest();
+        if (rootDependency != null) {
+            root = rootDependency.getArtifact();
+        }
+        collectRequest.setRootArtifact(root);
+        collectRequest.setManagedDependencies(managedDependencies);
+        collectRequest.setRepositories(remoteRepositories);
+        collectRequest.setRequestContext(CTX_TOOLBOX);
+        collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
+
+        logger.debug("Collecting {}", collectRequest);
+        CollectResult result = new CollectResult(collectRequest);
+        DefaultDependencyNode rootNode =
+                new DefaultDependencyNode(rootDependency != null ? rootDependency.getArtifact() : root);
+        result.setRoot(rootNode);
+        HashMap<String, LinkedHashSet<String>> encounters = new HashMap<>();
+        doCollectDmRecursive(rootNode, encounters);
+        Map<String, LinkedHashSet<String>> conflicts = encounters.entrySet().stream()
+                .filter(e -> e.getValue().size() > 1)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        if (!conflicts.isEmpty()) {
+            logger.warn("DM conflicts discovered:");
+            for (Map.Entry<String, LinkedHashSet<String>> entry : conflicts.entrySet()) {
+                logger.warn(
+                        " * {} version {} prevails, but met versions {}",
+                        entry.getKey(),
+                        entry.getValue().getFirst(),
+                        entry.getValue());
+            }
+        }
+        return result;
+    }
+
+    private void doCollectDmRecursive(DefaultDependencyNode currentRoot, Map<String, LinkedHashSet<String>> encounters)
+            throws ArtifactDescriptorException {
+        ArtifactDescriptorResult artifactDescriptorResult = toolboxMaven.readRawModel(
+                new ArtifactDescriptorRequest(currentRoot.getArtifact(), remoteRepositories, CTX_TOOLBOX));
+
+        for (Dependency managedDependency : artifactDescriptorResult.getManagedDependencies()) {
+            DefaultDependencyNode child = new DefaultDependencyNode(managedDependency);
+            currentRoot.getChildren().add(child);
+            String key = ArtifactIdUtils.toVersionlessId(managedDependency.getArtifact());
+            encounters
+                    .computeIfAbsent(key, k -> new LinkedHashSet<>())
+                    .add(managedDependency.getArtifact().getVersion());
+            if ("import".equals(child.getDependency().getScope())) {
+                doCollectDmRecursive(child, encounters);
+            }
+        }
     }
 
     private DependencyResult doResolve(

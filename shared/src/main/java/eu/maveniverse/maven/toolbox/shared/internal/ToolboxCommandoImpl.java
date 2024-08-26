@@ -57,6 +57,8 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.maven.model.building.ModelBuilder;
+import org.apache.maven.repository.internal.ModelCacheFactory;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
@@ -71,6 +73,8 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
+import org.eclipse.aether.impl.RepositoryEventDispatcher;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
@@ -114,7 +118,17 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         session.setRepositoryListener(
                 ChainedRepositoryListener.newInstance(session.getRepositoryListener(), artifactRecorder));
         this.toolboxResolver = new ToolboxResolverImpl(
-                context.repositorySystem(), session, context.remoteRepositories(), versionScheme);
+                context.repositorySystem(),
+                session,
+                new ToolboxMavenImpl(
+                        context.repositorySystem(),
+                        context.repositorySystemSession(),
+                        context.lookup().lookup(RemoteRepositoryManager.class).orElseThrow(),
+                        context.lookup().lookup(ModelBuilder.class).orElseThrow(),
+                        context.lookup().lookup(RepositoryEventDispatcher.class).orElseThrow(),
+                        context.lookup().lookup(ModelCacheFactory.class).orElseThrow()),
+                context.remoteRepositories(),
+                versionScheme);
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());
     }
 

@@ -58,7 +58,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.maven.model.building.ModelBuilder;
-import org.apache.maven.repository.internal.ModelCacheFactory;
+import org.apache.maven.repository.internal.DefaultModelCacheFactory;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
@@ -126,7 +126,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         context.lookup().lookup(RemoteRepositoryManager.class).orElseThrow(),
                         context.lookup().lookup(ModelBuilder.class).orElseThrow(),
                         context.lookup().lookup(RepositoryEventDispatcher.class).orElseThrow(),
-                        context.lookup().lookup(ModelCacheFactory.class).orElseThrow()),
+                        new DefaultModelCacheFactory()),
                 context.remoteRepositories(),
                 versionScheme);
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());

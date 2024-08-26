@@ -36,8 +36,6 @@ import org.apache.maven.model.building.ModelBuildingException;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.model.building.ModelBuildingResult;
 import org.apache.maven.model.building.ModelProblem;
-import org.apache.maven.model.building.ModelProblemCollector;
-import org.apache.maven.model.building.ModelProblemCollectorRequest;
 import org.apache.maven.model.building.ModelProblemUtils;
 import org.apache.maven.model.interpolation.DefaultModelVersionProcessor;
 import org.apache.maven.model.interpolation.StringVisitorModelInterpolator;
@@ -271,11 +269,7 @@ public class ArtifactDescriptorReaderImpl {
                             .setPathTranslator(new DefaultPathTranslator())
                             .setUrlNormalizer(new DefaultUrlNormalizer())
                             .setVersionPropertiesProcessor(new DefaultModelVersionProcessor())
-                            .interpolateModel(
-                                    modelResult.getRawModel(), new File(""), modelRequest, new ModelProblemCollector() {
-                                        @Override
-                                        public void add(ModelProblemCollectorRequest req) {}
-                                    });
+                            .interpolateModel(modelResult.getRawModel(), new File(""), modelRequest, req -> {});
                 }
             } catch (ModelBuildingException e) {
                 for (ModelProblem problem : e.getProblems()) {

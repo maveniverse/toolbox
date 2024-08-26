@@ -53,7 +53,7 @@ public final class Java11HttpClientFactory {
                         new PasswordAuthentication(
                                 repoAuthContext.get(AuthenticationContext.USERNAME),
                                 repoAuthContext
-                                        .get(AuthenticationContext.USERNAME)
+                                        .get(AuthenticationContext.PASSWORD)
                                         .toCharArray()));
             }
         }

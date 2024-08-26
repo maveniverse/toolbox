@@ -684,7 +684,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public boolean dmList(ResolutionRoot resolutionRoot, boolean verbose, Output output) throws Exception {
         AtomicInteger counter = new AtomicInteger(0);
-        resolutionRoot
+        toolboxResolver
+                .loadRoot(resolutionRoot)
                 .getManagedDependencies()
                 .forEach(d -> output.normal(
                         " {}. {}",
@@ -695,6 +696,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean dmTree(ResolutionRoot resolutionRoot, boolean verbose, Output output) throws Exception {
+        resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
         CollectResult collectResult = toolboxResolver.collectDm(
                 resolutionRoot.getArtifact(), resolutionRoot.getManagedDependencies(), verbose);
         collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
@@ -932,8 +934,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 searchBackends)) {
             try {
                 ArrayList<Artifact> artifacts = new ArrayList<>();
+                ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
                 if (transitive) {
-                    ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
                     CollectResult collectResult = toolboxResolver.collect(
                             resolutionScope,
                             root.getArtifact(),

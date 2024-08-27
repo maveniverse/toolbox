@@ -21,6 +21,7 @@ import eu.maveniverse.maven.mima.context.MavenSystemHome;
 import eu.maveniverse.maven.mima.context.MavenUserHome;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.internal.RuntimeSupport;
+import eu.maveniverse.maven.mima.extensions.mmr.MavenModelResolver;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
@@ -57,8 +58,6 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.maven.model.building.ModelBuilder;
-import org.apache.maven.repository.internal.DefaultModelCacheFactory;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
@@ -73,8 +72,6 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
-import org.eclipse.aether.impl.RemoteRepositoryManager;
-import org.eclipse.aether.impl.RepositoryEventDispatcher;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
@@ -120,13 +117,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         this.toolboxResolver = new ToolboxResolverImpl(
                 context.repositorySystem(),
                 session,
-                new ToolboxMavenImpl(
-                        context.repositorySystem(),
-                        context.repositorySystemSession(),
-                        context.lookup().lookup(RemoteRepositoryManager.class).orElseThrow(),
-                        context.lookup().lookup(ModelBuilder.class).orElseThrow(),
-                        context.lookup().lookup(RepositoryEventDispatcher.class).orElseThrow(),
-                        new DefaultModelCacheFactory()),
+                new MavenModelResolver(context),
                 context.remoteRepositories(),
                 versionScheme);
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());

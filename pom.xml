@@ -69,7 +69,7 @@
     <requireRuntimeMavenVersion.version>[3.6.3,)</requireRuntimeMavenVersion.version>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.16</version.mima>
+    <version.mima>2.4.17-SNAPSHOT</version.mima>
     <version.maven>3.9.9</version.maven>
     <version.resolver>1.9.22</version.resolver>
     <version.mavenIndexer>7.1.4</version.mavenIndexer>
@@ -119,6 +119,11 @@
       <dependency>
         <groupId>eu.maveniverse.maven.mima.runtime</groupId>
         <artifactId>standalone-static-uber</artifactId>
+        <version>${version.mima}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mima.extensions</groupId>
+        <artifactId>mmr</artifactId>
         <version>${version.mima}</version>
       </dependency>
 

@@ -21,7 +21,7 @@ import eu.maveniverse.maven.mima.context.MavenSystemHome;
 import eu.maveniverse.maven.mima.context.MavenUserHome;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.internal.RuntimeSupport;
-import eu.maveniverse.maven.mima.extensions.mmr.MavenModelResolver;
+import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
@@ -117,7 +117,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         this.toolboxResolver = new ToolboxResolverImpl(
                 context.repositorySystem(),
                 session,
-                new MavenModelResolver(context),
+                new MavenModelReader(context),
                 context.remoteRepositories(),
                 versionScheme);
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());

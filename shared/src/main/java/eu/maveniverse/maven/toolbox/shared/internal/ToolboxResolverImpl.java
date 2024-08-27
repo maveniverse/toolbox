@@ -10,8 +10,8 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector.last;
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.mima.extensions.mmr.MavenModelResolver;
-import eu.maveniverse.maven.mima.extensions.mmr.MavenModelResolverMode;
+import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
+import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReaderMode;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
@@ -75,19 +75,19 @@ public class ToolboxResolverImpl {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final RepositorySystem repositorySystem;
     private final RepositorySystemSession session;
-    private final MavenModelResolver mavenModelResolver;
+    private final MavenModelReader mavenModelReader;
     private final List<RemoteRepository> remoteRepositories;
     private final VersionScheme versionScheme;
 
     public ToolboxResolverImpl(
             RepositorySystem repositorySystem,
             RepositorySystemSession session,
-            MavenModelResolver mavenModelResolver,
+            MavenModelReader mavenModelReader,
             List<RemoteRepository> remoteRepositories,
             VersionScheme versionScheme) {
         this.repositorySystem = requireNonNull(repositorySystem, "repositorySystem");
         this.session = requireNonNull(session, "session");
-        this.mavenModelResolver = requireNonNull(mavenModelResolver, "mavenModelResolver");
+        this.mavenModelReader = requireNonNull(mavenModelReader, "mavenModelReader");
         this.remoteRepositories = requireNonNull(remoteRepositories, "remoteRepositories");
         this.versionScheme = requireNonNull(versionScheme, "versionScheme");
     }
@@ -380,9 +380,9 @@ public class ToolboxResolverImpl {
 
     private void doCollectDmRecursive(DefaultDependencyNode currentRoot, Map<String, LinkedHashSet<String>> encounters)
             throws ArtifactDescriptorException {
-        ArtifactDescriptorResult artifactDescriptorResult = mavenModelResolver.readArtifactDescriptor(
+        ArtifactDescriptorResult artifactDescriptorResult = mavenModelReader.readArtifactDescriptor(
                 new ArtifactDescriptorRequest(currentRoot.getArtifact(), remoteRepositories, CTX_TOOLBOX),
-                MavenModelResolverMode.RAW_INTERPOLATED);
+                MavenModelReaderMode.RAW_INTERPOLATED);
 
         for (Dependency managedDependency : artifactDescriptorResult.getManagedDependencies()) {
             DefaultDependencyNode child = new DefaultDependencyNode(managedDependency);

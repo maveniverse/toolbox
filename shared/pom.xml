@@ -31,6 +31,10 @@
       <groupId>eu.maveniverse.maven.mima</groupId>
       <artifactId>context</artifactId>
     </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mima.extensions</groupId>
+      <artifactId>mmr</artifactId>
+    </dependency>
 
     <!-- Maven -->
     <dependency>

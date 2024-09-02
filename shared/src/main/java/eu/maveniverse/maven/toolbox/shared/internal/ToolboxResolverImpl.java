@@ -11,7 +11,7 @@ import static eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector.last;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
-import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReaderMode;
+import eu.maveniverse.maven.mima.extensions.mmr.ModelLevel;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
@@ -58,6 +58,7 @@ import org.eclipse.aether.resolution.MetadataResult;
 import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
+import org.eclipse.aether.resolution.VersionResolutionException;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.graph.manager.DependencyManagerUtils;
@@ -253,12 +254,12 @@ public class ToolboxResolverImpl {
     }
 
     public CollectResult collectDm(Artifact root, List<Dependency> managedDependencies, boolean verbose)
-            throws DependencyCollectionException, ArtifactDescriptorException {
+            throws ArtifactDescriptorException, ArtifactResolutionException, VersionResolutionException {
         return doCollectDm(null, root, managedDependencies, remoteRepositories, verbose);
     }
 
     public CollectResult collectDm(Dependency root, List<Dependency> managedDependencies, boolean verbose)
-            throws DependencyCollectionException, ArtifactDescriptorException {
+            throws ArtifactDescriptorException, ArtifactResolutionException, VersionResolutionException {
         return doCollectDm(root, null, managedDependencies, remoteRepositories, verbose);
     }
 
@@ -338,7 +339,7 @@ public class ToolboxResolverImpl {
             List<Dependency> managedDependencies,
             List<RemoteRepository> remoteRepositories,
             boolean verbose)
-            throws DependencyCollectionException, ArtifactDescriptorException {
+            throws ArtifactDescriptorException, ArtifactResolutionException, VersionResolutionException {
         if (rootDependency == null && root == null) {
             throw new NullPointerException("one of rootDependency or root must be non-null");
         }
@@ -379,10 +380,10 @@ public class ToolboxResolverImpl {
     }
 
     private void doCollectDmRecursive(DefaultDependencyNode currentRoot, Map<String, LinkedHashSet<String>> encounters)
-            throws ArtifactDescriptorException {
-        ArtifactDescriptorResult artifactDescriptorResult = mavenModelReader.readArtifactDescriptor(
+            throws ArtifactDescriptorException, ArtifactResolutionException, VersionResolutionException {
+        ArtifactDescriptorResult artifactDescriptorResult = mavenModelReader.readArtifactDescriptorResult(
                 new ArtifactDescriptorRequest(currentRoot.getArtifact(), remoteRepositories, CTX_TOOLBOX),
-                MavenModelReaderMode.RAW_INTERPOLATED);
+                ModelLevel.RAW_INTERPOLATED);
 
         for (Dependency managedDependency : artifactDescriptorResult.getManagedDependencies()) {
             DefaultDependencyNode child = new DefaultDependencyNode(managedDependency);

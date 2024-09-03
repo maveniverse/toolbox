@@ -386,7 +386,6 @@ public class ToolboxResolverImpl {
             throws ArtifactDescriptorException, ArtifactResolutionException, VersionResolutionException {
         ModelResponse modelResponse = mavenModelReader.readModel(ModelRequest.builder()
                 .setArtifact(currentRoot.getArtifact())
-                .setRepositories(remoteRepositories)
                 .setRequestContext(CTX_TOOLBOX)
                 .build());
 

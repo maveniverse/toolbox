@@ -12,7 +12,7 @@ jobs:
     uses: maveniverse/parent/.github/workflows/ci.yml@release-18
     with:
       maven-single-run: false
-      maven-matrix: '[ "3.9.9", "4.0.0-beta-3" ]'
+      maven-matrix: '[ "3.9.9", "4.0.0-beta-4" ]'
       jdk-matrix: '[ "21" ]'
       maven-test: './mvnw clean verify -e -B -V -P run-its'
 

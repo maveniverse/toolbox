@@ -11,7 +11,8 @@ import static eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector.last;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
-import eu.maveniverse.maven.mima.extensions.mmr.ModelLevel;
+import eu.maveniverse.maven.mima.extensions.mmr.ModelRequest;
+import eu.maveniverse.maven.mima.extensions.mmr.ModelResponse;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
@@ -29,6 +30,8 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader;
+import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.model.Model;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -381,11 +384,32 @@ public class ToolboxResolverImpl {
 
     private void doCollectDmRecursive(DefaultDependencyNode currentRoot, Map<String, LinkedHashSet<String>> encounters)
             throws ArtifactDescriptorException, ArtifactResolutionException, VersionResolutionException {
-        ArtifactDescriptorResult artifactDescriptorResult = mavenModelReader.readArtifactDescriptorResult(
-                new ArtifactDescriptorRequest(currentRoot.getArtifact(), remoteRepositories, CTX_TOOLBOX),
-                ModelLevel.RAW_INTERPOLATED);
+        ModelResponse modelResponse = mavenModelReader.readModel(ModelRequest.builder()
+                .setArtifact(currentRoot.getArtifact())
+                .setRequestContext(CTX_TOOLBOX)
+                .build());
 
-        for (Dependency managedDependency : artifactDescriptorResult.getManagedDependencies()) {
+        Model rawModel = modelResponse.getRawModel();
+        Model current = rawModel;
+        while (current.getParent() != null) {
+            String parentId = current.getParent().getGroupId() + ":"
+                    + current.getParent().getArtifactId() + ":"
+                    + current.getParent().getVersion();
+            Model parent = modelResponse.getLineageModel(parentId);
+            if (parent.getDependencyManagement() != null) {
+                if (rawModel.getDependencyManagement() == null) {
+                    rawModel.setDependencyManagement(new DependencyManagement());
+                }
+                rawModel.getDependencyManagement()
+                        .getDependencies()
+                        .addAll(0, parent.getDependencyManagement().getDependencies());
+            }
+            current = parent;
+        }
+
+        for (Dependency managedDependency : modelResponse
+                .toArtifactDescriptorResult(modelResponse.interpolateModel(rawModel))
+                .getManagedDependencies()) {
             DefaultDependencyNode child = new DefaultDependencyNode(managedDependency);
             currentRoot.getChildren().add(child);
             String key = ArtifactIdUtils.toVersionlessId(managedDependency.getArtifact());

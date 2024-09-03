@@ -65,11 +65,11 @@
     -->
     <maven.compiler.release>21</maven.compiler.release>
     <requireBuildtimeJavaVersion.version>[21.0.3,)</requireBuildtimeJavaVersion.version>
-    <requireBuildtimeMavenVersion.version>[3.9.8,)</requireBuildtimeMavenVersion.version>
+    <requireBuildtimeMavenVersion.version>[3.8.8,)</requireBuildtimeMavenVersion.version>
     <requireRuntimeMavenVersion.version>[3.6.3,)</requireRuntimeMavenVersion.version>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.18</version.mima>
+    <version.mima>2.4.19</version.mima>
     <version.maven>3.9.9</version.maven>
     <version.resolver>1.9.22</version.resolver>
     <version.mavenIndexer>7.1.4</version.mavenIndexer>

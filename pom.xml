@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>18</version>
+    <version>19</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
@@ -65,11 +65,11 @@
     -->
     <maven.compiler.release>21</maven.compiler.release>
     <requireBuildtimeJavaVersion.version>[21.0.3,)</requireBuildtimeJavaVersion.version>
-    <requireBuildtimeMavenVersion.version>[3.8.8,)</requireBuildtimeMavenVersion.version>
+    <requireBuildtimeMavenVersion.version>[3.9.9,)</requireBuildtimeMavenVersion.version>
     <requireRuntimeMavenVersion.version>[3.6.3,)</requireRuntimeMavenVersion.version>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.19</version.mima>
+    <version.mima>2.4.20</version.mima>
     <version.maven>3.9.9</version.maven>
     <version.resolver>1.9.22</version.resolver>
     <version.mavenIndexer>7.1.4</version.mavenIndexer>
@@ -85,6 +85,11 @@
       <dependency>
         <groupId>eu.maveniverse.maven.toolbox</groupId>
         <artifactId>shared</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.plugins</groupId>
+        <artifactId>toolbox</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -175,6 +180,11 @@
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
+        <artifactId>maven-builder-support</artifactId>
+        <version>${version.maven}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
         <artifactId>maven-resolver-provider</artifactId>
         <version>${version.maven}</version>
       </dependency>
@@ -191,7 +201,7 @@
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
-        <version>3.5.1</version>
+        <version>4.0.1</version>
       </dependency>
 
       <!-- Maven Indexer -->
@@ -293,4 +303,13 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>run-its</id>
+      <modules>
+        <module>toolbox-plugin-its</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>

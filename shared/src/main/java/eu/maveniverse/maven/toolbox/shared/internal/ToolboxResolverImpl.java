@@ -389,22 +389,19 @@ public class ToolboxResolverImpl {
                 .setRequestContext(CTX_TOOLBOX)
                 .build());
 
-        Model rawModel = modelResponse.getRawModel();
-        Model current = rawModel;
-        while (current.getParent() != null) {
-            String parentId = current.getParent().getGroupId() + ":"
-                    + current.getParent().getArtifactId() + ":"
-                    + current.getParent().getVersion();
-            Model parent = modelResponse.getLineageModel(parentId);
-            if (parent.getDependencyManagement() != null) {
+        Model rawModel = null;
+        for (String lineage : modelResponse.getLineage()) {
+            Model current = modelResponse.getLineageModel(lineage);
+            if (rawModel == null) {
+                rawModel = current;
+            } else if (current.getDependencyManagement() != null) {
                 if (rawModel.getDependencyManagement() == null) {
                     rawModel.setDependencyManagement(new DependencyManagement());
                 }
                 rawModel.getDependencyManagement()
                         .getDependencies()
-                        .addAll(0, parent.getDependencyManagement().getDependencies());
+                        .addAll(0, current.getDependencyManagement().getDependencies());
             }
-            current = parent;
         }
 
         for (Dependency managedDependency : modelResponse

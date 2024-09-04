@@ -87,6 +87,11 @@
         <artifactId>shared</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.plugins</groupId>
+        <artifactId>toolbox</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <!-- Logging (except API, runtime only) -->
       <dependency>
@@ -298,4 +303,13 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>run-its</id>
+      <modules>
+        <module>toolbox-plugin-its</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>

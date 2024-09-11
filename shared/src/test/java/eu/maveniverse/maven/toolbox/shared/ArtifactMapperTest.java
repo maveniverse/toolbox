@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.shared;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashMap;
+import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ public class ArtifactMapperTest {
         Artifact mapped = ArtifactMapper.compose(
                         ArtifactMapper.baseVersion(),
                         ArtifactMapper.omitClassifier(),
-                        ArtifactMapper.rename("g1", "a1", null))
+                        ArtifactMapper.rename(s -> "g1", s -> "a1", Function.identity()))
                 .apply(new DefaultArtifact("g:a:jar:classifier:1.0-20240322.090900-12"));
         assertEquals(new DefaultArtifact("g1:a1:1.0-SNAPSHOT"), mapped);
     }
@@ -50,8 +51,7 @@ public class ArtifactMapperTest {
                 .apply(artifact);
         assertEquals(new DefaultArtifact("g:a:jar:1.0-SNAPSHOT"), mapped);
 
-        mapped = ArtifactMapper.build(properties, "rename(${groupId},artifact,3.2.1)")
-                .apply(artifact);
-        assertEquals(new DefaultArtifact("org.some.group:artifact:jar:classifier:3.2.1"), mapped);
+        mapped = ArtifactMapper.build(properties, "rename(${groupId},*,1.0.0)").apply(artifact);
+        assertEquals(new DefaultArtifact("org.some.group:a:jar:classifier:1.0.0"), mapped);
     }
 }

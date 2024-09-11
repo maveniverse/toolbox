@@ -116,16 +116,20 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
         };
     }
 
-    static ArtifactMapper rename(String g, String a, String v) {
+    static ArtifactMapper rename(
+            Function<String, String> gf, Function<String, String> af, Function<String, String> vf) {
+        requireNonNull(gf, "gf");
+        requireNonNull(af, "af");
+        requireNonNull(vf, "vf");
         return new ArtifactMapper() {
             @Override
             public Artifact apply(Artifact artifact) {
                 return new DefaultArtifact(
-                        g != null ? g : artifact.getGroupId(),
-                        a != null ? a : artifact.getArtifactId(),
+                        gf.apply(artifact.getGroupId()),
+                        af.apply(artifact.getArtifactId()),
                         artifact.getClassifier(),
                         artifact.getExtension(),
-                        v != null ? v : artifact.getVersion(),
+                        vf.apply(artifact.getVersion()),
                         artifact.getProperties(),
                         artifact.getFile());
             }
@@ -171,9 +175,9 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
                     break;
                 }
                 case "rename": {
-                    String p2 = stringParam(node.getValue());
-                    String p1 = stringParam(node.getValue());
-                    String p0 = stringParam(node.getValue());
+                    Function<String, String> p2 = mf(stringParam(node.getValue()));
+                    Function<String, String> p1 = mf(stringParam(node.getValue()));
+                    Function<String, String> p0 = mf(stringParam(node.getValue()));
                     params.add(rename(p0, p1, p2));
                     break;
                 }
@@ -188,6 +192,15 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
 
         public ArtifactMapper build() {
             return build(ArtifactMapper.class);
+        }
+    }
+
+    private static Function<String, String> mf(String target) {
+        requireNonNull(target, "target");
+        if ("*".equals(target)) {
+            return Function.identity();
+        } else {
+            return s -> target;
         }
     }
 }

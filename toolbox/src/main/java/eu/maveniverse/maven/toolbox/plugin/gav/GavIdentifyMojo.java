@@ -24,7 +24,7 @@ import picocli.CommandLine;
 @Mojo(name = "gav-identify", requiresProject = false, threadSafe = true)
 public class GavIdentifyMojo extends GavSearchMojoSupport {
     /**
-     * Target, a SHA-1 checksum or a file.
+     * Target, SHA-1 checksum or a file (comma separated if more).
      */
     @CommandLine.Parameters(index = "0", description = "Target, a SHA-1 checksum or a file (comma separated if more)")
     @Parameter(property = "target", required = true)

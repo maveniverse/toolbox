@@ -15,6 +15,8 @@ import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.maven.search.api.MAVEN;
@@ -31,6 +33,8 @@ import org.apache.maven.search.backend.remoterepository.extractor.Nx2ResponseExt
 import org.apache.maven.search.backend.smo.SmoSearchBackendFactory;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.ArtifactType;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,6 +121,55 @@ public class ToolboxSearchApiImpl {
                 new Java11HttpClientTransport(
                         Java11HttpClientFactory.DEFAULT_TIMEOUT,
                         Java11HttpClientFactory.buildHttpClient(session, remoteRepository)));
+    }
+
+    public Collection<Artifact> renderArtifacts(
+            RepositorySystemSession session, List<Record> page, Predicate<String> versionPredicate) {
+        ArrayList<Artifact> result = new ArrayList<>();
+        for (Record record : page) {
+            final String version = record.getValue(MAVEN.VERSION);
+            if (version != null && versionPredicate != null && !versionPredicate.test(version)) {
+                continue;
+            }
+
+            final String groupId = record.getValue(MAVEN.GROUP_ID);
+            final String artifactId = record.getValue(MAVEN.ARTIFACT_ID);
+            final String classifier = record.getValue(MAVEN.CLASSIFIER);
+            final String packaging = record.getValue(MAVEN.PACKAGING);
+            String fileExtension = record.getValue(MAVEN.FILE_EXTENSION);
+
+            if (fileExtension == null || fileExtension.trim().isEmpty() && packaging != null) {
+                ArtifactType type = session.getArtifactTypeRegistry().get(packaging);
+                if (type != null) {
+                    fileExtension = type.getExtension();
+                }
+            }
+
+            if (fileExtension == null || fileExtension.trim().isEmpty()) {
+                continue;
+            }
+
+            HashMap<String, String> properties = new HashMap<>();
+            if (packaging != null) {
+                properties.put("packaging", packaging);
+            }
+            if (record.getLastUpdated() != null) {
+                properties.put("lastUpdated", String.valueOf(record.getLastUpdated()));
+            }
+            if (record.hasField(MAVEN.VERSION_COUNT)) {
+                properties.put("versionCount", String.valueOf(record.getValue(MAVEN.VERSION_COUNT)));
+            }
+            if (record.hasField(MAVEN.HAS_SOURCE)) {
+                properties.put("hasSource", Boolean.toString(record.getValue(MAVEN.HAS_SOURCE)));
+            }
+            if (record.hasField(MAVEN.HAS_JAVADOC)) {
+                properties.put("hasJavadoc", Boolean.toString(record.getValue(MAVEN.HAS_JAVADOC)));
+            }
+
+            result.add(new DefaultArtifact(groupId, artifactId, classifier, fileExtension, version)
+                    .setProperties(properties));
+        }
+        return result;
     }
 
     public void renderPage(List<Record> page, Predicate<String> versionPredicate, Output output) {

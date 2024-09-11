@@ -52,8 +52,10 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -788,9 +790,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean identify(RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Output output) throws IOException {
+    public boolean identify(
+            RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Output output)
+            throws IOException {
+        HashMap<String, String> sha1s = new HashMap<>();
         for (String target : targets) {
-            String sha1;
             if (Files.exists(Paths.get(target))) {
                 try {
                     output.verbose("Calculating SHA1 of file {}", target);
@@ -804,28 +808,55 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                             read = fis.read(buf);
                         }
                     }
-                    sha1 = ChecksumUtils.toHexString(sha1md.digest());
+                    sha1s.put(target, ChecksumUtils.toHexString(sha1md.digest()));
                 } catch (NoSuchAlgorithmException e) {
                     throw new IllegalStateException("SHA1 MessageDigest unavailable", e);
                 }
             } else {
-                sha1 = target;
+                sha1s.put(target, target);
             }
-            output.verbose("Identifying artifact with SHA1={}", sha1);
+        }
+        BiConsumer<Map.Entry<String, String>, Artifact> render = (e, a) -> {
+            String hit = a != null ? a.toString() : "?";
+            if (decorated) {
+                if (!Objects.equals(e.getKey(), e.getValue())) {
+                    output.normal("{} ({}) = {}", e.getValue(), e.getKey(), hit);
+                } else {
+                    output.normal("{} = {}", e.getValue(), hit);
+                }
+            } else {
+                output.normal(hit);
+            }
+        };
+        int hits = 0;
+        for (Map.Entry<String, String> sha1 : sha1s.entrySet()) {
+            output.verbose("Identifying artifact with SHA1={}", sha1.getValue());
             try (SearchBackend backend =
-                         toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
-                SearchRequest searchRequest = new SearchRequest(fieldQuery(MAVEN.SHA1, sha1));
+                    toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
+                SearchRequest searchRequest = new SearchRequest(fieldQuery(MAVEN.SHA1, sha1.getValue()));
                 SearchResponse searchResponse = backend.search(searchRequest);
+                if (searchResponse.getCurrentHits() == 0) {
+                    render.accept(sha1, null);
+                } else {
+                    while (searchResponse.getCurrentHits() > 0) {
+                        Collection<Artifact> res = toolboxSearchApi.renderArtifacts(
+                                context.repositorySystemSession(), searchResponse.getPage(), null);
+                        if (res.isEmpty()) {
+                            render.accept(sha1, null);
+                        } else {
+                            for (Artifact artifact : res) {
+                                render.accept(sha1, artifact);
+                                hits++;
+                            }
+                        }
 
-                toolboxSearchApi.renderPage(searchResponse.getPage(), null, output);
-                while (searchResponse.getCurrentHits() > 0) {
-                    searchResponse =
-                            backend.search(searchResponse.getSearchRequest().nextPage());
-                    toolboxSearchApi.renderPage(searchResponse.getPage(), null, output);
+                        searchResponse =
+                                backend.search(searchResponse.getSearchRequest().nextPage());
+                    }
                 }
             }
         }
-        return true;
+        return targets.size() == hits;
     }
 
     @Override

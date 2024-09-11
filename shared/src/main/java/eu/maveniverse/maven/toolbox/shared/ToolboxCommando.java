@@ -232,7 +232,8 @@ public interface ToolboxCommando {
             Output output)
             throws IOException;
 
-    boolean identify(RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Output output) throws IOException;
+    boolean identify(RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Output output)
+            throws IOException;
 
     boolean list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Output output)
             throws IOException;

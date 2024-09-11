@@ -788,39 +788,41 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean identify(RemoteRepository remoteRepository, String target, Output output) throws IOException {
-        String sha1;
-        if (Files.exists(Paths.get(target))) {
-            try {
-                output.verbose("Calculating SHA1 of file {}", target);
-                MessageDigest sha1md = MessageDigest.getInstance("SHA-1");
-                byte[] buf = new byte[8192];
-                int read;
-                try (FileInputStream fis = new FileInputStream(target)) {
-                    read = fis.read(buf);
-                    while (read != -1) {
-                        sha1md.update(buf, 0, read);
+    public boolean identify(RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Output output) throws IOException {
+        for (String target : targets) {
+            String sha1;
+            if (Files.exists(Paths.get(target))) {
+                try {
+                    output.verbose("Calculating SHA1 of file {}", target);
+                    MessageDigest sha1md = MessageDigest.getInstance("SHA-1");
+                    byte[] buf = new byte[8192];
+                    int read;
+                    try (FileInputStream fis = new FileInputStream(target)) {
                         read = fis.read(buf);
+                        while (read != -1) {
+                            sha1md.update(buf, 0, read);
+                            read = fis.read(buf);
+                        }
                     }
+                    sha1 = ChecksumUtils.toHexString(sha1md.digest());
+                } catch (NoSuchAlgorithmException e) {
+                    throw new IllegalStateException("SHA1 MessageDigest unavailable", e);
                 }
-                sha1 = ChecksumUtils.toHexString(sha1md.digest());
-            } catch (NoSuchAlgorithmException e) {
-                throw new IllegalStateException("SHA1 MessageDigest unavailable", e);
+            } else {
+                sha1 = target;
             }
-        } else {
-            sha1 = target;
-        }
-        output.verbose("Identifying artifact with SHA1={}", sha1);
-        try (SearchBackend backend =
-                toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
-            SearchRequest searchRequest = new SearchRequest(fieldQuery(MAVEN.SHA1, sha1));
-            SearchResponse searchResponse = backend.search(searchRequest);
+            output.verbose("Identifying artifact with SHA1={}", sha1);
+            try (SearchBackend backend =
+                         toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
+                SearchRequest searchRequest = new SearchRequest(fieldQuery(MAVEN.SHA1, sha1));
+                SearchResponse searchResponse = backend.search(searchRequest);
 
-            toolboxSearchApi.renderPage(searchResponse.getPage(), null, output);
-            while (searchResponse.getCurrentHits() > 0) {
-                searchResponse =
-                        backend.search(searchResponse.getSearchRequest().nextPage());
                 toolboxSearchApi.renderPage(searchResponse.getPage(), null, output);
+                while (searchResponse.getCurrentHits() > 0) {
+                    searchResponse =
+                            backend.search(searchResponse.getSearchRequest().nextPage());
+                    toolboxSearchApi.renderPage(searchResponse.getPage(), null, output);
+                }
             }
         }
         return true;

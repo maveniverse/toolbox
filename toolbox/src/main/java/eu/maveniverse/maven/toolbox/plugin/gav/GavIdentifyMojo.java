@@ -26,12 +26,18 @@ public class GavIdentifyMojo extends GavSearchMojoSupport {
     /**
      * Target, a SHA-1 checksum or a file.
      */
-    @CommandLine.Parameters(index = "0", description = "Target, a SHA-1 checksum or a file")
+    @CommandLine.Parameters(index = "0", description = "Target, a SHA-1 checksum or a file (comma separated if more)")
     @Parameter(property = "target", required = true)
     private String target;
 
+    @CommandLine.Option(
+            names = {"-d", "--decorated"},
+            description = "Decorate the output")
+    @Parameter(property = "decorated")
+    private boolean decorated;
+
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws IOException {
-        return toolboxCommando.identify(getRemoteRepository(toolboxCommando), target, output);
+        return toolboxCommando.identify(getRemoteRepository(toolboxCommando), csv(target), decorated, output);
     }
 }

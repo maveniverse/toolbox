@@ -52,8 +52,10 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -788,42 +790,73 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean identify(RemoteRepository remoteRepository, String target, Output output) throws IOException {
-        String sha1;
-        if (Files.exists(Paths.get(target))) {
-            try {
-                output.verbose("Calculating SHA1 of file {}", target);
-                MessageDigest sha1md = MessageDigest.getInstance("SHA-1");
-                byte[] buf = new byte[8192];
-                int read;
-                try (FileInputStream fis = new FileInputStream(target)) {
-                    read = fis.read(buf);
-                    while (read != -1) {
-                        sha1md.update(buf, 0, read);
+    public boolean identify(
+            RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Output output)
+            throws IOException {
+        HashMap<String, String> sha1s = new HashMap<>();
+        for (String target : targets) {
+            if (Files.exists(Paths.get(target))) {
+                try {
+                    output.verbose("Calculating SHA1 of file {}", target);
+                    MessageDigest sha1md = MessageDigest.getInstance("SHA-1");
+                    byte[] buf = new byte[8192];
+                    int read;
+                    try (FileInputStream fis = new FileInputStream(target)) {
                         read = fis.read(buf);
+                        while (read != -1) {
+                            sha1md.update(buf, 0, read);
+                            read = fis.read(buf);
+                        }
+                    }
+                    sha1s.put(target, ChecksumUtils.toHexString(sha1md.digest()));
+                } catch (NoSuchAlgorithmException e) {
+                    throw new IllegalStateException("SHA1 MessageDigest unavailable", e);
+                }
+            } else {
+                sha1s.put(target, target);
+            }
+        }
+        BiConsumer<Map.Entry<String, String>, Artifact> render = (e, a) -> {
+            String hit = a != null ? a.toString() : "?";
+            if (decorated) {
+                if (!Objects.equals(e.getKey(), e.getValue())) {
+                    output.normal("{} ({}) = {}", e.getValue(), e.getKey(), hit);
+                } else {
+                    output.normal("{} = {}", e.getValue(), hit);
+                }
+            } else {
+                output.normal(hit);
+            }
+        };
+        int hits = 0;
+        for (Map.Entry<String, String> sha1 : sha1s.entrySet()) {
+            output.verbose("Identifying artifact with SHA1={}", sha1.getValue());
+            try (SearchBackend backend =
+                    toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
+                SearchRequest searchRequest = new SearchRequest(fieldQuery(MAVEN.SHA1, sha1.getValue()));
+                SearchResponse searchResponse = backend.search(searchRequest);
+                if (searchResponse.getCurrentHits() == 0) {
+                    render.accept(sha1, null);
+                } else {
+                    while (searchResponse.getCurrentHits() > 0) {
+                        Collection<Artifact> res = toolboxSearchApi.renderArtifacts(
+                                context.repositorySystemSession(), searchResponse.getPage(), null);
+                        if (res.isEmpty()) {
+                            render.accept(sha1, null);
+                        } else {
+                            for (Artifact artifact : res) {
+                                render.accept(sha1, artifact);
+                                hits++;
+                            }
+                        }
+
+                        searchResponse =
+                                backend.search(searchResponse.getSearchRequest().nextPage());
                     }
                 }
-                sha1 = ChecksumUtils.toHexString(sha1md.digest());
-            } catch (NoSuchAlgorithmException e) {
-                throw new IllegalStateException("SHA1 MessageDigest unavailable", e);
-            }
-        } else {
-            sha1 = target;
-        }
-        output.verbose("Identifying artifact with SHA1={}", sha1);
-        try (SearchBackend backend =
-                toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
-            SearchRequest searchRequest = new SearchRequest(fieldQuery(MAVEN.SHA1, sha1));
-            SearchResponse searchResponse = backend.search(searchRequest);
-
-            toolboxSearchApi.renderPage(searchResponse.getPage(), null, output);
-            while (searchResponse.getCurrentHits() > 0) {
-                searchResponse =
-                        backend.search(searchResponse.getSearchRequest().nextPage());
-                toolboxSearchApi.renderPage(searchResponse.getPage(), null, output);
             }
         }
-        return true;
+        return targets.size() == hits;
     }
 
     @Override

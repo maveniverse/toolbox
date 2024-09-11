@@ -116,7 +116,8 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
         };
     }
 
-    static ArtifactMapper rename(Function<String, String> gf, Function<String, String> af, Function<String, String> vf) {
+    static ArtifactMapper rename(
+            Function<String, String> gf, Function<String, String> af, Function<String, String> vf) {
         requireNonNull(gf, "gf");
         requireNonNull(af, "af");
         requireNonNull(vf, "vf");

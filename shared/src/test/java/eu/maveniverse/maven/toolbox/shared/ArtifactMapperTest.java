@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashMap;
 import java.util.function.Function;
-
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.Test;
@@ -52,8 +51,7 @@ public class ArtifactMapperTest {
                 .apply(artifact);
         assertEquals(new DefaultArtifact("g:a:jar:1.0-SNAPSHOT"), mapped);
 
-        mapped = ArtifactMapper.build(properties, "rename(${groupId},*,1.0.0)")
-                .apply(artifact);
+        mapped = ArtifactMapper.build(properties, "rename(${groupId},*,1.0.0)").apply(artifact);
         assertEquals(new DefaultArtifact("org.some.group:a:jar:classifier:1.0.0"), mapped);
     }
 }

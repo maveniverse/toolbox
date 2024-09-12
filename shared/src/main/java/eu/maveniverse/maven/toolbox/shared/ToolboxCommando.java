@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -102,7 +101,12 @@ public interface ToolboxCommando {
     /**
      * Provides {@link ArtifactSink} according to spec.
      */
-    ArtifactSink artifactSink(Output output, String spec) throws IOException;
+    ArtifactSink artifactSink(Output output, String spec);
+
+    /**
+     * Provides {@link DependencySink} according to spec.
+     */
+    DependencySink dependencySink(Output output, String spec);
 
     /**
      * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact.
@@ -140,23 +144,22 @@ public interface ToolboxCommando {
 
     boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) throws Exception;
 
-    boolean copy(Collection<Artifact> artifacts, ArtifactSink sink, Output output) throws Exception;
+    boolean copy(Collection<Artifact> artifacts, Sink<Artifact> sink, Output output) throws Exception;
 
     boolean copyTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
-            ArtifactSink sink,
+            Sink<Artifact> sink,
             Output output)
             throws Exception;
 
-    boolean copyAllRecorded(ArtifactSink sink, boolean stopRecording, Output output) throws Exception;
+    boolean copyAllRecorded(Sink<Artifact> sink, boolean stopRecording, Output output) throws Exception;
 
-    boolean deploy(RemoteRepository remoteRepository, Supplier<Collection<Artifact>> artifactSupplier, Output output)
-            throws Exception;
+    boolean deploy(RemoteRepository remoteRepository, ArtifactSource artifactSource, Output output) throws Exception;
 
     boolean deployAllRecorded(RemoteRepository remoteRepository, boolean stopRecording, Output output) throws Exception;
 
-    boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output) throws Exception;
+    boolean install(ArtifactSource artifactSource, Output output) throws Exception;
 
     default boolean listRepositories(
             ResolutionScope resolutionScope, String context, ResolutionRoot resolutionRoot, Output output)

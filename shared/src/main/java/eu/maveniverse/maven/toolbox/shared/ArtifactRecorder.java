@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -55,12 +54,5 @@ public interface ArtifactRecorder extends ArtifactSource {
     @Override
     default Stream<Artifact> get() {
         return getRecordedArtifacts().values().stream().flatMap(Collection::stream);
-    }
-
-    @Override
-    default List<Artifact> getAllArtifacts() {
-        try (Stream<Artifact> stream = get()) {
-            return stream.collect(Collectors.toList());
-        }
     }
 }

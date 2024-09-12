@@ -26,12 +26,15 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
+import eu.maveniverse.maven.toolbox.shared.ArtifactSource;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
+import eu.maveniverse.maven.toolbox.shared.DependencySink;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.Sink;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.File;
 import java.io.FileInputStream;
@@ -58,7 +61,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
@@ -282,8 +284,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public ArtifactSink artifactSink(Output output, String spec) throws IOException {
+    public ArtifactSink artifactSink(Output output, String spec) {
         return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
+    }
+
+    @Override
+    public DependencySink dependencySink(Output output, String spec) {
+        return DependencySinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
     }
 
     @Override
@@ -324,7 +331,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean copy(Collection<Artifact> artifacts, ArtifactSink sink, Output output) throws Exception {
+    public boolean copy(Collection<Artifact> artifacts, Sink<Artifact> sink, Output output) throws Exception {
         output.verbose("Resolving {}", artifacts);
         try (sink) {
             List<ArtifactResult> resolveResult = toolboxResolver.resolveArtifacts(artifacts);
@@ -337,7 +344,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public boolean copyTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
-            ArtifactSink sink,
+            Sink<Artifact> sink,
             Output output)
             throws Exception {
         try (sink) {
@@ -365,45 +372,47 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean copyAllRecorded(ArtifactSink sink, boolean stopRecording, Output output) throws Exception {
+    public boolean copyAllRecorded(Sink<Artifact> sink, boolean stopRecording, Output output) throws Exception {
         artifactRecorder.setActive(!stopRecording);
         try (sink) {
-            List<Artifact> artifacts = artifactRecorder.getAllArtifacts();
-            sink.accept(artifacts);
-            return !artifacts.isEmpty();
+            sink.accept(artifactRecorder.get());
+            return artifactRecorder.recordedCount() != 0;
         }
     }
 
     @Override
-    public boolean deploy(
-            RemoteRepository remoteRepository, Supplier<Collection<Artifact>> artifactSupplier, Output output)
+    public boolean deploy(RemoteRepository remoteRepository, ArtifactSource artifactSource, Output output)
             throws Exception {
-        Collection<Artifact> artifacts = artifactSupplier.get();
-        DeployRequest deployRequest = new DeployRequest();
-        deployRequest.setRepository(remoteRepository);
-        artifacts.forEach(deployRequest::addArtifact);
-        context.repositorySystem().deploy(context.repositorySystemSession(), deployRequest);
-        output.normal("");
-        output.normal("Deployed {} artifacts to {}", artifacts.size(), remoteRepository);
-        return !artifacts.isEmpty();
+        try (artifactSource) {
+            Collection<Artifact> artifacts = artifactSource.get().toList();
+            DeployRequest deployRequest = new DeployRequest();
+            deployRequest.setRepository(remoteRepository);
+            artifacts.forEach(deployRequest::addArtifact);
+            context.repositorySystem().deploy(context.repositorySystemSession(), deployRequest);
+            output.normal("");
+            output.normal("Deployed {} artifacts to {}", artifacts.size(), remoteRepository);
+            return !artifacts.isEmpty();
+        }
     }
 
     @Override
     public boolean deployAllRecorded(RemoteRepository remoteRepository, boolean stopRecording, Output output)
             throws Exception {
         artifactRecorder.setActive(!stopRecording);
-        return deploy(remoteRepository, () -> new HashSet<>(artifactRecorder.getAllArtifacts()), output);
+        return deploy(remoteRepository, artifactRecorder, output);
     }
 
     @Override
-    public boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output) throws Exception {
-        Collection<Artifact> artifacts = artifactSupplier.get();
-        InstallRequest installRequest = new InstallRequest();
-        artifacts.forEach(installRequest::addArtifact);
-        context.repositorySystem().install(context.repositorySystemSession(), installRequest);
-        output.normal("");
-        output.normal("Install {} artifacts to local repository", artifacts.size());
-        return !artifacts.isEmpty();
+    public boolean install(ArtifactSource artifactSource, Output output) throws Exception {
+        try (artifactSource) {
+            Collection<Artifact> artifacts = artifactSource.get().toList();
+            InstallRequest installRequest = new InstallRequest();
+            artifacts.forEach(installRequest::addArtifact);
+            context.repositorySystem().install(context.repositorySystemSession(), installRequest);
+            output.normal("");
+            output.normal("Install {} artifacts to local repository", artifacts.size());
+            return !artifacts.isEmpty();
+        }
     }
 
     @Override
@@ -995,7 +1004,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 } else {
                     artifacts.addAll(resolutionRoot.getDependencies().stream()
                             .map(this::toArtifact)
-                            .collect(Collectors.toList()));
+                            .toList());
                 }
                 sink.accept(artifacts);
             } catch (Exception e) {

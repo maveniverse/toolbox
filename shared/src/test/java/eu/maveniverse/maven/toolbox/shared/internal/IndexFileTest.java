@@ -22,7 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 public class IndexFileTest {
     @Test
-    void flat(@TempDir Path target) throws IOException {
+    void flat(@TempDir Path target) throws Exception {
         Path content = Files.write(target.resolve("somecontent"), "somecontent".getBytes(StandardCharsets.UTF_8));
         Path indexFile;
         try (DirectorySink sink = DirectorySink.repository(target)) {

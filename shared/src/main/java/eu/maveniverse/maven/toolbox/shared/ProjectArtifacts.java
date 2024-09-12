@@ -12,12 +12,10 @@ import static java.util.Objects.requireNonNull;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
@@ -26,7 +24,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
  * <p>
  * Warning: this abstraction uses extension and not packaging, as this one does not create POM, it is caller obligation.
  */
-public final class ProjectArtifacts implements Supplier<Collection<Artifact>> {
+public final class ProjectArtifacts implements ArtifactSource {
     private final String groupId;
     private final String artifactId;
     private final String version;
@@ -72,11 +70,11 @@ public final class ProjectArtifacts implements Supplier<Collection<Artifact>> {
     }
 
     @Override
-    public List<Artifact> get() {
+    public Stream<Artifact> get() {
         ArrayList<Artifact> result = new ArrayList<>(artifacts.size());
         artifacts.forEach((ce, path) -> result.add(
                 new DefaultArtifact(groupId, artifactId, ce.classifier, ce.extension, version).setFile(path.toFile())));
-        return result;
+        return result.stream();
     }
 
     private static final class CE {

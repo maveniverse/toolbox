@@ -7,9 +7,16 @@
  */
 package eu.maveniverse.maven.toolbox.shared;
 
-import org.eclipse.aether.artifact.Artifact;
+import java.io.IOException;
+import java.util.stream.Stream;
 
 /**
- * Construction to supply collection of artifacts, for example like a filesystem directory.
+ * Construction to supply collection of things.
  */
-public interface ArtifactSource extends Source<Artifact> {}
+@FunctionalInterface
+public interface Source<T> extends AutoCloseable {
+    Stream<T> get() throws IOException;
+
+    @Override
+    default void close() throws Exception {}
+}

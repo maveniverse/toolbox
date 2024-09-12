@@ -7,9 +7,11 @@
  */
 package eu.maveniverse.maven.toolbox.shared;
 
-import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.graph.Dependency;
 
 /**
- * Construction to supply collection of artifacts, for example like a filesystem directory.
+ * Construct to accept collection of dependencies.
+ *
+ * @see ArtifactSink
  */
-public interface ArtifactSource extends Source<Artifact> {}
+public interface DependencySink extends Sink<Dependency> {}

@@ -289,7 +289,7 @@ public final class LibYearSink implements ArtifactSink {
             SearchRequest searchRequest = new SearchRequest(toolboxSearchApi.toRrQuery(artifact));
             SearchResponse searchResponse = backend.search(searchRequest);
             if (searchResponse.getCurrentHits() > 0) {
-                Long lastUpdated = searchResponse.getPage().iterator().next().getLastUpdated();
+                Long lastUpdated = searchResponse.getPage().getFirst().getLastUpdated();
                 if (lastUpdated != null) {
                     return Instant.ofEpochMilli(lastUpdated);
                 }

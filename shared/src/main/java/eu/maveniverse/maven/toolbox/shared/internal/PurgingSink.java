@@ -161,14 +161,10 @@ public final class PurgingSink implements ArtifactSink {
     }
 
     private boolean purgeArtifact(Artifact artifact) throws IOException {
-        switch (mode) {
-            case EXACT:
-                return purgeExact(artifact);
-            case WHOLE:
-                return purgeGAV(artifact);
-            default:
-                throw new IllegalStateException("unknown mode");
-        }
+        return switch (mode) {
+            case EXACT -> purgeExact(artifact);
+            case WHOLE -> purgeGAV(artifact);
+        };
     }
 
     private boolean purgeExact(Artifact artifact) throws IOException {

@@ -77,7 +77,7 @@ public final class DependencySinks {
                     }
                     DependencyMatcher.DependencyMatcherBuilder matcherBuilder =
                             new DependencyMatcher.DependencyMatcherBuilder(properties);
-                    node.getChildren().get(0).accept(matcherBuilder);
+                    node.getChildren().getFirst().accept(matcherBuilder);
                     DependencyMatcher matcher = matcherBuilder.build();
                     DependencySinkBuilder sinkBuilder = new DependencySinkBuilder(properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);
@@ -92,7 +92,7 @@ public final class DependencySinks {
                     }
                     DependencyMapper.DependencyMapperBuilder mapperBuilder =
                             new DependencyMapper.DependencyMapperBuilder(properties);
-                    node.getChildren().get(0).accept(mapperBuilder);
+                    node.getChildren().getFirst().accept(mapperBuilder);
                     DependencyMapper mapper = mapperBuilder.build();
                     DependencySinkBuilder sinkBuilder = new DependencySinkBuilder(properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);

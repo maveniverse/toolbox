@@ -41,6 +41,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -68,6 +69,8 @@ import org.apache.maven.search.api.SearchRequest;
 import org.apache.maven.search.api.SearchResponse;
 import org.apache.maven.search.api.request.Query;
 import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
@@ -102,6 +105,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Runtime runtime;
     private final Context context;
+    private final RepositorySystemSession session;
     private final VersionScheme versionScheme;
     private final ToolboxSearchApiImpl toolboxSearchApi;
     private final ArtifactRecorderImpl artifactRecorder;
@@ -118,6 +122,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
         session.setRepositoryListener(
                 ChainedRepositoryListener.newInstance(session.getRepositoryListener(), artifactRecorder));
+        this.session = session;
         this.toolboxResolver = new ToolboxResolverImpl(
                 context.repositorySystem(),
                 session,
@@ -127,8 +132,20 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());
     }
 
-    public Context getContext() {
-        return context;
+    public Path basedir() {
+        return context.basedir();
+    }
+
+    public RepositorySystem repositorySystem() {
+        return context.repositorySystem();
+    }
+
+    public RepositorySystemSession session() {
+        return session;
+    }
+
+    public List<RemoteRepository> remoteRepositories() {
+        return context.remoteRepositories();
     }
 
     public ToolboxResolverImpl getToolboxResolver() {
@@ -388,7 +405,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             DeployRequest deployRequest = new DeployRequest();
             deployRequest.setRepository(remoteRepository);
             artifacts.forEach(deployRequest::addArtifact);
-            context.repositorySystem().deploy(context.repositorySystemSession(), deployRequest);
+            context.repositorySystem().deploy(session, deployRequest);
             output.normal("");
             output.normal("Deployed {} artifacts to {}", artifacts.size(), remoteRepository);
             return !artifacts.isEmpty();
@@ -408,7 +425,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Collection<Artifact> artifacts = artifactSource.get().toList();
             InstallRequest installRequest = new InstallRequest();
             artifacts.forEach(installRequest::addArtifact);
-            context.repositorySystem().install(context.repositorySystemSession(), installRequest);
+            context.repositorySystem().install(session, installRequest);
             output.normal("");
             output.normal("Install {} artifacts to local repository", artifacts.size());
             return !artifacts.isEmpty();
@@ -429,7 +446,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), false);
             LinkedHashMap<RemoteRepository, Dependency> repositories = new LinkedHashMap<>();
             Dependency sentinel = new Dependency(new DefaultArtifact("sentinel:sentinel:sentinel"), "");
-            context.remoteRepositories().forEach(r -> repositories.put(r, sentinel));
+            remoteRepositories().forEach(r -> repositories.put(r, sentinel));
             ArrayDeque<Dependency> path = new ArrayDeque<>();
             collectResult.getRoot().accept(new TreeDependencyVisitor(new DependencyVisitor() {
                 @Override
@@ -906,7 +923,14 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             SearchRequest searchRequest = new SearchRequest(query);
             SearchResponse searchResponse = backend.search(searchRequest);
 
-            toolboxSearchApi.renderPage(searchResponse.getPage(), versionPredicate, output);
+            Collection<Artifact> artifacts =
+                    toolboxSearchApi.renderArtifacts(session(), searchResponse.getPage(), versionPredicate);
+            for (Artifact artifact : artifacts) {
+                output.normal(artifact.toString());
+                if (output.isVerbose()) {
+                    output.normal(artifact.getProperties().toString());
+                }
+            }
         }
         return true;
     }
@@ -924,11 +948,24 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             SearchRequest searchRequest = new SearchRequest(query);
             SearchResponse searchResponse = backend.search(searchRequest);
 
-            toolboxSearchApi.renderPage(searchResponse.getPage(), null, output);
+            Collection<Artifact> artifacts =
+                    toolboxSearchApi.renderArtifacts(session(), searchResponse.getPage(), null);
+            for (Artifact artifact : artifacts) {
+                output.normal(artifact.toString());
+                if (output.isVerbose()) {
+                    output.normal(artifact.getProperties().toString());
+                }
+            }
             while (searchResponse.getCurrentHits() > 0) {
                 searchResponse =
                         backend.search(searchResponse.getSearchRequest().nextPage());
-                toolboxSearchApi.renderPage(searchResponse.getPage(), null, output);
+                artifacts = toolboxSearchApi.renderArtifacts(session(), searchResponse.getPage(), null);
+                for (Artifact artifact : artifacts) {
+                    output.normal(artifact.toString());
+                    if (output.isVerbose()) {
+                        output.normal(artifact.getProperties().toString());
+                    }
+                }
             }
         }
         return true;

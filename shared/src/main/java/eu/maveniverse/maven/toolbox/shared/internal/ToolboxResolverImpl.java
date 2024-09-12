@@ -96,18 +96,6 @@ public class ToolboxResolverImpl {
         this.versionScheme = requireNonNull(versionScheme, "versionScheme");
     }
 
-    public RepositorySystem getRepositorySystem() {
-        return repositorySystem;
-    }
-
-    public RepositorySystemSession getSession() {
-        return session;
-    }
-
-    public List<RemoteRepository> getRemoteRepositories() {
-        return remoteRepositories;
-    }
-
     public ArtifactDescriptorResult readArtifactDescriptor(Artifact artifact) throws ArtifactDescriptorException {
         ArtifactDescriptorRequest artifactDescriptorRequest =
                 new ArtifactDescriptorRequest(artifact, remoteRepositories, CTX_TOOLBOX);

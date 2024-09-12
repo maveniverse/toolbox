@@ -101,13 +101,13 @@ public final class SpecParser {
             if (params.isEmpty()) {
                 throw new IllegalArgumentException("bad parameter count for " + op);
             }
-            return (String) params.remove(params.size() - 1);
+            return (String) params.removeLast();
         }
 
         protected List<String> stringParams(String op) {
             ArrayList<String> result = new ArrayList<>();
             while (!params.isEmpty()) {
-                if (params.get(params.size() - 1) instanceof String) {
+                if (params.getLast() instanceof String) {
                     result.add(stringParam(op));
                 } else {
                     break;
@@ -120,27 +120,27 @@ public final class SpecParser {
             if (params.isEmpty()) {
                 throw new IllegalArgumentException("bad parameter count for " + op);
             }
-            return Boolean.parseBoolean((String) params.remove(params.size() - 1));
+            return Boolean.parseBoolean((String) params.removeLast());
         }
 
         protected int intParam(String op) {
             if (params.isEmpty()) {
                 throw new IllegalArgumentException("bad parameter count for " + op);
             }
-            return Integer.parseInt((String) params.remove(params.size() - 1));
+            return Integer.parseInt((String) params.removeLast());
         }
 
         protected <T> T typedParam(Class<T> clazz, String op) {
             if (params.isEmpty()) {
                 throw new IllegalArgumentException("bad parameter count for " + op);
             }
-            return clazz.cast(params.remove(params.size() - 1));
+            return clazz.cast(params.removeLast());
         }
 
         protected <T> List<T> typedParams(Class<T> clazz, String op) {
             ArrayList<T> result = new ArrayList<>();
             while (!params.isEmpty()) {
-                if (clazz.isInstance(params.get(params.size() - 1))) {
+                if (clazz.isInstance(params.getLast())) {
                     result.add(typedParam(clazz, op));
                 } else {
                     break;
@@ -153,7 +153,7 @@ public final class SpecParser {
             if (params.size() != 1) {
                 throw new IllegalArgumentException("bad spec");
             }
-            return clazz.cast(params.get(0));
+            return clazz.cast(params.getFirst());
         }
     }
 

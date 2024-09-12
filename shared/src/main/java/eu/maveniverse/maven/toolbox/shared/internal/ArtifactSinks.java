@@ -151,7 +151,7 @@ public final class ArtifactSinks {
                             tc.repositorySystem(),
                             tc.session(),
                             stringParams(node.getValue()).stream()
-                                    .map(tc.getToolboxResolver()::parseRemoteRepository)
+                                    .map(tc::parseRemoteRepository)
                                     .collect(Collectors.toList())));
                     break;
                 }

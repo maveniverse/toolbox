@@ -148,10 +148,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         return context.remoteRepositories();
     }
 
-    public ToolboxResolverImpl getToolboxResolver() {
-        return toolboxResolver;
-    }
-
     protected Map<String, RemoteRepository> createKnownSearchRemoteRepositories() {
         Map<String, RemoteRepository> rr = new HashMap<>();
         rr.put(

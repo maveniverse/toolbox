@@ -529,7 +529,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
-            ArtifactSink sink,
+            Sink<Artifact> sink,
             Output output)
             throws Exception {
         output.verbose("Resolving {}", artifacts);
@@ -578,7 +578,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
-            ArtifactSink sink,
+            Sink<Artifact> sink,
             Output output)
             throws Exception {
         try (ArtifactSink artifactSink =

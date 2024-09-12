@@ -101,12 +101,12 @@ public interface ToolboxCommando {
     /**
      * Provides {@link ArtifactSink} according to spec.
      */
-    ArtifactSink artifactSink(Output output, String spec);
+    Sink<Artifact> artifactSink(Output output, String spec);
 
     /**
      * Provides {@link DependencySink} according to spec.
      */
-    DependencySink dependencySink(Output output, String spec);
+    Sink<Dependency> dependencySink(Output output, String spec);
 
     /**
      * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact.
@@ -186,7 +186,7 @@ public interface ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
-            ArtifactSink sink,
+            Sink<Artifact> sink,
             Output output)
             throws Exception;
 
@@ -196,7 +196,7 @@ public interface ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
-            ArtifactSink sink,
+            Sink<Artifact> sink,
             Output output)
             throws Exception;
 

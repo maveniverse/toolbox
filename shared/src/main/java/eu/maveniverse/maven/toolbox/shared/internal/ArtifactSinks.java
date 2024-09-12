@@ -15,6 +15,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.Sink;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -398,49 +399,49 @@ public final class ArtifactSinks {
     /**
      * Creates a "tee" artifact sink out of supplied sinks.
      */
-    public static TeeArtifactSink teeArtifactSink(ArtifactSink... artifactSinks) {
+    public static TeeArtifactSink teeArtifactSink(Sink<Artifact>... artifactSinks) {
         return teeArtifactSink(Arrays.asList(artifactSinks));
     }
 
     /**
      * Creates a "tee" artifact sink out of supplied sinks.
      */
-    public static TeeArtifactSink teeArtifactSink(Collection<? extends ArtifactSink> artifactSinks) {
+    public static TeeArtifactSink teeArtifactSink(Collection<? extends Sink<Artifact>> artifactSinks) {
         requireNonNull(artifactSinks, "artifactSinks");
         return new TeeArtifactSink(artifactSinks);
     }
 
     public static class TeeArtifactSink implements ArtifactSink {
-        private final Collection<ArtifactSink> artifactSinks;
+        private final Collection<Sink<Artifact>> artifactSinks;
 
-        private TeeArtifactSink(Collection<? extends ArtifactSink> artifactSinks) {
+        private TeeArtifactSink(Collection<? extends Sink<Artifact>> artifactSinks) {
             this.artifactSinks = Collections.unmodifiableCollection(new ArrayList<>(artifactSinks));
         }
 
         @Override
         public void accept(Collection<Artifact> artifacts) throws IOException {
-            for (ArtifactSink sink : artifactSinks) {
+            for (Sink<Artifact> sink : artifactSinks) {
                 sink.accept(artifacts);
             }
         }
 
         @Override
         public void accept(Artifact artifact) throws IOException {
-            for (ArtifactSink sink : artifactSinks) {
+            for (Sink<Artifact> sink : artifactSinks) {
                 sink.accept(artifact);
             }
         }
 
         @Override
         public void cleanup(Exception e) {
-            for (ArtifactSink sink : artifactSinks) {
+            for (Sink<Artifact> sink : artifactSinks) {
                 sink.cleanup(e);
             }
         }
 
         @Override
         public void close() throws Exception {
-            for (ArtifactSink sink : artifactSinks) {
+            for (Sink<Artifact> sink : artifactSinks) {
                 sink.close();
             }
         }

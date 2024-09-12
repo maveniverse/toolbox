@@ -7,8 +7,6 @@
  */
 package eu.maveniverse.maven.toolbox.shared;
 
-import static java.util.Objects.requireNonNull;
-
 import eu.maveniverse.maven.toolbox.shared.internal.SpecParser;
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,6 +16,8 @@ import org.eclipse.aether.graph.Dependency;
 
 /**
  * Mapper that maps dependencies to dependencies.
+ *
+ * @TODO scope, optional, exclusions
  */
 public interface DependencyMapper extends Function<Dependency, Dependency> {
     static DependencyMapper compose(DependencyMapper... mappers) {
@@ -68,15 +68,6 @@ public interface DependencyMapper extends Function<Dependency, Dependency> {
 
         public DependencyMapper build() {
             return build(DependencyMapper.class);
-        }
-    }
-
-    private static Function<String, String> mf(String target) {
-        requireNonNull(target, "target");
-        if ("*".equals(target)) {
-            return Function.identity();
-        } else {
-            return s -> target;
         }
     }
 }

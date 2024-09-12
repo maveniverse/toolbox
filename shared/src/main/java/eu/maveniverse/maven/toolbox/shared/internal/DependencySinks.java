@@ -238,14 +238,14 @@ public final class DependencySinks {
     /**
      * Creates a counting sink, that simply counts all the accepted artifacts.
      */
-    public static CountingArtifactSink countingDependencySink() {
-        return new CountingArtifactSink();
+    public static CountingDependencySink countingDependencySink() {
+        return new CountingDependencySink();
     }
 
-    public static class CountingArtifactSink implements DependencySink {
+    public static class CountingDependencySink implements DependencySink {
         private final LongAdder counter;
 
-        private CountingArtifactSink() {
+        private CountingDependencySink() {
             this.counter = new LongAdder();
         }
 

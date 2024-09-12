@@ -7,7 +7,6 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
-import static eu.maveniverse.maven.toolbox.shared.internal.ArtifactSinks.nonClosingArtifactSink;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.maven.search.api.request.BooleanQuery.and;
@@ -25,16 +24,14 @@ import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSource;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
-import eu.maveniverse.maven.toolbox.shared.DependencySink;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Sink;
+import eu.maveniverse.maven.toolbox.shared.Source;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.File;
 import java.io.FileInputStream;
@@ -76,7 +73,6 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.deployment.DeployRequest;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.installation.InstallRequest;
@@ -297,12 +293,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public ArtifactSink artifactSink(Output output, String spec) {
+    public Sink<Artifact> artifactSink(Output output, String spec) {
         return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
     }
 
     @Override
-    public DependencySink dependencySink(Output output, String spec) {
+    public Sink<Dependency> dependencySink(Output output, String spec) {
         return DependencySinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
     }
 
@@ -394,7 +390,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean deploy(RemoteRepository remoteRepository, ArtifactSource artifactSource, Output output)
+    public boolean deploy(RemoteRepository remoteRepository, Source<Artifact> artifactSource, Output output)
             throws Exception {
         try (artifactSource) {
             Collection<Artifact> artifacts = artifactSource.get().toList();
@@ -416,7 +412,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean install(ArtifactSource artifactSource, Output output) throws Exception {
+    public boolean install(Source<Artifact> artifactSource, Output output) throws Exception {
         try (artifactSource) {
             Collection<Artifact> artifacts = artifactSource.get().toList();
             InstallRequest installRequest = new InstallRequest();
@@ -533,7 +529,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Output output)
             throws Exception {
         output.verbose("Resolving {}", artifacts);
-        try (ArtifactSink artifactSink =
+        try (Sink<Artifact> artifactSink =
                 ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, output))) {
             List<ArtifactResult> artifactResults = toolboxResolver.resolveArtifacts(artifacts);
             artifactSink.accept(
@@ -581,7 +577,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Sink<Artifact> sink,
             Output output)
             throws Exception {
-        try (ArtifactSink artifactSink =
+        try (Sink<Artifact> artifactSink =
                 ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, false, output))) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 doResolveTransitive(
@@ -591,7 +587,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         javadoc,
                         signature,
                         ArtifactSinks.teeArtifactSink(
-                                nonClosingArtifactSink(artifactSink), ArtifactSinks.statArtifactSink(1, true, output)),
+                                artifactSink.nonClosing(), ArtifactSinks.statArtifactSink(1, true, output)),
                         output);
             }
             return !resolutionRoots.isEmpty();
@@ -604,10 +600,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
-            ArtifactSink sink,
+            Sink<Artifact> sink,
             Output output)
             throws Exception {
-        try (ArtifactSink artifactSink = sink) {
+        try (Sink<Artifact> artifactSink = sink) {
             output.verbose("Resolving {}", resolutionRoot.getArtifact());
             resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
             DependencyResult dependencyResult = toolboxResolver.resolve(
@@ -687,13 +683,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
         CollectResult collectResult = toolboxResolver.collect(
                 resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), verbose);
-        PathRecordingDependencyVisitor pathRecordingDependencyVisitor =
-                new PathRecordingDependencyVisitor(new DependencyFilter() {
-                    @Override
-                    public boolean accept(DependencyNode node, List<DependencyNode> parents) {
-                        return node.getArtifact() != null && artifactMatcher.test(node.getArtifact());
-                    }
-                });
+        PathRecordingDependencyVisitor pathRecordingDependencyVisitor = new PathRecordingDependencyVisitor(
+                (node, parents) -> node.getArtifact() != null && artifactMatcher.test(node.getArtifact()));
         collectResult.getRoot().accept(pathRecordingDependencyVisitor);
         if (!pathRecordingDependencyVisitor.getPaths().isEmpty()) {
             output.normal("Paths");
@@ -1001,7 +992,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     context.repositorySystemSession(), remoteRepository, repositoryVendor));
         }
 
-        try (ArtifactSink sink = LibYearSink.libYear(
+        try (Sink<Artifact> sink = LibYearSink.libYear(
                 output,
                 subject,
                 context,
@@ -1058,7 +1049,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         for (Artifact artifact : artifacts) {
             List<Version> newer = toolboxResolver.findNewerVersions(artifact, versionPredicate);
             if (!newer.isEmpty()) {
-                Version latest = newer.get(newer.size() - 1);
+                Version latest = newer.getLast();
                 String all = newer.stream().map(Object::toString).collect(Collectors.joining(", "));
                 output.normal("* {} -> {}", ArtifactIdUtils.toId(artifact), latest);
                 output.normal("  Available: {}", all);

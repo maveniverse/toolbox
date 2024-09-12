@@ -399,6 +399,7 @@ public final class ArtifactSinks {
     /**
      * Creates a "tee" artifact sink out of supplied sinks.
      */
+    @SafeVarargs
     public static TeeArtifactSink teeArtifactSink(Sink<Artifact>... artifactSinks) {
         return teeArtifactSink(Arrays.asList(artifactSinks));
     }

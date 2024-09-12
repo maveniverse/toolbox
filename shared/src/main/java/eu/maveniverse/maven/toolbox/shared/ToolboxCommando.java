@@ -155,11 +155,11 @@ public interface ToolboxCommando {
 
     boolean copyAllRecorded(Sink<Artifact> sink, boolean stopRecording, Output output) throws Exception;
 
-    boolean deploy(RemoteRepository remoteRepository, ArtifactSource artifactSource, Output output) throws Exception;
+    boolean deploy(RemoteRepository remoteRepository, Source<Artifact> artifactSource, Output output) throws Exception;
 
     boolean deployAllRecorded(RemoteRepository remoteRepository, boolean stopRecording, Output output) throws Exception;
 
-    boolean install(ArtifactSource artifactSource, Output output) throws Exception;
+    boolean install(Source<Artifact> artifactSource, Output output) throws Exception;
 
     default boolean listRepositories(
             ResolutionScope resolutionScope, String context, ResolutionRoot resolutionRoot, Output output)

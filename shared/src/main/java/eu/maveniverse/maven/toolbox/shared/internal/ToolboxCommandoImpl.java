@@ -655,13 +655,18 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Output output)
+    public boolean tree(
+            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Output output)
             throws Exception {
         output.verbose("Loading root of: {}", resolutionRoot.getArtifact());
         ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
         output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
         CollectResult collectResult = toolboxResolver.collect(
-                resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), verboseTree);
+                resolutionScope,
+                root.getArtifact(),
+                root.getDependencies(),
+                root.getManagedDependencies(),
+                verboseTree);
         collectResult.getRoot().accept(new DependencyGraphDumper(output::normal));
         return true;
     }
@@ -678,7 +683,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
         output.verbose("Collecting graph of: {}", resolutionRoot.getArtifact());
         CollectResult collectResult = toolboxResolver.collect(
-                resolutionScope, root.getArtifact(), root.getDependencies(), root.getManagedDependencies(), verboseTree);
+                resolutionScope,
+                root.getArtifact(),
+                root.getDependencies(),
+                root.getManagedDependencies(),
+                verboseTree);
         PathRecordingDependencyVisitor pathRecordingDependencyVisitor = new PathRecordingDependencyVisitor(
                 (node, parents) -> node.getArtifact() != null && artifactMatcher.test(node.getArtifact()));
         collectResult.getRoot().accept(pathRecordingDependencyVisitor);

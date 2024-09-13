@@ -99,7 +99,6 @@ import org.slf4j.LoggerFactory;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Runtime runtime;
     private final Context context;
     private final RepositorySystemSession session;
     private final VersionScheme versionScheme;
@@ -109,8 +108,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     private final Map<String, RemoteRepository> knownSearchRemoteRepositories;
 
-    public ToolboxCommandoImpl(Runtime runtime, Context context) {
-        this.runtime = requireNonNull(runtime, "runtime");
+    public ToolboxCommandoImpl(Context context) {
         this.context = requireNonNull(context, "context");
         this.versionScheme = new GenericVersionScheme();
         this.toolboxSearchApi = new ToolboxSearchApiImpl();
@@ -181,6 +179,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public boolean dump(boolean verbose, Output output) {
+        Runtime runtime = context.getRuntime();
         output.warn("Toolbox {} (MIMA Runtime '{}' version {})", getVersion(), runtime.name(), runtime.version());
         output.warn("=======");
         output.normal("          Maven version {}", runtime.mavenVersion());

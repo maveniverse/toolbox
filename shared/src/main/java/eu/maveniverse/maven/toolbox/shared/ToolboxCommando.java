@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,10 +45,9 @@ public interface ToolboxCommando {
      * Gets or creates context. This method should be used to get instance that may be shared
      * across context (session).
      */
-    static ToolboxCommando create(Runtime runtime, Context context) {
-        requireNonNull(runtime, "runtime");
+    static ToolboxCommando create(Context context) {
         requireNonNull(context, "context");
-        return new ToolboxCommandoImpl(runtime, context);
+        return new ToolboxCommandoImpl(context);
     }
 
     default String getVersion() {

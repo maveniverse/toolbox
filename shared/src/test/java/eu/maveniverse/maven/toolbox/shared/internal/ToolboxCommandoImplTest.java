@@ -23,7 +23,7 @@ public class ToolboxCommandoImplTest {
         try (Context context = runtime.create(ContextOverrides.create()
                 .withBasedirOverride(Paths.get("target").toAbsolutePath())
                 .build())) {
-            ToolboxCommandoImpl tc = new ToolboxCommandoImpl(runtime, context);
+            ToolboxCommandoImpl tc = new ToolboxCommandoImpl(context);
 
             tc.search(ContextOverrides.CENTRAL, "junit:junit:4.13.2", new NullOutput());
         }

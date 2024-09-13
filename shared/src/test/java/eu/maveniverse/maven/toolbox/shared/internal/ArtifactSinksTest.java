@@ -28,7 +28,7 @@ public class ArtifactSinksTest {
         try (Context context = runtime.create(ContextOverrides.create()
                 .withBasedirOverride(Paths.get("target").toAbsolutePath())
                 .build())) {
-            ToolboxCommandoImpl tc = new ToolboxCommandoImpl(runtime, context);
+            ToolboxCommandoImpl tc = new ToolboxCommandoImpl(context);
 
             HashMap<String, Object> properties = new HashMap<>();
             properties.put("groupId", "org.some.group");

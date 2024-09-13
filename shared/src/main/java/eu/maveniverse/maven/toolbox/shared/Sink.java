@@ -12,8 +12,6 @@ import static java.util.Objects.requireNonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -53,100 +51,4 @@ public interface Sink<T> extends AutoCloseable {
 
     @Override
     default void close() throws Exception {}
-
-    // nonClosing
-    default Sink<T> nonClosing() {
-        return new Sink<>() {
-            @Override
-            public void accept(T thing) throws IOException {
-                Sink.this.accept(thing);
-            }
-
-            @Override
-            public void accept(Stream<T> stream) throws IOException {
-                Sink.this.accept(stream);
-            }
-
-            @Override
-            public void accept(Collection<T> things) throws IOException {
-                Sink.this.accept(things);
-            }
-
-            @Override
-            public void cleanup(Exception e) {
-                Sink.this.cleanup(e);
-            }
-
-            @Override
-            public void close() {
-                // nothing
-            }
-        };
-    }
-
-    // matching
-    default Sink<T> matching(Predicate<T> predicate) {
-        requireNonNull(predicate, "predicate");
-        return new Sink<>() {
-            public void accept(T thing) throws IOException {
-                if (predicate.test(thing)) {
-                    Sink.this.accept(thing);
-                }
-            }
-
-            @Override
-            public void accept(Stream<T> stream) throws IOException {
-                Sink.this.accept(stream.filter(predicate));
-            }
-
-            @Override
-            public void accept(Collection<T> things) throws IOException {
-                Sink.this.accept(things.stream().filter(predicate).toList());
-            }
-
-            @Override
-            public void cleanup(Exception e) {
-                Sink.this.cleanup(e);
-            }
-
-            @Override
-            public void close() throws Exception {
-                Sink.this.close();
-            }
-        };
-    }
-
-    // mapping
-    default Sink<T> mapping(Function<T, T> mapper) {
-        requireNonNull(mapper, "mapper");
-        return new Sink<>() {
-            public void accept(T thing) throws IOException {
-                Sink.this.accept(mapper.apply(thing));
-            }
-
-            @Override
-            public void accept(Stream<T> stream) throws IOException {
-                Sink.this.accept(stream.map(mapper));
-            }
-
-            @Override
-            public void accept(Collection<T> things) throws IOException {
-                Sink.this.accept(things.stream().map(mapper).toList());
-            }
-
-            @Override
-            public void cleanup(Exception e) {
-                Sink.this.cleanup(e);
-            }
-
-            @Override
-            public void close() throws Exception {
-                Sink.this.close();
-            }
-        };
-    }
-
-    // counting
-
-    // tee
 }

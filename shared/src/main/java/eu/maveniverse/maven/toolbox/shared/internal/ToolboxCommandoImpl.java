@@ -587,7 +587,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         javadoc,
                         signature,
                         ArtifactSinks.teeArtifactSink(
-                                artifactSink.nonClosing(), ArtifactSinks.statArtifactSink(1, true, output)),
+                                ArtifactSinks.nonClosingArtifactSink(artifactSink),
+                                ArtifactSinks.statArtifactSink(1, true, output)),
                         output);
             }
             return !resolutionRoots.isEmpty();

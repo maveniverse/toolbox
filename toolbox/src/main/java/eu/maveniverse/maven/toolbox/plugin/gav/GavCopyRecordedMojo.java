@@ -29,6 +29,6 @@ public final class GavCopyRecordedMojo extends GavMojoSupport {
 
     @Override
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.copyAllRecorded(toolboxCommando.artifactSink(output, sinkSpec), true, output);
+        return toolboxCommando.copyAllRecorded(toolboxCommando.artifactSink(sinkSpec), true, output);
     }
 }

@@ -67,7 +67,7 @@ public class PluginResolveTransitiveMojo extends MPPluginMojoSupport {
                 sources,
                 javadoc,
                 signature,
-                toolboxCommando.artifactSink(output, sinkSpec),
+                toolboxCommando.artifactSink(sinkSpec),
                 output);
     }
 }

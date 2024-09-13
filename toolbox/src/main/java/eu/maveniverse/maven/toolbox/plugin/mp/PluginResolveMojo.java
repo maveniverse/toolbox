@@ -59,6 +59,6 @@ public class PluginResolveMojo extends MPPluginMojoSupport {
                     .collect(Collectors.toList());
         }
         return toolboxCommando.resolve(
-                roots, sources, javadoc, signature, toolboxCommando.artifactSink(output, sinkSpec), output);
+                roots, sources, javadoc, signature, toolboxCommando.artifactSink(sinkSpec), output);
     }
 }

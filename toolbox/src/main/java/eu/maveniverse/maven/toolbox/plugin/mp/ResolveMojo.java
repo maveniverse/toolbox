@@ -59,7 +59,7 @@ public class ResolveMojo extends MPMojoSupport {
                 sources,
                 javadoc,
                 signature,
-                toolboxCommando.artifactSink(output, sinkSpec),
+                toolboxCommando.artifactSink(sinkSpec),
                 output);
     }
 }

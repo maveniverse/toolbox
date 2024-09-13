@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.slf4j.Logger;
@@ -18,7 +19,7 @@ import org.slf4j.Logger;
 @Mojo(name = "dump", threadSafe = true)
 public class DumpMojo extends MPMojoSupport {
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) {
+    protected Result<String> doExecute(Logger output, ToolboxCommando toolboxCommando) {
         return toolboxCommando.dump(output);
     }
 }

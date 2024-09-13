@@ -55,7 +55,7 @@ public interface ToolboxCommando {
         return ToolboxCommandoVersion.getVersion();
     }
 
-    boolean dump(Logger output);
+    Result<String> dump(Logger output);
 
     // Parsers
 
@@ -141,47 +141,88 @@ public interface ToolboxCommando {
 
     // Commands
 
-    boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Logger output) throws Exception;
+    /**
+     * Calculates the classpath (returned string is OS FS specific) of given scope and root.
+     */
+    Result<String> classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Logger output)
+            throws Exception;
 
-    boolean copy(Collection<Artifact> artifacts, Sink<Artifact> sink, Logger output) throws Exception;
+    /**
+     * Returns the list of artifacts copied from source to sink.
+     */
+    Result<List<Artifact>> copy(Source<Artifact> source, Sink<Artifact> sink, Logger output) throws Exception;
 
-    boolean copyTransitive(
+    /**
+     * Returns the list of artifacts copied from transitively resolving given roots to sink.
+     */
+    Result<List<Artifact>> copyTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
             Sink<Artifact> sink,
             Logger output)
             throws Exception;
 
-    boolean copyAllRecorded(Sink<Artifact> sink, boolean stopRecording, Logger output) throws Exception;
+    /**
+     * Returns the list of artifacts copied from recorder to sink.
+     */
+    Result<List<Artifact>> copyRecorded(boolean stopRecording, Sink<Artifact> sink, Logger output) throws Exception;
 
-    boolean deploy(RemoteRepository remoteRepository, Source<Artifact> artifactSource, Logger output) throws Exception;
-
-    boolean deployAllRecorded(RemoteRepository remoteRepository, boolean stopRecording, Logger output) throws Exception;
-
-    boolean install(Source<Artifact> artifactSource, Logger output) throws Exception;
-
-    default boolean listRepositories(
+    /**
+     * List repositories used to transitively resolve given root.
+     */
+    default Result<List<RemoteRepository>> listRepositories(
             ResolutionScope resolutionScope, String context, ResolutionRoot resolutionRoot, Logger output)
             throws Exception {
         HashMap<String, ResolutionRoot> resolutionRoots = new HashMap<>();
         resolutionRoots.put(context, resolutionRoot);
-        return listRepositories(resolutionScope, resolutionRoots, output);
+        Result<Map<String, List<RemoteRepository>>> result = listRepositories(resolutionScope, resolutionRoots, output);
+        return result.isSuccess()
+                ? Result.success(result.getData().orElseThrow().get(context))
+                : Result.failure(result.getMessage());
     }
 
-    boolean listRepositories(
+    /**
+     * List repositories used to transitively resolve given root.
+     */
+    Result<Map<String, List<RemoteRepository>>> listRepositories(
             ResolutionScope resolutionScope, Map<String, ResolutionRoot> resolutionRoots, Logger output)
             throws Exception;
 
-    boolean listAvailablePlugins(Collection<String> groupIds, Logger output) throws Exception;
+    /**
+     * Lists available plugins in given groupId.
+     */
+    Result<List<Artifact>> listAvailablePlugins(Collection<String> groupIds, Logger output) throws Exception;
 
-    boolean recordStart(Logger output);
+    /**
+     * Starts the recorder.
+     */
+    Result<String> recordStart(Logger output);
 
-    boolean recordStats(Logger output);
+    final class RecordStats {
+        public final boolean active;
+        public final int recordedCount;
 
-    boolean recordStop(Logger output);
+        public RecordStats(boolean active, int recordedCount) {
+            this.active = active;
+            this.recordedCount = recordedCount;
+        }
+    }
 
-    boolean resolve(
-            Collection<Artifact> artifacts,
+    /**
+     * Recorder stats.
+     */
+    Result<RecordStats> recordStats(Logger output);
+
+    /**
+     * Stops the recorder.
+     */
+    Result<String> recordStop(Logger output);
+
+    /**
+     * Resolves given artifacts.
+     */
+    Result<List<Artifact>> resolve(
+            Source<Artifact> artifacts,
             boolean sources,
             boolean javadoc,
             boolean signature,
@@ -189,7 +230,10 @@ public interface ToolboxCommando {
             Logger output)
             throws Exception;
 
-    boolean resolveTransitive(
+    /**
+     * Resolves transitively given root.
+     */
+    Result<List<Artifact>> resolveTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
             boolean sources,
@@ -199,10 +243,29 @@ public interface ToolboxCommando {
             Logger output)
             throws Exception;
 
-    boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Logger output)
+    final class Node {
+        public final Artifact artifact;
+        public final String scope;
+        public final Collection<Node> children;
+
+        public Node(Artifact artifact, String scope, Collection<Node> children) {
+            this.artifact = artifact;
+            this.scope = scope;
+            this.children = children;
+        }
+    }
+
+    /**
+     * Returns the tree of root.
+     */
+    Result<Node> tree(
+            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Logger output)
             throws Exception;
 
-    boolean treeFind(
+    /**
+     * Creates tree for given root and searches for artifacts using matcher, returns list of paths to hits.
+     */
+    Result<List<List<Artifact>>> treeFind(
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
             boolean verboseTree,
@@ -210,9 +273,15 @@ public interface ToolboxCommando {
             Logger output)
             throws Exception;
 
-    boolean dmList(ResolutionRoot resolutionRoot, boolean verboseList, Logger output) throws Exception;
+    /**
+     * Returns the depMgt list of given root.
+     */
+    Result<List<Dependency>> dmList(ResolutionRoot resolutionRoot, boolean verboseList, Logger output) throws Exception;
 
-    boolean dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Logger output) throws Exception;
+    /**
+     * Returns the depMgt tree of given root.
+     */
+    Result<Node> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Logger output) throws Exception;
 
     // Search API related commands: they target one single RemoteRepository
 
@@ -222,7 +291,10 @@ public interface ToolboxCommando {
      */
     Map<String, RemoteRepository> getKnownSearchRemoteRepositories();
 
-    boolean exists(
+    /**
+     * Checks existence of GAV (and sub-artifacts optionally).
+     */
+    Result<Map<Artifact, Boolean>> exists(
             RemoteRepository remoteRepository,
             String gav,
             boolean pom,
@@ -234,20 +306,38 @@ public interface ToolboxCommando {
             Logger output)
             throws IOException;
 
-    boolean identify(RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Logger output)
+    /**
+     * Identifies targets (a file or sha1) and returns matched artifacts.
+     */
+    Result<Map<String, Artifact>> identify(
+            RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Logger output)
             throws IOException;
 
-    boolean list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Logger output)
+    /**
+     * Lists given "gavoid" and returns list of "gavoids".
+     */
+    Result<List<String>> list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Logger output)
             throws IOException;
 
-    boolean search(RemoteRepository remoteRepository, String expression, Logger output) throws IOException;
+    /**
+     * Searches for artifacts.
+     */
+    Result<List<Artifact>> search(RemoteRepository remoteRepository, String expression, Logger output)
+            throws IOException;
 
-    boolean verify(RemoteRepository remoteRepository, String gav, String sha1, String repositoryVendor, Logger output)
+    /**
+     * Verifies artifact against given SHA-1.
+     */
+    Result<Boolean> verify(
+            RemoteRepository remoteRepository, String gav, String sha1, String repositoryVendor, Logger output)
             throws IOException;
 
     // Various
 
-    boolean libYear(
+    /**
+     * Calculates libyear with given parameters.
+     */
+    Result<Float> libYear(
             String subject,
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
@@ -260,6 +350,10 @@ public interface ToolboxCommando {
             Logger output)
             throws Exception;
 
-    boolean versions(String context, Collection<Artifact> artifacts, Predicate<Version> versionPredicate, Logger output)
+    /**
+     * Finds newer versions for artifacts from source.
+     */
+    Result<Map<Artifact, List<Version>>> versions(
+            String context, Source<Artifact> artifacts, Predicate<Version> versionPredicate, Logger output)
             throws Exception;
 }

@@ -8,10 +8,12 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.stream.Collectors;
+import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.slf4j.Logger;
 import picocli.CommandLine;
@@ -77,9 +79,9 @@ public class GavResolveMojo extends GavMojoSupport {
     private String sinkSpec;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<List<Artifact>> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolve(
-                slurp(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
+                () -> slurp(gav).stream().map(DefaultArtifact::new),
                 sources,
                 javadoc,
                 signature,

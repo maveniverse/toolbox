@@ -10,9 +10,12 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.slf4j.Logger;
 
 /**
@@ -27,12 +30,13 @@ public final class PluginListRepositoriesMojo extends MPPluginMojoSupport {
     private String scope;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<List<RemoteRepository>> doExecute(Logger output, ToolboxCommando toolboxCommando)
+            throws Exception {
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, true);
         if (root != null) {
             return toolboxCommando.listRepositories(ResolutionScope.parse(scope), "plugin", root, output);
         } else {
-            return true;
+            return Result.failure("No such plugin");
         }
     }
 }

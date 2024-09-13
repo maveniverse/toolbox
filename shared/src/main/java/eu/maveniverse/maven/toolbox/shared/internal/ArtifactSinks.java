@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -457,6 +459,7 @@ public final class ArtifactSinks {
     public static class StatArtifactSink implements Artifacts.Sink {
         private final int level;
         private final Logger output;
+        private final CopyOnWriteArrayList<Artifact> seen = new CopyOnWriteArrayList<>();
         private final CountingArtifactSink countingArtifactSink = new CountingArtifactSink();
         private final SizingArtifactSink sizingArtifactSink = new SizingArtifactSink();
         private final ModuleDescriptorExtractingSink moduleDescriptorExtractingSink;
@@ -469,11 +472,16 @@ public final class ArtifactSinks {
 
         @Override
         public void accept(Artifact artifact) throws IOException {
+            seen.add(artifact);
             countingArtifactSink.accept(artifact);
             sizingArtifactSink.accept(artifact);
             if (moduleDescriptorExtractingSink != null) {
                 moduleDescriptorExtractingSink.accept(artifact);
             }
+        }
+
+        public List<Artifact> getSeenArtifacts() {
+            return seen;
         }
 
         @Override

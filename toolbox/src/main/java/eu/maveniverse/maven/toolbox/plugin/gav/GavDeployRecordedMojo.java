@@ -8,9 +8,12 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.artifact.Artifact;
 import org.slf4j.Logger;
 import picocli.CommandLine;
 
@@ -30,8 +33,8 @@ public final class GavDeployRecordedMojo extends GavMojoSupport {
     private String remoteRepositorySpec;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.deployAllRecorded(
-                toolboxCommando.parseRemoteRepository(remoteRepositorySpec), true, output);
+    protected Result<List<Artifact>> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+        return toolboxCommando.copyRecorded(
+                true, toolboxCommando.artifactSink("deploy(" + remoteRepositorySpec + ")"), output);
     }
 }

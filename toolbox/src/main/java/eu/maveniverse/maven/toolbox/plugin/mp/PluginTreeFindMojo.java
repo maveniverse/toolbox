@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -39,28 +40,26 @@ public class PluginTreeFindMojo extends MPPluginMojoSupport {
     private boolean verboseTree;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Boolean> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
         if (root != null) {
-            return toolboxCommando.treeFind(
+            toolboxCommando.treeFind(
                     ResolutionScope.parse(scope),
                     root,
                     verboseTree,
                     toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec),
                     output);
         } else {
-            boolean result = true;
             for (ResolutionRoot resolutionRoot : allProjectPluginsAsResolutionRoots(toolboxCommando)) {
-                result = result
-                        && toolboxCommando.treeFind(
-                                ResolutionScope.parse(scope),
-                                resolutionRoot,
-                                verboseTree,
-                                toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec),
-                                output);
+                toolboxCommando.treeFind(
+                        ResolutionScope.parse(scope),
+                        resolutionRoot,
+                        verboseTree,
+                        toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec),
+                        output);
                 output.info("");
             }
-            return result;
         }
+        return Result.success(true);
     }
 }

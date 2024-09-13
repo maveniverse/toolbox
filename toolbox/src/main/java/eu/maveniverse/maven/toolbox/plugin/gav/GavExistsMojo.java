@@ -8,10 +8,13 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
+import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.artifact.Artifact;
 import org.slf4j.Logger;
 import picocli.CommandLine;
 
@@ -76,7 +79,8 @@ public class GavExistsMojo extends GavSearchMojoSupport {
     private boolean allRequired;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws IOException {
+    protected Result<Map<Artifact, Boolean>> doExecute(Logger output, ToolboxCommando toolboxCommando)
+            throws IOException {
         return toolboxCommando.exists(
                 getRemoteRepository(toolboxCommando), gav, pom, sources, javadoc, signature, allRequired, null, output);
     }

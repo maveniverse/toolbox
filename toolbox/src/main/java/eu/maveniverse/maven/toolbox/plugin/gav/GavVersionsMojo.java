@@ -8,11 +8,15 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.version.Version;
 import org.slf4j.Logger;
 import picocli.CommandLine;
 
@@ -40,10 +44,11 @@ public class GavVersionsMojo extends GavMojoSupport {
     private String artifactVersionMatcherSpec;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Map<Artifact, List<Version>>> doExecute(Logger output, ToolboxCommando toolboxCommando)
+            throws Exception {
         return toolboxCommando.versions(
                 "GAV",
-                slurp(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
+                () -> slurp(gav).stream().map(DefaultArtifact::new),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 output);
     }

@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -59,7 +60,7 @@ public class GavTreeMojo extends GavMojoSupport {
     private boolean verboseTree;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<ToolboxCommando.Node> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.tree(
                 ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)), verboseTree, output);
     }

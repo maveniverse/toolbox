@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.DoubleAdder;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.apache.maven.search.api.SearchBackend;
@@ -103,6 +104,7 @@ public final class LibYearSink implements Artifacts.Sink {
     private final BiFunction<Artifact, List<Version>, String> versionSelector;
     private final LocalDate now;
     private final CopyOnWriteArraySet<Artifact> artifacts;
+    private final DoubleAdder doubleAdder;
 
     private final List<SearchBackend> searchBackends;
 
@@ -128,9 +130,14 @@ public final class LibYearSink implements Artifacts.Sink {
         this.versionSelector = requireNonNull(versionSelector);
         this.now = Instant.now().atZone(ZoneId.systemDefault()).toLocalDate();
         this.artifacts = new CopyOnWriteArraySet<>();
+        this.doubleAdder = new DoubleAdder();
         this.searchBackends = requireNonNull(searchBackends);
 
         output.info("Calculating libYear for {}", subject);
+    }
+
+    public float getTotalLibyear() {
+        return doubleAdder.floatValue();
     }
 
     @SuppressWarnings("unchecked")
@@ -173,7 +180,6 @@ public final class LibYearSink implements Artifacts.Sink {
     @Override
     public void close() throws DeploymentException {
         try {
-            float totalLibYears = 0;
             TreeMap<Float, List<String>> outdatedWithLibyear = new TreeMap<>(Collections.reverseOrder());
             TreeSet<String> outdatedWithoutLibyear = new TreeSet<>();
             TreeSet<String> upToDateByAge = new TreeSet<>();
@@ -221,7 +227,7 @@ public final class LibYearSink implements Artifacts.Sink {
                             }
                             float libLatestYearsAge = libLatestWeeksAge / 52f;
                             float libYearsOutdated = libWeeksOutdated / 52f;
-                            totalLibYears += libYearsOutdated;
+                            doubleAdder.add(libYearsOutdated);
                             outdatedWithLibyear
                                     .computeIfAbsent(libYearsOutdated, k -> new CopyOnWriteArrayList<>())
                                     .add(String.format(
@@ -268,7 +274,7 @@ public final class LibYearSink implements Artifacts.Sink {
             }
             output.info(
                     "Total of {} years from {} outdated dependencies for {}",
-                    String.format("%.2f", totalLibYears),
+                    String.format("%.2f", doubleAdder.floatValue()),
                     outdatedWithLibyear.values().stream().mapToInt(List::size).sum() + outdatedWithoutLibyear.size(),
                     subject);
             output.info("{}", indent);

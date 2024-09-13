@@ -198,20 +198,20 @@ public interface ToolboxCommando {
             Output output)
             throws Exception;
 
-    boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verbose, Output output)
+    boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Output output)
             throws Exception;
 
     boolean treeFind(
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
-            boolean verbose,
+            boolean verboseTree,
             ArtifactMatcher artifactMatcher,
             Output output)
             throws Exception;
 
-    boolean dmList(ResolutionRoot resolutionRoot, boolean verbose, Output output) throws Exception;
+    boolean dmList(ResolutionRoot resolutionRoot, boolean verboseList, Output output) throws Exception;
 
-    boolean dmTree(ResolutionRoot resolutionRoot, boolean verbose, Output output) throws Exception;
+    boolean dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Output output) throws Exception;
 
     // Search API related commands: they target one single RemoteRepository
 

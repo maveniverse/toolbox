@@ -97,7 +97,7 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     private boolean upToDate;
 
     @Override
-    protected Result<Integer> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Float> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.libYear(
                 "GAV " + gav,
                 ResolutionScope.parse(scope),

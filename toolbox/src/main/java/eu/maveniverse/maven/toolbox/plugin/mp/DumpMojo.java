@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 @Mojo(name = "dump", threadSafe = true)
 public class DumpMojo extends MPMojoSupport {
     @Override
-    protected Result<Void> doExecute(Logger output, ToolboxCommando toolboxCommando) {
+    protected Result<String> doExecute(Logger output, ToolboxCommando toolboxCommando) {
         return toolboxCommando.dump(output);
     }
 }

@@ -21,7 +21,7 @@ import picocli.CommandLine;
 @Mojo(name = "gav-dump", requiresProject = false, threadSafe = true)
 public class GavDumpMojo extends GavMojoSupport {
     @Override
-    protected Result<Void> doExecute(Logger output, ToolboxCommando toolboxCommando) {
+    protected Result<String> doExecute(Logger output, ToolboxCommando toolboxCommando) {
         return toolboxCommando.dump(output);
     }
 }

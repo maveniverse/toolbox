@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -39,7 +40,7 @@ public class VersionsMojo extends MPMojoSupport {
     private String artifactVersionMatcherSpec;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Boolean> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         ResolutionScope resolutionScope = ResolutionScope.parse(scope);
         toolboxCommando.versions(
                 "managed dependencies",
@@ -59,6 +60,6 @@ public class VersionsMojo extends MPMojoSupport {
                                 .map(ResolutionRoot::getArtifact),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 output);
-        return true;
+        return Result.success(true);
     }
 }

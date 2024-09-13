@@ -57,7 +57,7 @@ public class LibYearMojo extends MPMojoSupport {
     private boolean upToDate;
 
     @Override
-    protected Result<Integer> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Float> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.libYear(
                 "project " + mavenProject.getId(),
                 ResolutionScope.parse(scope),

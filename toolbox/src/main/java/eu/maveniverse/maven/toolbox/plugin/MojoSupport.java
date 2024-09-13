@@ -23,7 +23,6 @@ import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.Output;
-import eu.maveniverse.maven.toolbox.shared.OutputBuilder;
 import eu.maveniverse.maven.toolbox.shared.Slf4jOutput;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommandoVersion;
@@ -60,21 +59,9 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
 
     @CommandLine.Option(
             names = {"-v", "--verbose"},
-            description = "Be verbose about things happening (deprecated and unused, see --verbosity instead)")
+            description = "Be verbose about things happening")
     @Parameter(property = "verbose")
-    @Deprecated
     private boolean verbose;
-
-    @CommandLine.Option(
-            names = {"--verbosity"},
-            description = "Verbosity level, accepted values are: SILENT, NORMAL (default), HIGH, INSANE")
-    @Parameter(property = "verbosity")
-    private OutputBuilder.Verbosity verbosity = OutputBuilder.Verbosity.NORMAL;
-
-    @CommandLine.Option(
-            names = {"-X", "--debug"},
-            description = "Enable debug logging in CLI.")
-    private boolean debug;
 
     @CommandLine.Option(
             names = {"-o", "--offline"},
@@ -423,6 +410,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         getOrCreate(Output.class, this::createCliOutput);
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
+
         try {
             boolean result = doExecute(getOutput(), getToolboxCommando());
             if (!result && failOnLogicalFailure) {

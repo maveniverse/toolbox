@@ -83,7 +83,7 @@ public class GavResolveMojo extends GavMojoSupport {
                 sources,
                 javadoc,
                 signature,
-                toolboxCommando.artifactSink(output, sinkSpec),
+                toolboxCommando.artifactSink(sinkSpec),
                 output);
     }
 }

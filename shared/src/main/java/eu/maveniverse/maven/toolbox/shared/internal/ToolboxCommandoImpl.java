@@ -291,12 +291,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Sink<Artifact> artifactSink(Output output, String spec) {
+    public Sink<Artifact> artifactSink(String spec) {
         return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
     }
 
     @Override
-    public Sink<Dependency> dependencySink(Output output, String spec) {
+    public Sink<Dependency> dependencySink(String spec) {
         return DependencySinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
     }
 

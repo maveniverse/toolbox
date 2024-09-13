@@ -40,7 +40,7 @@ public final class GavCopyMojo extends GavMojoSupport {
     protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.copy(
                 slurp(gav).stream().map(DefaultArtifact::new).collect(Collectors.toList()),
-                toolboxCommando.artifactSink(output, sinkSpec),
+                toolboxCommando.artifactSink(sinkSpec),
                 output);
     }
 }

@@ -39,7 +39,7 @@ public final class CopyMojo extends MPMojoSupport {
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
                         .map(toolboxCommando::toArtifact)
                         .collect(Collectors.toList()),
-                toolboxCommando.artifactSink(output, sinkSpec),
+                toolboxCommando.artifactSink(sinkSpec),
                 output);
     }
 }

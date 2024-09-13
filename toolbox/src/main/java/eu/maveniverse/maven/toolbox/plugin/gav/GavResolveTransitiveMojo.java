@@ -93,7 +93,7 @@ public class GavResolveTransitiveMojo extends GavMojoSupport {
                 sources,
                 javadoc,
                 signature,
-                toolboxCommando.artifactSink(output, sinkSpec),
+                toolboxCommando.artifactSink(sinkSpec),
                 output);
     }
 }

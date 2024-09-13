@@ -484,10 +484,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<RecordStats> recordStats(Logger output) {
         boolean active = artifactRecorder.isActive();
         int recordedCount = artifactRecorder.recordedCount();
-        output.info(
-                "Recorder is {}; recorded {} artifacts so far",
-                active? "started" : "stopped",
-                recordedCount);
+        output.info("Recorder is {}; recorded {} artifacts so far", active ? "started" : "stopped", recordedCount);
         return Result.success(new RecordStats(active, recordedCount));
     }
 
@@ -516,7 +513,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         output.debug("Resolving {}", artifacts);
         try (Sink<Artifact> artifactSink =
                 ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, logger))) {
-            List<Artifact> artifactResults = toolboxResolver.resolveArtifacts(artifacts).stream().map(ArtifactResult::getArtifact).toList();
+            List<Artifact> artifactResults = toolboxResolver.resolveArtifacts(artifacts).stream()
+                    .map(ArtifactResult::getArtifact)
+                    .toList();
             result.addAll(artifactResults);
             artifactSink.accept(artifactResults);
             if (sources || javadoc || signature) {
@@ -535,15 +534,17 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 if (!subartifacts.isEmpty()) {
                     output.debug("Resolving (best effort) {}", subartifacts);
                     try {
-                        List<Artifact> subartifactResults = toolboxResolver.resolveArtifacts(subartifacts).stream().map(ArtifactResult::getArtifact).toList();
+                        List<Artifact> subartifactResults = toolboxResolver.resolveArtifacts(subartifacts).stream()
+                                .map(ArtifactResult::getArtifact)
+                                .toList();
                         result.addAll(subartifactResults);
                         artifactSink.accept(subartifactResults);
                     } catch (ArtifactResolutionException e) {
                         // ignore, this is "best effort"
-                        List<Artifact> bestEffort =e.getResults().stream()
+                        List<Artifact> bestEffort = e.getResults().stream()
                                 .filter(ArtifactResult::isResolved)
                                 .map(ArtifactResult::getArtifact)
-                                        .toList();
+                                .toList();
                         result.addAll(bestEffort);
                         artifactSink.accept(bestEffort);
                     }
@@ -563,8 +564,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Sink<Artifact> sink,
             Logger output)
             throws Exception {
-        try (Sink<Artifact> artifactSink =
-                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, false, logger))) {
+        ArtifactSinks.StatArtifactSink stat = ArtifactSinks.statArtifactSink(0, false, logger);
+        try (Sink<Artifact> artifactSink = ArtifactSinks.teeArtifactSink(sink, stat)) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 doResolveTransitive(
                         resolutionScope,
@@ -577,8 +578,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                                 ArtifactSinks.statArtifactSink(1, true, logger)),
                         output);
             }
-            return !resolutionRoots.isEmpty();
         }
+        return stat.getSeenArtifacts().isEmpty()
+                ? Result.failure("No artifacts")
+                : Result.success(stat.getSeenArtifacts());
     }
 
     private void doResolveTransitive(
@@ -646,7 +649,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public boolean tree(
+    public Result<Node> tree(
             ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Logger output)
             throws Exception {
         output.debug("Loading root of: {}", resolutionRoot.getArtifact());
@@ -659,7 +662,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 root.getManagedDependencies(),
                 verboseTree);
         collectResult.getRoot().accept(new DependencyGraphDumper(output::info));
-        return true;
+        // TODO: implement this
+        return Result.success(new Node(collectResult.getRoot().getArtifact(), "", Collections.emptyList()));
     }
 
     @Override
@@ -700,25 +704,23 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<Dependency>> dmList(ResolutionRoot resolutionRoot, boolean verboseList, Logger output) throws Exception {
+    public Result<List<Dependency>> dmList(ResolutionRoot resolutionRoot, boolean verboseList, Logger output)
+            throws Exception {
         AtomicInteger counter = new AtomicInteger(0);
-        List<Dependency> result = toolboxResolver
-                .loadRoot(resolutionRoot)
-                .getManagedDependencies();
-                result.forEach(d -> output.info(
-                        " {}. {}",
-                        counter.incrementAndGet(),
-                        d.getScope().trim().isEmpty() ? d.getArtifact() : d));
+        List<Dependency> result = toolboxResolver.loadRoot(resolutionRoot).getManagedDependencies();
+        result.forEach(d -> output.info(
+                " {}. {}", counter.incrementAndGet(), d.getScope().trim().isEmpty() ? d.getArtifact() : d));
         return Result.success(result);
     }
 
     @Override
-    public boolean dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Logger output) throws Exception {
+    public Result<Node> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Logger output) throws Exception {
         resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
         CollectResult collectResult = toolboxResolver.collectDm(
                 resolutionRoot.getArtifact(), resolutionRoot.getManagedDependencies(), verboseTree);
         collectResult.getRoot().accept(new DependencyGraphDumper(output::info));
-        return true;
+        // TODO: implement this
+        return Result.success(new Node(collectResult.getRoot().getArtifact(), "", Collections.emptyList()));
     }
 
     @Override
@@ -881,7 +883,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<String>> list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Logger output)
+    public Result<List<String>> list(
+            RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Logger output)
             throws IOException {
         ArrayList<String> result = new ArrayList<>();
         try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(
@@ -929,7 +932,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<Artifact>> search(RemoteRepository remoteRepository, String expression, Logger output) throws IOException {
+    public Result<List<Artifact>> search(RemoteRepository remoteRepository, String expression, Logger output)
+            throws IOException {
         ArrayList<Artifact> result = new ArrayList<>();
         try (SearchBackend backend =
                 toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {

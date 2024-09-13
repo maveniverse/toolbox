@@ -9,7 +9,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.toolbox.shared.ArtifactSource;
+import eu.maveniverse.maven.toolbox.shared.Source;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,7 +19,7 @@ import org.eclipse.aether.artifact.Artifact;
 /**
  * Construction to supply collection of artifacts, for example like a filesystem directory.
  */
-public final class DirectorySource implements ArtifactSource {
+public final class DirectorySource implements Source<Artifact> {
     /**
      * Creates plain directory source, that supplies all artifacts it has.
      */

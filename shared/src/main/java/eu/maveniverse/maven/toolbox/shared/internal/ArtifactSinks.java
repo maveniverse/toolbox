@@ -13,7 +13,6 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Sink;
 import java.io.IOException;
@@ -230,7 +229,7 @@ public final class ArtifactSinks {
         return new NullArtifactSink();
     }
 
-    public static class NullArtifactSink implements ArtifactSink {
+    public static class NullArtifactSink extends ArtifactSink {
         private NullArtifactSink() {}
 
         @Override
@@ -240,10 +239,10 @@ public final class ArtifactSinks {
         public void accept(Artifact artifact) {}
     }
 
-    public abstract static class DelegatingArtifactSink implements ArtifactSink {
-        private final ArtifactSink delegate;
+    public abstract static class DelegatingArtifactSink extends ArtifactSink {
+        private final Sink<Artifact> delegate;
 
-        public DelegatingArtifactSink(final ArtifactSink delegate) {
+        public DelegatingArtifactSink(final Sink<Artifact> delegate) {
             this.delegate = requireNonNull(delegate, "delegate");
         }
 
@@ -269,13 +268,13 @@ public final class ArtifactSinks {
     /**
      * Creates a delegating sink that prevents closing delegate.
      */
-    public static NonClosingArtifactSink nonClosingArtifactSink(ArtifactSink delegate) {
+    public static NonClosingArtifactSink nonClosingArtifactSink(Sink<Artifact> delegate) {
         requireNonNull(delegate, "delegate");
         return new NonClosingArtifactSink(delegate);
     }
 
     public static class NonClosingArtifactSink extends DelegatingArtifactSink {
-        private NonClosingArtifactSink(ArtifactSink delegate) {
+        private NonClosingArtifactSink(Sink<Artifact> delegate) {
             super(delegate);
         }
 
@@ -289,7 +288,7 @@ public final class ArtifactSinks {
      * Creates a delegating sink that delegates calls only with matched artifacts.
      */
     public static MatchingArtifactSink matchingArtifactSink(
-            Predicate<Artifact> artifactMatcher, ArtifactSink delegate) {
+            Predicate<Artifact> artifactMatcher, Sink<Artifact> delegate) {
         requireNonNull(artifactMatcher, "artifactMatcher");
         requireNonNull(delegate, "delegate");
         return new MatchingArtifactSink(artifactMatcher, delegate);
@@ -298,7 +297,7 @@ public final class ArtifactSinks {
     public static class MatchingArtifactSink extends DelegatingArtifactSink {
         private final Predicate<Artifact> artifactMatcher;
 
-        private MatchingArtifactSink(Predicate<Artifact> artifactMatcher, ArtifactSink delegate) {
+        private MatchingArtifactSink(Predicate<Artifact> artifactMatcher, Sink<Artifact> delegate) {
             super(delegate);
             this.artifactMatcher = artifactMatcher;
         }
@@ -320,7 +319,7 @@ public final class ArtifactSinks {
      * Creates a delegating sink that delegates calls with mapped artifacts.
      */
     public static MappingArtifactSink mappingArtifactSink(
-            Function<Artifact, Artifact> artifactMapper, ArtifactSink delegate) {
+            Function<Artifact, Artifact> artifactMapper, Sink<Artifact> delegate) {
         requireNonNull(artifactMapper, "artifactMapper");
         requireNonNull(delegate, "delegate");
         return new MappingArtifactSink(artifactMapper, delegate);
@@ -329,7 +328,7 @@ public final class ArtifactSinks {
     public static class MappingArtifactSink extends DelegatingArtifactSink {
         private final Function<Artifact, Artifact> artifactMapper;
 
-        private MappingArtifactSink(Function<Artifact, Artifact> artifactMapper, ArtifactSink delegate) {
+        private MappingArtifactSink(Function<Artifact, Artifact> artifactMapper, Sink<Artifact> delegate) {
             super(delegate);
             this.artifactMapper = artifactMapper;
         }
@@ -352,7 +351,7 @@ public final class ArtifactSinks {
         return new CountingArtifactSink();
     }
 
-    public static class CountingArtifactSink implements ArtifactSink {
+    public static class CountingArtifactSink extends ArtifactSink {
         private final LongAdder counter;
 
         private CountingArtifactSink() {
@@ -376,7 +375,7 @@ public final class ArtifactSinks {
         return new SizingArtifactSink();
     }
 
-    public static class SizingArtifactSink implements ArtifactSink {
+    public static class SizingArtifactSink extends ArtifactSink {
         private final LongAdder size;
 
         private SizingArtifactSink() {
@@ -412,7 +411,7 @@ public final class ArtifactSinks {
         return new TeeArtifactSink(artifactSinks);
     }
 
-    public static class TeeArtifactSink implements ArtifactSink {
+    public static class TeeArtifactSink extends ArtifactSink {
         private final Collection<Sink<Artifact>> artifactSinks;
 
         private TeeArtifactSink(Collection<? extends Sink<Artifact>> artifactSinks) {
@@ -455,7 +454,7 @@ public final class ArtifactSinks {
         return new StatArtifactSink(level, moduleDescriptor, output);
     }
 
-    public static class StatArtifactSink implements ArtifactSink {
+    public static class StatArtifactSink extends ArtifactSink {
         private final int level;
         private final Output output;
         private final CountingArtifactSink countingArtifactSink = new CountingArtifactSink();

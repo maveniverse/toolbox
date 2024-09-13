@@ -5,13 +5,12 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared;
+package eu.maveniverse.maven.toolbox.shared.internal;
 
-import org.eclipse.aether.graph.Dependency;
+import eu.maveniverse.maven.toolbox.shared.Sink;
+import org.eclipse.aether.artifact.Artifact;
 
 /**
- * Construction to supply collection of dependencies.
- *
- * @see ArtifactSource
+ * Artifact sink.
  */
-public interface DependencySource extends Source<Dependency> {}
+public abstract class ArtifactSink implements Sink<Artifact> {}

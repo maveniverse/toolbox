@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.DependencyMapper;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
-import eu.maveniverse.maven.toolbox.shared.DependencySink;
+import eu.maveniverse.maven.toolbox.shared.Sink;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -118,7 +118,7 @@ public final class DependencySinks {
         return new NullDependencySink();
     }
 
-    public static class NullDependencySink implements DependencySink {
+    public static class NullDependencySink extends DependencySink {
         private NullDependencySink() {}
 
         @Override
@@ -128,14 +128,14 @@ public final class DependencySinks {
         public void accept(Dependency dependency) {}
     }
 
-    public static DelegatingDependencySink delegatingDependencySink(DependencySink delegate) {
+    public static DelegatingDependencySink delegatingDependencySink(Sink<Dependency> delegate) {
         return new DelegatingDependencySink(delegate);
     }
 
-    public static class DelegatingDependencySink implements DependencySink {
-        private final DependencySink delegate;
+    public static class DelegatingDependencySink extends DependencySink {
+        private final Sink<Dependency> delegate;
 
-        private DelegatingDependencySink(DependencySink delegate) {
+        private DelegatingDependencySink(Sink<Dependency> delegate) {
             requireNonNull(delegate, "delegate");
             this.delegate = delegate;
         }
@@ -159,13 +159,13 @@ public final class DependencySinks {
     /**
      * Creates a delegating sink that prevents closing delegate.
      */
-    public static NonClosingDependencySink nonClosingDependencySink(DependencySink delegate) {
+    public static NonClosingDependencySink nonClosingDependencySink(Sink<Dependency> delegate) {
         requireNonNull(delegate, "delegate");
         return new NonClosingDependencySink(delegate);
     }
 
     public static class NonClosingDependencySink extends DelegatingDependencySink {
-        private NonClosingDependencySink(DependencySink delegate) {
+        private NonClosingDependencySink(Sink<Dependency> delegate) {
             super(delegate);
         }
 
@@ -179,7 +179,7 @@ public final class DependencySinks {
      * Creates a delegating sink that delegates calls only with matched artifacts.
      */
     public static MatchingDependencySink matchingDependencySink(
-            Predicate<Dependency> matcher, DependencySink delegate) {
+            Predicate<Dependency> matcher, Sink<Dependency> delegate) {
         requireNonNull(matcher, "matcher");
         requireNonNull(delegate, "delegate");
         return new MatchingDependencySink(matcher, delegate);
@@ -188,7 +188,7 @@ public final class DependencySinks {
     public static class MatchingDependencySink extends DelegatingDependencySink {
         private final Predicate<Dependency> matcher;
 
-        private MatchingDependencySink(Predicate<Dependency> matcher, DependencySink delegate) {
+        private MatchingDependencySink(Predicate<Dependency> matcher, Sink<Dependency> delegate) {
             super(delegate);
             this.matcher = matcher;
         }
@@ -210,7 +210,7 @@ public final class DependencySinks {
      * Creates a delegating sink that delegates calls with mapped artifacts.
      */
     public static MappingDependencySink mappingDependencySink(
-            Function<Dependency, Dependency> mapper, DependencySink delegate) {
+            Function<Dependency, Dependency> mapper, Sink<Dependency> delegate) {
         requireNonNull(mapper, "mapper");
         requireNonNull(delegate, "delegate");
         return new MappingDependencySink(mapper, delegate);
@@ -219,7 +219,7 @@ public final class DependencySinks {
     public static class MappingDependencySink extends DelegatingDependencySink {
         private final Function<Dependency, Dependency> mapper;
 
-        private MappingDependencySink(Function<Dependency, Dependency> mapper, DependencySink delegate) {
+        private MappingDependencySink(Function<Dependency, Dependency> mapper, Sink<Dependency> delegate) {
             super(delegate);
             this.mapper = mapper;
         }
@@ -242,7 +242,7 @@ public final class DependencySinks {
         return new CountingDependencySink();
     }
 
-    public static class CountingDependencySink implements DependencySink {
+    public static class CountingDependencySink extends DependencySink {
         private final LongAdder counter;
 
         private CountingDependencySink() {
@@ -262,49 +262,50 @@ public final class DependencySinks {
     /**
      * Creates a "tee" artifact sink out of supplied sinks.
      */
-    public static TeeDependencySink teeDependencySink(DependencySink... dependencySinks) {
+    @SafeVarargs
+    public static TeeDependencySink teeDependencySink(Sink<Dependency>... dependencySinks) {
         return teeDependencySink(Arrays.asList(dependencySinks));
     }
 
     /**
      * Creates a "tee" artifact sink out of supplied sinks.
      */
-    public static TeeDependencySink teeDependencySink(Collection<? extends DependencySink> dependencySinks) {
+    public static TeeDependencySink teeDependencySink(Collection<? extends Sink<Dependency>> dependencySinks) {
         requireNonNull(dependencySinks, "dependencySinks");
         return new TeeDependencySink(dependencySinks);
     }
 
-    public static class TeeDependencySink implements DependencySink {
-        private final Collection<DependencySink> dependencySinks;
+    public static class TeeDependencySink extends DependencySink {
+        private final Collection<Sink<Dependency>> dependencySinks;
 
-        private TeeDependencySink(Collection<? extends DependencySink> artifactSinks) {
+        private TeeDependencySink(Collection<? extends Sink<Dependency>> artifactSinks) {
             this.dependencySinks = Collections.unmodifiableCollection(new ArrayList<>(artifactSinks));
         }
 
         @Override
         public void accept(Collection<Dependency> dependencies) throws IOException {
-            for (DependencySink sink : dependencySinks) {
+            for (Sink<Dependency> sink : dependencySinks) {
                 sink.accept(dependencies);
             }
         }
 
         @Override
         public void accept(Dependency dependency) throws IOException {
-            for (DependencySink sink : dependencySinks) {
+            for (Sink<Dependency> sink : dependencySinks) {
                 sink.accept(dependency);
             }
         }
 
         @Override
         public void cleanup(Exception e) {
-            for (DependencySink sink : dependencySinks) {
+            for (Sink<Dependency> sink : dependencySinks) {
                 sink.cleanup(e);
             }
         }
 
         @Override
         public void close() throws Exception {
-            for (DependencySink sink : dependencySinks) {
+            for (Sink<Dependency> sink : dependencySinks) {
                 sink.close();
             }
         }

@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -137,7 +138,7 @@ public final class SpecParser {
             return clazz.cast(params.removeLast());
         }
 
-        protected <T> List<T> typedParams(Class<T> clazz, String op) {
+        protected <T> Collection<T> typedParams(Class<T> clazz, String op) {
             ArrayList<T> result = new ArrayList<>();
             while (!params.isEmpty()) {
                 if (clazz.isInstance(params.getLast())) {

@@ -9,7 +9,6 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.Sink;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,7 +21,7 @@ import org.eclipse.aether.artifact.Artifact;
 /**
  * Construction to accept collection of artifacts and differentiate the into separate "lanes", or sinks.
  */
-public final class MultiArtifactSink implements ArtifactSink {
+public final class MultiArtifactSink extends ArtifactSink {
     public static final class MultiArtifactSinkBuilder {
         private final LinkedHashMap<Predicate<Artifact>, Sink<Artifact>> sinks;
         private boolean missedArtifactFails = true;

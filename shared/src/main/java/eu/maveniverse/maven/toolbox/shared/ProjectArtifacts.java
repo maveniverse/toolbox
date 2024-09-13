@@ -23,7 +23,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
  * <p>
  * Warning: this abstraction uses extension and not packaging, as this one does not create POM, it is caller obligation.
  */
-public final class ProjectArtifacts implements ArtifactSource {
+public final class ProjectArtifacts implements Source<Artifact> {
     private final Artifact prototype;
     private final Map<CE, Path> artifacts;
 

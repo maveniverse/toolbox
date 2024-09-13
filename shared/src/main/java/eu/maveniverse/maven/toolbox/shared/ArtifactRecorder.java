@@ -17,7 +17,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 /**
  * Artifact recorder.
  */
-public interface ArtifactRecorder extends ArtifactSource {
+public interface ArtifactRecorder extends Source<Artifact> {
     /**
      * The "sentinel" remote repository that recorder assigns when there is no remote repository available. This
      * means that artifact was either installed locally. To check for "sentinel" remote repository use instance

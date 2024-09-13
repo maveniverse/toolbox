@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -35,7 +34,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 /**
  * Construction to accept collection of artifacts and purge them from local repository.
  */
-public final class PurgingSink implements ArtifactSink {
+public final class PurgingSink extends ArtifactSink {
     /**
      * Creates purging sink treats artifacts as "whole", purges whole GAVs from passed in session local repository.
      * Artifacts this sink accepts MUST NOT BE resolved from the same local repository this purging sink is about to

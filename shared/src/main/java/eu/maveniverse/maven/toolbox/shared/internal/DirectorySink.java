@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,7 +23,7 @@ import org.eclipse.aether.artifact.Artifact;
 /**
  * Construction to accept collection of artifacts, for example like a filesystem directory.
  */
-public final class DirectorySink implements ArtifactSink {
+public final class DirectorySink extends ArtifactSink {
     /**
      * Creates plain "flat" directory sink, that accepts all artifacts and copies them out having filenames according
      * to supplied {@link ArtifactNameMapper} and prevents overwrite (what you usually want).

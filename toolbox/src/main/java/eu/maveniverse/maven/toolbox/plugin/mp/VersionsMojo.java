@@ -8,13 +8,13 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.slf4j.Logger;
 
 /**
  * Lists available versions of Maven Project dependencies.
@@ -40,7 +40,7 @@ public class VersionsMojo extends MPMojoSupport {
     private String artifactVersionMatcherSpec;
 
     @Override
-    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         ResolutionScope resolutionScope = ResolutionScope.parse(scope);
         toolboxCommando.versions(
                 "managed dependencies",

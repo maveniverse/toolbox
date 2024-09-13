@@ -22,8 +22,6 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
-import eu.maveniverse.maven.toolbox.shared.Output;
-import eu.maveniverse.maven.toolbox.shared.Slf4jOutput;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommandoVersion;
 import java.io.PrintStream;
@@ -52,16 +50,25 @@ import picocli.CommandLine;
  * Support class for all Mojos and Commands.
  */
 public abstract class MojoSupport extends AbstractMojo implements Callable<Integer>, CommandLine.IVersionProvider {
-
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     // CLI
 
     @CommandLine.Option(
-            names = {"-v", "--verbose"},
-            description = "Be verbose about things happening")
-    @Parameter(property = "verbose")
-    private boolean verbose;
+            names = {"--verbosity"},
+            description = "Output verbosity level in CLI. Accepted values: silent, normal (default), high, insane")
+    @Parameter(property = "verbosity")
+    private OutputFactory.Verbosity verbosity = OutputFactory.Verbosity.normal;
+
+    @CommandLine.Option(
+            names = {"-X", "--debug"},
+            description = "Enable debug logging in CLI.")
+    private boolean debug;
+
+    @CommandLine.Option(
+            names = {"-Y", "--trace"},
+            description = "Enable trace logging in CLI.")
+    private boolean trace;
 
     @CommandLine.Option(
             names = {"-o", "--offline"},
@@ -105,35 +112,6 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
             defaultValue = "false",
             description = "Show error stack traces")
     private boolean errors;
-
-    private Output createCliOutput() {
-        return new Output() {
-            @Override
-            public boolean isVerbose() {
-                return verbose;
-            }
-
-            @Override
-            public void verbose(String msg, Object... params) {
-                MojoSupport.this.verbose(msg, params);
-            }
-
-            @Override
-            public void normal(String msg, Object... params) {
-                MojoSupport.this.normal(msg, params);
-            }
-
-            @Override
-            public void warn(String msg, Object... params) {
-                MojoSupport.this.warn(msg, params);
-            }
-
-            @Override
-            public void error(String msg, Object... params) {
-                MojoSupport.this.error(msg, params);
-            }
-        };
-    }
 
     private static final AtomicReference<Map<Object, Object>> CONTEXT = new AtomicReference<>(null);
 
@@ -221,18 +199,11 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         return get(Context.class);
     }
 
-    protected Output getOutput() {
-        return get(Output.class);
-    }
-
     protected ToolboxCommando getToolboxCommando() {
         return getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getContext()));
     }
 
     private void verbose(String format, Object... args) {
-        if (!verbose) {
-            return;
-        }
         if (args.length > 0 && args[args.length - 1] instanceof Throwable) {
             log(
                     System.err,
@@ -405,14 +376,18 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
      */
     @Override
     public final Integer call() {
+        if (trace) {
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "TRACE");
+        } else if (debug) {
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "DEBUG");
+        }
         Ansi.setEnabled(!batch);
         boolean seeded = CONTEXT.compareAndSet(null, new HashMap<>());
-        getOrCreate(Output.class, this::createCliOutput);
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
 
         try {
-            boolean result = doExecute(getOutput(), getToolboxCommando());
+            boolean result = doExecute(OutputFactory.createOutput(verbosity), getToolboxCommando());
             if (!result && failOnLogicalFailure) {
                 return 1;
             } else {
@@ -430,10 +405,6 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
 
     // Mojo
 
-    private Output createMojoOutput() {
-        return new Slf4jOutput(LoggerFactory.getLogger(getClass()), verbose);
-    }
-
     @CommandLine.Option(
             names = {"--fail-on-logical-failure"},
             defaultValue = "true",
@@ -450,12 +421,12 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {
         CONTEXT.compareAndSet(null, getPluginContext());
-        getOrCreate(Output.class, this::createMojoOutput);
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createMavenContextOverrides()));
 
         try {
-            boolean result = doExecute(getOutput(), getToolboxCommando());
+            // in Mojo, output is == maven logger, so use -X if you want verbose output etc.
+            boolean result = doExecute(LoggerFactory.getLogger(getClass()), getToolboxCommando());
             if (!result && failOnLogicalFailure) {
                 throw new MojoFailureException("Operation failed");
             }
@@ -466,5 +437,5 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         }
     }
 
-    protected abstract boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception;
+    protected abstract boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception;
 }

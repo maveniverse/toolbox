@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
@@ -37,6 +36,7 @@ import org.eclipse.aether.deployment.DeploymentException;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.version.Version;
+import org.slf4j.Logger;
 
 /**
  * Construction to calculate "libyear".
@@ -69,7 +69,7 @@ public final class LibYearSink implements Artifacts.Sink {
      * Creates libYear sink.
      */
     public static LibYearSink libYear(
-            Output output,
+            Logger output,
             String subject,
             Context context,
             ToolboxResolverImpl toolboxResolver,
@@ -92,7 +92,7 @@ public final class LibYearSink implements Artifacts.Sink {
                 searchBackends);
     }
 
-    private final Output output;
+    private final Logger output;
     private final String subject;
     private final Context context;
     private final ToolboxResolverImpl toolboxResolver;
@@ -107,7 +107,7 @@ public final class LibYearSink implements Artifacts.Sink {
     private final List<SearchBackend> searchBackends;
 
     private LibYearSink(
-            Output output,
+            Logger output,
             String subject,
             Context context,
             ToolboxResolverImpl toolboxResolver,
@@ -117,7 +117,7 @@ public final class LibYearSink implements Artifacts.Sink {
             Predicate<Version> versionFilter,
             BiFunction<Artifact, List<Version>, String> versionSelector,
             List<SearchBackend> searchBackends) {
-        this.output = requireNonNull(output, "output");
+        this.output = requireNonNull(output, "logger");
         this.subject = requireNonNull(subject, "subject");
         this.context = requireNonNull(context, "context");
         this.toolboxResolver = requireNonNull(toolboxResolver, "toolboxResolver");
@@ -130,7 +130,7 @@ public final class LibYearSink implements Artifacts.Sink {
         this.artifacts = new CopyOnWriteArraySet<>();
         this.searchBackends = requireNonNull(searchBackends);
 
-        output.normal("Calculating libYear for {}", subject);
+        output.info("Calculating libYear for {}", subject);
     }
 
     @SuppressWarnings("unchecked")
@@ -248,30 +248,30 @@ public final class LibYearSink implements Artifacts.Sink {
 
             String indent = "  ";
             if (!outdatedWithLibyear.isEmpty()) {
-                output.normal("{}Outdated versions with known age", indent);
+                output.info("{}Outdated versions with known age", indent);
                 outdatedWithLibyear.values().stream()
                         .flatMap(Collection::stream)
-                        .forEach(l -> output.normal("{}{}", indent, l));
-                output.normal("{}", indent);
+                        .forEach(l -> output.info("{}{}", indent, l));
+                output.info("{}", indent);
             }
             if (!outdatedWithoutLibyear.isEmpty()) {
-                output.normal("{}Outdated versions without known age", indent);
-                outdatedWithoutLibyear.forEach(l -> output.normal("{}{}", indent, l));
-                output.normal("{}", indent);
+                output.info("{}Outdated versions without known age", indent);
+                outdatedWithoutLibyear.forEach(l -> output.info("{}{}", indent, l));
+                output.info("{}", indent);
             }
             if (upToDate) {
                 if (!upToDateByAge.isEmpty()) {
-                    output.normal("{}Up to date versions", indent);
+                    output.info("{}Up to date versions", indent);
                 }
-                upToDateByAge.forEach(l -> output.normal("{}{}", indent, l));
-                output.normal("{}", indent);
+                upToDateByAge.forEach(l -> output.info("{}{}", indent, l));
+                output.info("{}", indent);
             }
-            output.normal(
+            output.info(
                     "Total of {} years from {} outdated dependencies for {}",
                     String.format("%.2f", totalLibYears),
                     outdatedWithLibyear.values().stream().mapToInt(List::size).sum() + outdatedWithoutLibyear.size(),
                     subject);
-            output.normal("{}", indent);
+            output.info("{}", indent);
         } finally {
             searchBackends.forEach(b -> {
                 try {

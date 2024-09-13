@@ -8,9 +8,9 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.slf4j.Logger;
 
 /**
  * Dumps the MIMA environment.
@@ -18,7 +18,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 @Mojo(name = "dump", threadSafe = true)
 public class DumpMojo extends MPMojoSupport {
     @Override
-    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) {
-        return toolboxCommando.dump(output.isVerbose(), output);
+    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) {
+        return toolboxCommando.dump(output);
     }
 }

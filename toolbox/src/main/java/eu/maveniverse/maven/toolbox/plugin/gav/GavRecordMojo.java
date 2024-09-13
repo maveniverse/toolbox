@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -41,7 +42,7 @@ public final class GavRecordMojo extends GavMojoSupport {
     private boolean stop;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws DependencyResolutionException {
+    protected Result<?> doExecute(Logger output, ToolboxCommando toolboxCommando) throws DependencyResolutionException {
         if (stop) {
             return toolboxCommando.recordStop(output);
         } else if (start) {

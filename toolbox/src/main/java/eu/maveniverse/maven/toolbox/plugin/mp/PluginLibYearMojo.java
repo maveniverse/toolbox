@@ -13,8 +13,8 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.slf4j.Logger;
@@ -61,7 +61,7 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
     private boolean upToDate;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<String> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
         ArtifactVersionMatcher artifactVersionMatcher =
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec);
@@ -69,7 +69,7 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
         for (ResolutionRoot root : allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
                 .filter(r -> artifactMatcher.test(r.getArtifact()))
-                .collect(Collectors.toList())) {
+                .toList()) {
             toolboxCommando.libYear(
                     "managed plugin " + root.getArtifact(),
                     ResolutionScope.RUNTIME,
@@ -84,7 +84,7 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
         }
         for (ResolutionRoot root : allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
                 .filter(r -> artifactMatcher.test(r.getArtifact()))
-                .collect(Collectors.toList())) {
+                .toList()) {
             toolboxCommando.libYear(
                     "plugin " + root.getArtifact(),
                     ResolutionScope.RUNTIME,
@@ -97,6 +97,6 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
                     getRepositoryVendor(),
                     output);
         }
-        return true;
+        return Result.success("Success");
     }
 }

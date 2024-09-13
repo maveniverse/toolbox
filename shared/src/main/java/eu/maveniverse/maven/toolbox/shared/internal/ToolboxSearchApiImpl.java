@@ -121,6 +121,38 @@ public class ToolboxSearchApiImpl {
                         Java11HttpClientFactory.buildHttpClient(session, remoteRepository)));
     }
 
+    public List<String> renderGavoid(List<Record> page, Predicate<String> versionPredicate) {
+        ArrayList<String> result = new ArrayList<>();
+        for (Record record : page) {
+            final String version = record.getValue(MAVEN.VERSION);
+            if (version != null && versionPredicate != null && !versionPredicate.test(version)) {
+                continue;
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.append(record.getValue(MAVEN.GROUP_ID));
+            if (record.hasField(MAVEN.ARTIFACT_ID)) {
+                sb.append(":").append(record.getValue(MAVEN.ARTIFACT_ID));
+            }
+            if (record.hasField(MAVEN.PACKAGING)) {
+                if (record.hasField(MAVEN.CLASSIFIER)) {
+                    sb.append(":").append(record.getValue(MAVEN.CLASSIFIER));
+                }
+                sb.append(":").append(record.getValue(MAVEN.PACKAGING));
+            } else if (record.hasField(MAVEN.FILE_EXTENSION)) {
+                if (record.hasField(MAVEN.CLASSIFIER)) {
+                    sb.append(":").append(record.getValue(MAVEN.CLASSIFIER));
+                }
+                sb.append(":").append(record.getValue(MAVEN.FILE_EXTENSION));
+            }
+            if (record.hasField(MAVEN.VERSION)) {
+                sb.append(":").append(record.getValue(MAVEN.VERSION));
+            }
+
+            result.add(sb.toString());
+        }
+        return result;
+    }
+
     public Collection<Artifact> renderArtifacts(
             RepositorySystemSession session, List<Record> page, Predicate<String> versionPredicate) {
         ArrayList<Artifact> result = new ArrayList<>();

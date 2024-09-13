@@ -8,10 +8,12 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.stream.Collectors;
+import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.artifact.Artifact;
 import org.slf4j.Logger;
 
 /**
@@ -50,12 +52,11 @@ public class ResolveMojo extends MPMojoSupport {
     private String sinkSpec;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<List<Artifact>> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolve(
-                projectAsResolutionRoot().getDependencies().stream()
+                () -> projectAsResolutionRoot().getDependencies().stream()
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
-                        .map(toolboxCommando::toArtifact)
-                        .collect(Collectors.toList()),
+                        .map(toolboxCommando::toArtifact),
                 sources,
                 javadoc,
                 signature,

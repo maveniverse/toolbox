@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -50,7 +51,7 @@ public class GavClasspathMojo extends GavMojoSupport {
     private String boms;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<String> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.classpath(
                 ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)), output);
     }

@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -26,7 +27,7 @@ public class ClasspathMojo extends MPMojoSupport {
     private String scope;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<String> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.classpath(ResolutionScope.parse(scope), projectAsResolutionRoot(), output);
     }
 }

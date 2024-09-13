@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -25,7 +26,7 @@ public class DmTreeMojo extends MPMojoSupport {
     private boolean verboseTree;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<ToolboxCommando.Node> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.dmTree(projectAsResolutionRoot(), verboseTree, output);
     }
 }

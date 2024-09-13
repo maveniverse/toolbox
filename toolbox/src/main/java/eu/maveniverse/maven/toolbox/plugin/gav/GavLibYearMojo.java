@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -96,7 +97,7 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     private boolean upToDate;
 
     @Override
-    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Integer> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.libYear(
                 "GAV " + gav,
                 ResolutionScope.parse(scope),

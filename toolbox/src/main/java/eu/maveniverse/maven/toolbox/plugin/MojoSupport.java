@@ -22,6 +22,7 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommandoVersion;
 import java.io.PrintStream;
@@ -387,8 +388,8 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
 
         try {
-            boolean result = doExecute(OutputFactory.createOutput(verbosity), getToolboxCommando());
-            if (!result && failOnLogicalFailure) {
+            Result<?> result = doExecute(OutputFactory.createOutput(verbosity), getToolboxCommando());
+            if (!result.isSuccess() && failOnLogicalFailure) {
                 return 1;
             } else {
                 return 0;
@@ -426,9 +427,9 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
 
         try {
             // in Mojo, output is == maven logger, so use -X if you want verbose output etc.
-            boolean result = doExecute(LoggerFactory.getLogger(getClass()), getToolboxCommando());
-            if (!result && failOnLogicalFailure) {
-                throw new MojoFailureException("Operation failed");
+            Result<?> result = doExecute(LoggerFactory.getLogger(getClass()), getToolboxCommando());
+            if (!result.isSuccess() && failOnLogicalFailure) {
+                throw new MojoFailureException("Operation failed: " + result.getMessage());
             }
         } catch (RuntimeException e) {
             throw new MojoExecutionException("Runtime exception", e);
@@ -437,5 +438,5 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         }
     }
 
-    protected abstract boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception;
+    protected abstract Result<?> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception;
 }

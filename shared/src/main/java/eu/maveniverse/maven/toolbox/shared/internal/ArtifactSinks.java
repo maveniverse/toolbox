@@ -13,7 +13,6 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Sink;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,6 +31,7 @@ import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.LocalRepositoryManager;
+import org.slf4j.Logger;
 
 /**
  * Various utility sink implementations.
@@ -450,18 +450,18 @@ public final class ArtifactSinks {
     /**
      * Creates a "stat" artifact sink out of supplied sinks.
      */
-    public static StatArtifactSink statArtifactSink(int level, boolean moduleDescriptor, Output output) {
+    public static StatArtifactSink statArtifactSink(int level, boolean moduleDescriptor, Logger output) {
         return new StatArtifactSink(level, moduleDescriptor, output);
     }
 
     public static class StatArtifactSink implements Artifacts.Sink {
         private final int level;
-        private final Output output;
+        private final Logger output;
         private final CountingArtifactSink countingArtifactSink = new CountingArtifactSink();
         private final SizingArtifactSink sizingArtifactSink = new SizingArtifactSink();
         private final ModuleDescriptorExtractingSink moduleDescriptorExtractingSink;
 
-        private StatArtifactSink(int level, boolean moduleDescriptor, Output output) {
+        private StatArtifactSink(int level, boolean moduleDescriptor, Logger output) {
             this.level = level;
             this.output = requireNonNull(output, "output");
             this.moduleDescriptorExtractingSink = moduleDescriptor ? new ModuleDescriptorExtractingSink() : null;
@@ -486,7 +486,7 @@ public final class ArtifactSinks {
             sizingArtifactSink.close();
             if (moduleDescriptorExtractingSink != null) {
                 moduleDescriptorExtractingSink.close();
-                output.normal("{}------------------------------", indent);
+                output.info("{}------------------------------", indent);
                 for (Map.Entry<Artifact, ModuleDescriptorExtractingSink.ModuleDescriptor> entry :
                         moduleDescriptorExtractingSink.getModuleDescriptors().entrySet()) {
                     String moduleInfo = "";
@@ -494,25 +494,21 @@ public final class ArtifactSinks {
                         ModuleDescriptorExtractingSink.ModuleDescriptor moduleDescriptor = entry.getValue();
                         moduleInfo = moduleDescriptorExtractingSink.formatString(moduleDescriptor);
                     }
-                    if (output.isVerbose()) {
-                        output.verbose(
-                                "{}{} {} -> {}",
-                                indent,
-                                entry.getKey(),
-                                moduleInfo,
-                                entry.getKey().getFile());
-                    } else {
-                        output.normal("{}{} {}", indent, entry.getKey(), moduleInfo);
-                    }
+                    output.info(
+                            "{}{} {} -> {}",
+                            indent,
+                            entry.getKey(),
+                            moduleInfo,
+                            entry.getKey().getFile());
                 }
-                output.normal("{}------------------------------", indent);
+                output.info("{}------------------------------", indent);
             }
-            output.normal(
+            output.info(
                     "{}Total of {} artifacts ({})",
                     indent,
                     countingArtifactSink.count(),
                     humanReadableByteCountBin(sizingArtifactSink.size()));
-            output.normal("{}------------------------------", indent);
+            output.info("{}------------------------------", indent);
         }
     }
 }

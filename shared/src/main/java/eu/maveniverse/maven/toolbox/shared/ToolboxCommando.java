@@ -27,6 +27,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
+import org.slf4j.Logger;
 
 /**
  * The Toolbox Commando, that implements all the commands that are exposed via Mojos or CLI.
@@ -54,7 +55,7 @@ public interface ToolboxCommando {
         return ToolboxCommandoVersion.getVersion();
     }
 
-    boolean dump(boolean verbose, Output output);
+    boolean dump(Logger output);
 
     // Parsers
 
@@ -140,27 +141,27 @@ public interface ToolboxCommando {
 
     // Commands
 
-    boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) throws Exception;
+    boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Logger output) throws Exception;
 
-    boolean copy(Collection<Artifact> artifacts, Sink<Artifact> sink, Output output) throws Exception;
+    boolean copy(Collection<Artifact> artifacts, Sink<Artifact> sink, Logger output) throws Exception;
 
     boolean copyTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
             Sink<Artifact> sink,
-            Output output)
+            Logger output)
             throws Exception;
 
-    boolean copyAllRecorded(Sink<Artifact> sink, boolean stopRecording, Output output) throws Exception;
+    boolean copyAllRecorded(Sink<Artifact> sink, boolean stopRecording, Logger output) throws Exception;
 
-    boolean deploy(RemoteRepository remoteRepository, Source<Artifact> artifactSource, Output output) throws Exception;
+    boolean deploy(RemoteRepository remoteRepository, Source<Artifact> artifactSource, Logger output) throws Exception;
 
-    boolean deployAllRecorded(RemoteRepository remoteRepository, boolean stopRecording, Output output) throws Exception;
+    boolean deployAllRecorded(RemoteRepository remoteRepository, boolean stopRecording, Logger output) throws Exception;
 
-    boolean install(Source<Artifact> artifactSource, Output output) throws Exception;
+    boolean install(Source<Artifact> artifactSource, Logger output) throws Exception;
 
     default boolean listRepositories(
-            ResolutionScope resolutionScope, String context, ResolutionRoot resolutionRoot, Output output)
+            ResolutionScope resolutionScope, String context, ResolutionRoot resolutionRoot, Logger output)
             throws Exception {
         HashMap<String, ResolutionRoot> resolutionRoots = new HashMap<>();
         resolutionRoots.put(context, resolutionRoot);
@@ -168,16 +169,16 @@ public interface ToolboxCommando {
     }
 
     boolean listRepositories(
-            ResolutionScope resolutionScope, Map<String, ResolutionRoot> resolutionRoots, Output output)
+            ResolutionScope resolutionScope, Map<String, ResolutionRoot> resolutionRoots, Logger output)
             throws Exception;
 
-    boolean listAvailablePlugins(Collection<String> groupIds, Output output) throws Exception;
+    boolean listAvailablePlugins(Collection<String> groupIds, Logger output) throws Exception;
 
-    boolean recordStart(Output output);
+    boolean recordStart(Logger output);
 
-    boolean recordStats(Output output);
+    boolean recordStats(Logger output);
 
-    boolean recordStop(Output output);
+    boolean recordStop(Logger output);
 
     boolean resolve(
             Collection<Artifact> artifacts,
@@ -185,7 +186,7 @@ public interface ToolboxCommando {
             boolean javadoc,
             boolean signature,
             Sink<Artifact> sink,
-            Output output)
+            Logger output)
             throws Exception;
 
     boolean resolveTransitive(
@@ -195,10 +196,10 @@ public interface ToolboxCommando {
             boolean javadoc,
             boolean signature,
             Sink<Artifact> sink,
-            Output output)
+            Logger output)
             throws Exception;
 
-    boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Output output)
+    boolean tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Logger output)
             throws Exception;
 
     boolean treeFind(
@@ -206,12 +207,12 @@ public interface ToolboxCommando {
             ResolutionRoot resolutionRoot,
             boolean verboseTree,
             ArtifactMatcher artifactMatcher,
-            Output output)
+            Logger output)
             throws Exception;
 
-    boolean dmList(ResolutionRoot resolutionRoot, boolean verboseList, Output output) throws Exception;
+    boolean dmList(ResolutionRoot resolutionRoot, boolean verboseList, Logger output) throws Exception;
 
-    boolean dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Output output) throws Exception;
+    boolean dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Logger output) throws Exception;
 
     // Search API related commands: they target one single RemoteRepository
 
@@ -230,18 +231,18 @@ public interface ToolboxCommando {
             boolean signature,
             boolean allRequired,
             String repositoryVendor,
-            Output output)
+            Logger output)
             throws IOException;
 
-    boolean identify(RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Output output)
+    boolean identify(RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Logger output)
             throws IOException;
 
-    boolean list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Output output)
+    boolean list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Logger output)
             throws IOException;
 
-    boolean search(RemoteRepository remoteRepository, String expression, Output output) throws IOException;
+    boolean search(RemoteRepository remoteRepository, String expression, Logger output) throws IOException;
 
-    boolean verify(RemoteRepository remoteRepository, String gav, String sha1, String repositoryVendor, Output output)
+    boolean verify(RemoteRepository remoteRepository, String gav, String sha1, String repositoryVendor, Logger output)
             throws IOException;
 
     // Various
@@ -256,9 +257,9 @@ public interface ToolboxCommando {
             Predicate<Version> versionPredicate,
             BiFunction<Artifact, List<Version>, String> artifactVersionSelector,
             String repositoryVendor,
-            Output output)
+            Logger output)
             throws Exception;
 
-    boolean versions(String context, Collection<Artifact> artifacts, Predicate<Version> versionPredicate, Output output)
+    boolean versions(String context, Collection<Artifact> artifacts, Predicate<Version> versionPredicate, Logger output)
             throws Exception;
 }

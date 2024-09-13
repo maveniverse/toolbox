@@ -8,11 +8,11 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.slf4j.Logger;
 
 /**
  * Resolves selected dependencies transitively and copies all of them to target.
@@ -39,7 +39,7 @@ public final class CopyTransitiveMojo extends MPMojoSupport {
     private String depSpec;
 
     @Override
-    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         ResolutionScope resolutionScope = ResolutionScope.parse(scope);
         return toolboxCommando.copyTransitive(
                 resolutionScope,

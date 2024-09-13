@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.plugin.CLI;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -33,6 +32,7 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.terminal.impl.jni.JniTerminalProvider;
 import org.jline.widget.TailTipWidgets;
+import org.slf4j.Logger;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
 
@@ -40,11 +40,11 @@ import picocli.shell.jline3.PicocliCommands;
 @Mojo(name = "gav-repl", requiresProject = false, threadSafe = true)
 public class GavReplMojo extends GavMojoSupport {
     @Override
-    public boolean doExecute(Output output, ToolboxCommando toolboxCommando) {
+    public boolean doExecute(Logger output, ToolboxCommando toolboxCommando) {
         Class<?> tp = JniTerminalProvider.class;
         Context context = getContext();
 
-        toolboxCommando.dump(false, output);
+        toolboxCommando.dump(output);
 
         // set up JLine built-in commands
         ConfigurationPath configPath = new ConfigurationPath(context.basedir(), context.basedir());

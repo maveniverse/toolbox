@@ -8,11 +8,11 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.slf4j.Logger;
 
 /**
  * Prints the classpath of current project.
@@ -26,7 +26,7 @@ public class ClasspathMojo extends MPMojoSupport {
     private String scope;
 
     @Override
-    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.classpath(ResolutionScope.parse(scope), projectAsResolutionRoot(), output);
     }
 }

@@ -8,11 +8,11 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.slf4j.Logger;
 
 /**
  * Resolves selected dependencies and copies resulting artifacts to target.
@@ -33,7 +33,7 @@ public final class CopyMojo extends MPMojoSupport {
     private String depSpec;
 
     @Override
-    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.copy(
                 projectAsResolutionRoot().getDependencies().stream()
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))

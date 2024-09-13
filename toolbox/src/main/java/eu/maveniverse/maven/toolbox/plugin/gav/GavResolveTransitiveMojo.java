@@ -8,11 +8,11 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.slf4j.Logger;
 import picocli.CommandLine;
 
 /**
@@ -86,7 +86,7 @@ public class GavResolveTransitiveMojo extends GavMojoSupport {
     private String sinkSpec;
 
     @Override
-    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(scope),
                 toolboxCommando.loadGavs(slurp(gav), slurp(boms)),

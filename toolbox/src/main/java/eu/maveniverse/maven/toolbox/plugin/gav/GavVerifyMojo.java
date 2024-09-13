@@ -8,11 +8,11 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.IOException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.slf4j.Logger;
 import picocli.CommandLine;
 
 /**
@@ -38,7 +38,7 @@ public class GavVerifyMojo extends GavSearchMojoSupport {
     private String sha1;
 
     @Override
-    protected boolean doExecute(Output output, ToolboxCommando toolboxCommando) throws IOException {
+    protected boolean doExecute(Logger output, ToolboxCommando toolboxCommando) throws IOException {
         return toolboxCommando.verify(getRemoteRepository(toolboxCommando), gav, sha1, null, output);
     }
 }

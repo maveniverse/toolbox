@@ -9,15 +9,13 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.toolbox.shared.internal.Artifacts;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
@@ -26,57 +24,24 @@ import org.eclipse.aether.artifact.DefaultArtifact;
  * <p>
  * Warning: this abstraction uses extension and not packaging, as this one does not create POM, it is caller obligation.
  */
-public final class ProjectArtifacts implements Supplier<Collection<Artifact>> {
-    private final String groupId;
-    private final String artifactId;
-    private final String version;
-    private final String extension;
+public final class ProjectArtifacts implements Artifacts.Source {
+    private final Artifact prototype;
     private final Map<CE, Path> artifacts;
 
-    public ProjectArtifacts(String gav) {
-        DefaultArtifact prototype = new DefaultArtifact(gav);
-        this.groupId = prototype.getGroupId();
-        this.artifactId = prototype.getArtifactId();
-        this.version = prototype.getVersion();
-        this.extension = prototype.getExtension();
-        this.artifacts = new HashMap<>();
-    }
-
-    public void addPom(Path artifact) {
-        addArtifact(null, "pom", artifact);
-    }
-
-    public void addMain(Path artifact) {
-        addArtifact(null, extension, artifact);
-    }
-
-    public void addSources(Path artifact) {
-        addArtifact("sources", "jar", artifact);
-    }
-
-    public void addJavadoc(Path artifact) {
-        addArtifact("javadoc", "jar", artifact);
-    }
-
-    public void addArtifact(String classifier, String extension, Path artifact) {
-        requireNonNull(extension, "extension");
-        requireNonNull(artifact, "artifact");
-        if (!Files.exists(artifact) || Files.isDirectory(artifact)) {
-            throw new IllegalArgumentException("artifact backing file must exist and cannot be a directory");
-        }
-        CE ce = new CE(classifier, extension);
-        if (artifacts.containsKey(ce)) {
-            throw new IllegalArgumentException("artifact already present");
-        }
-        artifacts.put(ce, artifact);
+    private ProjectArtifacts(Artifact prototype, Map<CE, Path> artifacts) {
+        this.prototype = prototype;
+        this.artifacts = artifacts;
     }
 
     @Override
-    public List<Artifact> get() {
-        ArrayList<Artifact> result = new ArrayList<>(artifacts.size());
-        artifacts.forEach((ce, path) -> result.add(
-                new DefaultArtifact(groupId, artifactId, ce.classifier, ce.extension, version).setFile(path.toFile())));
-        return result;
+    public Stream<Artifact> get() {
+        return artifacts.entrySet().stream().map(e -> new DefaultArtifact(
+                        prototype.getGroupId(),
+                        prototype.getArtifactId(),
+                        e.getKey().classifier,
+                        e.getKey().extension,
+                        prototype.getVersion())
+                .setFile(e.getValue().toFile()));
     }
 
     private static final class CE {
@@ -103,6 +68,49 @@ public final class ProjectArtifacts implements Supplier<Collection<Artifact>> {
         @Override
         public int hashCode() {
             return Objects.hash(classifier, extension);
+        }
+    }
+
+    public static class Builder {
+        private final Artifact prototype;
+        private final Map<CE, Path> artifacts;
+
+        public Builder(String gav) {
+            this.prototype = new DefaultArtifact(gav);
+            this.artifacts = new HashMap<>();
+        }
+
+        public void addPom(Path artifact) {
+            addArtifact(null, "pom", artifact);
+        }
+
+        public void addMain(Path artifact) {
+            addArtifact(null, prototype.getExtension(), artifact);
+        }
+
+        public void addSources(Path artifact) {
+            addArtifact("sources", "jar", artifact);
+        }
+
+        public void addJavadoc(Path artifact) {
+            addArtifact("javadoc", "jar", artifact);
+        }
+
+        public void addArtifact(String classifier, String extension, Path artifact) {
+            requireNonNull(extension, "extension");
+            requireNonNull(artifact, "artifact");
+            if (!Files.exists(artifact) || Files.isDirectory(artifact)) {
+                throw new IllegalArgumentException("artifact backing file must exist and cannot be a directory");
+            }
+            CE ce = new CE(classifier, extension);
+            if (artifacts.containsKey(ce)) {
+                throw new IllegalArgumentException("artifact already present");
+            }
+            artifacts.put(ce, artifact);
+        }
+
+        public ProjectArtifacts build() {
+            return new ProjectArtifacts(prototype, artifacts);
         }
     }
 }

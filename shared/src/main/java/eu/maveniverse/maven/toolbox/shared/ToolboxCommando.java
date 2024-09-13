@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -47,10 +45,9 @@ public interface ToolboxCommando {
      * Gets or creates context. This method should be used to get instance that may be shared
      * across context (session).
      */
-    static ToolboxCommando create(Runtime runtime, Context context) {
-        requireNonNull(runtime, "runtime");
+    static ToolboxCommando create(Context context) {
         requireNonNull(context, "context");
-        return new ToolboxCommandoImpl(runtime, context);
+        return new ToolboxCommandoImpl(context);
     }
 
     default String getVersion() {
@@ -100,9 +97,14 @@ public interface ToolboxCommando {
     // Resolver related commands: they target current context contained RemoteRepository
 
     /**
-     * Provides {@link ArtifactSink} according to spec.
+     * Provides {@link Sink<Artifact>} according to spec.
      */
-    ArtifactSink artifactSink(Output output, String spec) throws IOException;
+    Sink<Artifact> artifactSink(Output output, String spec);
+
+    /**
+     * Provides {@link Sink<Dependency>} according to spec.
+     */
+    Sink<Dependency> dependencySink(Output output, String spec);
 
     /**
      * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact.
@@ -140,23 +142,22 @@ public interface ToolboxCommando {
 
     boolean classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output) throws Exception;
 
-    boolean copy(Collection<Artifact> artifacts, ArtifactSink sink, Output output) throws Exception;
+    boolean copy(Collection<Artifact> artifacts, Sink<Artifact> sink, Output output) throws Exception;
 
     boolean copyTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
-            ArtifactSink sink,
+            Sink<Artifact> sink,
             Output output)
             throws Exception;
 
-    boolean copyAllRecorded(ArtifactSink sink, boolean stopRecording, Output output) throws Exception;
+    boolean copyAllRecorded(Sink<Artifact> sink, boolean stopRecording, Output output) throws Exception;
 
-    boolean deploy(RemoteRepository remoteRepository, Supplier<Collection<Artifact>> artifactSupplier, Output output)
-            throws Exception;
+    boolean deploy(RemoteRepository remoteRepository, Source<Artifact> artifactSource, Output output) throws Exception;
 
     boolean deployAllRecorded(RemoteRepository remoteRepository, boolean stopRecording, Output output) throws Exception;
 
-    boolean install(Supplier<Collection<Artifact>> artifactSupplier, Output output) throws Exception;
+    boolean install(Source<Artifact> artifactSource, Output output) throws Exception;
 
     default boolean listRepositories(
             ResolutionScope resolutionScope, String context, ResolutionRoot resolutionRoot, Output output)
@@ -183,7 +184,7 @@ public interface ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
-            ArtifactSink sink,
+            Sink<Artifact> sink,
             Output output)
             throws Exception;
 
@@ -193,7 +194,7 @@ public interface ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
-            ArtifactSink sink,
+            Sink<Artifact> sink,
             Output output)
             throws Exception;
 

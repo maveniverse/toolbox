@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.plugin;
 
+import eu.maveniverse.maven.toolbox.shared.ProjectArtifacts;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -46,5 +48,20 @@ public abstract class GavMojoSupport extends MojoSupport {
             // ignore
         }
         return csv(csv);
+    }
+
+    protected ProjectArtifacts projectArtifacts(String gav, File jar, File pom, File sources, File javadoc) {
+        ProjectArtifacts.Builder builder = new ProjectArtifacts.Builder(gav);
+        builder.addMain(jar.toPath());
+        if (pom != null) {
+            builder.addPom(pom.toPath());
+        }
+        if (sources != null) {
+            builder.addSources(sources.toPath());
+        }
+        if (javadoc != null) {
+            builder.addJavadoc(javadoc.toPath());
+        }
+        return builder.build();
     }
 }

@@ -9,7 +9,6 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import java.util.Collection;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -22,7 +21,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 /**
  * Construction to accept collection of artifacts and deploy them into given remote repository.
  */
-public final class DeployingSink implements ArtifactSink {
+public final class DeployingSink implements Artifacts.Sink {
     /**
      * Creates installing sink that installs into passed in session local repository.
      */

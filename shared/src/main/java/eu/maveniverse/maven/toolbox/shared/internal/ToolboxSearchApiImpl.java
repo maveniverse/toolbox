@@ -11,9 +11,7 @@ import static org.apache.maven.search.api.request.BooleanQuery.and;
 import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 
 import eu.maveniverse.maven.mima.context.ContextOverrides;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -170,53 +168,6 @@ public class ToolboxSearchApiImpl {
                     .setProperties(properties));
         }
         return result;
-    }
-
-    public void renderPage(List<Record> page, Predicate<String> versionPredicate, Output output) {
-        for (Record record : page) {
-            final String version = record.getValue(MAVEN.VERSION);
-            if (version != null && versionPredicate != null && !versionPredicate.test(version)) {
-                continue;
-            }
-            StringBuilder sb = new StringBuilder();
-            sb.append(record.getValue(MAVEN.GROUP_ID));
-            if (record.hasField(MAVEN.ARTIFACT_ID)) {
-                sb.append(":").append(record.getValue(MAVEN.ARTIFACT_ID));
-            }
-            if (record.hasField(MAVEN.PACKAGING)) {
-                if (record.hasField(MAVEN.CLASSIFIER)) {
-                    sb.append(":").append(record.getValue(MAVEN.CLASSIFIER));
-                }
-                sb.append(":").append(record.getValue(MAVEN.PACKAGING));
-            } else if (record.hasField(MAVEN.FILE_EXTENSION)) {
-                if (record.hasField(MAVEN.CLASSIFIER)) {
-                    sb.append(":").append(record.getValue(MAVEN.CLASSIFIER));
-                }
-                sb.append(":").append(record.getValue(MAVEN.FILE_EXTENSION));
-            }
-            if (record.hasField(MAVEN.VERSION)) {
-                sb.append(":").append(record.getValue(MAVEN.VERSION));
-            }
-
-            List<String> remarks = new ArrayList<>();
-            if (record.getLastUpdated() != null) {
-                remarks.add("lastUpdate=" + Instant.ofEpochMilli(record.getLastUpdated()));
-            }
-            if (record.hasField(MAVEN.VERSION_COUNT)) {
-                remarks.add("versionCount=" + record.getValue(MAVEN.VERSION_COUNT));
-            }
-            if (record.hasField(MAVEN.HAS_SOURCE)) {
-                remarks.add("hasSource=" + record.getValue(MAVEN.HAS_SOURCE));
-            }
-            if (record.hasField(MAVEN.HAS_JAVADOC)) {
-                remarks.add("hasJavadoc=" + record.getValue(MAVEN.HAS_JAVADOC));
-            }
-
-            output.normal(sb.toString());
-            if (output.isVerbose() && !remarks.isEmpty()) {
-                output.verbose("   " + remarks);
-            }
-        }
     }
 
     public boolean exists(SearchBackend backend, Artifact artifact) throws IOException {

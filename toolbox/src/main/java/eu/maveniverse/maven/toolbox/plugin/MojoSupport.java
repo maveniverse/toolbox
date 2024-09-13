@@ -217,10 +217,6 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         return ContextOverrides.create().build();
     }
 
-    protected Runtime getRuntime() {
-        return get(Runtime.class);
-    }
-
     protected Context getContext() {
         return get(Context.class);
     }
@@ -230,7 +226,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     }
 
     protected ToolboxCommando getToolboxCommando() {
-        return getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getRuntime(), getContext()));
+        return getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getContext()));
     }
 
     private void verbose(String format, Object... args) {

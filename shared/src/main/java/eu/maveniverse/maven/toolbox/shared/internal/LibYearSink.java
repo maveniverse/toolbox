@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -44,7 +43,7 @@ import org.eclipse.aether.version.Version;
  *
  * @see <a href="https://libyear.com/">libyear</a>
  */
-public final class LibYearSink implements ArtifactSink {
+public final class LibYearSink implements Artifacts.Sink {
     public static final class LibYear {
         public final String currentVersion;
         public final Instant currentVersionInstant;
@@ -289,7 +288,7 @@ public final class LibYearSink implements ArtifactSink {
             SearchRequest searchRequest = new SearchRequest(toolboxSearchApi.toRrQuery(artifact));
             SearchResponse searchResponse = backend.search(searchRequest);
             if (searchResponse.getCurrentHits() > 0) {
-                Long lastUpdated = searchResponse.getPage().iterator().next().getLastUpdated();
+                Long lastUpdated = searchResponse.getPage().getFirst().getLastUpdated();
                 if (lastUpdated != null) {
                     return Instant.ofEpochMilli(lastUpdated);
                 }

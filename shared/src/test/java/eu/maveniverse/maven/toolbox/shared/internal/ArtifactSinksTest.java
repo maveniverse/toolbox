@@ -14,9 +14,10 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
+import eu.maveniverse.maven.toolbox.shared.Sink;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.junit.jupiter.api.Test;
 
@@ -27,11 +28,11 @@ public class ArtifactSinksTest {
         try (Context context = runtime.create(ContextOverrides.create()
                 .withBasedirOverride(Paths.get("target").toAbsolutePath())
                 .build())) {
-            ToolboxCommandoImpl tc = new ToolboxCommandoImpl(runtime, context);
+            ToolboxCommandoImpl tc = new ToolboxCommandoImpl(context);
 
             HashMap<String, Object> properties = new HashMap<>();
             properties.put("groupId", "org.some.group");
-            ArtifactSink artifactSink;
+            Sink<Artifact> artifactSink;
 
             artifactSink = ArtifactSinks.build(properties, tc, "null()");
             assertInstanceOf(ArtifactSinks.NullArtifactSink.class, artifactSink);

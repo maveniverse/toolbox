@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -18,7 +17,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 /**
  * Artifact recorder.
  */
-public interface ArtifactRecorder extends ArtifactSource {
+public interface ArtifactRecorder extends Source<Artifact> {
     /**
      * The "sentinel" remote repository that recorder assigns when there is no remote repository available. This
      * means that artifact was either installed locally. To check for "sentinel" remote repository use instance
@@ -55,12 +54,5 @@ public interface ArtifactRecorder extends ArtifactSource {
     @Override
     default Stream<Artifact> get() {
         return getRecordedArtifacts().values().stream().flatMap(Collection::stream);
-    }
-
-    @Override
-    default List<Artifact> getAllArtifacts() {
-        try (Stream<Artifact> stream = get()) {
-            return stream.collect(Collectors.toList());
-        }
     }
 }

@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,7 +39,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Construction to accept collection of artifacts and unpack them.
  */
-public final class UnpackSink implements ArtifactSink {
+public final class UnpackSink implements Artifacts.Sink {
     /**
      * Creates plain unpack sink where unpacking happens according to supplied parameters.
      *

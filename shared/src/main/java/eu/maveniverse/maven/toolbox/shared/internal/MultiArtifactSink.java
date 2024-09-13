@@ -9,7 +9,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
+import eu.maveniverse.maven.toolbox.shared.Sink;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,9 +21,9 @@ import org.eclipse.aether.artifact.Artifact;
 /**
  * Construction to accept collection of artifacts and differentiate the into separate "lanes", or sinks.
  */
-public final class MultiArtifactSink implements ArtifactSink {
+public final class MultiArtifactSink implements Artifacts.Sink {
     public static final class MultiArtifactSinkBuilder {
-        private final LinkedHashMap<Predicate<Artifact>, ArtifactSink> sinks;
+        private final LinkedHashMap<Predicate<Artifact>, Sink<Artifact>> sinks;
         private boolean missedArtifactFails = true;
 
         private MultiArtifactSinkBuilder() {
@@ -35,7 +35,7 @@ public final class MultiArtifactSink implements ArtifactSink {
             return this;
         }
 
-        public MultiArtifactSinkBuilder addSink(Predicate<Artifact> artifactMatcher, ArtifactSink sink) {
+        public MultiArtifactSinkBuilder addSink(Predicate<Artifact> artifactMatcher, Sink<Artifact> sink) {
             requireNonNull(artifactMatcher, "artifactMatcher");
             requireNonNull(sink, "sink");
             sinks.put(artifactMatcher, sink);
@@ -54,10 +54,10 @@ public final class MultiArtifactSink implements ArtifactSink {
         return new MultiArtifactSinkBuilder();
     }
 
-    private final Map<Predicate<Artifact>, ArtifactSink> sinks;
+    private final Map<Predicate<Artifact>, Sink<Artifact>> sinks;
     private final boolean missedArtifactFails;
 
-    private MultiArtifactSink(LinkedHashMap<Predicate<Artifact>, ArtifactSink> sinks, boolean missedArtifactFails) {
+    private MultiArtifactSink(LinkedHashMap<Predicate<Artifact>, Sink<Artifact>> sinks, boolean missedArtifactFails) {
         this.sinks = Collections.unmodifiableMap(sinks);
         this.missedArtifactFails = missedArtifactFails;
     }
@@ -65,7 +65,7 @@ public final class MultiArtifactSink implements ArtifactSink {
     @Override
     public void accept(Artifact artifact) throws IOException {
         boolean processed = false;
-        for (Map.Entry<Predicate<Artifact>, ArtifactSink> sink : sinks.entrySet()) {
+        for (Map.Entry<Predicate<Artifact>, Sink<Artifact>> sink : sinks.entrySet()) {
             if (sink.getKey().test(artifact)) {
                 sink.getValue().accept(artifact);
                 processed = true;
@@ -85,7 +85,7 @@ public final class MultiArtifactSink implements ArtifactSink {
     @Override
     public void close() throws Exception {
         ArrayList<Exception> exceptions = new ArrayList<>();
-        for (ArtifactSink sink : sinks.values()) {
+        for (Sink<Artifact> sink : sinks.values()) {
             try {
                 sink.close();
             } catch (Exception e) {

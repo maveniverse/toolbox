@@ -7,7 +7,6 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -30,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Sink that extracts module descriptors from artifacts.
  */
-public final class ModuleDescriptorExtractingSink implements ArtifactSink, DependencyVisitor {
+public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, DependencyVisitor {
     public interface ModuleDescriptor {
         String name();
 

@@ -13,8 +13,8 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
-import eu.maveniverse.maven.toolbox.shared.ArtifactSink;
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.Sink;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -39,7 +39,7 @@ import org.eclipse.aether.repository.LocalRepositoryManager;
 public final class ArtifactSinks {
     private ArtifactSinks() {}
 
-    public static ArtifactSink build(Map<String, ?> properties, ToolboxCommandoImpl tc, String spec) {
+    public static Artifacts.Sink build(Map<String, ?> properties, ToolboxCommandoImpl tc, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(tc, "tc");
         requireNonNull(spec, "spec");
@@ -81,11 +81,11 @@ public final class ArtifactSinks {
                     break;
                 }
                 case "tee": {
-                    params.add(teeArtifactSink(typedParams(ArtifactSink.class, node.getValue())));
+                    params.add(teeArtifactSink(typedParams(Artifacts.Sink.class, node.getValue())));
                     break;
                 }
                 case "nonClosing": {
-                    params.add(nonClosingArtifactSink(typedParam(ArtifactSink.class, node.getValue())));
+                    params.add(nonClosingArtifactSink(typedParam(Artifacts.Sink.class, node.getValue())));
                     break;
                 }
                 case "flat": {
@@ -97,14 +97,12 @@ public final class ArtifactSinks {
                                     new ArtifactNameMapper.ArtifactNameMapperBuilder(properties);
                             node.getChildren().get(1).accept(mapperBuilder);
                             p1 = mapperBuilder.build();
-                            p0 = tc.getContext()
-                                    .basedir()
-                                    .resolve(node.getChildren().get(0).getValue());
+                            p0 = tc.basedir()
+                                    .resolve(node.getChildren().getFirst().getValue());
                         } else if (node.getChildren().size() == 1) {
                             p1 = ArtifactNameMapper.AbVCE();
-                            p0 = tc.getContext()
-                                    .basedir()
-                                    .resolve(node.getChildren().get(0).getValue());
+                            p0 = tc.basedir()
+                                    .resolve(node.getChildren().getFirst().getValue());
                         } else {
                             throw new IllegalArgumentException("op flat accepts only 1..2 argument");
                         }
@@ -117,7 +115,7 @@ public final class ArtifactSinks {
                 }
                 case "repository": {
                     try {
-                        Path p0 = tc.getContext().basedir().resolve(stringParam(node.getValue()));
+                        Path p0 = tc.basedir().resolve(stringParam(node.getValue()));
                         params.add(DirectorySink.repository(p0));
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
@@ -126,22 +124,16 @@ public final class ArtifactSinks {
                 }
                 case "install": {
                     if (node.getChildren().isEmpty()) {
-                        params.add(InstallingSink.installing(
-                                tc.getToolboxResolver().getRepositorySystem(),
-                                tc.getToolboxResolver().getSession()));
+                        params.add(InstallingSink.installing(tc.repositorySystem(), tc.session()));
                     } else if (node.getChildren().size() == 1) {
                         String p0 = stringParam(node.getValue());
-                        Path altLocalRepository = tc.getContext().basedir().resolve(p0);
+                        Path altLocalRepository = tc.basedir().resolve(p0);
                         LocalRepository localRepository = new LocalRepository(altLocalRepository.toFile());
-                        LocalRepositoryManager lrm = tc.getToolboxResolver()
-                                .getRepositorySystem()
-                                .newLocalRepositoryManager(
-                                        tc.getToolboxResolver().getSession(), localRepository);
-                        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(
-                                tc.getToolboxResolver().getSession());
+                        LocalRepositoryManager lrm =
+                                tc.repositorySystem().newLocalRepositoryManager(tc.session(), localRepository);
+                        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(tc.session());
                         session.setLocalRepositoryManager(lrm);
-                        params.add(InstallingSink.installing(
-                                tc.getToolboxResolver().getRepositorySystem(), session));
+                        params.add(InstallingSink.installing(tc.repositorySystem(), session));
                     } else {
                         throw new IllegalArgumentException("op install accepts only 0..1 argument");
                     }
@@ -149,35 +141,33 @@ public final class ArtifactSinks {
                 }
                 case "deploy": {
                     params.add(DeployingSink.deploying(
-                            tc.getToolboxResolver().getRepositorySystem(),
-                            tc.getToolboxResolver().getSession(),
+                            tc.repositorySystem(),
+                            tc.session(),
                             tc.parseRemoteRepository(stringParam(node.getValue()))));
                     break;
                 }
                 case "purge": {
                     params.add(PurgingSink.purging(
-                            tc.getToolboxResolver().getRepositorySystem(),
-                            tc.getToolboxResolver().getSession(),
+                            tc.repositorySystem(),
+                            tc.session(),
                             stringParams(node.getValue()).stream()
-                                    .map(tc.getToolboxResolver()::parseRemoteRepository)
+                                    .map(tc::parseRemoteRepository)
                                     .collect(Collectors.toList())));
                     break;
                 }
                 case "unpack": {
                     try {
                         if (node.getChildren().size() == 1) {
-                            Path p0 = tc.getContext()
-                                    .basedir()
-                                    .resolve(node.getChildren().get(0).getValue());
+                            Path p0 = tc.basedir()
+                                    .resolve(node.getChildren().getFirst().getValue());
                             params.add(UnpackSink.unpack(p0, ArtifactNameMapper.ACVE(), true));
                         } else if (node.getChildren().size() == 2) {
                             ArtifactNameMapper.ArtifactNameMapperBuilder mapperBuilder =
                                     new ArtifactNameMapper.ArtifactNameMapperBuilder(properties);
                             node.getChildren().get(1).accept(mapperBuilder);
                             ArtifactNameMapper p1 = mapperBuilder.build();
-                            Path p0 = tc.getContext()
-                                    .basedir()
-                                    .resolve(node.getChildren().get(0).getValue());
+                            Path p0 = tc.basedir()
+                                    .resolve(node.getChildren().getFirst().getValue());
                             params.add(UnpackSink.unpack(p0, p1, true));
                         } else {
                             throw new IllegalArgumentException("op unpack accepts only 1..2 argument");
@@ -194,11 +184,11 @@ public final class ArtifactSinks {
                     }
                     ArtifactMatcher.ArtifactMatcherBuilder matcherBuilder =
                             new ArtifactMatcher.ArtifactMatcherBuilder(properties);
-                    node.getChildren().get(0).accept(matcherBuilder);
+                    node.getChildren().getFirst().accept(matcherBuilder);
                     ArtifactMatcher matcher = matcherBuilder.build();
                     ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);
-                    ArtifactSink delegate = sinkBuilder.build();
+                    Artifacts.Sink delegate = sinkBuilder.build();
                     params.add(matchingArtifactSink(matcher, delegate));
                     node.getChildren().clear();
                     break;
@@ -209,11 +199,11 @@ public final class ArtifactSinks {
                     }
                     ArtifactMapper.ArtifactMapperBuilder mapperBuilder =
                             new ArtifactMapper.ArtifactMapperBuilder(properties);
-                    node.getChildren().get(0).accept(mapperBuilder);
+                    node.getChildren().getFirst().accept(mapperBuilder);
                     ArtifactMapper mapper = mapperBuilder.build();
                     ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);
-                    ArtifactSink delegate = sinkBuilder.build();
+                    Artifacts.Sink delegate = sinkBuilder.build();
                     params.add(mappingArtifactSink(mapper, delegate));
                     node.getChildren().clear();
                     break;
@@ -227,8 +217,8 @@ public final class ArtifactSinks {
             }
         }
 
-        public ArtifactSink build() {
-            return build(ArtifactSink.class);
+        public Artifacts.Sink build() {
+            return build(Artifacts.Sink.class);
         }
     }
 
@@ -239,7 +229,7 @@ public final class ArtifactSinks {
         return new NullArtifactSink();
     }
 
-    public static class NullArtifactSink implements ArtifactSink {
+    public static class NullArtifactSink implements Artifacts.Sink {
         private NullArtifactSink() {}
 
         @Override
@@ -249,10 +239,10 @@ public final class ArtifactSinks {
         public void accept(Artifact artifact) {}
     }
 
-    public abstract static class DelegatingArtifactSink implements ArtifactSink {
-        private final ArtifactSink delegate;
+    public abstract static class DelegatingArtifactSink implements Artifacts.Sink {
+        private final Sink<Artifact> delegate;
 
-        public DelegatingArtifactSink(final ArtifactSink delegate) {
+        public DelegatingArtifactSink(final Sink<Artifact> delegate) {
             this.delegate = requireNonNull(delegate, "delegate");
         }
 
@@ -278,13 +268,13 @@ public final class ArtifactSinks {
     /**
      * Creates a delegating sink that prevents closing delegate.
      */
-    public static NonClosingArtifactSink nonClosingArtifactSink(ArtifactSink delegate) {
+    public static NonClosingArtifactSink nonClosingArtifactSink(Sink<Artifact> delegate) {
         requireNonNull(delegate, "delegate");
         return new NonClosingArtifactSink(delegate);
     }
 
     public static class NonClosingArtifactSink extends DelegatingArtifactSink {
-        private NonClosingArtifactSink(ArtifactSink delegate) {
+        private NonClosingArtifactSink(Sink<Artifact> delegate) {
             super(delegate);
         }
 
@@ -298,7 +288,7 @@ public final class ArtifactSinks {
      * Creates a delegating sink that delegates calls only with matched artifacts.
      */
     public static MatchingArtifactSink matchingArtifactSink(
-            Predicate<Artifact> artifactMatcher, ArtifactSink delegate) {
+            Predicate<Artifact> artifactMatcher, Sink<Artifact> delegate) {
         requireNonNull(artifactMatcher, "artifactMatcher");
         requireNonNull(delegate, "delegate");
         return new MatchingArtifactSink(artifactMatcher, delegate);
@@ -307,7 +297,7 @@ public final class ArtifactSinks {
     public static class MatchingArtifactSink extends DelegatingArtifactSink {
         private final Predicate<Artifact> artifactMatcher;
 
-        private MatchingArtifactSink(Predicate<Artifact> artifactMatcher, ArtifactSink delegate) {
+        private MatchingArtifactSink(Predicate<Artifact> artifactMatcher, Sink<Artifact> delegate) {
             super(delegate);
             this.artifactMatcher = artifactMatcher;
         }
@@ -329,7 +319,7 @@ public final class ArtifactSinks {
      * Creates a delegating sink that delegates calls with mapped artifacts.
      */
     public static MappingArtifactSink mappingArtifactSink(
-            Function<Artifact, Artifact> artifactMapper, ArtifactSink delegate) {
+            Function<Artifact, Artifact> artifactMapper, Sink<Artifact> delegate) {
         requireNonNull(artifactMapper, "artifactMapper");
         requireNonNull(delegate, "delegate");
         return new MappingArtifactSink(artifactMapper, delegate);
@@ -338,7 +328,7 @@ public final class ArtifactSinks {
     public static class MappingArtifactSink extends DelegatingArtifactSink {
         private final Function<Artifact, Artifact> artifactMapper;
 
-        private MappingArtifactSink(Function<Artifact, Artifact> artifactMapper, ArtifactSink delegate) {
+        private MappingArtifactSink(Function<Artifact, Artifact> artifactMapper, Sink<Artifact> delegate) {
             super(delegate);
             this.artifactMapper = artifactMapper;
         }
@@ -361,7 +351,7 @@ public final class ArtifactSinks {
         return new CountingArtifactSink();
     }
 
-    public static class CountingArtifactSink implements ArtifactSink {
+    public static class CountingArtifactSink implements Artifacts.Sink {
         private final LongAdder counter;
 
         private CountingArtifactSink() {
@@ -385,7 +375,7 @@ public final class ArtifactSinks {
         return new SizingArtifactSink();
     }
 
-    public static class SizingArtifactSink implements ArtifactSink {
+    public static class SizingArtifactSink implements Artifacts.Sink {
         private final LongAdder size;
 
         private SizingArtifactSink() {
@@ -408,49 +398,50 @@ public final class ArtifactSinks {
     /**
      * Creates a "tee" artifact sink out of supplied sinks.
      */
-    public static TeeArtifactSink teeArtifactSink(ArtifactSink... artifactSinks) {
+    @SafeVarargs
+    public static TeeArtifactSink teeArtifactSink(Sink<Artifact>... artifactSinks) {
         return teeArtifactSink(Arrays.asList(artifactSinks));
     }
 
     /**
      * Creates a "tee" artifact sink out of supplied sinks.
      */
-    public static TeeArtifactSink teeArtifactSink(Collection<? extends ArtifactSink> artifactSinks) {
+    public static TeeArtifactSink teeArtifactSink(Collection<? extends Sink<Artifact>> artifactSinks) {
         requireNonNull(artifactSinks, "artifactSinks");
         return new TeeArtifactSink(artifactSinks);
     }
 
-    public static class TeeArtifactSink implements ArtifactSink {
-        private final Collection<ArtifactSink> artifactSinks;
+    public static class TeeArtifactSink implements Artifacts.Sink {
+        private final Collection<Sink<Artifact>> artifactSinks;
 
-        private TeeArtifactSink(Collection<? extends ArtifactSink> artifactSinks) {
+        private TeeArtifactSink(Collection<? extends Sink<Artifact>> artifactSinks) {
             this.artifactSinks = Collections.unmodifiableCollection(new ArrayList<>(artifactSinks));
         }
 
         @Override
         public void accept(Collection<Artifact> artifacts) throws IOException {
-            for (ArtifactSink sink : artifactSinks) {
+            for (Sink<Artifact> sink : artifactSinks) {
                 sink.accept(artifacts);
             }
         }
 
         @Override
         public void accept(Artifact artifact) throws IOException {
-            for (ArtifactSink sink : artifactSinks) {
+            for (Sink<Artifact> sink : artifactSinks) {
                 sink.accept(artifact);
             }
         }
 
         @Override
         public void cleanup(Exception e) {
-            for (ArtifactSink sink : artifactSinks) {
+            for (Sink<Artifact> sink : artifactSinks) {
                 sink.cleanup(e);
             }
         }
 
         @Override
         public void close() throws Exception {
-            for (ArtifactSink sink : artifactSinks) {
+            for (Sink<Artifact> sink : artifactSinks) {
                 sink.close();
             }
         }
@@ -463,7 +454,7 @@ public final class ArtifactSinks {
         return new StatArtifactSink(level, moduleDescriptor, output);
     }
 
-    public static class StatArtifactSink implements ArtifactSink {
+    public static class StatArtifactSink implements Artifacts.Sink {
         private final int level;
         private final Output output;
         private final CountingArtifactSink countingArtifactSink = new CountingArtifactSink();

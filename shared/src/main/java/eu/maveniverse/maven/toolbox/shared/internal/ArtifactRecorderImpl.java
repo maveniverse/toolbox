@@ -20,7 +20,7 @@ import org.eclipse.aether.RepositoryEvent;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
 
-public class ArtifactRecorderImpl extends AbstractRepositoryListener implements ArtifactRecorder {
+public class ArtifactRecorderImpl extends AbstractRepositoryListener implements Artifacts.Source, ArtifactRecorder {
     private final ConcurrentHashMap<RemoteRepository, List<Artifact>> recordedArtifacts;
     private final AtomicBoolean active;
 

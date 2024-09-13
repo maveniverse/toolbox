@@ -21,7 +21,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 /**
  * Construction to accept collection of artifacts and deploy them into given remote repository.
  */
-public final class DeployingSink extends ArtifactSink {
+public final class DeployingSink implements Artifacts.Sink {
     /**
      * Creates installing sink that installs into passed in session local repository.
      */

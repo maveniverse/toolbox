@@ -23,7 +23,7 @@ import org.eclipse.aether.artifact.Artifact;
 /**
  * Construction to accept collection of artifacts, for example like a filesystem directory.
  */
-public final class DirectorySink extends ArtifactSink {
+public final class DirectorySink implements Artifacts.Sink {
     /**
      * Creates plain "flat" directory sink, that accepts all artifacts and copies them out having filenames according
      * to supplied {@link ArtifactNameMapper} and prevents overwrite (what you usually want).

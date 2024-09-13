@@ -25,7 +25,7 @@ import org.eclipse.aether.repository.LocalRepository;
  * onto your "real" local repository, as it can lead to unexpected results. Installed artifacts with this sink will
  * appear as "locally built" ones, as "install" operation means exactly that: install built artifacts.
  */
-public final class InstallingSink extends ArtifactSink {
+public final class InstallingSink implements Artifacts.Sink {
     /**
      * Creates installing sink that installs into passed in session local repository.
      */

@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Sink that extracts module descriptors from artifacts.
  */
-public final class ModuleDescriptorExtractingSink extends ArtifactSink implements DependencyVisitor {
+public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, DependencyVisitor {
     public interface ModuleDescriptor {
         String name();
 

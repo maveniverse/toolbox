@@ -34,7 +34,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 /**
  * Construction to accept collection of artifacts and purge them from local repository.
  */
-public final class PurgingSink extends ArtifactSink {
+public final class PurgingSink implements Artifacts.Sink {
     /**
      * Creates purging sink treats artifacts as "whole", purges whole GAVs from passed in session local repository.
      * Artifacts this sink accepts MUST NOT BE resolved from the same local repository this purging sink is about to

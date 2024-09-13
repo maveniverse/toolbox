@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Construction to accept collection of artifacts and unpack them.
  */
-public final class UnpackSink extends ArtifactSink {
+public final class UnpackSink implements Artifacts.Sink {
     /**
      * Creates plain unpack sink where unpacking happens according to supplied parameters.
      *

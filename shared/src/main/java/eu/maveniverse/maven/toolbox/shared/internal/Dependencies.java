@@ -7,10 +7,15 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
-import eu.maveniverse.maven.toolbox.shared.Sink;
-import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.graph.Dependency;
 
 /**
- * Artifact sink.
+ * Dependencies.
  */
-public abstract class ArtifactSink implements Sink<Artifact> {}
+public final class Dependencies {
+    private Dependencies() {}
+
+    public interface Sink extends eu.maveniverse.maven.toolbox.shared.Sink<Dependency> {}
+
+    public interface Source extends eu.maveniverse.maven.toolbox.shared.Source<Dependency> {}
+}

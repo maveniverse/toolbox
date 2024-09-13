@@ -39,7 +39,7 @@ import org.eclipse.aether.repository.LocalRepositoryManager;
 public final class ArtifactSinks {
     private ArtifactSinks() {}
 
-    public static ArtifactSink build(Map<String, ?> properties, ToolboxCommandoImpl tc, String spec) {
+    public static Artifacts.Sink build(Map<String, ?> properties, ToolboxCommandoImpl tc, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(tc, "tc");
         requireNonNull(spec, "spec");
@@ -81,11 +81,11 @@ public final class ArtifactSinks {
                     break;
                 }
                 case "tee": {
-                    params.add(teeArtifactSink(typedParams(ArtifactSink.class, node.getValue())));
+                    params.add(teeArtifactSink(typedParams(Artifacts.Sink.class, node.getValue())));
                     break;
                 }
                 case "nonClosing": {
-                    params.add(nonClosingArtifactSink(typedParam(ArtifactSink.class, node.getValue())));
+                    params.add(nonClosingArtifactSink(typedParam(Artifacts.Sink.class, node.getValue())));
                     break;
                 }
                 case "flat": {
@@ -188,7 +188,7 @@ public final class ArtifactSinks {
                     ArtifactMatcher matcher = matcherBuilder.build();
                     ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);
-                    ArtifactSink delegate = sinkBuilder.build();
+                    Artifacts.Sink delegate = sinkBuilder.build();
                     params.add(matchingArtifactSink(matcher, delegate));
                     node.getChildren().clear();
                     break;
@@ -203,7 +203,7 @@ public final class ArtifactSinks {
                     ArtifactMapper mapper = mapperBuilder.build();
                     ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);
-                    ArtifactSink delegate = sinkBuilder.build();
+                    Artifacts.Sink delegate = sinkBuilder.build();
                     params.add(mappingArtifactSink(mapper, delegate));
                     node.getChildren().clear();
                     break;
@@ -217,8 +217,8 @@ public final class ArtifactSinks {
             }
         }
 
-        public ArtifactSink build() {
-            return build(ArtifactSink.class);
+        public Artifacts.Sink build() {
+            return build(Artifacts.Sink.class);
         }
     }
 
@@ -229,7 +229,7 @@ public final class ArtifactSinks {
         return new NullArtifactSink();
     }
 
-    public static class NullArtifactSink extends ArtifactSink {
+    public static class NullArtifactSink implements Artifacts.Sink {
         private NullArtifactSink() {}
 
         @Override
@@ -239,7 +239,7 @@ public final class ArtifactSinks {
         public void accept(Artifact artifact) {}
     }
 
-    public abstract static class DelegatingArtifactSink extends ArtifactSink {
+    public abstract static class DelegatingArtifactSink implements Artifacts.Sink {
         private final Sink<Artifact> delegate;
 
         public DelegatingArtifactSink(final Sink<Artifact> delegate) {
@@ -351,7 +351,7 @@ public final class ArtifactSinks {
         return new CountingArtifactSink();
     }
 
-    public static class CountingArtifactSink extends ArtifactSink {
+    public static class CountingArtifactSink implements Artifacts.Sink {
         private final LongAdder counter;
 
         private CountingArtifactSink() {
@@ -375,7 +375,7 @@ public final class ArtifactSinks {
         return new SizingArtifactSink();
     }
 
-    public static class SizingArtifactSink extends ArtifactSink {
+    public static class SizingArtifactSink implements Artifacts.Sink {
         private final LongAdder size;
 
         private SizingArtifactSink() {
@@ -411,7 +411,7 @@ public final class ArtifactSinks {
         return new TeeArtifactSink(artifactSinks);
     }
 
-    public static class TeeArtifactSink extends ArtifactSink {
+    public static class TeeArtifactSink implements Artifacts.Sink {
         private final Collection<Sink<Artifact>> artifactSinks;
 
         private TeeArtifactSink(Collection<? extends Sink<Artifact>> artifactSinks) {
@@ -454,7 +454,7 @@ public final class ArtifactSinks {
         return new StatArtifactSink(level, moduleDescriptor, output);
     }
 
-    public static class StatArtifactSink extends ArtifactSink {
+    public static class StatArtifactSink implements Artifacts.Sink {
         private final int level;
         private final Output output;
         private final CountingArtifactSink countingArtifactSink = new CountingArtifactSink();

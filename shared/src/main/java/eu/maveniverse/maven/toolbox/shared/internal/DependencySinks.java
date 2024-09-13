@@ -30,7 +30,7 @@ import org.eclipse.aether.graph.Dependency;
 public final class DependencySinks {
     private DependencySinks() {}
 
-    public static DependencySink build(Map<String, ?> properties, ToolboxCommandoImpl tc, String spec) {
+    public static Dependencies.Sink build(Map<String, ?> properties, ToolboxCommandoImpl tc, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(tc, "tc");
         requireNonNull(spec, "spec");
@@ -64,11 +64,11 @@ public final class DependencySinks {
                     break;
                 }
                 case "tee": {
-                    params.add(teeDependencySink(typedParams(DependencySink.class, node.getValue())));
+                    params.add(teeDependencySink(typedParams(Dependencies.Sink.class, node.getValue())));
                     break;
                 }
                 case "nonClosing": {
-                    params.add(nonClosingDependencySink(typedParam(DependencySink.class, node.getValue())));
+                    params.add(nonClosingDependencySink(typedParam(Dependencies.Sink.class, node.getValue())));
                     break;
                 }
                 case "matching": {
@@ -81,7 +81,7 @@ public final class DependencySinks {
                     DependencyMatcher matcher = matcherBuilder.build();
                     DependencySinkBuilder sinkBuilder = new DependencySinkBuilder(properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);
-                    DependencySink delegate = sinkBuilder.build();
+                    Dependencies.Sink delegate = sinkBuilder.build();
                     params.add(matchingDependencySink(matcher, delegate));
                     node.getChildren().clear();
                     break;
@@ -96,7 +96,7 @@ public final class DependencySinks {
                     DependencyMapper mapper = mapperBuilder.build();
                     DependencySinkBuilder sinkBuilder = new DependencySinkBuilder(properties, tc);
                     node.getChildren().get(1).accept(sinkBuilder);
-                    DependencySink delegate = sinkBuilder.build();
+                    Dependencies.Sink delegate = sinkBuilder.build();
                     params.add(mappingDependencySink(mapper, delegate));
                     node.getChildren().clear();
                     break;
@@ -106,8 +106,8 @@ public final class DependencySinks {
             }
         }
 
-        public DependencySink build() {
-            return build(DependencySink.class);
+        public Dependencies.Sink build() {
+            return build(Dependencies.Sink.class);
         }
     }
 
@@ -118,7 +118,7 @@ public final class DependencySinks {
         return new NullDependencySink();
     }
 
-    public static class NullDependencySink extends DependencySink {
+    public static class NullDependencySink implements Dependencies.Sink {
         private NullDependencySink() {}
 
         @Override
@@ -132,7 +132,7 @@ public final class DependencySinks {
         return new DelegatingDependencySink(delegate);
     }
 
-    public static class DelegatingDependencySink extends DependencySink {
+    public static class DelegatingDependencySink implements Dependencies.Sink {
         private final Sink<Dependency> delegate;
 
         private DelegatingDependencySink(Sink<Dependency> delegate) {
@@ -242,7 +242,7 @@ public final class DependencySinks {
         return new CountingDependencySink();
     }
 
-    public static class CountingDependencySink extends DependencySink {
+    public static class CountingDependencySink implements Dependencies.Sink {
         private final LongAdder counter;
 
         private CountingDependencySink() {
@@ -275,7 +275,7 @@ public final class DependencySinks {
         return new TeeDependencySink(dependencySinks);
     }
 
-    public static class TeeDependencySink extends DependencySink {
+    public static class TeeDependencySink implements Dependencies.Sink {
         private final Collection<Sink<Dependency>> dependencySinks;
 
         private TeeDependencySink(Collection<? extends Sink<Dependency>> artifactSinks) {

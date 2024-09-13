@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.toolbox.shared.internal.Artifacts;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -23,7 +24,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
  * <p>
  * Warning: this abstraction uses extension and not packaging, as this one does not create POM, it is caller obligation.
  */
-public final class ProjectArtifacts implements Source<Artifact> {
+public final class ProjectArtifacts implements Artifacts.Source {
     private final Artifact prototype;
     private final Map<CE, Path> artifacts;
 

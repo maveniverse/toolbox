@@ -8,13 +8,13 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.graph.Dependency;
-import org.slf4j.Logger;
 
 /**
  * Displays dependency management list of Maven Project.
@@ -28,7 +28,7 @@ public class DmListMojo extends MPMojoSupport {
     private boolean verboseList;
 
     @Override
-    protected Result<List<Dependency>> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<List<Dependency>> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.dmList(projectAsResolutionRoot(), verboseList, output);
     }
 }

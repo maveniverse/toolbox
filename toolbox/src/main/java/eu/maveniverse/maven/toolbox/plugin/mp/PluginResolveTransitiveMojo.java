@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
@@ -18,7 +19,6 @@ import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
-import org.slf4j.Logger;
 
 /**
  * Resolves transitively given project build plugin.
@@ -56,7 +56,7 @@ public class PluginResolveTransitiveMojo extends MPPluginMojoSupport {
     private String sinkSpec;
 
     @Override
-    protected Result<List<Artifact>> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<List<Artifact>> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         Collection<ResolutionRoot> roots;
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
         if (root != null) {

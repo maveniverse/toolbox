@@ -22,6 +22,7 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommandoVersion;
@@ -57,9 +58,11 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
 
     @CommandLine.Option(
             names = {"--verbosity"},
-            description = "Output verbosity level in CLI. Accepted values: silent, normal (default), high, insane")
-    @Parameter(property = "verbosity")
-    private OutputFactory.Verbosity verbosity = OutputFactory.Verbosity.normal;
+            defaultValue = "normal",
+            description =
+                    "Output verbosity level in CLI. Accepted values: silent, tight, normal (default), suggest, chatter")
+    @Parameter(property = "verbosity", defaultValue = "normal")
+    private Output.Verbosity verbosity;
 
     @CommandLine.Option(
             names = {"-X", "--debug"},
@@ -388,7 +391,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
 
         try {
-            Result<?> result = doExecute(OutputFactory.createOutput(verbosity), getToolboxCommando());
+            Result<?> result = doExecute(OutputFactory.createCliOutput(verbosity), getToolboxCommando());
             if (!result.isSuccess() && failOnLogicalFailure) {
                 return 1;
             } else {
@@ -426,8 +429,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         getOrCreate(Context.class, () -> get(Runtime.class).create(createMavenContextOverrides()));
 
         try {
-            // in Mojo, output is == maven logger, so use -X if you want verbose output etc.
-            Result<?> result = doExecute(LoggerFactory.getLogger(getClass()), getToolboxCommando());
+            Result<?> result = doExecute(OutputFactory.createMojoOutput(verbosity), getToolboxCommando());
             if (!result.isSuccess() && failOnLogicalFailure) {
                 throw new MojoFailureException("Operation failed: " + result.getMessage());
             }
@@ -438,5 +440,5 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         }
     }
 
-    protected abstract Result<?> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception;
+    protected abstract Result<?> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception;
 }

@@ -8,13 +8,13 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.collection.CollectResult;
-import org.slf4j.Logger;
 
 /**
  * Collects project and output its dependency tree.
@@ -34,7 +34,7 @@ public class TreeMojo extends MPMojoSupport {
     private boolean verboseTree;
 
     @Override
-    protected Result<CollectResult> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<CollectResult> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.tree(ResolutionScope.parse(scope), projectAsResolutionRoot(), verboseTree, output);
     }
 }

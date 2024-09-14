@@ -8,12 +8,12 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.slf4j.Logger;
 
 /**
  * Calculates "libyear" for Maven Projects (for direct dependencies or transitively).
@@ -57,7 +57,7 @@ public class LibYearMojo extends MPMojoSupport {
     private boolean upToDate;
 
     @Override
-    protected Result<Float> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Float> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.libYear(
                 "project " + mavenProject.getId(),
                 ResolutionScope.parse(scope),

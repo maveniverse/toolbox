@@ -8,13 +8,13 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.slf4j.Logger;
 
 /**
  * Collects paths to matched artifact from plugins, if exists.
@@ -40,7 +40,7 @@ public class PluginTreeFindMojo extends MPPluginMojoSupport {
     private boolean verboseTree;
 
     @Override
-    protected Result<Boolean> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Boolean> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
         if (root != null) {
             toolboxCommando.treeFind(
@@ -57,7 +57,6 @@ public class PluginTreeFindMojo extends MPPluginMojoSupport {
                         verboseTree,
                         toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec),
                         output);
-                output.info("");
             }
         }
         return Result.success(true);

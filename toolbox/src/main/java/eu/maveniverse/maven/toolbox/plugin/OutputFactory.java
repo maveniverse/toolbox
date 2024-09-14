@@ -7,6 +7,11 @@
  */
 package eu.maveniverse.maven.toolbox.plugin;
 
+import static java.util.Objects.requireNonNull;
+
+import eu.maveniverse.maven.toolbox.shared.LoggerOutput;
+import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.PrintStreamOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,27 +21,13 @@ import org.slf4j.LoggerFactory;
 public final class OutputFactory {
     private OutputFactory() {}
 
-    public enum Verbosity {
-        silent,
-        normal,
-        high,
-        insane
+    public static Output createMojoOutput(Output.Verbosity verbosity) {
+        requireNonNull(verbosity, "verbosity");
+        return new LoggerOutput(LoggerFactory.getLogger(OutputFactory.class), verbosity);
     }
 
-    private static class Silent {}
-
-    private static class Normal {}
-
-    private static class High {}
-
-    private static class Insane {}
-
-    public static Logger createOutput(Verbosity verbosity) {
-        return switch (verbosity) {
-            case silent -> LoggerFactory.getLogger(Silent.class);
-            case normal -> LoggerFactory.getLogger(Normal.class);
-            case high -> LoggerFactory.getLogger(High.class);
-            case insane -> LoggerFactory.getLogger(Insane.class);
-        };
+    public static Output createCliOutput(Output.Verbosity verbosity) {
+        requireNonNull(verbosity, "verbosity");
+        return new PrintStreamOutput(System.out, verbosity);
     }
 }

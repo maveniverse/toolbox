@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.toolbox.shared.LoggerOutput;
 import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.PrintStreamOutput;
+import org.jline.jansi.Ansi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,13 +22,34 @@ import org.slf4j.LoggerFactory;
 public final class OutputFactory {
     private OutputFactory() {}
 
-    public static Output createMojoOutput(Output.Verbosity verbosity) {
-        requireNonNull(verbosity, "verbosity");
-        return new LoggerOutput(LoggerFactory.getLogger(OutputFactory.class), verbosity);
+    private static void dumpOutputStatus(Output output) {
+        if (output.isHeard(Output.Verbosity.chatter)) {
+            output.chatter("Using output {}", output.getClass().getSimpleName());
+            output.chatter("Output verbosity '{}'", output.getVerbosity());
+            output.chatter("ANSI detected={} and enabled={}", Ansi.isDetected(), Ansi.isEnabled());
+        }
     }
 
-    public static Output createCliOutput(Output.Verbosity verbosity) {
+    /**
+     * When running as Maven plugin, we use {@link Logger} and Maven "drives" (Logging engine, ANSI, etc).
+     */
+    public static Output createMojoOutput(Output.Verbosity verbosity) {
         requireNonNull(verbosity, "verbosity");
-        return new PrintStreamOutput(System.out, verbosity);
+        Output output = new LoggerOutput(LoggerFactory.getLogger(OutputFactory.class), verbosity);
+        dumpOutputStatus(output);
+        return output;
+    }
+
+    /**
+     * When running as CLI, we need to set up ourselves fully.
+     */
+    public static Output createCliOutput(boolean batchMode, Output.Verbosity verbosity) {
+        requireNonNull(verbosity, "verbosity");
+        if (!batchMode && System.console() != null) {
+            Ansi.setEnabled(true);
+        }
+        Output output = new PrintStreamOutput(System.out, verbosity);
+        dumpOutputStatus(output);
+        return output;
     }
 }

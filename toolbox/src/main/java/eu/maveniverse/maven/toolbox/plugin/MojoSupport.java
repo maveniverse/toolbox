@@ -42,7 +42,6 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
-import org.jline.jansi.Ansi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
@@ -385,13 +384,12 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         } else if (debug) {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "DEBUG");
         }
-        Ansi.setEnabled(!batch);
         boolean seeded = CONTEXT.compareAndSet(null, new HashMap<>());
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
 
         try {
-            Result<?> result = doExecute(OutputFactory.createCliOutput(verbosity), getToolboxCommando());
+            Result<?> result = doExecute(OutputFactory.createCliOutput(batch, verbosity), getToolboxCommando());
             if (!result.isSuccess() && failOnLogicalFailure) {
                 return 1;
             } else {

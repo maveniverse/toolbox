@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
@@ -243,22 +244,10 @@ public interface ToolboxCommando {
             Logger output)
             throws Exception;
 
-    final class Node {
-        public final Artifact artifact;
-        public final String scope;
-        public final Collection<Node> children;
-
-        public Node(Artifact artifact, String scope, Collection<Node> children) {
-            this.artifact = artifact;
-            this.scope = scope;
-            this.children = children;
-        }
-    }
-
     /**
      * Returns the tree of root.
      */
-    Result<Node> tree(
+    Result<CollectResult> tree(
             ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Logger output)
             throws Exception;
 
@@ -281,7 +270,7 @@ public interface ToolboxCommando {
     /**
      * Returns the depMgt tree of given root.
      */
-    Result<Node> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Logger output) throws Exception;
+    Result<CollectResult> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Logger output) throws Exception;
 
     // Search API related commands: they target one single RemoteRepository
 

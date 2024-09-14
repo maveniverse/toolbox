@@ -22,10 +22,6 @@ import org.slf4j.LoggerFactory;
 public final class OutputFactory {
     private OutputFactory() {}
 
-    private static boolean isInteractive() {
-        return System.console() != null;
-    }
-
     private static void dumpOutputStatus(Output output) {
         if (output.isHeard(Output.Verbosity.chatter)) {
             output.chatter("Using output {}", output.getClass().getSimpleName());
@@ -34,6 +30,9 @@ public final class OutputFactory {
         }
     }
 
+    /**
+     * When running as Maven plugin, we use {@link Logger} and Maven "drives" (Logging engine, ANSI, etc).
+     */
     public static Output createMojoOutput(Output.Verbosity verbosity) {
         requireNonNull(verbosity, "verbosity");
         Output output = new LoggerOutput(LoggerFactory.getLogger(OutputFactory.class), verbosity);
@@ -41,9 +40,12 @@ public final class OutputFactory {
         return output;
     }
 
+    /**
+     * When running as CLI, we need to set up ourselves fully.
+     */
     public static Output createCliOutput(boolean batchMode, Output.Verbosity verbosity) {
         requireNonNull(verbosity, "verbosity");
-        if (!batchMode && isInteractive()) {
+        if (!batchMode && System.console() != null) {
             Ansi.setEnabled(true);
         }
         Output output = new PrintStreamOutput(System.out, verbosity);

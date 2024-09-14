@@ -13,6 +13,7 @@ import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.collection.CollectResult;
 import org.slf4j.Logger;
 import picocli.CommandLine;
 
@@ -60,7 +61,7 @@ public class GavTreeMojo extends GavMojoSupport {
     private boolean verboseTree;
 
     @Override
-    protected Result<ToolboxCommando.Node> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<CollectResult> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.tree(
                 ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)), verboseTree, output);
     }

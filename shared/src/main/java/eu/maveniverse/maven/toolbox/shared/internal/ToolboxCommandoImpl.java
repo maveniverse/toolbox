@@ -177,8 +177,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public Result<String> dump(Logger output) {
         Runtime runtime = context.getRuntime();
-        output.info("Toolbox {} (MIMA Runtime '{}' version {})", getVersion(), runtime.name(), runtime.version());
-        output.info("=======");
+        output.warn("Toolbox {} (MIMA Runtime '{}' version {})", getVersion(), runtime.name(), runtime.version());
+        output.warn("=======");
         output.info("          Maven version {}", runtime.mavenVersion());
         output.info("                Managed {}", runtime.managedRepositorySystem());
         output.info("                Basedir {}", context.basedir());
@@ -649,7 +649,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<Node> tree(
+    public Result<CollectResult> tree(
             ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Logger output)
             throws Exception {
         output.debug("Loading root of: {}", resolutionRoot.getArtifact());
@@ -662,8 +662,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 root.getManagedDependencies(),
                 verboseTree);
         collectResult.getRoot().accept(new DependencyGraphDumper(output::info));
-        // TODO: implement this
-        return Result.success(new Node(collectResult.getRoot().getArtifact(), "", Collections.emptyList()));
+        return Result.success(collectResult);
     }
 
     @Override
@@ -714,13 +713,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<Node> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Logger output) throws Exception {
+    public Result<CollectResult> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Logger output)
+            throws Exception {
         resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
         CollectResult collectResult = toolboxResolver.collectDm(
                 resolutionRoot.getArtifact(), resolutionRoot.getManagedDependencies(), verboseTree);
         collectResult.getRoot().accept(new DependencyGraphDumper(output::info));
-        // TODO: implement this
-        return Result.success(new Node(collectResult.getRoot().getArtifact(), "", Collections.emptyList()));
+        return Result.success(collectResult);
     }
 
     @Override

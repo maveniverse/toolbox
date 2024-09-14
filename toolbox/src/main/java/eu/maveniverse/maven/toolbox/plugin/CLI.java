@@ -31,9 +31,9 @@ import eu.maveniverse.maven.toolbox.plugin.gav.GavSearchMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavTreeMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavVerifyMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavVersionsMojo;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import org.slf4j.Logger;
 import picocli.CommandLine;
 
 /**
@@ -72,7 +72,7 @@ import picocli.CommandLine;
         mixinStandardHelpOptions = true)
 public class CLI extends MojoSupport {
     @Override
-    protected Result<String> doExecute(Logger output, ToolboxCommando commando) throws Exception {
+    protected Result<String> doExecute(Output output, ToolboxCommando commando) throws Exception {
         return new GavReplMojo().doExecute(output, commando);
     }
 

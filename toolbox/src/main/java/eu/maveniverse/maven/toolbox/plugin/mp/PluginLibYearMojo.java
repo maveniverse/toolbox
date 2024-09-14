@@ -11,13 +11,13 @@ import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.slf4j.Logger;
 
 /**
  * Calculates "libyear" for Maven Project (for plugins or transitively).
@@ -61,7 +61,7 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
     private boolean upToDate;
 
     @Override
-    protected Result<String> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<String> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
         ArtifactVersionMatcher artifactVersionMatcher =
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec);

@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -15,7 +16,6 @@ import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
-import org.slf4j.Logger;
 
 /**
  * Collects paths to matched artifact, if exists.
@@ -41,7 +41,7 @@ public class TreeFindMojo extends MPMojoSupport {
     private boolean verboseTree;
 
     @Override
-    protected Result<List<List<Artifact>>> doExecute(Logger output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<List<List<Artifact>>> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         return toolboxCommando.treeFind(
                 ResolutionScope.parse(scope),
                 projectAsResolutionRoot(),

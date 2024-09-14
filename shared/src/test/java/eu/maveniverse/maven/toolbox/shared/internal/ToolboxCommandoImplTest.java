@@ -11,6 +11,8 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
+import eu.maveniverse.maven.toolbox.shared.LoggerOutput;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.IOException;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
@@ -25,7 +27,10 @@ public class ToolboxCommandoImplTest {
                 .build())) {
             ToolboxCommandoImpl tc = new ToolboxCommandoImpl(context);
 
-            tc.search(ContextOverrides.CENTRAL, "junit:junit:4.13.2", LoggerFactory.getLogger(getClass()));
+            tc.search(
+                    ContextOverrides.CENTRAL,
+                    "junit:junit:4.13.2",
+                    new LoggerOutput(LoggerFactory.getLogger(getClass()), Output.Verbosity.normal));
         }
     }
 }

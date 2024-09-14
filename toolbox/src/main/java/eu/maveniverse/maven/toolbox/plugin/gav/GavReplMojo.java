@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.plugin.CLI;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
@@ -33,7 +34,6 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.terminal.impl.jni.JniTerminalProvider;
 import org.jline.widget.TailTipWidgets;
-import org.slf4j.Logger;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
 
@@ -41,7 +41,7 @@ import picocli.shell.jline3.PicocliCommands;
 @Mojo(name = "gav-repl", requiresProject = false, threadSafe = true)
 public class GavReplMojo extends GavMojoSupport {
     @Override
-    public Result<String> doExecute(Logger output, ToolboxCommando toolboxCommando) {
+    public Result<String> doExecute(Output output, ToolboxCommando toolboxCommando) {
         Class<?> tp = JniTerminalProvider.class;
         Context context = getContext();
 
@@ -92,14 +92,14 @@ public class GavReplMojo extends GavMojoSupport {
                 } catch (EndOfFileException e) {
                     return Result.success("eof");
                 } catch (SystemRegistryImpl.UnknownCommandException e) {
-                    output.error("REPL Failure: " + e.getMessage());
+                    logger.error("REPL Failure: ", e);
                 } catch (Exception e) {
                     systemRegistry.trace(e);
                     return Result.failure(e.getMessage());
                 }
             }
         } catch (Exception e) {
-            output.error("REPL Failure: ", e);
+            logger.error("REPL Failure: ", e);
             return Result.failure(e.getMessage());
         }
     }

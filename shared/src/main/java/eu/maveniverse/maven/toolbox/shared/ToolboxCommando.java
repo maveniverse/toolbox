@@ -28,7 +28,6 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
-import org.slf4j.Logger;
 
 /**
  * The Toolbox Commando, that implements all the commands that are exposed via Mojos or CLI.
@@ -56,7 +55,7 @@ public interface ToolboxCommando {
         return ToolboxCommandoVersion.getVersion();
     }
 
-    Result<String> dump(Logger output);
+    Result<String> dump(Output output);
 
     // Parsers
 
@@ -145,13 +144,13 @@ public interface ToolboxCommando {
     /**
      * Calculates the classpath (returned string is OS FS specific) of given scope and root.
      */
-    Result<String> classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Logger output)
+    Result<String> classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output)
             throws Exception;
 
     /**
      * Returns the list of artifacts copied from source to sink.
      */
-    Result<List<Artifact>> copy(Source<Artifact> source, Sink<Artifact> sink, Logger output) throws Exception;
+    Result<List<Artifact>> copy(Source<Artifact> source, Sink<Artifact> sink, Output output) throws Exception;
 
     /**
      * Returns the list of artifacts copied from transitively resolving given roots to sink.
@@ -160,19 +159,19 @@ public interface ToolboxCommando {
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
             Sink<Artifact> sink,
-            Logger output)
+            Output output)
             throws Exception;
 
     /**
      * Returns the list of artifacts copied from recorder to sink.
      */
-    Result<List<Artifact>> copyRecorded(boolean stopRecording, Sink<Artifact> sink, Logger output) throws Exception;
+    Result<List<Artifact>> copyRecorded(boolean stopRecording, Sink<Artifact> sink, Output output) throws Exception;
 
     /**
      * List repositories used to transitively resolve given root.
      */
     default Result<List<RemoteRepository>> listRepositories(
-            ResolutionScope resolutionScope, String context, ResolutionRoot resolutionRoot, Logger output)
+            ResolutionScope resolutionScope, String context, ResolutionRoot resolutionRoot, Output output)
             throws Exception {
         HashMap<String, ResolutionRoot> resolutionRoots = new HashMap<>();
         resolutionRoots.put(context, resolutionRoot);
@@ -186,18 +185,18 @@ public interface ToolboxCommando {
      * List repositories used to transitively resolve given root.
      */
     Result<Map<String, List<RemoteRepository>>> listRepositories(
-            ResolutionScope resolutionScope, Map<String, ResolutionRoot> resolutionRoots, Logger output)
+            ResolutionScope resolutionScope, Map<String, ResolutionRoot> resolutionRoots, Output output)
             throws Exception;
 
     /**
      * Lists available plugins in given groupId.
      */
-    Result<List<Artifact>> listAvailablePlugins(Collection<String> groupIds, Logger output) throws Exception;
+    Result<List<Artifact>> listAvailablePlugins(Collection<String> groupIds, Output output) throws Exception;
 
     /**
      * Starts the recorder.
      */
-    Result<String> recordStart(Logger output);
+    Result<String> recordStart(Output output);
 
     final class RecordStats {
         public final boolean active;
@@ -212,12 +211,12 @@ public interface ToolboxCommando {
     /**
      * Recorder stats.
      */
-    Result<RecordStats> recordStats(Logger output);
+    Result<RecordStats> recordStats(Output output);
 
     /**
      * Stops the recorder.
      */
-    Result<String> recordStop(Logger output);
+    Result<String> recordStop(Output output);
 
     /**
      * Resolves given artifacts.
@@ -228,7 +227,7 @@ public interface ToolboxCommando {
             boolean javadoc,
             boolean signature,
             Sink<Artifact> sink,
-            Logger output)
+            Output output)
             throws Exception;
 
     /**
@@ -241,14 +240,14 @@ public interface ToolboxCommando {
             boolean javadoc,
             boolean signature,
             Sink<Artifact> sink,
-            Logger output)
+            Output output)
             throws Exception;
 
     /**
      * Returns the tree of root.
      */
     Result<CollectResult> tree(
-            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Logger output)
+            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Output output)
             throws Exception;
 
     /**
@@ -259,18 +258,18 @@ public interface ToolboxCommando {
             ResolutionRoot resolutionRoot,
             boolean verboseTree,
             ArtifactMatcher artifactMatcher,
-            Logger output)
+            Output output)
             throws Exception;
 
     /**
      * Returns the depMgt list of given root.
      */
-    Result<List<Dependency>> dmList(ResolutionRoot resolutionRoot, boolean verboseList, Logger output) throws Exception;
+    Result<List<Dependency>> dmList(ResolutionRoot resolutionRoot, boolean verboseList, Output output) throws Exception;
 
     /**
      * Returns the depMgt tree of given root.
      */
-    Result<CollectResult> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Logger output) throws Exception;
+    Result<CollectResult> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Output output) throws Exception;
 
     // Search API related commands: they target one single RemoteRepository
 
@@ -292,33 +291,33 @@ public interface ToolboxCommando {
             boolean signature,
             boolean allRequired,
             String repositoryVendor,
-            Logger output)
+            Output output)
             throws IOException;
 
     /**
      * Identifies targets (a file or sha1) and returns matched artifacts.
      */
     Result<Map<String, Artifact>> identify(
-            RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Logger output)
+            RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Output output)
             throws IOException;
 
     /**
      * Lists given "gavoid" and returns list of "gavoids".
      */
-    Result<List<String>> list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Logger output)
+    Result<List<String>> list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Output output)
             throws IOException;
 
     /**
      * Searches for artifacts.
      */
-    Result<List<Artifact>> search(RemoteRepository remoteRepository, String expression, Logger output)
+    Result<List<Artifact>> search(RemoteRepository remoteRepository, String expression, Output output)
             throws IOException;
 
     /**
      * Verifies artifact against given SHA-1.
      */
     Result<Boolean> verify(
-            RemoteRepository remoteRepository, String gav, String sha1, String repositoryVendor, Logger output)
+            RemoteRepository remoteRepository, String gav, String sha1, String repositoryVendor, Output output)
             throws IOException;
 
     // Various
@@ -336,13 +335,13 @@ public interface ToolboxCommando {
             Predicate<Version> versionPredicate,
             BiFunction<Artifact, List<Version>, String> artifactVersionSelector,
             String repositoryVendor,
-            Logger output)
+            Output output)
             throws Exception;
 
     /**
      * Finds newer versions for artifacts from source.
      */
     Result<Map<Artifact, List<Version>>> versions(
-            String context, Source<Artifact> artifacts, Predicate<Version> versionPredicate, Logger output)
+            String context, Source<Artifact> artifacts, Predicate<Version> versionPredicate, Output output)
             throws Exception;
 }

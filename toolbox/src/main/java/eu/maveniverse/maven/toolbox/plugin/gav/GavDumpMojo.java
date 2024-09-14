@@ -8,10 +8,10 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
-import org.slf4j.Logger;
 import picocli.CommandLine;
 
 /**
@@ -21,7 +21,7 @@ import picocli.CommandLine;
 @Mojo(name = "gav-dump", requiresProject = false, threadSafe = true)
 public class GavDumpMojo extends GavMojoSupport {
     @Override
-    protected Result<String> doExecute(Logger output, ToolboxCommando toolboxCommando) {
+    protected Result<String> doExecute(Output output, ToolboxCommando toolboxCommando) {
         return toolboxCommando.dump(output);
     }
 }

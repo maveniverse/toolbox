@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -15,7 +16,6 @@ import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.slf4j.Logger;
 
 /**
  * Resolves transitively current project and outputs used repositories.
@@ -29,7 +29,7 @@ public final class ListRepositoriesMojo extends MPMojoSupport {
     private String scope;
 
     @Override
-    protected Result<List<RemoteRepository>> doExecute(Logger output, ToolboxCommando toolboxCommando)
+    protected Result<List<RemoteRepository>> doExecute(Output output, ToolboxCommando toolboxCommando)
             throws Exception {
         return toolboxCommando.listRepositories(
                 ResolutionScope.parse(scope), "project", projectAsResolutionRoot(), output);

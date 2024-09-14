@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.shared;
 
 import java.io.PrintStream;
+import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
 /**
@@ -30,28 +31,36 @@ public final class PrintStreamOutput implements Output {
     @Override
     public void doTell(String message, Object... params) {
         if (isHeard(Verbosity.tight)) {
-            output.println(MessageFormatter.arrayFormat(message, params));
+            handle(message, params);
         }
     }
 
     @Override
     public void tell(String message, Object... params) {
         if (isHeard(Verbosity.normal)) {
-            output.println(MessageFormatter.arrayFormat(message, params));
+            handle(message, params);
         }
     }
 
     @Override
     public void suggest(String message, Object... params) {
         if (isHeard(Verbosity.suggest)) {
-            output.println(MessageFormatter.arrayFormat(message, params));
+            handle(message, params);
         }
     }
 
     @Override
     public void chatter(String message, Object... params) {
         if (isHeard(Verbosity.chatter)) {
-            output.println(MessageFormatter.arrayFormat(message, params));
+            handle(message, params);
+        }
+    }
+
+    private void handle(String message, Object... params) {
+        FormattingTuple tuple = MessageFormatter.arrayFormat(message, params);
+        output.println(tuple.getMessage());
+        if (tuple.getThrowable() != null) {
+            tuple.getThrowable().printStackTrace(output);
         }
     }
 }

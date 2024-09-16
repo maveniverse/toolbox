@@ -23,7 +23,7 @@ public final class OutputFactory {
     private OutputFactory() {}
 
     private static void dumpOutputStatus(Output output) {
-        if (output.isHeard(Output.Verbosity.chatter)) {
+        if (output.isHeard(Output.Verbosity.CHATTER)) {
             output.chatter("Using output {}", output.getClass().getSimpleName());
             output.chatter("Output verbosity '{}'", output.getVerbosity());
             output.chatter("ANSI detected={} and enabled={}", Ansi.isDetected(), Ansi.isEnabled());

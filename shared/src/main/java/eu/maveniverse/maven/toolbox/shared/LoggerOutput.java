@@ -27,30 +27,7 @@ public final class LoggerOutput implements Output {
     }
 
     @Override
-    public void doTell(String message, Object... params) {
-        if (isHeard(Verbosity.tight)) {
-            output.info(message, params);
-        }
-    }
-
-    @Override
-    public void tell(String message, Object... params) {
-        if (isHeard(Verbosity.normal)) {
-            output.info(message, params);
-        }
-    }
-
-    @Override
-    public void suggest(String message, Object... params) {
-        if (isHeard(Verbosity.suggest)) {
-            output.info(message, params);
-        }
-    }
-
-    @Override
-    public void chatter(String message, Object... params) {
-        if (isHeard(Verbosity.chatter)) {
-            output.info(message, params);
-        }
+    public void handle(Verbosity verbosity, String message, Object... params) {
+        output.info(message, params);
     }
 }

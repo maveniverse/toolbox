@@ -17,23 +17,23 @@ public interface Output {
         /**
          * No output is emitted.
          */
-        silent,
+        SILENT,
         /**
          * Tight-lipped: merely the "result" (whatever it is) is emitted.
          */
-        tight,
+        TIGHT,
         /**
          * Normal verbosity level.
          */
-        normal,
+        NORMAL,
         /**
          * More than normal verbosity level.
          */
-        suggest,
+        SUGGEST,
         /**
          * Insane verbosity level.
          */
-        chatter
+        CHATTER
     }
 
     default boolean isHeard(Verbosity verbosity) {
@@ -43,11 +43,29 @@ public interface Output {
 
     Verbosity getVerbosity();
 
-    void doTell(String message, Object... params);
+    default void doTell(String message, Object... params) {
+        if (isHeard(Verbosity.TIGHT)) {
+            handle(Verbosity.TIGHT, message, params);
+        }
+    }
 
-    void tell(String message, Object... params);
+    default void tell(String message, Object... params) {
+        if (isHeard(Verbosity.NORMAL)) {
+            handle(Verbosity.NORMAL, message, params);
+        }
+    }
 
-    void suggest(String message, Object... params);
+    default void suggest(String message, Object... params) {
+        if (isHeard(Verbosity.SUGGEST)) {
+            handle(Verbosity.SUGGEST, message, params);
+        }
+    }
 
-    void chatter(String message, Object... params);
+    default void chatter(String message, Object... params) {
+        if (isHeard(Verbosity.CHATTER)) {
+            handle(Verbosity.CHATTER, message, params);
+        }
+    }
+
+    void handle(Verbosity verbosity, String message, Object... params);
 }

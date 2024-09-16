@@ -227,7 +227,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             output.tell("          nonProxyHosts {}", proxy.getNonProxyHosts());
         }
 
-        if (output.isHeard(Output.Verbosity.suggest)) {
+        if (output.isHeard(Output.Verbosity.SUGGEST)) {
             output.suggest("");
             output.suggest("        USER PROPERTIES");
             context.repositorySystemSession().getUserProperties().entrySet().stream()
@@ -243,7 +243,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     .forEach(e -> output.suggest("                         {}={}", e.getKey(), e.getValue()));
             output.suggest("");
 
-            if (output.isHeard(Output.Verbosity.chatter)) {
+            if (output.isHeard(Output.Verbosity.CHATTER)) {
                 output.tell("OUTPUT TEST:");
                 output.chatter("Chatter: {}", "Message", new RuntimeException("runtime"));
                 output.suggest("Suggest: {}", "Message", new RuntimeException("runtime"));

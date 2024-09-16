@@ -57,10 +57,10 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
 
     @CommandLine.Option(
             names = {"--verbosity"},
-            defaultValue = "normal",
+            defaultValue = "NORMAL",
             description =
-                    "Output verbosity level in CLI. Accepted values: silent, tight, normal (default), suggest, chatter")
-    @Parameter(property = "verbosity", defaultValue = "normal")
+                    "Output verbosity level in CLI. Accepted values: SILENT, TIGHT, NORMAL (default), SUGGEST, CHATTER")
+    @Parameter(property = "verbosity", defaultValue = "NORMAL")
     private Output.Verbosity verbosity;
 
     @CommandLine.Option(

@@ -30,7 +30,7 @@ public class ToolboxCommandoImplTest {
             tc.search(
                     ContextOverrides.CENTRAL,
                     "junit:junit:4.13.2",
-                    new LoggerOutput(LoggerFactory.getLogger(getClass()), Output.Verbosity.normal));
+                    new LoggerOutput(LoggerFactory.getLogger(getClass()), Output.Verbosity.NORMAL));
         }
     }
 }

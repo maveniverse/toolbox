@@ -29,34 +29,7 @@ public final class PrintStreamOutput implements Output {
     }
 
     @Override
-    public void doTell(String message, Object... params) {
-        if (isHeard(Verbosity.tight)) {
-            handle(message, params);
-        }
-    }
-
-    @Override
-    public void tell(String message, Object... params) {
-        if (isHeard(Verbosity.normal)) {
-            handle(message, params);
-        }
-    }
-
-    @Override
-    public void suggest(String message, Object... params) {
-        if (isHeard(Verbosity.suggest)) {
-            handle(message, params);
-        }
-    }
-
-    @Override
-    public void chatter(String message, Object... params) {
-        if (isHeard(Verbosity.chatter)) {
-            handle(message, params);
-        }
-    }
-
-    private void handle(String message, Object... params) {
+    public void handle(Verbosity verbosity, String message, Object... params) {
         FormattingTuple tuple = MessageFormatter.arrayFormat(message, params);
         output.println(tuple.getMessage());
         if (tuple.getThrowable() != null) {

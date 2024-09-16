@@ -146,11 +146,12 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
             }
         }
         if (plugin == null) {
-            logger.warn(
-                    "Plugin matching '{}' not found in project {} (packaging={})",
-                    pluginKey,
-                    mavenProject.getId(),
-                    mavenProject.getPackaging());
+            // TODO: maybe warn the user?
+            // logger.warn(
+            //        "Plugin matching '{}' not found in project {} (packaging={})",
+            //        pluginKey,
+            //        mavenProject.getId(),
+            //        mavenProject.getPackaging());
             return null;
         }
         return pluginToResolutionRoot(toolboxCommando).apply(plugin);

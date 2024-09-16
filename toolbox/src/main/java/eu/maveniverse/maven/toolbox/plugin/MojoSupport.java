@@ -8,15 +8,6 @@
 package eu.maveniverse.maven.toolbox.plugin;
 
 import static java.util.Objects.requireNonNull;
-import static org.jline.jansi.Ansi.Attribute.INTENSITY_BOLD;
-import static org.jline.jansi.Ansi.Attribute.INTENSITY_BOLD_OFF;
-import static org.jline.jansi.Ansi.Attribute.INTENSITY_FAINT;
-import static org.jline.jansi.Ansi.Attribute.ITALIC;
-import static org.jline.jansi.Ansi.Attribute.ITALIC_OFF;
-import static org.jline.jansi.Ansi.Color.RED;
-import static org.jline.jansi.Ansi.Color.WHITE;
-import static org.jline.jansi.Ansi.Color.YELLOW;
-import static org.jline.jansi.Ansi.ansi;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
@@ -26,10 +17,8 @@ import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommandoVersion;
-import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,16 +31,12 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.helpers.MessageFormatter;
 import picocli.CommandLine;
 
 /**
  * Support class for all Mojos and Commands.
  */
 public abstract class MojoSupport extends AbstractMojo implements Callable<Integer>, CommandLine.IVersionProvider {
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     // CLI
 
@@ -206,174 +191,6 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         return getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getContext()));
     }
 
-    private void verbose(String format, Object... args) {
-        if (args.length > 0 && args[args.length - 1] instanceof Throwable) {
-            log(
-                    System.err,
-                    ansi().a(INTENSITY_FAINT)
-                            .fg(WHITE)
-                            .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
-                                    .getMessage())
-                            .reset()
-                            .toString(),
-                    (Throwable) args[args.length - 1]);
-        } else {
-            log(
-                    System.err,
-                    ansi().a(INTENSITY_FAINT)
-                            .fg(WHITE)
-                            .a(MessageFormatter.arrayFormat(format, args).getMessage())
-                            .reset()
-                            .toString());
-        }
-    }
-
-    private void normal(String format, Object... args) {
-        if (args.length > 0 && args[args.length - 1] instanceof Throwable) {
-            log(
-                    System.err,
-                    ansi().fg(WHITE)
-                            .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
-                                    .getMessage())
-                            .reset()
-                            .toString(),
-                    (Throwable) args[args.length - 1]);
-        } else {
-            log(
-                    System.err,
-                    ansi().fg(WHITE)
-                            .a(MessageFormatter.arrayFormat(format, args).getMessage())
-                            .reset()
-                            .toString());
-        }
-    }
-
-    private void warn(String format, Object... args) {
-        if (args.length > 0 && args[args.length - 1] instanceof Throwable) {
-            log(
-                    System.err,
-                    ansi().fg(YELLOW)
-                            .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
-                                    .getMessage())
-                            .reset()
-                            .toString(),
-                    (Throwable) args[args.length - 1]);
-        } else {
-            log(
-                    System.err,
-                    ansi().fg(YELLOW)
-                            .a(MessageFormatter.arrayFormat(format, args).getMessage())
-                            .reset()
-                            .toString());
-        }
-    }
-
-    private void error(String format, Object... args) {
-        if (args.length > 0 && args[args.length - 1] instanceof Throwable) {
-            log(
-                    System.err,
-                    ansi().a(INTENSITY_BOLD)
-                            .fg(RED)
-                            .a(MessageFormatter.arrayFormat(format, Arrays.copyOfRange(args, 0, args.length - 1))
-                                    .getMessage())
-                            .reset()
-                            .toString(),
-                    (Throwable) args[args.length - 1]);
-        } else {
-            log(
-                    System.err,
-                    ansi().a(INTENSITY_BOLD)
-                            .fg(RED)
-                            .a(MessageFormatter.arrayFormat(format, args).getMessage())
-                            .reset()
-                            .toString());
-        }
-    }
-
-    private void log(PrintStream ps, String message) {
-        log(ps, message, null);
-    }
-
-    private void log(PrintStream ps, String message, Throwable throwable) {
-        ps.println(message);
-        writeThrowable(throwable, ps);
-    }
-
-    private static String failure(String format) {
-        return ansi().a(ITALIC).a(format).a(ITALIC_OFF).toString();
-    }
-
-    private static String strong(String format) {
-        return ansi().a(INTENSITY_BOLD).a(format).a(INTENSITY_BOLD_OFF).toString();
-    }
-
-    private void writeThrowable(Throwable t, PrintStream stream) {
-        if (t == null) {
-            return;
-        }
-        String builder = failure(t.getClass().getName());
-        if (t.getMessage() != null) {
-            builder += ": " + failure(t.getMessage());
-        }
-        stream.println(builder);
-
-        if (errors) {
-            printStackTrace(t, stream, "");
-        }
-        stream.println(ansi().reset());
-    }
-
-    private void printStackTrace(Throwable t, PrintStream stream, String prefix) {
-        StringBuilder builder = new StringBuilder();
-        for (StackTraceElement e : t.getStackTrace()) {
-            builder.append(prefix);
-            builder.append("    ");
-            builder.append(strong("at"));
-            builder.append(" ");
-            builder.append(e.getClassName());
-            builder.append(".");
-            builder.append(e.getMethodName());
-            builder.append(" (");
-            builder.append(strong(getLocation(e)));
-            builder.append(")");
-            stream.println(builder);
-            builder.setLength(0);
-        }
-        for (Throwable se : t.getSuppressed()) {
-            writeThrowable(se, stream, "Suppressed", prefix + "    ");
-        }
-        Throwable cause = t.getCause();
-        if (cause != null && t != cause) {
-            writeThrowable(cause, stream, "Caused by", prefix);
-        }
-    }
-
-    private void writeThrowable(Throwable t, PrintStream stream, String caption, String prefix) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(prefix)
-                .append(strong(caption))
-                .append(": ")
-                .append(t.getClass().getName());
-        if (t.getMessage() != null) {
-            builder.append(": ").append(failure(t.getMessage()));
-        }
-        stream.println(builder);
-
-        printStackTrace(t, stream, prefix);
-    }
-
-    private String getLocation(final StackTraceElement e) {
-        if (e.isNativeMethod()) {
-            return "Native Method";
-        } else if (e.getFileName() == null) {
-            return "Unknown Source";
-        } else if (e.getLineNumber() >= 0) {
-            return e.getFileName() + ":" + e.getLineNumber();
-        } else {
-            return e.getFileName();
-        }
-    }
-
     /**
      * Picocli CLI entry point.
      */
@@ -388,15 +205,18 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
 
-        try {
-            Result<?> result = doExecute(OutputFactory.createCliOutput(batch, verbosity), getToolboxCommando());
+        try (Output output = OutputFactory.createCliOutput(batch, errors, verbosity)) {
+            Result<?> result = doExecute(output, getToolboxCommando());
             if (!result.isSuccess() && failOnLogicalFailure) {
                 return 1;
             } else {
                 return 0;
             }
         } catch (Exception e) {
-            error("Error", e);
+            System.err.println(e.getMessage());
+            if (errors) {
+                e.printStackTrace(System.err);
+            }
             return 1;
         } finally {
             if (seeded) {
@@ -426,8 +246,8 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createMavenContextOverrides()));
 
-        try {
-            Result<?> result = doExecute(OutputFactory.createMojoOutput(verbosity), getToolboxCommando());
+        try (Output output = OutputFactory.createMojoOutput(verbosity)) {
+            Result<?> result = doExecute(output, getToolboxCommando());
             if (!result.isSuccess() && failOnLogicalFailure) {
                 throw new MojoFailureException("Operation failed: " + result.getMessage());
             }

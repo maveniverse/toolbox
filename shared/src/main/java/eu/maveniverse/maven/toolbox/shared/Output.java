@@ -9,10 +9,14 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import static java.util.Objects.requireNonNull;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.function.Supplier;
+
 /**
  * The output used for... output.
  */
-public interface Output {
+public interface Output extends Closeable {
     enum Verbosity {
         /**
          * No output is emitted.
@@ -36,9 +40,17 @@ public interface Output {
         CHATTER
     }
 
+    @Override
+    default void close() throws IOException {}
+
     default boolean isHeard(Verbosity verbosity) {
         requireNonNull(verbosity);
         return getVerbosity().ordinal() >= verbosity.ordinal();
+    }
+
+    default <T> T tool(Class<T> klazz, Supplier<T> supplier) {
+        requireNonNull(supplier, "supplier");
+        return supplier.get();
     }
 
     Verbosity getVerbosity();

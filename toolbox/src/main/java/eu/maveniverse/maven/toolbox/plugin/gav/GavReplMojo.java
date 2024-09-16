@@ -92,14 +92,14 @@ public class GavReplMojo extends GavMojoSupport {
                 } catch (EndOfFileException e) {
                     return Result.success("eof");
                 } catch (SystemRegistryImpl.UnknownCommandException e) {
-                    logger.error("REPL Failure: ", e);
+                    output.doTell("REPL Failure: ", e);
                 } catch (Exception e) {
                     systemRegistry.trace(e);
                     return Result.failure(e.getMessage());
                 }
             }
         } catch (Exception e) {
-            logger.error("REPL Failure: ", e);
+            output.doTell("REPL Failure: ", e);
             return Result.failure(e.getMessage());
         }
     }

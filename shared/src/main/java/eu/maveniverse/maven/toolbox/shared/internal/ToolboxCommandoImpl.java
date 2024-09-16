@@ -515,7 +515,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         List<Artifact> artifacts = artifactSource.get().toList();
         output.suggest("Resolving {}", artifacts);
         try (Sink<Artifact> artifactSink =
-                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, logger))) {
+                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, output))) {
             List<Artifact> artifactResults = toolboxResolver.resolveArtifacts(artifacts).stream()
                     .map(ArtifactResult::getArtifact)
                     .toList();
@@ -567,7 +567,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Sink<Artifact> sink,
             Output output)
             throws Exception {
-        ArtifactSinks.StatArtifactSink stat = ArtifactSinks.statArtifactSink(0, false, logger);
+        ArtifactSinks.StatArtifactSink stat = ArtifactSinks.statArtifactSink(0, false, output);
         try (Sink<Artifact> artifactSink = ArtifactSinks.teeArtifactSink(sink, stat)) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 doResolveTransitive(
@@ -578,7 +578,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         signature,
                         ArtifactSinks.teeArtifactSink(
                                 ArtifactSinks.nonClosingArtifactSink(artifactSink),
-                                ArtifactSinks.statArtifactSink(1, true, logger)),
+                                ArtifactSinks.statArtifactSink(1, true, output)),
                         output);
             }
         }
@@ -664,7 +664,14 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 root.getDependencies(),
                 root.getManagedDependencies(),
                 verboseTree);
-        collectResult.getRoot().accept(new DependencyGraphDumper(output::tell));
+        collectResult
+                .getRoot()
+                .accept(new DependencyGraphDumper(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
+                        output.tool(
+                                DependencyGraphDumper.LineFormatter.class,
+                                DependencyGraphDumper.PlainLineFormatter::new)));
         return Result.success(collectResult);
     }
 
@@ -1002,7 +1009,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }
 
         LibYearSink sink = LibYearSink.libYear(
-                logger,
+                output,
                 subject,
                 context,
                 toolboxResolver,

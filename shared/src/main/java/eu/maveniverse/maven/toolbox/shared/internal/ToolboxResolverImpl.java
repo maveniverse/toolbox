@@ -287,9 +287,9 @@ public class ToolboxResolverImpl {
         }
 
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
+        session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         if (verbose) {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
-            session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         }
         logger.debug("Collecting scope: {}", resolutionScope.name());
 

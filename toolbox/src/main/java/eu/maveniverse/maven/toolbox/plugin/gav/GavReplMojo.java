@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.plugin.CLI;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
-import eu.maveniverse.maven.toolbox.plugin.JLine3Output;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
@@ -57,14 +56,7 @@ public class GavReplMojo extends GavMojoSupport {
         PicocliCommands picocliCommands = new PicocliCommands(cmd);
         Parser parser = new DefaultParser();
 
-        Terminal existing = null;
-        if (output instanceof JLine3Output jLine3Output) {
-            existing = jLine3Output.getTerminal();
-        }
-
-        try (Terminal terminal = existing != null
-                ? existing
-                : TerminalBuilder.builder().name("Toolbox").build()) {
+        try (Terminal terminal = TerminalBuilder.builder().name("Toolbox").build()) {
             SystemRegistry systemRegistry = new SystemRegistryImpl(parser, terminal, context::basedir, configPath);
             systemRegistry.setCommandRegistries(builtins, picocliCommands);
 

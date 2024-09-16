@@ -101,6 +101,13 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
             description = "Show error stack traces")
     private boolean errors;
 
+    @CommandLine.Option(
+            names = {"--fail-on-logical-failure"},
+            defaultValue = "true",
+            description = "Fail on operation logical failure")
+    @Parameter(property = "failOnLogicalFailure", defaultValue = "true")
+    private boolean failOnLogicalFailure;
+
     private static final AtomicReference<Map<Object, Object>> CONTEXT = new AtomicReference<>(null);
 
     protected <T> T getOrCreate(Class<T> key, Supplier<T> supplier) {
@@ -179,7 +186,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         return builder.build();
     }
 
-    private ContextOverrides createMavenContextOverrides() {
+    private ContextOverrides createMojoContextOverrides() {
         return ContextOverrides.create().build();
     }
 
@@ -197,6 +204,8 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
 
     /**
      * Picocli CLI entry point.
+     * <p>
+     * This entry point is re-entrant due REPL.
      */
     @Override
     public final Integer call() {
@@ -226,12 +235,12 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         } finally {
             if (seeded) {
                 try {
-                    getContext().close();
+                    getOutput().close();
                 } catch (Exception e) {
                     e.printStackTrace(System.err);
                 }
                 try {
-                    getOutput().close();
+                    getContext().close();
                 } catch (Exception e) {
                     e.printStackTrace(System.err);
                 }
@@ -241,26 +250,20 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
 
     // Mojo
 
-    @CommandLine.Option(
-            names = {"--fail-on-logical-failure"},
-            defaultValue = "true",
-            description = "Fail on operation logical failure")
-    @Parameter(property = "failOnLogicalFailure", defaultValue = "true")
-    protected boolean failOnLogicalFailure;
-
     @Parameter(defaultValue = "${settings}", readonly = true, required = true)
     protected Settings settings;
 
     /**
      * Maven Mojo entry point.
+     * <p>
+     * Maven Mojos are not re-entrant (Mojo cannot, or should not, call itself).
      */
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {
-        CONTEXT.compareAndSet(null, getPluginContext());
+        CONTEXT.compareAndSet(null, new HashMap<>());
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
-        getOrCreate(Context.class, () -> get(Runtime.class).create(createMavenContextOverrides()));
+        getOrCreate(Context.class, () -> get(Runtime.class).create(createMojoContextOverrides()));
         getOrCreate(Output.class, () -> OutputFactory.createMojoOutput(verbosity));
-
         try {
             Result<?> result = doExecute(getOutput(), getToolboxCommando());
             if (!result.isSuccess() && failOnLogicalFailure) {
@@ -270,6 +273,17 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
             throw new MojoExecutionException("Runtime exception", e);
         } catch (Exception e) {
             throw new MojoFailureException(e);
+        } finally {
+            try {
+                getOutput().close();
+            } catch (Exception e) {
+                getLog().error(e);
+            }
+            try {
+                getContext().close();
+            } catch (Exception e) {
+                getLog().error(e);
+            }
         }
     }
 

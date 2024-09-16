@@ -10,7 +10,8 @@ package eu.maveniverse.maven.toolbox.shared.output;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Simple Marker, useful to assemble single message line with different markings.
+ * Simple Marker, useful to assemble single message line with different markings. This implementation is
+ * "no op" (does not do anything), subclasses of it may do more.
  */
 public class Marker {
     private final Output output;
@@ -55,10 +56,11 @@ public class Marker {
 
     public void say(Object... params) {
         if (output.isHeard(verbosity)) {
-            output.handle(verbosity, message.toString(), params);
+            output.handle(verbosity, toString(), params);
         }
     }
 
+    @Override
     public String toString() {
         String result = message.toString();
         message.setLength(0);

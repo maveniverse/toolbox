@@ -21,14 +21,14 @@ public class AnsiOutput extends PrintStreamOutput {
     @Override
     public <T> T tool(Class<T> klazz, Supplier<T> supplier) {
         if (DependencyGraphDumper.LineFormatter.class.equals(klazz)) {
-            return klazz.cast(new JLine3TreeFormatter(this));
+            return klazz.cast(new AnsiTreeFormatter(marker(Verbosity.NORMAL)));
         }
         return supplier.get();
     }
 
     @Override
     public Marker marker(Verbosity verbosity) {
-        return new JLine3Marker(this, verbosity);
+        return new AnsiMarker(this, verbosity);
     }
 
     @Override
@@ -125,15 +125,13 @@ public class AnsiOutput extends PrintStreamOutput {
 
     // Tree
 
-    private static class JLine3TreeFormatter extends DependencyGraphDumper.PlainLineFormatter {
+    private static class AnsiTreeFormatter extends DependencyGraphDumper.PlainLineFormatter {
         private final Function<DependencyNode, String> winner = DependencyGraphDumper.winnerNode();
         private final Function<DependencyNode, Boolean> premanaged = DependencyGraphDumper.isPremanaged();
-        private final Output output;
         private final Marker marker;
 
-        public JLine3TreeFormatter(Output output) {
-            this.output = output;
-            this.marker = output.marker(Verbosity.NORMAL);
+        public AnsiTreeFormatter(Marker marker) {
+            this.marker = marker;
         }
 
         @Override
@@ -164,7 +162,7 @@ public class AnsiOutput extends PrintStreamOutput {
         }
 
         private String renderRoot(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            return "\uD83C\uDF33" + winner(formatNode(nodes, decorators));
+            return winner(formatNode(nodes, decorators));
         }
 
         private boolean isLoser(DependencyNode node) {
@@ -184,7 +182,7 @@ public class AnsiOutput extends PrintStreamOutput {
         }
 
         private String provided(String string) {
-            return marker.unimportant(string).toString();
+            return marker.detail(string).toString();
         }
 
         private String modified(String string) {
@@ -192,14 +190,14 @@ public class AnsiOutput extends PrintStreamOutput {
         }
 
         private String loser(String string) {
-            return marker.detail(string).toString();
+            return marker.unimportant(string).toString();
         }
     }
 
     // MessageBuilder
 
-    private static class JLine3Marker extends Marker {
-        public JLine3Marker(Output output, Verbosity verbosity) {
+    private static class AnsiMarker extends Marker {
+        public AnsiMarker(Output output, Verbosity verbosity) {
             super(output, verbosity);
         }
 
@@ -222,19 +220,19 @@ public class AnsiOutput extends PrintStreamOutput {
         @Override
         public Marker detail(String word) {
             return super.detail(
-                    Ansi.ansi().fgBright(Ansi.Color.YELLOW).a(word).reset().toString());
+                    Ansi.ansi().fgBright(Ansi.Color.BLUE).a(word).reset().toString());
         }
 
         @Override
         public Marker unimportant(String word) {
             return super.unimportant(
-                    Ansi.ansi().fgBright(Ansi.Color.CYAN).a(word).reset().toString());
+                    Ansi.ansi().fg(Ansi.Color.BLUE).a(word).reset().toString());
         }
 
         @Override
         public Marker scary(String word) {
             return super.scary(
-                    Ansi.ansi().fgBright(Ansi.Color.RED).a(word).reset().toString());
+                    Ansi.ansi().fgBright(Ansi.Color.YELLOW).a(word).reset().toString());
         }
     }
 }

@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.Output;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
@@ -37,7 +38,6 @@ import org.eclipse.aether.deployment.DeploymentException;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.version.Version;
-import org.slf4j.Logger;
 
 /**
  * Construction to calculate "libyear".
@@ -70,7 +70,7 @@ public final class LibYearSink implements Artifacts.Sink {
      * Creates libYear sink.
      */
     public static LibYearSink libYear(
-            Logger output,
+            Output output,
             String subject,
             Context context,
             ToolboxResolverImpl toolboxResolver,
@@ -93,7 +93,7 @@ public final class LibYearSink implements Artifacts.Sink {
                 searchBackends);
     }
 
-    private final Logger output;
+    private final Output output;
     private final String subject;
     private final Context context;
     private final ToolboxResolverImpl toolboxResolver;
@@ -109,7 +109,7 @@ public final class LibYearSink implements Artifacts.Sink {
     private final List<SearchBackend> searchBackends;
 
     private LibYearSink(
-            Logger output,
+            Output output,
             String subject,
             Context context,
             ToolboxResolverImpl toolboxResolver,
@@ -133,7 +133,7 @@ public final class LibYearSink implements Artifacts.Sink {
         this.doubleAdder = new DoubleAdder();
         this.searchBackends = requireNonNull(searchBackends);
 
-        output.info("Calculating libYear for {}", subject);
+        output.chatter("Calculating libYear for {}", subject);
     }
 
     public float getTotalLibyear() {
@@ -254,36 +254,36 @@ public final class LibYearSink implements Artifacts.Sink {
 
             String indent = "  ";
             if (!outdatedWithLibyear.isEmpty()) {
-                output.info("{}Outdated versions with known age", indent);
+                output.tell("{}Outdated versions with known age", indent);
                 outdatedWithLibyear.values().stream()
                         .flatMap(Collection::stream)
-                        .forEach(l -> output.info("{}{}", indent, l));
-                output.info("{}", indent);
+                        .forEach(l -> output.tell("{}{}", indent, l));
+                output.tell("{}", indent);
             }
             if (!outdatedWithoutLibyear.isEmpty()) {
-                output.info("{}Outdated versions without known age", indent);
-                outdatedWithoutLibyear.forEach(l -> output.info("{}{}", indent, l));
-                output.info("{}", indent);
+                output.tell("{}Outdated versions without known age", indent);
+                outdatedWithoutLibyear.forEach(l -> output.tell("{}{}", indent, l));
+                output.tell("{}", indent);
             }
             if (upToDate) {
                 if (!upToDateByAge.isEmpty()) {
-                    output.info("{}Up to date versions", indent);
+                    output.tell("{}Up to date versions", indent);
                 }
-                upToDateByAge.forEach(l -> output.info("{}{}", indent, l));
-                output.info("{}", indent);
+                upToDateByAge.forEach(l -> output.tell("{}{}", indent, l));
+                output.tell("{}", indent);
             }
-            output.info(
+            output.doTell(
                     "Total of {} years from {} outdated dependencies for {}",
                     String.format("%.2f", doubleAdder.floatValue()),
                     outdatedWithLibyear.values().stream().mapToInt(List::size).sum() + outdatedWithoutLibyear.size(),
                     subject);
-            output.info("{}", indent);
+            output.tell("{}", indent);
         } finally {
             searchBackends.forEach(b -> {
                 try {
                     b.close();
                 } catch (Exception e) {
-                    output.warn("Could not close SearchBackend", e);
+                    output.tell("Could not close SearchBackend", e);
                 }
             });
         }

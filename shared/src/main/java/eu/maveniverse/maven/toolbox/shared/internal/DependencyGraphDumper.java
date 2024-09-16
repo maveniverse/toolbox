@@ -39,12 +39,7 @@ import org.eclipse.aether.version.VersionConstraint;
  * Copy of the corresponding class from Resolver, to retain same output across Maven 3.6+
  */
 public class DependencyGraphDumper implements DependencyVisitor {
-    public interface LineFormatter {
-        String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators);
-    }
-
-    public static class PlainLineFormatter implements LineFormatter {
-        @Override
+    public static class LineFormatter {
         public String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
             return formatIndentation(nodes) + formatNode(nodes, decorators);
         }
@@ -331,7 +326,7 @@ public class DependencyGraphDumper implements DependencyVisitor {
      * @param decorators The decorators to apply, must not be {@code null}.
      */
     public DependencyGraphDumper(Consumer<String> consumer, Collection<Function<DependencyNode, String>> decorators) {
-        this(consumer, decorators, new PlainLineFormatter());
+        this(consumer, decorators, new LineFormatter());
     }
 
     /**

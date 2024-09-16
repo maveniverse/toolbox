@@ -673,8 +673,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         output::tell,
                         DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
                         output.tool(
-                                DependencyGraphDumper.LineFormatter.class,
-                                DependencyGraphDumper.PlainLineFormatter::new)));
+                                DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
         return Result.success(collectResult);
     }
 
@@ -731,7 +730,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
         CollectResult collectResult = toolboxResolver.collectDm(
                 resolutionRoot.getArtifact(), resolutionRoot.getManagedDependencies(), verboseTree);
-        collectResult.getRoot().accept(new DependencyGraphDumper(output::tell));
+        collectResult
+                .getRoot()
+                .accept(new DependencyGraphDumper(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
+                        output.tool(
+                                DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
         return Result.success(collectResult);
     }
 

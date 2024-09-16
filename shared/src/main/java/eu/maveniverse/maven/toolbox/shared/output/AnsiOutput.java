@@ -1,5 +1,7 @@
 package eu.maveniverse.maven.toolbox.shared.output;
 
+import static java.util.Objects.requireNonNull;
+
 import eu.maveniverse.maven.toolbox.shared.internal.DependencyGraphDumper;
 import java.io.PrintStream;
 import java.util.Deque;
@@ -125,7 +127,7 @@ public class AnsiOutput extends PrintStreamOutput {
 
     // Tree
 
-    private static class AnsiTreeFormatter extends DependencyGraphDumper.PlainLineFormatter {
+    private static class AnsiTreeFormatter extends DependencyGraphDumper.LineFormatter {
         private final Function<DependencyNode, String> winner = DependencyGraphDumper.winnerNode();
         private final Function<DependencyNode, Boolean> premanaged = DependencyGraphDumper.isPremanaged();
         private final Marker marker;
@@ -136,17 +138,10 @@ public class AnsiOutput extends PrintStreamOutput {
 
         @Override
         public String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            DependencyNode node = requireNonNull(nodes.peek(), "bug");
             if (nodes.size() == 1) {
-                return renderRoot(nodes, decorators);
-            } else if (nodes.peek().getChildren().isEmpty()) {
-                return renderLeaf(nodes, decorators);
-            } else {
-                return renderBranch(nodes, decorators);
+                return winner(formatNode(nodes, decorators));
             }
-        }
-
-        private String renderBranch(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            DependencyNode node = nodes.peek();
             boolean loser = isLoser(node);
             String nodeStr = formatNode(nodes, decorators);
             return formatIndentation(nodes, "╰─", "├─", "  ", "│ ")
@@ -155,14 +150,6 @@ public class AnsiOutput extends PrintStreamOutput {
                             : (isProvided(node)
                                     ? provided(nodeStr)
                                     : (isModded(node) ? modified(nodeStr) : winner(nodeStr))));
-        }
-
-        private String renderLeaf(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            return renderBranch(nodes, decorators);
-        }
-
-        private String renderRoot(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            return winner(formatNode(nodes, decorators));
         }
 
         private boolean isLoser(DependencyNode node) {

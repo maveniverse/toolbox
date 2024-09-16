@@ -388,8 +388,8 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
 
-        try {
-            Result<?> result = doExecute(OutputFactory.createCliOutput(batch, verbosity), getToolboxCommando());
+        try (Output output = OutputFactory.createCliOutput(batch, verbosity)) {
+            Result<?> result = doExecute(output, getToolboxCommando());
             if (!result.isSuccess() && failOnLogicalFailure) {
                 return 1;
             } else {
@@ -426,8 +426,8 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createMavenContextOverrides()));
 
-        try {
-            Result<?> result = doExecute(OutputFactory.createMojoOutput(verbosity), getToolboxCommando());
+        try (Output output = OutputFactory.createMojoOutput(verbosity)) {
+            Result<?> result = doExecute(output, getToolboxCommando());
             if (!result.isSuccess() && failOnLogicalFailure) {
                 throw new MojoFailureException("Operation failed: " + result.getMessage());
             }

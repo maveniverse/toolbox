@@ -1,16 +1,9 @@
-package eu.maveniverse.maven.toolbox.plugin;
+package eu.maveniverse.maven.toolbox.shared.output;
 
-import static org.jline.jansi.Ansi.Attribute.INTENSITY_BOLD;
-import static org.jline.jansi.Ansi.Attribute.INTENSITY_BOLD_OFF;
-import static org.jline.jansi.Ansi.Attribute.ITALIC;
-import static org.jline.jansi.Ansi.Attribute.ITALIC_OFF;
-import static org.jline.jansi.Ansi.ansi;
+import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.internal.DependencyGraphDumper;
-import eu.maveniverse.maven.toolbox.shared.output.Marker;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.PrintStream;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.Function;
@@ -18,58 +11,38 @@ import java.util.function.Supplier;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.jline.jansi.Ansi;
-import org.jline.terminal.Terminal;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
-public class JLine3Output implements Output {
-    private final Terminal terminal;
-    private final Verbosity verbosity;
-    private final boolean errors;
+public class AnsiOutput extends PrintStreamOutput {
 
-    public JLine3Output(Terminal terminal, Verbosity verbosity, boolean errors) {
-        this.terminal = terminal;
-        this.verbosity = verbosity;
-        this.errors = errors;
-    }
-
-    public Terminal getTerminal() {
-        return terminal;
-    }
-
-    public void close() throws IOException {
-        terminal.flush();
-        terminal.close();
+    public AnsiOutput(PrintStream printStream, Verbosity verbosity, boolean errors) {
+        super(printStream, verbosity, errors);
     }
 
     @Override
     public <T> T tool(Class<T> klazz, Supplier<T> supplier) {
         if (DependencyGraphDumper.LineFormatter.class.equals(klazz)) {
-            return klazz.cast(new JLine3TreeFormatter(this));
+            return klazz.cast(new AnsiTreeFormatter(marker(Verbosity.NORMAL)));
         }
         return supplier.get();
     }
 
     @Override
     public Marker marker(Verbosity verbosity) {
-        return new JLine3Marker(this, verbosity);
-    }
-
-    @Override
-    public Verbosity getVerbosity() {
-        return verbosity;
+        return new AnsiMarker(this, verbosity);
     }
 
     @Override
     public void handle(Verbosity verbosity, String message, Object... params) {
         FormattingTuple tuple = MessageFormatter.arrayFormat(message, params);
-        terminal.writer().println(tuple.getMessage());
+        output.println(tuple.getMessage());
         if (tuple.getThrowable() != null) {
-            writeThrowable(tuple.getThrowable(), terminal.writer());
+            writeThrowable(tuple.getThrowable(), output);
         }
     }
 
-    private void writeThrowable(Throwable t, PrintWriter stream) {
+    private void writeThrowable(Throwable t, PrintStream stream) {
         if (t == null) {
             return;
         }
@@ -82,10 +55,10 @@ public class JLine3Output implements Output {
         if (errors) {
             printStackTrace(t, stream, "");
         }
-        stream.println(ansi().reset());
+        stream.println(Ansi.ansi().reset());
     }
 
-    private void printStackTrace(Throwable t, PrintWriter stream, String prefix) {
+    private void printStackTrace(Throwable t, PrintStream stream, String prefix) {
         StringBuilder builder = new StringBuilder();
         for (StackTraceElement e : t.getStackTrace()) {
             builder.append(prefix);
@@ -110,7 +83,7 @@ public class JLine3Output implements Output {
         }
     }
 
-    private void writeThrowable(Throwable t, PrintWriter stream, String caption, String prefix) {
+    private void writeThrowable(Throwable t, PrintStream stream, String caption, String prefix) {
         StringBuilder builder = new StringBuilder();
         builder.append(prefix)
                 .append(bold(caption))
@@ -137,39 +110,38 @@ public class JLine3Output implements Output {
     }
 
     private static String italic(String format) {
-        return ansi().a(ITALIC).a(format).a(ITALIC_OFF).toString();
+        return Ansi.ansi()
+                .a(Ansi.Attribute.ITALIC)
+                .a(format)
+                .a(Ansi.Attribute.ITALIC_OFF)
+                .toString();
     }
 
     private static String bold(String format) {
-        return ansi().a(INTENSITY_BOLD).a(format).a(INTENSITY_BOLD_OFF).toString();
+        return Ansi.ansi()
+                .a(Ansi.Attribute.INTENSITY_BOLD)
+                .a(format)
+                .a(Ansi.Attribute.INTENSITY_BOLD_OFF)
+                .toString();
     }
 
     // Tree
 
-    private static class JLine3TreeFormatter extends DependencyGraphDumper.PlainLineFormatter {
+    private static class AnsiTreeFormatter extends DependencyGraphDumper.LineFormatter {
         private final Function<DependencyNode, String> winner = DependencyGraphDumper.winnerNode();
         private final Function<DependencyNode, Boolean> premanaged = DependencyGraphDumper.isPremanaged();
-        private final Output output;
         private final Marker marker;
 
-        public JLine3TreeFormatter(Output output) {
-            this.output = output;
-            this.marker = output.marker(Verbosity.NORMAL);
+        public AnsiTreeFormatter(Marker marker) {
+            this.marker = marker;
         }
 
         @Override
         public String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            DependencyNode node = requireNonNull(nodes.peek(), "bug");
             if (nodes.size() == 1) {
-                return renderRoot(nodes, decorators);
-            } else if (nodes.peek().getChildren().isEmpty()) {
-                return renderLeaf(nodes, decorators);
-            } else {
-                return renderBranch(nodes, decorators);
+                return winner(formatNode(nodes, decorators));
             }
-        }
-
-        private String renderBranch(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            DependencyNode node = nodes.peek();
             boolean loser = isLoser(node);
             String nodeStr = formatNode(nodes, decorators);
             return formatIndentation(nodes, "╰─", "├─", "  ", "│ ")
@@ -178,14 +150,6 @@ public class JLine3Output implements Output {
                             : (isProvided(node)
                                     ? provided(nodeStr)
                                     : (isModded(node) ? modified(nodeStr) : winner(nodeStr))));
-        }
-
-        private String renderLeaf(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            return renderBranch(nodes, decorators);
-        }
-
-        private String renderRoot(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            return "\uD83C\uDF33" + winner(formatNode(nodes, decorators));
         }
 
         private boolean isLoser(DependencyNode node) {
@@ -205,7 +169,7 @@ public class JLine3Output implements Output {
         }
 
         private String provided(String string) {
-            return marker.unimportant(string).toString();
+            return marker.detail(string).toString();
         }
 
         private String modified(String string) {
@@ -213,44 +177,49 @@ public class JLine3Output implements Output {
         }
 
         private String loser(String string) {
-            return marker.detail(string).toString();
+            return marker.unimportant(string).toString();
         }
     }
 
     // MessageBuilder
 
-    private static class JLine3Marker extends Marker {
-        public JLine3Marker(Output output, Verbosity verbosity) {
+    private static class AnsiMarker extends Marker {
+        public AnsiMarker(Output output, Verbosity verbosity) {
             super(output, verbosity);
         }
 
         @Override
         public Marker emphasize(String word) {
-            return super.emphasize(
-                    ansi().bold().fgBright(Ansi.Color.WHITE).a(word).reset().toString());
+            return super.emphasize(Ansi.ansi()
+                    .bold()
+                    .fgBright(Ansi.Color.WHITE)
+                    .a(word)
+                    .reset()
+                    .toString());
         }
 
         @Override
         public Marker outstanding(String word) {
             return super.outstanding(
-                    ansi().fgBright(Ansi.Color.GREEN).a(word).reset().toString());
+                    Ansi.ansi().fgBright(Ansi.Color.GREEN).a(word).reset().toString());
         }
 
         @Override
         public Marker detail(String word) {
             return super.detail(
-                    ansi().fgBright(Ansi.Color.YELLOW).a(word).reset().toString());
+                    Ansi.ansi().fgBright(Ansi.Color.BLUE).a(word).reset().toString());
         }
 
         @Override
         public Marker unimportant(String word) {
             return super.unimportant(
-                    ansi().fgBright(Ansi.Color.CYAN).a(word).reset().toString());
+                    Ansi.ansi().fg(Ansi.Color.BLUE).a(word).reset().toString());
         }
 
         @Override
         public Marker scary(String word) {
-            return super.scary(ansi().fgBright(Ansi.Color.RED).a(word).reset().toString());
+            return super.scary(
+                    Ansi.ansi().fgBright(Ansi.Color.YELLOW).a(word).reset().toString());
         }
     }
 }

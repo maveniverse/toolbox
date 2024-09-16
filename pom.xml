@@ -254,6 +254,11 @@
         <artifactId>jline</artifactId>
         <version>${version.jline}</version>
       </dependency>
+      <dependency>
+        <groupId>org.jline</groupId>
+        <artifactId>jansi-core</artifactId>
+        <version>${version.jline}</version>
+      </dependency>
 
       <dependency>
         <groupId>org.junit.jupiter</groupId>

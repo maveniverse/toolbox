@@ -28,6 +28,11 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.jline</groupId>
+      <artifactId>jansi-core</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>eu.maveniverse.maven.mima</groupId>
       <artifactId>context</artifactId>
     </dependency>

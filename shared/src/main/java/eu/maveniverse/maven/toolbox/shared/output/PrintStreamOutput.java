@@ -14,10 +14,10 @@ import org.slf4j.helpers.MessageFormatter;
 /**
  * {@link Output} backed with {@link PrintStream}.
  */
-public final class PrintStreamOutput implements Output {
-    private final PrintStream output;
-    private final Verbosity verbosity;
-    private final boolean errors;
+public class PrintStreamOutput implements Output {
+    protected final PrintStream output;
+    protected final Verbosity verbosity;
+    protected final boolean errors;
 
     public PrintStreamOutput(PrintStream output, Verbosity verbosity, boolean errors) {
         this.output = output;

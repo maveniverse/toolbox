@@ -27,13 +27,13 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.Sink;
 import eu.maveniverse.maven.toolbox.shared.Source;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -178,8 +178,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public Result<String> dump(Output output) {
         Runtime runtime = context.getRuntime();
-        output.doTell("Toolbox {} (MIMA Runtime '{}' version {})", getVersion(), runtime.name(), runtime.version());
-        output.doTell("=======");
+        output.marker(Output.Verbosity.TIGHT)
+                .emphasize("Toolbox {}")
+                .normal(" (MIMA Runtime '{}' version {})")
+                .say(getVersion(), runtime.name(), runtime.version());
+        output.doTell("");
         output.tell("          Maven version {}", runtime.mavenVersion());
         output.tell("                Managed {}", runtime.managedRepositorySystem());
         output.tell("                Basedir {}", context.basedir());

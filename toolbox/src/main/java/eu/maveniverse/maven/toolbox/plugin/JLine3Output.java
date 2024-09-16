@@ -6,8 +6,9 @@ import static org.jline.jansi.Ansi.Attribute.ITALIC;
 import static org.jline.jansi.Ansi.Attribute.ITALIC_OFF;
 import static org.jline.jansi.Ansi.ansi;
 
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.internal.DependencyGraphDumper;
+import eu.maveniverse.maven.toolbox.shared.output.Marker;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Deque;
@@ -40,9 +41,14 @@ public class JLine3Output implements Output {
     @Override
     public <T> T tool(Class<T> klazz, Supplier<T> supplier) {
         if (DependencyGraphDumper.LineFormatter.class.equals(klazz)) {
-            return klazz.cast(new JLine3TreeFormatter());
+            return klazz.cast(new JLine3TreeFormatter(this));
         }
         return supplier.get();
+    }
+
+    @Override
+    public Marker marker(Verbosity verbosity) {
+        return new JLine3Marker(this, verbosity);
     }
 
     @Override
@@ -139,6 +145,13 @@ public class JLine3Output implements Output {
     private static class JLine3TreeFormatter extends DependencyGraphDumper.PlainLineFormatter {
         private final Function<DependencyNode, String> winner = DependencyGraphDumper.winnerNode();
         private final Function<DependencyNode, Boolean> premanaged = DependencyGraphDumper.isPremanaged();
+        private final Output output;
+        private final Marker marker;
+
+        public JLine3TreeFormatter(Output output) {
+            this.output = output;
+            this.marker = output.marker(Verbosity.NORMAL);
+        }
 
         @Override
         public String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
@@ -184,19 +197,56 @@ public class JLine3Output implements Output {
         }
 
         private String winner(String string) {
-            return ansi().fgBright(Ansi.Color.GREEN).a(string).reset().toString();
+            return marker.outstanding(string).toString();
         }
 
         private String provided(String string) {
-            return ansi().fgBright(Ansi.Color.CYAN).a(string).reset().toString();
+            return marker.unimportant(string).toString();
         }
 
         private String modified(String string) {
-            return ansi().fgBright(Ansi.Color.YELLOW).a(string).reset().toString();
+            return marker.scary(string).toString();
         }
 
         private String loser(String string) {
-            return ansi().fg(Ansi.Color.YELLOW).a(string).reset().toString();
+            return marker.detail(string).toString();
+        }
+    }
+
+    // MessageBuilder
+
+    private static class JLine3Marker extends Marker {
+        public JLine3Marker(Output output, Verbosity verbosity) {
+            super(output, verbosity);
+        }
+
+        @Override
+        public Marker emphasize(String word) {
+            return super.emphasize(
+                    ansi().bold().fgBright(Ansi.Color.WHITE).a(word).reset().toString());
+        }
+
+        @Override
+        public Marker outstanding(String word) {
+            return super.outstanding(
+                    ansi().fgBright(Ansi.Color.GREEN).a(word).reset().toString());
+        }
+
+        @Override
+        public Marker detail(String word) {
+            return super.detail(
+                    ansi().fgBright(Ansi.Color.YELLOW).a(word).reset().toString());
+        }
+
+        @Override
+        public Marker unimportant(String word) {
+            return super.unimportant(
+                    ansi().fgBright(Ansi.Color.CYAN).a(word).reset().toString());
+        }
+
+        @Override
+        public Marker scary(String word) {
+            return super.scary(ansi().fgBright(Ansi.Color.RED).a(word).reset().toString());
         }
     }
 }

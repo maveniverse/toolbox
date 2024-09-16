@@ -7,8 +7,15 @@ import static org.jline.jansi.Ansi.Attribute.ITALIC_OFF;
 import static org.jline.jansi.Ansi.ansi;
 
 import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.internal.DependencyGraphDumper;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Deque;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import org.eclipse.aether.graph.DependencyNode;
+import org.jline.jansi.Ansi;
 import org.jline.terminal.Terminal;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
@@ -27,6 +34,14 @@ public class JLine3Output implements Output {
     public void close() throws IOException {
         terminal.flush();
         terminal.close();
+    }
+
+    @Override
+    public <T> T tool(Class<T> klazz, Supplier<T> supplier) {
+        if (DependencyGraphDumper.LineFormatter.class.equals(klazz)) {
+            return klazz.cast(new JLine3TreeFormatter());
+        }
+        return supplier.get();
     }
 
     @Override
@@ -116,5 +131,59 @@ public class JLine3Output implements Output {
 
     private static String bold(String format) {
         return ansi().a(INTENSITY_BOLD).a(format).a(INTENSITY_BOLD_OFF).toString();
+    }
+
+    // Tree
+
+    private static class JLine3TreeFormatter extends DependencyGraphDumper.PlainLineFormatter {
+        private final Function<DependencyNode, String> winner = DependencyGraphDumper.winnerNode();
+        private final Function<DependencyNode, Boolean> premanaged = DependencyGraphDumper.isPremanaged();
+
+        @Override
+        public String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            if (nodes.size() == 1) {
+                return renderRoot(nodes, decorators);
+            } else if (nodes.peek().getChildren().isEmpty()) {
+                return renderLeaf(nodes, decorators);
+            } else {
+                return renderBranch(nodes, decorators);
+            }
+        }
+
+        private String renderBranch(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            DependencyNode node = nodes.peek();
+            boolean loser = isLoser(node);
+            String nodeStr = formatNode(nodes, decorators);
+            return formatIndentation(nodes, "╰─", "├─", "  ", "│ ")
+                    + (loser ? loser(nodeStr) : (isModded(node) ? modified(nodeStr) : winner(nodeStr)));
+        }
+
+        private String renderLeaf(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            return renderBranch(nodes, decorators);
+        }
+
+        private String renderRoot(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            return "\uD83C\uDF33" + winner(formatNode(nodes, decorators));
+        }
+
+        private boolean isLoser(DependencyNode node) {
+            return winner.apply(node) != null;
+        }
+
+        private boolean isModded(DependencyNode node) {
+            return premanaged.apply(node);
+        }
+
+        private String winner(String string) {
+            return ansi().fgBright(Ansi.Color.GREEN).a(string).reset().toString();
+        }
+
+        private String modified(String string) {
+            return ansi().fgBright(Ansi.Color.YELLOW).a(string).reset().toString();
+        }
+
+        private String loser(String string) {
+            return ansi().fg(Ansi.Color.YELLOW).a(string).reset().toString();
+        }
     }
 }

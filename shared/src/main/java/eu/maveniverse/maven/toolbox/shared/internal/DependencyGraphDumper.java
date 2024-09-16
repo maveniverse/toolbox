@@ -39,6 +39,57 @@ import org.eclipse.aether.version.VersionConstraint;
  * Copy of the corresponding class from Resolver, to retain same output across Maven 3.6+
  */
 public class DependencyGraphDumper implements DependencyVisitor {
+    public interface LineFormatter {
+        String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators);
+    }
+
+    public static class PlainLineFormatter implements LineFormatter {
+        @Override
+        public String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            return formatIndentation(nodes) + formatNode(nodes, decorators);
+        }
+
+        protected String formatIndentation(Deque<DependencyNode> nodes) {
+            return formatIndentation(nodes, "\\- ", "+- ", "   ", "|  ");
+        }
+
+        protected String formatIndentation(
+                Deque<DependencyNode> nodes, String endLastStr, String endStr, String midLastStr, String midStr) {
+            StringBuilder buffer = new StringBuilder(128);
+            Iterator<DependencyNode> iter = nodes.descendingIterator();
+            DependencyNode parent = iter.hasNext() ? iter.next() : null;
+            DependencyNode child = iter.hasNext() ? iter.next() : null;
+            while (parent != null && child != null) {
+                boolean lastChild = parent.getChildren().getLast() == child;
+                boolean end = child == nodes.peekFirst();
+                String indent;
+                if (end) {
+                    indent = lastChild ? endLastStr : endStr;
+                } else {
+                    indent = lastChild ? midLastStr : midStr;
+                }
+                buffer.append(indent);
+                parent = child;
+                child = iter.hasNext() ? iter.next() : null;
+            }
+            return buffer.toString();
+        }
+
+        protected String formatNode(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            DependencyNode node = requireNonNull(nodes.peek(), "bug: should not happen");
+            StringBuilder buffer = new StringBuilder(128);
+            Artifact a = node.getArtifact();
+            buffer.append(a);
+            for (Function<DependencyNode, String> decorator : decorators) {
+                String decoration = decorator.apply(node);
+                if (decoration != null) {
+                    buffer.append(" ").append(decoration);
+                }
+            }
+            return buffer.toString();
+        }
+    }
+
     /**
      * Decorator of "effective dependency": shows effective scope and optionality.
      */
@@ -56,6 +107,28 @@ public class DependencyGraphDumper implements DependencyVisitor {
             }
             return null;
         };
+    }
+
+    /**
+     * Helper for premanaged state handling.
+     */
+    public static Function<DependencyNode, Boolean> isPremanaged() {
+        return node -> (DependencyManagerUtils.getPremanagedVersion(node) != null
+                        && !Objects.equals(
+                                DependencyManagerUtils.getPremanagedVersion(node),
+                                node.getDependency().getArtifact().getVersion()))
+                || (DependencyManagerUtils.getPremanagedScope(node) != null
+                        && !Objects.equals(
+                                DependencyManagerUtils.getPremanagedScope(node),
+                                node.getDependency().getScope()))
+                || (DependencyManagerUtils.getPremanagedOptional(node) != null
+                        && !Objects.equals(
+                                DependencyManagerUtils.getPremanagedOptional(node),
+                                node.getDependency().getOptional()))
+                || (DependencyManagerUtils.getPremanagedExclusions(node) != null
+                        && !Objects.equals(
+                                DependencyManagerUtils.getPremanagedExclusions(node),
+                                node.getDependency().getExclusions()));
     }
     /**
      * Decorator of "managed version": explains on nodes what was managed.
@@ -112,8 +185,12 @@ public class DependencyGraphDumper implements DependencyVisitor {
             if (d != null) {
                 Collection<Exclusion> premanagedExclusions =
                         DependencyManagerUtils.getPremanagedExclusions(dependencyNode);
-                if (premanagedExclusions != null && !equals(premanagedExclusions, d.getExclusions())) {
-                    return "(exclusions managed from " + premanagedExclusions + ")";
+                if (premanagedExclusions != null) {
+                    if (!equals(premanagedExclusions, d.getExclusions())) {
+                        return "(exclusions override from " + premanagedExclusions + ")";
+                    } else {
+                        return "(exclusions applied " + premanagedExclusions + ")";
+                    }
                 }
             }
             return null;
@@ -213,8 +290,14 @@ public class DependencyGraphDumper implements DependencyVisitor {
 
     /**
      * Extends {@link #DEFAULT_DECORATORS} decorators with passed in ones.
-     *
-     * @since 2.0.0
+     */
+    @SafeVarargs
+    public static List<Function<DependencyNode, String>> defaultsWith(Function<DependencyNode, String>... extras) {
+        return defaultsWith(Arrays.asList(extras));
+    }
+
+    /**
+     * Extends {@link #DEFAULT_DECORATORS} decorators with passed in ones.
      */
     public static List<Function<DependencyNode, String>> defaultsWith(
             Collection<Function<DependencyNode, String>> extras) {
@@ -227,6 +310,8 @@ public class DependencyGraphDumper implements DependencyVisitor {
     private final Consumer<String> consumer;
 
     private final List<Function<DependencyNode, String>> decorators;
+
+    private final LineFormatter lineFormatter;
 
     private final Deque<DependencyNode> nodes = new ArrayDeque<>();
 
@@ -244,17 +329,31 @@ public class DependencyGraphDumper implements DependencyVisitor {
      *
      * @param consumer The string consumer, must not be {@code null}.
      * @param decorators The decorators to apply, must not be {@code null}.
-     * @since 2.0.0
      */
     public DependencyGraphDumper(Consumer<String> consumer, Collection<Function<DependencyNode, String>> decorators) {
+        this(consumer, decorators, new PlainLineFormatter());
+    }
+
+    /**
+     * Creates instance with given consumer and decorators.
+     *
+     * @param consumer The string consumer, must not be {@code null}.
+     * @param decorators The decorators to apply, must not be {@code null}.
+     * @param lineFormatter The {@link LineFormatter}, must not be {@code null}.
+     */
+    public DependencyGraphDumper(
+            Consumer<String> consumer,
+            Collection<Function<DependencyNode, String>> decorators,
+            LineFormatter lineFormatter) {
         this.consumer = requireNonNull(consumer);
         this.decorators = new ArrayList<>(decorators);
+        this.lineFormatter = requireNonNull(lineFormatter);
     }
 
     @Override
     public boolean visitEnter(DependencyNode node) {
         nodes.push(node);
-        consumer.accept(formatLine(nodes));
+        consumer.accept(lineFormatter.formatLine(nodes, decorators));
         return true;
     }
 
@@ -264,45 +363,6 @@ public class DependencyGraphDumper implements DependencyVisitor {
             nodes.pop();
         }
         return true;
-    }
-
-    protected String formatLine(Deque<DependencyNode> nodes) {
-        return formatIndentation(nodes) + formatNode(nodes);
-    }
-
-    protected String formatIndentation(Deque<DependencyNode> nodes) {
-        StringBuilder buffer = new StringBuilder(128);
-        Iterator<DependencyNode> iter = nodes.descendingIterator();
-        DependencyNode parent = iter.hasNext() ? iter.next() : null;
-        DependencyNode child = iter.hasNext() ? iter.next() : null;
-        while (parent != null && child != null) {
-            boolean lastChild = parent.getChildren().getLast() == child;
-            boolean end = child == nodes.peekFirst();
-            String indent;
-            if (end) {
-                indent = lastChild ? "\\- " : "+- ";
-            } else {
-                indent = lastChild ? "   " : "|  ";
-            }
-            buffer.append(indent);
-            parent = child;
-            child = iter.hasNext() ? iter.next() : null;
-        }
-        return buffer.toString();
-    }
-
-    protected String formatNode(Deque<DependencyNode> nodes) {
-        DependencyNode node = requireNonNull(nodes.peek(), "bug: should not happen");
-        StringBuilder buffer = new StringBuilder(128);
-        Artifact a = node.getArtifact();
-        buffer.append(a);
-        for (Function<DependencyNode, String> decorator : decorators) {
-            String decoration = decorator.apply(node);
-            if (decoration != null) {
-                buffer.append(" ").append(decoration);
-            }
-        }
-        return buffer.toString();
     }
 
     private static boolean equals(Collection<Exclusion> c1, Collection<Exclusion> c2) {

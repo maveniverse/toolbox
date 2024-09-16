@@ -664,7 +664,14 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 root.getDependencies(),
                 root.getManagedDependencies(),
                 verboseTree);
-        collectResult.getRoot().accept(new DependencyGraphDumper(output::tell));
+        collectResult
+                .getRoot()
+                .accept(new DependencyGraphDumper(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
+                        output.tool(
+                                DependencyGraphDumper.LineFormatter.class,
+                                DependencyGraphDumper.PlainLineFormatter::new)));
         return Result.success(collectResult);
     }
 

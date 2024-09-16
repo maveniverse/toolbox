@@ -14,12 +14,14 @@ import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
 public class JLine3Output implements Output {
-    private final Verbosity verbosity;
     private final Terminal terminal;
+    private final Verbosity verbosity;
+    private final boolean errors;
 
-    public JLine3Output(Verbosity verbosity, Terminal terminal) {
-        this.verbosity = verbosity;
+    public JLine3Output(Terminal terminal, Verbosity verbosity, boolean errors) {
         this.terminal = terminal;
+        this.verbosity = verbosity;
+        this.errors = errors;
     }
 
     public void close() throws IOException {
@@ -45,13 +47,13 @@ public class JLine3Output implements Output {
         if (t == null) {
             return;
         }
-        String builder = failure(t.getClass().getName());
+        String builder = bold(t.getClass().getName());
         if (t.getMessage() != null) {
-            builder += ": " + failure(t.getMessage());
+            builder += ": " + italic(t.getMessage());
         }
         stream.println(builder);
 
-        if (true) {
+        if (errors) {
             printStackTrace(t, stream, "");
         }
         stream.println(ansi().reset());
@@ -62,13 +64,13 @@ public class JLine3Output implements Output {
         for (StackTraceElement e : t.getStackTrace()) {
             builder.append(prefix);
             builder.append("    ");
-            builder.append(strong("at"));
+            builder.append(bold("at"));
             builder.append(" ");
             builder.append(e.getClassName());
             builder.append(".");
             builder.append(e.getMethodName());
             builder.append(" (");
-            builder.append(strong(getLocation(e)));
+            builder.append(bold(getLocation(e)));
             builder.append(")");
             stream.println(builder);
             builder.setLength(0);
@@ -85,11 +87,11 @@ public class JLine3Output implements Output {
     private void writeThrowable(Throwable t, PrintWriter stream, String caption, String prefix) {
         StringBuilder builder = new StringBuilder();
         builder.append(prefix)
-                .append(strong(caption))
+                .append(bold(caption))
                 .append(": ")
                 .append(t.getClass().getName());
         if (t.getMessage() != null) {
-            builder.append(": ").append(failure(t.getMessage()));
+            builder.append(": ").append(italic(t.getMessage()));
         }
         stream.println(builder);
 
@@ -108,11 +110,11 @@ public class JLine3Output implements Output {
         }
     }
 
-    private static String failure(String format) {
+    private static String italic(String format) {
         return ansi().a(ITALIC).a(format).a(ITALIC_OFF).toString();
     }
 
-    private static String strong(String format) {
+    private static String bold(String format) {
         return ansi().a(INTENSITY_BOLD).a(format).a(INTENSITY_BOLD_OFF).toString();
     }
 }

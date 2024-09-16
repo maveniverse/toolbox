@@ -17,10 +17,12 @@ import org.slf4j.helpers.MessageFormatter;
 public final class PrintStreamOutput implements Output {
     private final PrintStream output;
     private final Verbosity verbosity;
+    private final boolean errors;
 
-    public PrintStreamOutput(PrintStream output, Verbosity verbosity) {
+    public PrintStreamOutput(PrintStream output, Verbosity verbosity, boolean errors) {
         this.output = output;
         this.verbosity = verbosity;
+        this.errors = errors;
     }
 
     @Override
@@ -33,7 +35,11 @@ public final class PrintStreamOutput implements Output {
         FormattingTuple tuple = MessageFormatter.arrayFormat(message, params);
         output.println(tuple.getMessage());
         if (tuple.getThrowable() != null) {
-            tuple.getThrowable().printStackTrace(output);
+            if (errors) {
+                tuple.getThrowable().printStackTrace(output);
+            } else {
+                output.println(tuple.getThrowable().getMessage());
+            }
         }
     }
 }

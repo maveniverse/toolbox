@@ -14,6 +14,7 @@ import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.PrintStreamOutput;
 import java.io.IOException;
 import org.jline.jansi.Ansi;
+import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,20 +46,34 @@ public final class OutputFactory {
     /**
      * When running as CLI, we need to set up ourselves fully.
      */
-    public static Output createCliOutput(boolean batchMode, Output.Verbosity verbosity) {
+    public static Output createCliOutput(boolean batchMode, boolean errors, Output.Verbosity verbosity) {
         requireNonNull(verbosity, "verbosity");
-        Output output;
+        Output output = null;
         if (!batchMode && System.console() != null) {
-            Ansi.setEnabled(true);
+            if (!Ansi.isEnabled()) {
+                Ansi.setEnabled(true);
+            }
+            Terminal terminal = null;
             try {
-                output = new JLine3Output(verbosity, TerminalBuilder.builder().build());
+                terminal = TerminalBuilder.builder().build();
             } catch (IOException e) {
                 System.err.println("Error creating JLine3 Terminal; fallback to System.out");
                 e.printStackTrace(System.err);
-                output = new PrintStreamOutput(System.out, verbosity);
             }
-        } else {
-            output = new PrintStreamOutput(System.out, verbosity);
+            if (terminal != null) {
+                if (!Terminal.TYPE_DUMB.equals(terminal.getType())) {
+                    output = new JLine3Output(terminal, verbosity, errors);
+                } else {
+                    try {
+                        terminal.close();
+                    } catch (IOException e) {
+                        System.err.println("Error closing dissed terminal");
+                    }
+                }
+            }
+        }
+        if (output == null) {
+            output = new PrintStreamOutput(System.out, verbosity, errors);
         }
         dumpOutputStatus(output);
         return output;

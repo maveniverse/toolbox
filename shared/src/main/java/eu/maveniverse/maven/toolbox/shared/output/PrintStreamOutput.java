@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared;
+package eu.maveniverse.maven.toolbox.shared.output;
 
 import java.io.PrintStream;
 import org.slf4j.helpers.FormattingTuple;

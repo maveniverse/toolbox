@@ -10,7 +10,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.Output;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;

@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;

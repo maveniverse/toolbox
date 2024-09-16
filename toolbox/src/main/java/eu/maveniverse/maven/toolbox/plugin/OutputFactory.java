@@ -9,9 +9,9 @@ package eu.maveniverse.maven.toolbox.plugin;
 
 import static java.util.Objects.requireNonNull;
 
-import eu.maveniverse.maven.toolbox.shared.LoggerOutput;
-import eu.maveniverse.maven.toolbox.shared.Output;
-import eu.maveniverse.maven.toolbox.shared.PrintStreamOutput;
+import eu.maveniverse.maven.toolbox.shared.output.LoggerOutput;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
+import eu.maveniverse.maven.toolbox.shared.output.PrintStreamOutput;
 import java.io.IOException;
 import org.jline.jansi.Ansi;
 import org.jline.terminal.Terminal;

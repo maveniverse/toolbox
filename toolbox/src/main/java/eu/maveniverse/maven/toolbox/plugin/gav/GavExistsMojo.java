@@ -8,9 +8,9 @@
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.Output;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;

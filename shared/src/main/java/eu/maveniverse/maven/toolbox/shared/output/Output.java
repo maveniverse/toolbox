@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * https://www.eclipse.org/legal/epl-v20.html
  */
-package eu.maveniverse.maven.toolbox.shared;
+package eu.maveniverse.maven.toolbox.shared.output;
 
 import static java.util.Objects.requireNonNull;
 
@@ -43,14 +43,18 @@ public interface Output extends Closeable {
     @Override
     default void close() throws IOException {}
 
-    default boolean isHeard(Verbosity verbosity) {
-        requireNonNull(verbosity);
-        return getVerbosity().ordinal() >= verbosity.ordinal();
-    }
-
     default <T> T tool(Class<T> klazz, Supplier<T> supplier) {
         requireNonNull(supplier, "supplier");
         return supplier.get();
+    }
+
+    default Marker marker(Verbosity verbosity) {
+        return new Marker(this, verbosity);
+    }
+
+    default boolean isHeard(Verbosity verbosity) {
+        requireNonNull(verbosity);
+        return getVerbosity().ordinal() >= verbosity.ordinal();
     }
 
     Verbosity getVerbosity();

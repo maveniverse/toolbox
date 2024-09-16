@@ -187,6 +187,10 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         return get(Context.class);
     }
 
+    protected Output getOutput() {
+        return get(Output.class);
+    }
+
     protected ToolboxCommando getToolboxCommando() {
         return getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getContext()));
     }
@@ -204,9 +208,10 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         boolean seeded = CONTEXT.compareAndSet(null, new HashMap<>());
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
+        getOrCreate(Output.class, () -> OutputFactory.createCliOutput(batch, errors, verbosity));
 
-        try (Output output = OutputFactory.createCliOutput(batch, errors, verbosity)) {
-            Result<?> result = doExecute(output, getToolboxCommando());
+        try {
+            Result<?> result = doExecute(getOutput(), getToolboxCommando());
             if (!result.isSuccess() && failOnLogicalFailure) {
                 return 1;
             } else {
@@ -220,7 +225,16 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
             return 1;
         } finally {
             if (seeded) {
-                getContext().close();
+                try {
+                    getContext().close();
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                }
+                try {
+                    getOutput().close();
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                }
             }
         }
     }
@@ -245,9 +259,10 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         CONTEXT.compareAndSet(null, getPluginContext());
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createMavenContextOverrides()));
+        getOrCreate(Output.class, () -> OutputFactory.createMojoOutput(verbosity));
 
-        try (Output output = OutputFactory.createMojoOutput(verbosity)) {
-            Result<?> result = doExecute(output, getToolboxCommando());
+        try {
+            Result<?> result = doExecute(getOutput(), getToolboxCommando());
             if (!result.isSuccess() && failOnLogicalFailure) {
                 throw new MojoFailureException("Operation failed: " + result.getMessage());
             }

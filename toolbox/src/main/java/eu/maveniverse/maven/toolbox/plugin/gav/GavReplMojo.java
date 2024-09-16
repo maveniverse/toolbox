@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.plugin.CLI;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.plugin.JLine3Output;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
@@ -32,7 +33,6 @@ import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
-import org.jline.terminal.impl.jni.JniTerminalProvider;
 import org.jline.widget.TailTipWidgets;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
@@ -41,8 +41,7 @@ import picocli.shell.jline3.PicocliCommands;
 @Mojo(name = "gav-repl", requiresProject = false, threadSafe = true)
 public class GavReplMojo extends GavMojoSupport {
     @Override
-    public Result<String> doExecute(Output output, ToolboxCommando toolboxCommando) {
-        Class<?> tp = JniTerminalProvider.class;
+    public Result<String> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
         Context context = getContext();
 
         toolboxCommando.dump(output);
@@ -56,10 +55,16 @@ public class GavReplMojo extends GavMojoSupport {
         // set up picocli commands
         CommandLine cmd = new CommandLine(new CLI());
         PicocliCommands picocliCommands = new PicocliCommands(cmd);
-
         Parser parser = new DefaultParser();
 
-        try (Terminal terminal = TerminalBuilder.builder().name("mima").build()) {
+        Terminal existing = null;
+        if (output instanceof JLine3Output jLine3Output) {
+            existing = jLine3Output.getTerminal();
+        }
+
+        try (Terminal terminal = existing != null
+                ? existing
+                : TerminalBuilder.builder().name("Toolbox").build()) {
             SystemRegistry systemRegistry = new SystemRegistryImpl(parser, terminal, context::basedir, configPath);
             systemRegistry.setCommandRegistries(builtins, picocliCommands);
 
@@ -98,9 +103,6 @@ public class GavReplMojo extends GavMojoSupport {
                     return Result.failure(e.getMessage());
                 }
             }
-        } catch (Exception e) {
-            output.doTell("REPL Failure: ", e);
-            return Result.failure(e.getMessage());
         }
     }
 }

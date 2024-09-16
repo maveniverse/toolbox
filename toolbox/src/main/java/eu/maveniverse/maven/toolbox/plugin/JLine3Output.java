@@ -33,6 +33,10 @@ public class JLine3Output implements Output {
         this.errors = errors;
     }
 
+    public Terminal getTerminal() {
+        return terminal;
+    }
+
     public void close() throws IOException {
         terminal.flush();
         terminal.close();

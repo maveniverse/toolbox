@@ -55,7 +55,7 @@ public final class OutputFactory {
             }
             Terminal terminal = null;
             try {
-                terminal = TerminalBuilder.builder().build();
+                terminal = TerminalBuilder.builder().name("Toolbox").build();
             } catch (IOException e) {
                 System.err.println("Error creating JLine3 Terminal; fallback to System.out");
                 e.printStackTrace(System.err);

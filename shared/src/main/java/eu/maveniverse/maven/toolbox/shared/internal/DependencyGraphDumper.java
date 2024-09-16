@@ -187,9 +187,9 @@ public class DependencyGraphDumper implements DependencyVisitor {
                         DependencyManagerUtils.getPremanagedExclusions(dependencyNode);
                 if (premanagedExclusions != null) {
                     if (!equals(premanagedExclusions, d.getExclusions())) {
-                        return "(exclusions override from " + premanagedExclusions + ")";
+                        return "(exclusions managed from " + premanagedExclusions + ")";
                     } else {
-                        return "(exclusions applied " + premanagedExclusions + ")";
+                        return "(exclusions applied: " + premanagedExclusions.size() + ")";
                     }
                 }
             }

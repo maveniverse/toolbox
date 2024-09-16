@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.util.artifact.JavaScopes;
 import org.jline.jansi.Ansi;
 import org.jline.terminal.Terminal;
 import org.slf4j.helpers.FormattingTuple;
@@ -155,7 +156,11 @@ public class JLine3Output implements Output {
             boolean loser = isLoser(node);
             String nodeStr = formatNode(nodes, decorators);
             return formatIndentation(nodes, "╰─", "├─", "  ", "│ ")
-                    + (loser ? loser(nodeStr) : (isModded(node) ? modified(nodeStr) : winner(nodeStr)));
+                    + (loser
+                            ? loser(nodeStr)
+                            : (isProvided(node)
+                                    ? provided(nodeStr)
+                                    : (isModded(node) ? modified(nodeStr) : winner(nodeStr))));
         }
 
         private String renderLeaf(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
@@ -174,8 +179,16 @@ public class JLine3Output implements Output {
             return premanaged.apply(node);
         }
 
+        private boolean isProvided(DependencyNode node) {
+            return JavaScopes.PROVIDED.equals(node.getDependency().getScope());
+        }
+
         private String winner(String string) {
             return ansi().fgBright(Ansi.Color.GREEN).a(string).reset().toString();
+        }
+
+        private String provided(String string) {
+            return ansi().fgBright(Ansi.Color.CYAN).a(string).reset().toString();
         }
 
         private String modified(String string) {

@@ -16,18 +16,12 @@ import org.slf4j.helpers.MessageFormatter;
 /**
  * ANSI output that wraps another {@link Output} to decorate it.
  */
-public class AnsiOutput implements Output {
+public class AnsiOutput extends OutputSupport {
     private final Output output;
-    private final boolean errors;
 
-    public AnsiOutput(Output output, boolean errors) {
+    public AnsiOutput(Output output) {
+        super(output.getVerbosity(), output.isShowErrors());
         this.output = output;
-        this.errors = errors;
-    }
-
-    @Override
-    public Verbosity getVerbosity() {
-        return output.getVerbosity();
     }
 
     @Override

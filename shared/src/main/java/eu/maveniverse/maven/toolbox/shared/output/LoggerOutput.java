@@ -12,18 +12,16 @@ import org.slf4j.Logger;
 /**
  * {@link Output} backed with Slf4J {@link Logger}.
  */
-public final class LoggerOutput implements Output {
+public final class LoggerOutput extends OutputSupport {
     private final Logger output;
-    private final Verbosity verbosity;
 
     public LoggerOutput(Logger output, Verbosity verbosity) {
+        super(verbosity, true);
         this.output = output;
-        this.verbosity = verbosity;
     }
 
-    @Override
-    public Verbosity getVerbosity() {
-        return verbosity;
+    public void warn(String message, Object... params) {
+        output.warn(message, params);
     }
 
     @Override

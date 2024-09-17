@@ -10,16 +10,9 @@ package eu.maveniverse.maven.toolbox.shared.output;
 /**
  * No op {@link Output}.
  */
-public final class NopOutput implements Output {
-    private final Verbosity verbosity;
-
+public final class NopOutput extends OutputSupport {
     public NopOutput() {
-        this.verbosity = Verbosity.SILENT;
-    }
-
-    @Override
-    public Verbosity getVerbosity() {
-        return verbosity;
+        super(Verbosity.SILENT, false);
     }
 
     @Override

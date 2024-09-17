@@ -41,7 +41,7 @@ public final class OutputFactory {
             if (!Ansi.isEnabled()) {
                 Ansi.setEnabled(true);
             }
-            output = new AnsiOutput(output, errors);
+            output = new AnsiOutput(output);
         }
         dumpOutputStatus(output);
         return output;
@@ -57,7 +57,7 @@ public final class OutputFactory {
             if (!Ansi.isEnabled()) {
                 Ansi.setEnabled(true);
             }
-            output = new AnsiOutput(output, errors);
+            output = new AnsiOutput(output);
         }
         dumpOutputStatus(output);
         return output;

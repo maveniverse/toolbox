@@ -7,10 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.shared.output;
 
-import static java.util.Objects.requireNonNull;
-
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.function.Supplier;
 
 /**
@@ -40,52 +37,25 @@ public interface Output extends Closeable {
         CHATTER
     }
 
-    @Override
-    default void close() throws IOException {}
-
-    default <T> T tool(Class<T> klazz, Supplier<T> supplier) {
-        requireNonNull(supplier, "supplier");
-        return supplier.get();
-    }
-
-    default Marker marker(Verbosity verbosity) {
-        return new Marker(this, verbosity);
-    }
-
-    default boolean isHeard(Verbosity verbosity) {
-        requireNonNull(verbosity);
-        return getVerbosity().ordinal() >= verbosity.ordinal();
-    }
-
     Verbosity getVerbosity();
 
-    default void doTell(String message, Object... params) {
-        if (isHeard(Verbosity.TIGHT)) {
-            handle(Verbosity.TIGHT, message, params);
-        }
-    }
+    boolean isShowErrors();
 
-    default void tell(String message, Object... params) {
-        if (isHeard(Verbosity.NORMAL)) {
-            handle(Verbosity.NORMAL, message, params);
-        }
-    }
+    <T> T tool(Class<T> klazz, Supplier<T> supplier);
 
-    default void suggest(String message, Object... params) {
-        if (isHeard(Verbosity.SUGGEST)) {
-            handle(Verbosity.SUGGEST, message, params);
-        }
-    }
+    Marker marker(Verbosity verbosity);
 
-    default void chatter(String message, Object... params) {
-        if (isHeard(Verbosity.CHATTER)) {
-            handle(Verbosity.CHATTER, message, params);
-        }
-    }
+    boolean isHeard(Verbosity verbosity);
 
-    default void warn(String message, Object... params) {
-        new Marker(this, Verbosity.TIGHT).scary("[W] " + message).say(params);
-    }
+    void doTell(String message, Object... params);
+
+    void tell(String message, Object... params);
+
+    void suggest(String message, Object... params);
+
+    void chatter(String message, Object... params);
+
+    void warn(String message, Object... params);
 
     void handle(Verbosity verbosity, String message, Object... params);
 }

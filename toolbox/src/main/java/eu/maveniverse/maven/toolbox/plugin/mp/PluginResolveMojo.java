@@ -11,7 +11,6 @@ import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -50,7 +49,8 @@ public class PluginResolveMojo extends MPPluginMojoSupport {
     private String sinkSpec;
 
     @Override
-    protected Result<List<Artifact>> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<List<Artifact>> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         Collection<Artifact> roots;
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
         if (root != null) {
@@ -61,6 +61,6 @@ public class PluginResolveMojo extends MPPluginMojoSupport {
                     .collect(Collectors.toList());
         }
         return toolboxCommando.resolve(
-                roots::stream, sources, javadoc, signature, toolboxCommando.artifactSink(sinkSpec), output);
+                roots::stream, sources, javadoc, signature, toolboxCommando.artifactSink(sinkSpec));
     }
 }

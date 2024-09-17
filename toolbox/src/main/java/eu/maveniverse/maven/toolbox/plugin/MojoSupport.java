@@ -25,11 +25,9 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
@@ -201,7 +199,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     }
 
     protected ToolboxCommando getToolboxCommando() {
-        return getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getContext()));
+        return getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getOutput(), getContext()));
     }
 
     /**
@@ -219,10 +217,10 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         boolean seeded = CONTEXT.compareAndSet(null, new HashMap<>());
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
-        getOrCreate(Output.class, () -> OutputFactory.createOutput(batch, errors, verbosity));
+        getOrCreate(Output.class, () -> OutputFactory.createCliOutput(batch, errors, verbosity));
 
         try {
-            Result<?> result = doExecute(getOutput(), getToolboxCommando());
+            Result<?> result = doExecute();
             if (!result.isSuccess() && failOnLogicalFailure) {
                 return 1;
             } else {
@@ -253,10 +251,13 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     // Mojo
 
     @Parameter(defaultValue = "${settings}", readonly = true, required = true)
-    protected Settings settings;
+    protected Settings mojoSettings;
 
-    @Component
-    protected MavenSession mavenSession;
+    @Parameter(defaultValue = "${session.request.interactiveMode}", readonly = true, required = true)
+    protected boolean mojoInteractiveMode;
+
+    @Parameter(defaultValue = "${session.request.showErrors}", readonly = true, required = true)
+    protected boolean mojoErrors;
 
     /**
      * Maven Mojo entry point.
@@ -268,21 +269,16 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         CONTEXT.compareAndSet(null, new HashMap<>());
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createMojoContextOverrides()));
-        getOrCreate(
-                Output.class,
-                () -> OutputFactory.createOutput(
-                        !mavenSession.getRequest().isInteractiveMode(),
-                        mavenSession.getRequest().isShowErrors(),
-                        verbosity));
+        getOrCreate(Output.class, () -> OutputFactory.createMojoOutput(!mojoInteractiveMode, mojoErrors, verbosity));
         try {
-            Result<?> result = doExecute(getOutput(), getToolboxCommando());
+            Result<?> result = doExecute();
             if (!result.isSuccess() && failOnLogicalFailure) {
                 throw new MojoFailureException("Operation failed: " + result.getMessage());
             }
         } catch (RuntimeException e) {
-            throw new MojoExecutionException("Runtime exception", e);
+            throw new MojoExecutionException("Execution failed: ", e);
         } catch (Exception e) {
-            throw new MojoFailureException(e);
+            throw new MojoFailureException("Operation failed: ", e);
         } finally {
             try {
                 getOutput().close();
@@ -297,5 +293,5 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         }
     }
 
-    protected abstract Result<?> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception;
+    protected abstract Result<?> doExecute() throws Exception;
 }

@@ -11,7 +11,6 @@ import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -57,7 +56,8 @@ public class LibYearMojo extends MPMojoSupport {
     private boolean upToDate;
 
     @Override
-    protected Result<Float> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Float> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.libYear(
                 "project " + mavenProject.getId(),
                 ResolutionScope.parse(scope),
@@ -67,7 +67,6 @@ public class LibYearMojo extends MPMojoSupport {
                 upToDate,
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
-                getRepositoryVendor(),
-                output);
+                getRepositoryVendor());
     }
 }

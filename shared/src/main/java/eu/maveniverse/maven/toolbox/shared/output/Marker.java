@@ -10,7 +10,7 @@ package eu.maveniverse.maven.toolbox.shared.output;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Simple Marker, useful to assemble single message line with different markings. This implementation is
+ * Simple "Marker (Pen)", useful to assemble single message line with different markings. This implementation is
  * "no op" (does not do anything), subclasses of it may do more.
  */
 public class Marker {
@@ -51,6 +51,10 @@ public class Marker {
     }
 
     public Marker scary(String word) {
+        return word(word);
+    }
+
+    public Marker bloody(String word) {
         return word(word);
     }
 

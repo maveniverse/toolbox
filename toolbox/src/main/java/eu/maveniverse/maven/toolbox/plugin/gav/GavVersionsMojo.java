@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.util.List;
 import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -44,12 +43,11 @@ public class GavVersionsMojo extends GavMojoSupport {
     private String artifactVersionMatcherSpec;
 
     @Override
-    protected Result<Map<Artifact, List<Version>>> doExecute(Output output, ToolboxCommando toolboxCommando)
-            throws Exception {
+    protected Result<Map<Artifact, List<Version>>> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.versions(
                 "GAV",
                 () -> slurp(gav).stream().map(DefaultArtifact::new),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                output);
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
     }
 }

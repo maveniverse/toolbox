@@ -11,7 +11,6 @@ import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.collection.CollectResult;
@@ -61,8 +60,9 @@ public class GavTreeMojo extends GavMojoSupport {
     private boolean verboseTree;
 
     @Override
-    protected Result<CollectResult> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<CollectResult> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.tree(
-                ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)), verboseTree, output);
+                ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)), verboseTree);
     }
 }

@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.Sink;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,10 +24,12 @@ import org.eclipse.aether.artifact.Artifact;
  */
 public final class MultiArtifactSink implements Artifacts.Sink {
     public static final class MultiArtifactSinkBuilder {
+        private final Output output;
         private final LinkedHashMap<Predicate<Artifact>, Sink<Artifact>> sinks;
         private boolean missedArtifactFails = true;
 
-        private MultiArtifactSinkBuilder() {
+        private MultiArtifactSinkBuilder(Output output) {
+            this.output = requireNonNull(output, "output");
             this.sinks = new LinkedHashMap<>();
         }
 
@@ -43,21 +46,24 @@ public final class MultiArtifactSink implements Artifacts.Sink {
         }
 
         public MultiArtifactSink build() {
-            return new MultiArtifactSink(sinks, missedArtifactFails);
+            return new MultiArtifactSink(output, sinks, missedArtifactFails);
         }
     }
 
     /**
      * Creates new empty instance.
      */
-    public static MultiArtifactSinkBuilder builder() {
-        return new MultiArtifactSinkBuilder();
+    public static MultiArtifactSinkBuilder builder(Output output) {
+        return new MultiArtifactSinkBuilder(output);
     }
 
+    private final Output output;
     private final Map<Predicate<Artifact>, Sink<Artifact>> sinks;
     private final boolean missedArtifactFails;
 
-    private MultiArtifactSink(LinkedHashMap<Predicate<Artifact>, Sink<Artifact>> sinks, boolean missedArtifactFails) {
+    private MultiArtifactSink(
+            Output output, LinkedHashMap<Predicate<Artifact>, Sink<Artifact>> sinks, boolean missedArtifactFails) {
+        this.output = requireNonNull(output, "output");
         this.sinks = Collections.unmodifiableMap(sinks);
         this.missedArtifactFails = missedArtifactFails;
     }
@@ -75,6 +81,7 @@ public final class MultiArtifactSink implements Artifacts.Sink {
         if (!processed && missedArtifactFails) {
             throw new IllegalStateException("Nobody accepted artifact: " + artifact);
         }
+        output.chatter("Processed {}: {}", artifact, processed ? "OK" : "MISSED");
     }
 
     @Override

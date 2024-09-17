@@ -9,8 +9,6 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -28,7 +26,7 @@ public class DmListMojo extends MPMojoSupport {
     private boolean verboseList;
 
     @Override
-    protected Result<List<Dependency>> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.dmList(projectAsResolutionRoot(), verboseList, output);
+    protected Result<List<Dependency>> doExecute() throws Exception {
+        return getToolboxCommando().dmList(projectAsResolutionRoot(), verboseList);
     }
 }

@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -32,7 +31,8 @@ public class GavSearchMojo extends GavSearchMojoSupport {
     private String expression;
 
     @Override
-    protected Result<List<Artifact>> doExecute(Output output, ToolboxCommando toolboxCommando) throws IOException {
-        return toolboxCommando.search(getRemoteRepository(toolboxCommando), expression, output);
+    protected Result<List<Artifact>> doExecute() throws IOException {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
+        return toolboxCommando.search(getRemoteRepository(toolboxCommando), expression);
     }
 }

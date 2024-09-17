@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -51,7 +50,8 @@ public class GavDmListMojo extends GavMojoSupport {
     private boolean verboseList;
 
     @Override
-    protected Result<List<Dependency>> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.dmList(toolboxCommando.loadGav(gav, slurp(boms)), verboseList, output);
+    protected Result<List<Dependency>> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
+        return toolboxCommando.dmList(toolboxCommando.loadGav(gav, slurp(boms)), verboseList);
     }
 }

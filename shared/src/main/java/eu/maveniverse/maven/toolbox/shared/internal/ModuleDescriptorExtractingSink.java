@@ -7,6 +7,9 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static java.util.Objects.requireNonNull;
+
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -23,8 +26,6 @@ import java.util.jar.Manifest;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Sink that extracts module descriptors from artifacts.
@@ -38,10 +39,11 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
         String moduleNameSource();
     }
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Output output;
     private final ConcurrentMap<Artifact, ModuleDescriptor> moduleDescriptors;
 
-    public ModuleDescriptorExtractingSink() {
+    public ModuleDescriptorExtractingSink(Output output) {
+        this.output = requireNonNull(output, "output");
         this.moduleDescriptors = new ConcurrentHashMap<>();
     }
 
@@ -122,13 +124,13 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
                 | IllegalAccessException
                 | IllegalArgumentException
                 | NoSuchMethodException e) {
-            logger.debug("Ignored Exception:", e);
+            output.warn("Ignored Exception:", e);
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             while (cause.getCause() != null) {
                 cause = cause.getCause();
             }
-            logger.debug("Can't extract module name from {}:", artifactPath.getFileName(), cause);
+            output.warn("Can't extract module name from {}:", artifactPath.getFileName(), cause);
         }
         return moduleDescriptor;
     }
@@ -139,7 +141,7 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
             try {
                 accept(dependencyNode.getDependency().getArtifact());
             } catch (IOException e) {
-                logger.warn("IO problem: ", e);
+                output.warn("IO problem: ", e);
             }
         }
         return true;

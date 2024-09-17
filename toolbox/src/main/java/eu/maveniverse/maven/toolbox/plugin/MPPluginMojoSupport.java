@@ -128,7 +128,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
             }
         }
         if (pluginKey.startsWith(":")) {
-            for (String pluginGroup : settings.getPluginGroups()) {
+            for (String pluginGroup : mojoSettings.getPluginGroups()) {
                 plugin = mavenProject.getPlugin(pluginGroup + pluginKey);
                 if (plugin != null) {
                     break;

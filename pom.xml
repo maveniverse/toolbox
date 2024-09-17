@@ -92,6 +92,12 @@
         <artifactId>toolbox</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.plugins</groupId>
+        <artifactId>toolbox</artifactId>
+        <version>${project.version}</version>
+        <classifier>cli</classifier>
+      </dependency>
 
       <!-- Logging (except API, runtime only) -->
       <dependency>
@@ -314,6 +320,7 @@
       <id>run-its</id>
       <modules>
         <module>toolbox-plugin-its</module>
+        <module>toolbox-cli-its</module>
       </modules>
     </profile>
   </profiles>

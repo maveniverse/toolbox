@@ -14,24 +14,16 @@ import org.slf4j.helpers.MessageFormatter;
 /**
  * {@link Output} backed with {@link PrintStream}.
  */
-public class PrintStreamOutput implements Output {
+public class PrintStreamOutput extends OutputSupport {
     protected final PrintStream output;
-    protected final Verbosity verbosity;
-    protected final boolean errors;
 
     public PrintStreamOutput(PrintStream output, Verbosity verbosity, boolean errors) {
+        super(verbosity, errors);
         this.output = output;
-        this.verbosity = verbosity;
-        this.errors = errors;
     }
 
     @Override
-    public Verbosity getVerbosity() {
-        return verbosity;
-    }
-
-    @Override
-    public void handle(Verbosity verbosity, String message, Object... params) {
+    protected void doHandle(Verbosity verbosity, String message, Object... params) {
         FormattingTuple tuple = MessageFormatter.arrayFormat(message, params);
         output.println(tuple.getMessage());
         if (tuple.getThrowable() != null) {

@@ -15,7 +15,6 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -61,7 +60,8 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
     private boolean upToDate;
 
     @Override
-    protected Result<String> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<String> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
         ArtifactVersionMatcher artifactVersionMatcher =
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec);
@@ -79,8 +79,7 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
                     upToDate,
                     artifactVersionMatcher,
                     artifactVersionSelector,
-                    getRepositoryVendor(),
-                    output);
+                    getRepositoryVendor());
         }
         for (ResolutionRoot root : allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
                 .filter(r -> artifactMatcher.test(r.getArtifact()))
@@ -94,8 +93,7 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
                     upToDate,
                     artifactVersionMatcher,
                     artifactVersionSelector,
-                    getRepositoryVendor(),
-                    output);
+                    getRepositoryVendor());
         }
         return Result.success("Success");
     }

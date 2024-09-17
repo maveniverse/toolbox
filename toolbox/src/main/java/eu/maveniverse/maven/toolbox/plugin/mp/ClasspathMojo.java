@@ -10,8 +10,6 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -27,7 +25,7 @@ public class ClasspathMojo extends MPMojoSupport {
     private String scope;
 
     @Override
-    protected Result<String> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.classpath(ResolutionScope.parse(scope), projectAsResolutionRoot(), output);
+    protected Result<String> doExecute() throws Exception {
+        return getToolboxCommando().classpath(ResolutionScope.parse(scope), projectAsResolutionRoot());
     }
 }

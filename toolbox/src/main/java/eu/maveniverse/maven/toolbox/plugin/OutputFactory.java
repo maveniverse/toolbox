@@ -10,13 +10,15 @@ package eu.maveniverse.maven.toolbox.plugin;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.output.AnsiOutput;
+import eu.maveniverse.maven.toolbox.shared.output.LoggerOutput;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import eu.maveniverse.maven.toolbox.shared.output.PrintStreamOutput;
 import org.jline.jansi.Ansi;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Factory for properly configured {@link Logger} instances to serve as "output".
+ * Factory for {@link Output}.
  */
 public final class OutputFactory {
     private OutputFactory() {}
@@ -30,18 +32,32 @@ public final class OutputFactory {
     }
 
     /**
-     * When running as CLI, we need to set up ourselves fully.
+     * When running as Mojo, Maven set up {@link Logger} for us.
      */
-    public static Output createOutput(boolean batchMode, boolean errors, Output.Verbosity verbosity) {
+    public static Output createMojoOutput(boolean batchMode, boolean errors, Output.Verbosity verbosity) {
         requireNonNull(verbosity, "verbosity");
-        Output output;
+        Output output = new LoggerOutput(LoggerFactory.getLogger(OutputFactory.class), verbosity);
         if (!batchMode && System.console() != null) {
             if (!Ansi.isEnabled()) {
                 Ansi.setEnabled(true);
             }
-            output = new AnsiOutput(System.out, verbosity, errors);
-        } else {
-            output = new PrintStreamOutput(System.out, verbosity, errors);
+            output = new AnsiOutput(output);
+        }
+        dumpOutputStatus(output);
+        return output;
+    }
+
+    /**
+     * When running as CLI, we need to set up ourselves fully.
+     */
+    public static Output createCliOutput(boolean batchMode, boolean errors, Output.Verbosity verbosity) {
+        requireNonNull(verbosity, "verbosity");
+        Output output = new PrintStreamOutput(System.out, verbosity, errors);
+        if (!batchMode && System.console() != null) {
+            if (!Ansi.isEnabled()) {
+                Ansi.setEnabled(true);
+            }
+            output = new AnsiOutput(output);
         }
         dumpOutputStatus(output);
         return output;

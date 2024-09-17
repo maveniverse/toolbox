@@ -3,7 +3,6 @@ package eu.maveniverse.maven.toolbox.shared.output;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.internal.DependencyGraphDumper;
-import java.io.PrintStream;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.Function;
@@ -14,10 +13,15 @@ import org.jline.jansi.Ansi;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
-public class AnsiOutput extends PrintStreamOutput {
+/**
+ * ANSI output that wraps another {@link Output} to decorate it.
+ */
+public class AnsiOutput extends OutputSupport {
+    private final Output output;
 
-    public AnsiOutput(PrintStream printStream, Verbosity verbosity, boolean errors) {
-        super(printStream, verbosity, errors);
+    public AnsiOutput(Output output) {
+        super(output.getVerbosity(), output.isShowErrors());
+        this.output = output;
     }
 
     @Override
@@ -34,15 +38,15 @@ public class AnsiOutput extends PrintStreamOutput {
     }
 
     @Override
-    public void handle(Verbosity verbosity, String message, Object... params) {
+    protected void doHandle(Verbosity verbosity, String message, Object... params) {
         FormattingTuple tuple = MessageFormatter.arrayFormat(message, params);
-        output.println(tuple.getMessage());
+        output.handle(verbosity, tuple.getMessage());
         if (tuple.getThrowable() != null) {
-            writeThrowable(tuple.getThrowable(), output);
+            writeThrowable(tuple.getThrowable(), output, verbosity);
         }
     }
 
-    private void writeThrowable(Throwable t, PrintStream stream) {
+    private void writeThrowable(Throwable t, Output output, Verbosity verbosity) {
         if (t == null) {
             return;
         }
@@ -50,15 +54,15 @@ public class AnsiOutput extends PrintStreamOutput {
         if (t.getMessage() != null) {
             builder += ": " + italic(t.getMessage());
         }
-        stream.println(builder);
+        output.handle(verbosity, builder);
 
         if (errors) {
-            printStackTrace(t, stream, "");
+            printStackTrace(t, output, verbosity, "");
         }
-        stream.println(Ansi.ansi().reset());
+        output.handle(verbosity, Ansi.ansi().reset().toString());
     }
 
-    private void printStackTrace(Throwable t, PrintStream stream, String prefix) {
+    private void printStackTrace(Throwable t, Output output, Verbosity verbosity, String prefix) {
         StringBuilder builder = new StringBuilder();
         for (StackTraceElement e : t.getStackTrace()) {
             builder.append(prefix);
@@ -71,19 +75,19 @@ public class AnsiOutput extends PrintStreamOutput {
             builder.append(" (");
             builder.append(bold(getLocation(e)));
             builder.append(")");
-            stream.println(builder);
+            output.handle(verbosity, builder.toString());
             builder.setLength(0);
         }
         for (Throwable se : t.getSuppressed()) {
-            writeThrowable(se, stream, "Suppressed", prefix + "    ");
+            writeThrowable(se, output, verbosity, "Suppressed", prefix + "    ");
         }
         Throwable cause = t.getCause();
         if (cause != null && t != cause) {
-            writeThrowable(cause, stream, "Caused by", prefix);
+            writeThrowable(cause, output, verbosity, "Caused by", prefix);
         }
     }
 
-    private void writeThrowable(Throwable t, PrintStream stream, String caption, String prefix) {
+    private void writeThrowable(Throwable t, Output output, Verbosity verbosity, String caption, String prefix) {
         StringBuilder builder = new StringBuilder();
         builder.append(prefix)
                 .append(bold(caption))
@@ -92,9 +96,9 @@ public class AnsiOutput extends PrintStreamOutput {
         if (t.getMessage() != null) {
             builder.append(": ").append(italic(t.getMessage()));
         }
-        stream.println(builder);
+        output.handle(verbosity, builder.toString());
 
-        printStackTrace(t, stream, prefix);
+        printStackTrace(t, output, verbosity, prefix);
     }
 
     private String getLocation(final StackTraceElement e) {
@@ -220,6 +224,12 @@ public class AnsiOutput extends PrintStreamOutput {
         public Marker scary(String word) {
             return super.scary(
                     Ansi.ansi().fgBright(Ansi.Color.YELLOW).a(word).reset().toString());
+        }
+
+        @Override
+        public Marker bloody(String word) {
+            return super.bloody(
+                    Ansi.ansi().bold().fgBright(Ansi.Color.RED).a(word).reset().toString());
         }
     }
 }

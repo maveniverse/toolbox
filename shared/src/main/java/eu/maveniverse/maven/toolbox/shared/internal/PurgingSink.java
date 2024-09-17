@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -41,20 +42,24 @@ public final class PurgingSink implements Artifacts.Sink {
      * purge.
      */
     public static PurgingSink purging(
-            RepositorySystem system, RepositorySystemSession session, List<RemoteRepository> remoteRepositories) {
-        return purging(Mode.WHOLE, false, system, session, remoteRepositories);
+            Output output,
+            RepositorySystem system,
+            RepositorySystemSession session,
+            List<RemoteRepository> remoteRepositories) {
+        return purging(output, Mode.WHOLE, false, system, session, remoteRepositories);
     }
 
     /**
      * Creates purging sink that purges from passed in session local repository.
      */
     public static PurgingSink purging(
+            Output output,
             Mode mode,
             boolean enforceOrigin,
             RepositorySystem system,
             RepositorySystemSession session,
             List<RemoteRepository> remoteRepositories) {
-        return new PurgingSink(mode, enforceOrigin, system, session, remoteRepositories);
+        return new PurgingSink(output, mode, enforceOrigin, system, session, remoteRepositories);
     }
 
     /**
@@ -81,6 +86,7 @@ public final class PurgingSink implements Artifacts.Sink {
         WHOLE
     }
 
+    private final Output output;
     private final Mode mode;
     private final boolean enforceOrigin;
     private final AtomicBoolean perform;
@@ -92,11 +98,13 @@ public final class PurgingSink implements Artifacts.Sink {
     private final AtomicInteger purgedArtifacts;
 
     private PurgingSink(
+            Output output,
             Mode mode,
             boolean enforceOrigin,
             RepositorySystem system,
             RepositorySystemSession session,
             List<RemoteRepository> remoteRepositories) {
+        this.output = requireNonNull(output, "output");
         this.mode = requireNonNull(mode, "mode");
         this.enforceOrigin = enforceOrigin;
         this.perform = new AtomicBoolean(true);
@@ -135,6 +143,7 @@ public final class PurgingSink implements Artifacts.Sink {
                                     session.getLocalRepository().getBasedir().toPath())) {
                 throw new IllegalArgumentException("artifact does not originate from local repository to be purged");
             }
+            output.chatter("Accepted artifact {}", artifact);
             artifacts.add(artifact);
         }
     }
@@ -147,9 +156,13 @@ public final class PurgingSink implements Artifacts.Sink {
     @Override
     public void close() throws IOException {
         if (perform.get()) {
+            output.suggest("Performing purge");
             int artifactCount = 0;
+            boolean purged;
             for (Artifact artifact : artifacts) {
-                artifactCount += purgeArtifact(artifact) ? 1 : 0;
+                purged = purgeArtifact(artifact);
+                output.chatter("Purge of {}: {}", artifact, purged ? "DONE" : "NOT DONE");
+                artifactCount += purged ? 1 : 0;
             }
             purgedArtifacts.set(artifactCount);
         }

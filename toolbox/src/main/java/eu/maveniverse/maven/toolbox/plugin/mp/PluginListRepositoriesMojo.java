@@ -12,7 +12,6 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -30,11 +29,11 @@ public final class PluginListRepositoriesMojo extends MPPluginMojoSupport {
     private String scope;
 
     @Override
-    protected Result<List<RemoteRepository>> doExecute(Output output, ToolboxCommando toolboxCommando)
-            throws Exception {
+    protected Result<List<RemoteRepository>> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, true);
         if (root != null) {
-            return toolboxCommando.listRepositories(ResolutionScope.parse(scope), "plugin", root, output);
+            return toolboxCommando.listRepositories(ResolutionScope.parse(scope), "plugin", root);
         } else {
             return Result.failure("No such plugin");
         }

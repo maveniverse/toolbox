@@ -11,26 +11,24 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
-import eu.maveniverse.maven.toolbox.shared.output.LoggerOutput;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
+import eu.maveniverse.maven.toolbox.shared.output.NopOutput;
 import java.io.IOException;
 import java.nio.file.Paths;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
 
+@Disabled("This test does not test anything")
 public class ToolboxCommandoImplTest {
+
     @Test
     void search() throws IOException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create()
                 .withBasedirOverride(Paths.get("target").toAbsolutePath())
                 .build())) {
-            ToolboxCommandoImpl tc = new ToolboxCommandoImpl(context);
+            ToolboxCommandoImpl tc = new ToolboxCommandoImpl(NopOutput.INSTANCE, context);
 
-            tc.search(
-                    ContextOverrides.CENTRAL,
-                    "junit:junit:4.13.2",
-                    new LoggerOutput(LoggerFactory.getLogger(getClass()), Output.Verbosity.NORMAL));
+            tc.search(ContextOverrides.CENTRAL, "junit:junit:4.13.2");
         }
     }
 }

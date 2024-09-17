@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import eu.maveniverse.maven.toolbox.shared.output.NopOutput;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -25,7 +26,7 @@ public class IndexFileTest {
     void flat(@TempDir Path target) throws Exception {
         Path content = Files.write(target.resolve("somecontent"), "somecontent".getBytes(StandardCharsets.UTF_8));
         Path indexFile;
-        try (DirectorySink sink = DirectorySink.repository(target)) {
+        try (DirectorySink sink = DirectorySink.repository(NopOutput.INSTANCE, target)) {
             indexFile = sink.getIndexFile();
             sink.accept(Arrays.asList(
                     new DefaultArtifact("g:a1:1").setFile(content.toFile()),
@@ -48,7 +49,7 @@ public class IndexFileTest {
     void flatAppend(@TempDir Path target) throws IOException {
         Path content = Files.write(target.resolve("somecontent"), "somecontent".getBytes(StandardCharsets.UTF_8));
         Path indexFile;
-        try (DirectorySink sink = DirectorySink.repository(target)) {
+        try (DirectorySink sink = DirectorySink.repository(NopOutput.INSTANCE, target)) {
             indexFile = sink.getIndexFile();
             Assertions.assertFalse(Files.isRegularFile(indexFile));
             sink.accept(Arrays.asList(
@@ -56,7 +57,7 @@ public class IndexFileTest {
                     new DefaultArtifact("g:a2:1").setFile(content.toFile())));
         }
         Assertions.assertTrue(Files.isRegularFile(indexFile));
-        try (DirectorySink sink = DirectorySink.repository(target)) {
+        try (DirectorySink sink = DirectorySink.repository(NopOutput.INSTANCE, target)) {
             sink.accept(Arrays.asList(
                     new DefaultArtifact("g:a3:1").setFile(content.toFile()),
                     new DefaultArtifact("g:a4:1").setFile(content.toFile())));
@@ -75,7 +76,7 @@ public class IndexFileTest {
     void flatAppendRestore(@TempDir Path target) throws IOException {
         Path content = Files.write(target.resolve("somecontent"), "somecontent".getBytes(StandardCharsets.UTF_8));
         Path indexFile;
-        try (DirectorySink sink = DirectorySink.repository(target)) {
+        try (DirectorySink sink = DirectorySink.repository(NopOutput.INSTANCE, target)) {
             indexFile = sink.getIndexFile();
             Assertions.assertFalse(Files.isRegularFile(indexFile));
             sink.accept(Arrays.asList(
@@ -83,7 +84,7 @@ public class IndexFileTest {
                     new DefaultArtifact("g:a2:1").setFile(content.toFile())));
         }
         Assertions.assertTrue(Files.isRegularFile(indexFile));
-        try (DirectorySink sink = DirectorySink.repository(target)) {
+        try (DirectorySink sink = DirectorySink.repository(NopOutput.INSTANCE, target)) {
             sink.accept(Arrays.asList(
                     new DefaultArtifact("g:a3:1").setFile(content.toFile()),
                     new DefaultArtifact("g:a4:1").setFile(content.toFile())));

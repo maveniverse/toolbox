@@ -38,7 +38,7 @@ public class AnsiOutput extends OutputSupport {
     }
 
     @Override
-    public void handle(Verbosity verbosity, String message, Object... params) {
+    protected void doHandle(Verbosity verbosity, String message, Object... params) {
         FormattingTuple tuple = MessageFormatter.arrayFormat(message, params);
         output.handle(verbosity, tuple.getMessage());
         if (tuple.getThrowable() != null) {
@@ -224,6 +224,12 @@ public class AnsiOutput extends OutputSupport {
         public Marker scary(String word) {
             return super.scary(
                     Ansi.ansi().fgBright(Ansi.Color.YELLOW).a(word).reset().toString());
+        }
+
+        @Override
+        public Marker bloody(String word) {
+            return super.bloody(
+                    Ansi.ansi().bold().fgBright(Ansi.Color.RED).a(word).reset().toString());
         }
     }
 }

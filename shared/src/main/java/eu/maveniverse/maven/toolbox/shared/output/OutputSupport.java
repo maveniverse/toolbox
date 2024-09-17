@@ -78,4 +78,17 @@ public abstract class OutputSupport implements Output {
     public void warn(String message, Object... params) {
         new Marker(this, Verbosity.TIGHT).scary("[W] " + message).say(params);
     }
+
+    public void error(String message, Object... params) {
+        new Marker(this, Verbosity.TIGHT).bloody("[E] " + message).say(params);
+    }
+
+    @Override
+    public void handle(Verbosity verbosity, String message, Object... params) {
+        if (isHeard(verbosity)) {
+            doHandle(verbosity, message, params);
+        }
+    }
+
+    protected abstract void doHandle(Verbosity verbosity, String message, Object... params);
 }

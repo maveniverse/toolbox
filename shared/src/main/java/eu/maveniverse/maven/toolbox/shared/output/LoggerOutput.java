@@ -20,12 +20,18 @@ public final class LoggerOutput extends OutputSupport {
         this.output = output;
     }
 
+    @Override
     public void warn(String message, Object... params) {
         output.warn(message, params);
     }
 
     @Override
-    public void handle(Verbosity verbosity, String message, Object... params) {
+    public void error(String message, Object... params) {
+        output.error(message, params);
+    }
+
+    @Override
+    protected void doHandle(Verbosity verbosity, String message, Object... params) {
         output.info(message, params);
     }
 }

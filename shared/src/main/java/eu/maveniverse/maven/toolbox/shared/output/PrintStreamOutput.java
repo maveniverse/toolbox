@@ -23,7 +23,7 @@ public class PrintStreamOutput extends OutputSupport {
     }
 
     @Override
-    public void handle(Verbosity verbosity, String message, Object... params) {
+    protected void doHandle(Verbosity verbosity, String message, Object... params) {
         FormattingTuple tuple = MessageFormatter.arrayFormat(message, params);
         output.println(tuple.getMessage());
         if (tuple.getThrowable() != null) {

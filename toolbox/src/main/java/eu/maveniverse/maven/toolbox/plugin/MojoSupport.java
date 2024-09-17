@@ -280,9 +280,9 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
                 throw new MojoFailureException("Operation failed: " + result.getMessage());
             }
         } catch (RuntimeException e) {
-            throw new MojoExecutionException("Runtime exception", e);
+            throw new MojoExecutionException("Execution failed: ", e);
         } catch (Exception e) {
-            throw new MojoFailureException(e);
+            throw new MojoFailureException("Operation failed: ", e);
         } finally {
             try {
                 getOutput().close();

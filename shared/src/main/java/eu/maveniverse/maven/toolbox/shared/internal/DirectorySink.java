@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,8 +29,9 @@ public final class DirectorySink implements Artifacts.Sink {
      * Creates plain "flat" directory sink, that accepts all artifacts and copies them out having filenames according
      * to supplied {@link ArtifactNameMapper} and prevents overwrite (what you usually want).
      */
-    public static DirectorySink flat(Path path, ArtifactNameMapper artifactNameMapper) throws IOException {
-        return new DirectorySink(path, Mode.COPY, ArtifactMatcher.unique(), false, artifactNameMapper, false);
+    public static DirectorySink flat(Output output, Path path, ArtifactNameMapper artifactNameMapper)
+            throws IOException {
+        return new DirectorySink(output, path, Mode.COPY, ArtifactMatcher.unique(), false, artifactNameMapper, false);
     }
 
     /**
@@ -40,8 +42,9 @@ public final class DirectorySink implements Artifacts.Sink {
      * only, and fails with snapshot ones, as this is not equivalent to deploy them (no timestamped version is
      * created).
      */
-    public static DirectorySink repository(Path path) throws IOException {
+    public static DirectorySink repository(Output output, Path path) throws IOException {
         return new DirectorySink(
+                output,
                 path,
                 Mode.COPY,
                 ArtifactMatcher.and(ArtifactMatcher.not(ArtifactMatcher.snapshot()), ArtifactMatcher.unique()),
@@ -59,6 +62,7 @@ public final class DirectorySink implements Artifacts.Sink {
         SYMLINK
     }
 
+    private final Output output;
     private final Path directory;
     private final boolean directoryCreated;
     private final Mode mode;
@@ -74,6 +78,7 @@ public final class DirectorySink implements Artifacts.Sink {
     /**
      * Creates a directory sink.
      *
+     * @param output The output.
      * @param directory The directory, if not existing, will be created.
      * @param mode The accepting mode: copy, link or symlink.
      * @param artifactMatcher The matcher, that decides is this sink accepting artifact or not.
@@ -83,6 +88,7 @@ public final class DirectorySink implements Artifacts.Sink {
      * @throws IOException In case of IO problem.
      */
     private DirectorySink(
+            Output output,
             Path directory,
             Mode mode,
             Predicate<Artifact> artifactMatcher,
@@ -90,6 +96,7 @@ public final class DirectorySink implements Artifacts.Sink {
             Function<Artifact, String> artifactNameMapper,
             boolean allowOverwrite)
             throws IOException {
+        this.output = requireNonNull(output, "output");
         this.directory = requireNonNull(directory, "directory").toAbsolutePath();
         this.mode = requireNonNull(mode, "mode");
         if (Files.exists(directory) && !Files.isDirectory(directory)) {
@@ -134,6 +141,7 @@ public final class DirectorySink implements Artifacts.Sink {
             if (!writtenPaths.add(target) && !allowOverwrite) {
                 throw new IOException("Overwrite prevented; check mappings");
             }
+            output.chatter("Accepting artifact {} -> ", artifact, target);
             indexFileWriter.write(artifact, name);
             Files.createDirectories(target.getParent());
             switch (mode) {

@@ -29,7 +29,7 @@ public class ArtifactSinksTest {
         try (Context context = runtime.create(ContextOverrides.create()
                 .withBasedirOverride(Paths.get("target").toAbsolutePath())
                 .build())) {
-            ToolboxCommandoImpl tc = new ToolboxCommandoImpl(new NopOutput(), context);
+            ToolboxCommandoImpl tc = new ToolboxCommandoImpl(NopOutput.INSTANCE, context);
 
             HashMap<String, Object> properties = new HashMap<>();
             properties.put("groupId", "org.some.group");

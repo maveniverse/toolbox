@@ -35,7 +35,7 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
     @Override
     protected Result<List<Artifact>> doExecute() throws Exception {
         if (groupIds == null || groupIds.trim().isEmpty()) {
-            groupIds = String.join(",", settings.getPluginGroups());
+            groupIds = String.join(",", mojoSettings.getPluginGroups());
         }
         return getToolboxCommando().listAvailablePlugins(csv(groupIds));
     }

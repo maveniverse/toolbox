@@ -11,7 +11,9 @@ package eu.maveniverse.maven.toolbox.shared.output;
  * No op {@link Output}.
  */
 public final class NopOutput extends OutputSupport {
-    public NopOutput() {
+    public static final NopOutput INSTANCE = new NopOutput();
+
+    private NopOutput() {
         super(Verbosity.SILENT, false);
     }
 

@@ -292,8 +292,6 @@ public class ToolboxResolverImpl {
         if (verbose) {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
         }
-        output.chatter("Collecting scope: {}", resolutionScope.name());
-
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
             root = rootDependency.getArtifact();
@@ -307,7 +305,7 @@ public class ToolboxResolverImpl {
         collectRequest.setRequestContext(CTX_TOOLBOX);
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
 
-        output.chatter("Collecting {}", collectRequest);
+        output.chatter("Collecting {} @ {}", collectRequest, resolutionScope.name());
         CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
         if (!verbose && resolutionScope != ResolutionScope.TEST) {
             ArrayList<DependencyNode> childrenToRemove = new ArrayList<>();
@@ -336,8 +334,6 @@ public class ToolboxResolverImpl {
             throw new NullPointerException("one of rootDependency or root must be non-null");
         }
 
-        output.chatter("Collecting depMgt: {}", rootDependency != null ? rootDependency.getArtifact() : root);
-
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
             root = rootDependency.getArtifact();
@@ -348,7 +344,7 @@ public class ToolboxResolverImpl {
         collectRequest.setRequestContext(CTX_TOOLBOX);
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
 
-        output.chatter("Collecting {}", collectRequest);
+        output.chatter("Collecting depMgt {}", root);
         CollectResult result = new CollectResult(collectRequest);
         DefaultDependencyNode rootNode =
                 new DefaultDependencyNode(rootDependency != null ? rootDependency.getArtifact() : root);
@@ -422,7 +418,6 @@ public class ToolboxResolverImpl {
         }
 
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
-        output.chatter("Resolving scope: {}", resolutionScope.name());
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
@@ -439,16 +434,16 @@ public class ToolboxResolverImpl {
         DependencyRequest dependencyRequest =
                 new DependencyRequest(collectRequest, resolutionScope.getDependencyFilter());
 
-        output.chatter("Resolving {}", dependencyRequest);
+        output.chatter("Resolving {} @ {}", dependencyRequest, resolutionScope.name());
         DependencyResult result = repositorySystem.resolveDependencies(session, dependencyRequest);
         try {
             ArtifactResult rootResult =
-                    resolveArtifacts(Collections.singletonList(root)).get(0);
+                    resolveArtifacts(Collections.singletonList(root)).getFirst();
 
             DefaultDependencyNode newRoot = new DefaultDependencyNode(new Dependency(rootResult.getArtifact(), ""));
             newRoot.setChildren(result.getRoot().getChildren());
             result.setRoot(newRoot);
-            result.getArtifactResults().add(0, rootResult);
+            result.getArtifactResults().addFirst(rootResult);
             return result;
         } catch (ArtifactResolutionException e) {
             throw new DependencyResolutionException(result, e);

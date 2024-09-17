@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
@@ -26,6 +27,9 @@ import org.eclipse.aether.graph.Dependency;
  * Support class for "project aware" Mojos.
  */
 public abstract class MPMojoSupport extends MojoSupport {
+    @Component
+    protected MavenSession mavenSession;
+
     @Component
     protected MavenProject mavenProject;
 

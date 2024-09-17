@@ -7,15 +7,18 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static java.util.Objects.requireNonNull;
 import static org.apache.maven.search.api.request.BooleanQuery.and;
 import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 
 import eu.maveniverse.maven.mima.context.ContextOverrides;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.Record;
@@ -36,7 +39,11 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 
 public class ToolboxSearchApiImpl {
-    public ToolboxSearchApiImpl() {}
+    private final Output output;
+
+    public ToolboxSearchApiImpl(Output output) {
+        this.output = requireNonNull(output, "output");
+    }
 
     /**
      * Creates RR search backend: it may be explicitly selected by using parameter {@code repositoryVendor}. The logic:
@@ -56,6 +63,10 @@ public class ToolboxSearchApiImpl {
      */
     public SearchBackend getRemoteRepositoryBackend(
             RepositorySystemSession session, RemoteRepository remoteRepository, String repositoryVendor) {
+        output.chatter(
+                "Creating backend for {} (vendor={})",
+                remoteRepository,
+                repositoryVendor == null ? "n/a" : repositoryVendor);
         if (repositoryVendor == null) {
             repositoryVendor = (String) session.getConfigProperties().get("toolbox.search.backend.type");
             if (repositoryVendor == null) {
@@ -81,6 +92,7 @@ public class ToolboxSearchApiImpl {
                     }
                 }
             }
+            output.chatter("Vendor guessed to {}", repositoryVendor);
         }
         final ResponseExtractor extractor;
         if ("central".equalsIgnoreCase(repositoryVendor)) {
@@ -91,6 +103,12 @@ public class ToolboxSearchApiImpl {
             throw new IllegalArgumentException(
                     "Unsupported Search RR extractor: '" + repositoryVendor + "'; (supported are 'central', 'nx2')");
         }
+        output.chatter(
+                "Creating backend {}-rr {}:{}:{}",
+                remoteRepository.getId(),
+                remoteRepository.getId(),
+                remoteRepository.getId(),
+                repositoryVendor);
         return RemoteRepositorySearchBackendFactory.create(
                 remoteRepository.getId() + "-rr",
                 remoteRepository.getId(),
@@ -108,6 +126,7 @@ public class ToolboxSearchApiImpl {
         if (!ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())) {
             throw new IllegalArgumentException("The SMO service is offered for Central only");
         }
+        output.chatter("Creating SMO backend");
         return SmoSearchBackendFactory.create(
                 remoteRepository.getId() + "-smo",
                 remoteRepository.getId(),
@@ -202,6 +221,11 @@ public class ToolboxSearchApiImpl {
         Query query = toRrQuery(artifact);
         SearchRequest searchRequest = new SearchRequest(query);
         SearchResponse searchResponse = backend.search(searchRequest);
+        output.chatter(
+                "SearchRequest: {} SearchResponse TH/CH {}/{}",
+                searchResponse.getSearchRequest(),
+                searchResponse.getTotalHits(),
+                searchResponse.getCurrentHits());
         return searchResponse.getTotalHits() == 1;
     }
 
@@ -210,7 +234,50 @@ public class ToolboxSearchApiImpl {
         query = and(query, fieldQuery(MAVEN.SHA1, sha1));
         SearchRequest searchRequest = new SearchRequest(query);
         SearchResponse searchResponse = backend.search(searchRequest);
+        output.chatter(
+                "SearchRequest: {} SearchResponse TH/CH {}/{}",
+                searchResponse.getSearchRequest(),
+                searchResponse.getTotalHits(),
+                searchResponse.getCurrentHits());
         return searchResponse.getTotalHits() == 1;
+    }
+
+    public Map<String, Artifact> identify(
+            RepositorySystemSession session, SearchBackend searchBackend, Collection<String> sha1s) throws IOException {
+        HashMap<String, Artifact> result = new HashMap<>(sha1s.size());
+        for (String sha1 : sha1s) {
+            output.tell("Identifying artifact with SHA1={}", sha1);
+            SearchRequest searchRequest = new SearchRequest(fieldQuery(MAVEN.SHA1, sha1));
+            SearchResponse searchResponse = searchBackend.search(searchRequest);
+            output.chatter(
+                    "SearchRequest: {} SearchResponse TH/CH {}/{}",
+                    searchResponse.getSearchRequest(),
+                    searchResponse.getTotalHits(),
+                    searchResponse.getCurrentHits());
+            if (searchResponse.getCurrentHits() == 0) {
+                result.put(sha1, null);
+            } else {
+                while (searchResponse.getCurrentHits() > 0) {
+                    Collection<Artifact> res = renderArtifacts(session, searchResponse.getPage(), null);
+                    if (res.isEmpty()) {
+                        result.put(sha1, null);
+                    } else {
+                        for (Artifact artifact : res) {
+                            result.put(sha1, artifact);
+                        }
+                    }
+
+                    searchResponse = searchBackend.search(
+                            searchResponse.getSearchRequest().nextPage());
+                    output.chatter(
+                            "SearchRequest: {} SearchResponse TH/CH {}/{}",
+                            searchResponse.getSearchRequest(),
+                            searchResponse.getTotalHits(),
+                            searchResponse.getCurrentHits());
+                }
+            }
+        }
+        return result;
     }
 
     public Query toRrQuery(Artifact artifact) {

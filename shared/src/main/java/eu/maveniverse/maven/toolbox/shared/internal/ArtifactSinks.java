@@ -108,7 +108,7 @@ public final class ArtifactSinks {
                         } else {
                             throw new IllegalArgumentException("op flat accepts only 1..2 argument");
                         }
-                        params.add(DirectorySink.flat(p0, p1));
+                        params.add(DirectorySink.flat(tc.output(), p0, p1));
                         node.getChildren().clear();
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
@@ -118,7 +118,7 @@ public final class ArtifactSinks {
                 case "repository": {
                     try {
                         Path p0 = tc.basedir().resolve(stringParam(node.getValue()));
-                        params.add(DirectorySink.repository(p0));
+                        params.add(DirectorySink.repository(tc.output(), p0));
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -126,7 +126,7 @@ public final class ArtifactSinks {
                 }
                 case "install": {
                     if (node.getChildren().isEmpty()) {
-                        params.add(InstallingSink.installing(tc.repositorySystem(), tc.session()));
+                        params.add(InstallingSink.installing(tc.output(), tc.repositorySystem(), tc.session()));
                     } else if (node.getChildren().size() == 1) {
                         String p0 = stringParam(node.getValue());
                         Path altLocalRepository = tc.basedir().resolve(p0);
@@ -135,7 +135,7 @@ public final class ArtifactSinks {
                                 tc.repositorySystem().newLocalRepositoryManager(tc.session(), localRepository);
                         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(tc.session());
                         session.setLocalRepositoryManager(lrm);
-                        params.add(InstallingSink.installing(tc.repositorySystem(), session));
+                        params.add(InstallingSink.installing(tc.output(), tc.repositorySystem(), session));
                     } else {
                         throw new IllegalArgumentException("op install accepts only 0..1 argument");
                     }
@@ -143,6 +143,7 @@ public final class ArtifactSinks {
                 }
                 case "deploy": {
                     params.add(DeployingSink.deploying(
+                            tc.output(),
                             tc.repositorySystem(),
                             tc.session(),
                             tc.parseRemoteRepository(stringParam(node.getValue()))));
@@ -150,6 +151,7 @@ public final class ArtifactSinks {
                 }
                 case "purge": {
                     params.add(PurgingSink.purging(
+                            tc.output(),
                             tc.repositorySystem(),
                             tc.session(),
                             stringParams(node.getValue()).stream()

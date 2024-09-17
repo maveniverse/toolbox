@@ -14,8 +14,10 @@ import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.output.NopOutput;
 import java.io.IOException;
 import java.nio.file.Paths;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled("This test does not test anything")
 public class ToolboxCommandoImplTest {
 
     @Test

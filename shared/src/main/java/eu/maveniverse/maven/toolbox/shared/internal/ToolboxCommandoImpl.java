@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -754,7 +755,22 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             } else {
                 existingOnes.add(artifact);
             }
-            output.tell("Artifact {} {}", artifact, exists ? "EXISTS" : "NOT EXISTS");
+
+            BiConsumer<Artifact, Boolean> reporter = (a, e) -> {
+                if (e) {
+                    output.marker(Output.Verbosity.NORMAL)
+                            .normal("Artifact {} ")
+                            .outstanding("EXISTS")
+                            .say(a);
+                } else {
+                    output.marker(Output.Verbosity.NORMAL)
+                            .normal("Artifact {} ")
+                            .scary("NOT EXISTS")
+                            .say(a);
+                }
+            };
+
+            reporter.accept(artifact, exists);
             if (pom && !"pom".equals(artifact.getExtension())) {
                 Artifact poma = new SubArtifact(artifact, null, "pom");
                 exists = toolboxSearchApi.exists(backend, poma);
@@ -764,7 +780,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 } else if (allRequired) {
                     existingOnes.add(poma);
                 }
-                output.tell("    {} {}", poma, exists ? "EXISTS" : "NOT EXISTS");
+                reporter.accept(poma, exists);
             }
             if (sources) {
                 Artifact sourcesa = new SubArtifact(artifact, "sources", "jar");
@@ -775,7 +791,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 } else if (allRequired) {
                     existingOnes.add(sourcesa);
                 }
-                output.tell("    {} {}", sourcesa, exists ? "EXISTS" : "NOT EXISTS");
+                reporter.accept(sourcesa, exists);
             }
             if (javadoc) {
                 Artifact javadoca = new SubArtifact(artifact, "javadoc", "jar");
@@ -786,7 +802,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 } else if (allRequired) {
                     existingOnes.add(javadoca);
                 }
-                output.tell("    {} {}", javadoca, exists ? "EXISTS" : "NOT EXISTS");
+                reporter.accept(javadoca, exists);
             }
             if (signature) {
                 Artifact signaturea = new SubArtifact(artifact, null, artifact.getExtension() + ".asc");
@@ -797,15 +813,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 } else if (allRequired) {
                     existingOnes.add(signaturea);
                 }
-                output.tell("    {} {}", signaturea, exists ? "EXISTS" : "NOT EXISTS");
+                reporter.accept(signaturea, exists);
             }
         }
         output.tell("");
-        output.tell(
-                "Checked TOTAL of {} (existing: {} not existing: {})",
-                existingOnes.size() + missingOnes.size(),
-                existingOnes.size(),
-                missingOnes.size());
+        output.marker(Output.Verbosity.TIGHT)
+                .emphasize("Checked TOTAL of {} (existing: {} not existing: {})")
+                .say(existingOnes.size() + missingOnes.size(), existingOnes.size(), missingOnes.size());
         return missingOnes.isEmpty() ? Result.success(result) : Result.failure("Missing artifacts");
     }
 
@@ -844,15 +858,17 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
         sha1s.forEach((key, value) -> {
             Artifact a = result.get(value);
-            String hit = a != null ? a.toString() : "Unknown";
+            String hit = a != null ? a.toString() : "UNKNOWN";
             if (decorated) {
                 if (!Objects.equals(key, value)) {
-                    output.tell("{} ({}) = {}", value, key, hit);
+                    output.marker(Output.Verbosity.TIGHT)
+                            .outstanding("{} ({}) = {}")
+                            .say(value, key, hit);
                 } else {
-                    output.tell("{} = {}", value, hit);
+                    output.marker(Output.Verbosity.TIGHT).outstanding("{} = {}").say(value, hit);
                 }
             } else {
-                output.tell(hit);
+                output.marker(Output.Verbosity.TIGHT).outstanding(hit).say();
             }
         });
 

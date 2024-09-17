@@ -246,7 +246,7 @@ public class ToolboxSearchApiImpl {
             RepositorySystemSession session, SearchBackend searchBackend, Collection<String> sha1s) throws IOException {
         HashMap<String, Artifact> result = new HashMap<>(sha1s.size());
         for (String sha1 : sha1s) {
-            output.tell("Identifying artifact with SHA1={}", sha1);
+            output.suggest("Identifying artifact with SHA1={}", sha1);
             SearchRequest searchRequest = new SearchRequest(fieldQuery(MAVEN.SHA1, sha1));
             SearchResponse searchResponse = searchBackend.search(searchRequest);
             output.chatter(

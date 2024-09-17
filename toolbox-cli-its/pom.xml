@@ -30,6 +30,7 @@
     <maven.deploy.skip>true</maven.deploy.skip>
 
     <javaBin>${java.home}/bin/java</javaBin>
+    <itDir>${project.basedir}/src/it</itDir>
   </properties>
 
   <build>
@@ -58,6 +59,10 @@
         <configuration>
           <properties>
             <property>
+              <name>itDir</name>
+              <value>${itDir}</value>
+            </property>
+            <property>
               <name>java</name>
               <value>${javaBin}</value>
             </property>
@@ -67,12 +72,14 @@
             </property>
           </properties>
           <scripts>
-            <script>${project.basedir}/src/it/classpath-1/it.groovy</script>
-            <script>${project.basedir}/src/it/dm-tree-1/it.groovy</script>
-            <script>${project.basedir}/src/it/dump-1/it.groovy</script>
-            <script>${project.basedir}/src/it/exists-1/it.groovy</script>
-            <script>${project.basedir}/src/it/help-1/it.groovy</script>
-            <script>${project.basedir}/src/it/libyear-1/it.groovy</script>
+            <script>${itDir}/classpath-1/it.groovy</script>
+            <script>${itDir}/dm-tree-1/it.groovy</script>
+            <script>${itDir}/dump-1/it.groovy</script>
+            <script>${itDir}/exists-1/it.groovy</script>
+            <script>${itDir}/help-1/it.groovy</script>
+            <script>${itDir}/identify-1/it.groovy</script>
+            <script>${itDir}/identify-2/it.groovy</script>
+            <script>${itDir}/libyear-1/it.groovy</script>
           </scripts>
         </configuration>
         <dependencies>

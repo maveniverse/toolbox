@@ -12,7 +12,6 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -40,7 +39,8 @@ public class VersionsMojo extends MPMojoSupport {
     private String artifactVersionMatcherSpec;
 
     @Override
-    protected Result<Boolean> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Boolean> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         ResolutionScope resolutionScope = ResolutionScope.parse(scope);
         toolboxCommando.versions(
                 "managed dependencies",
@@ -49,8 +49,7 @@ public class VersionsMojo extends MPMojoSupport {
                                         resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec))
                                 .stream()
                                 .map(ResolutionRoot::getArtifact),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                output);
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
         toolboxCommando.versions(
                 "dependencies",
                 () ->
@@ -58,8 +57,7 @@ public class VersionsMojo extends MPMojoSupport {
                                         resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec))
                                 .stream()
                                 .map(ResolutionRoot::getArtifact),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                output);
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
         return Result.success(true);
     }
 }

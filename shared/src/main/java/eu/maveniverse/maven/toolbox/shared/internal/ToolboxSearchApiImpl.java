@@ -34,12 +34,8 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.ArtifactType;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ToolboxSearchApiImpl {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     public ToolboxSearchApiImpl() {}
 
     /**

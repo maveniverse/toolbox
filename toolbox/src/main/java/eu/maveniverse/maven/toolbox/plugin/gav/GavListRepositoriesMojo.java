@@ -11,7 +11,6 @@ import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -52,9 +51,9 @@ public final class GavListRepositoriesMojo extends GavMojoSupport {
     private String boms;
 
     @Override
-    protected Result<List<RemoteRepository>> doExecute(Output output, ToolboxCommando toolboxCommando)
-            throws Exception {
+    protected Result<List<RemoteRepository>> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.listRepositories(
-                ResolutionScope.parse(scope), "GAV", toolboxCommando.loadGav(gav, slurp(boms)), output);
+                ResolutionScope.parse(scope), "GAV", toolboxCommando.loadGav(gav, slurp(boms)));
     }
 }

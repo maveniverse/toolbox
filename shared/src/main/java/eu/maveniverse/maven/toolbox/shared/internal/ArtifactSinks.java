@@ -162,7 +162,7 @@ public final class ArtifactSinks {
                         if (node.getChildren().size() == 1) {
                             Path p0 = tc.basedir()
                                     .resolve(node.getChildren().getFirst().getValue());
-                            params.add(UnpackSink.unpack(p0, ArtifactNameMapper.ACVE(), true));
+                            params.add(UnpackSink.unpack(tc.output(), p0, ArtifactNameMapper.ACVE(), true));
                         } else if (node.getChildren().size() == 2) {
                             ArtifactNameMapper.ArtifactNameMapperBuilder mapperBuilder =
                                     new ArtifactNameMapper.ArtifactNameMapperBuilder(properties);
@@ -170,7 +170,7 @@ public final class ArtifactSinks {
                             ArtifactNameMapper p1 = mapperBuilder.build();
                             Path p0 = tc.basedir()
                                     .resolve(node.getChildren().getFirst().getValue());
-                            params.add(UnpackSink.unpack(p0, p1, true));
+                            params.add(UnpackSink.unpack(tc.output(), p0, p1, true));
                         } else {
                             throw new IllegalArgumentException("op unpack accepts only 1..2 argument");
                         }
@@ -211,7 +211,7 @@ public final class ArtifactSinks {
                     break;
                 }
                 case "moduleDescriptor": {
-                    params.add(new ModuleDescriptorExtractingSink());
+                    params.add(new ModuleDescriptorExtractingSink(tc.output()));
                     break;
                 }
                 default:
@@ -467,7 +467,7 @@ public final class ArtifactSinks {
         private StatArtifactSink(int level, boolean moduleDescriptor, Output output) {
             this.level = level;
             this.output = requireNonNull(output, "output");
-            this.moduleDescriptorExtractingSink = moduleDescriptor ? new ModuleDescriptorExtractingSink() : null;
+            this.moduleDescriptorExtractingSink = moduleDescriptor ? new ModuleDescriptorExtractingSink(output) : null;
         }
 
         @Override

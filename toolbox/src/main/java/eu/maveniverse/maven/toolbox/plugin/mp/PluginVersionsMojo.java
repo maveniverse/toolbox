@@ -12,7 +12,6 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -34,22 +33,21 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     private String artifactVersionMatcherSpec;
 
     @Override
-    protected Result<Boolean> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Boolean> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
         toolboxCommando.versions(
                 "managed plugins",
                 () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                output);
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
         toolboxCommando.versions(
                 "plugins",
                 () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                output);
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
         return Result.success(true);
     }
 }

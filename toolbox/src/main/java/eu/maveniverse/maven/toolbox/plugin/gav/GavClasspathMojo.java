@@ -11,7 +11,6 @@ import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import picocli.CommandLine;
@@ -51,8 +50,8 @@ public class GavClasspathMojo extends GavMojoSupport {
     private String boms;
 
     @Override
-    protected Result<String> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
-        return toolboxCommando.classpath(
-                ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)), output);
+    protected Result<String> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
+        return toolboxCommando.classpath(ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)));
     }
 }

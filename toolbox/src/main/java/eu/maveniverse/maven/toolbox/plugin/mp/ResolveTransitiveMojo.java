@@ -11,7 +11,6 @@ import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -59,7 +58,8 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
     private String sinkSpec;
 
     @Override
-    protected Result<List<Artifact>> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<List<Artifact>> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         ResolutionScope resolutionScope = ResolutionScope.parse(scope);
         return toolboxCommando.resolveTransitive(
                 resolutionScope,
@@ -68,7 +68,6 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
                 sources,
                 javadoc,
                 signature,
-                toolboxCommando.artifactSink(sinkSpec),
-                output);
+                toolboxCommando.artifactSink(sinkSpec));
     }
 }

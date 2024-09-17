@@ -16,6 +16,7 @@ import eu.maveniverse.maven.mima.extensions.mmr.ModelResponse;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -71,12 +72,10 @@ import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ToolboxResolverImpl {
     private static final String CTX_TOOLBOX = "toolbox";
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Output output;
     private final RepositorySystem repositorySystem;
     private final RepositorySystemSession session;
     private final MavenModelReader mavenModelReader;
@@ -84,11 +83,13 @@ public class ToolboxResolverImpl {
     private final VersionScheme versionScheme;
 
     public ToolboxResolverImpl(
+            Output output,
             RepositorySystem repositorySystem,
             RepositorySystemSession session,
             MavenModelReader mavenModelReader,
             List<RemoteRepository> remoteRepositories,
             VersionScheme versionScheme) {
+        this.output = requireNonNull(output, "output");
         this.repositorySystem = requireNonNull(repositorySystem, "repositorySystem");
         this.session = requireNonNull(session, "session");
         this.mavenModelReader = requireNonNull(mavenModelReader, "mavenModelReader");
@@ -117,7 +118,7 @@ public class ToolboxResolverImpl {
                 if (keys.add(ArtifactIdUtils.toVersionlessId(d.getArtifact()))) {
                     managedDependencies.add(d);
                 } else {
-                    logger.warn("BOM {} introduced an already managed dependency {}", bom, d);
+                    output.warn("BOM {} introduced an already managed dependency {}", bom, d);
                 }
             });
         }
@@ -291,7 +292,7 @@ public class ToolboxResolverImpl {
         if (verbose) {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
         }
-        logger.debug("Collecting scope: {}", resolutionScope.name());
+        output.chatter("Collecting scope: {}", resolutionScope.name());
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
@@ -306,7 +307,7 @@ public class ToolboxResolverImpl {
         collectRequest.setRequestContext(CTX_TOOLBOX);
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
 
-        logger.debug("Collecting {}", collectRequest);
+        output.chatter("Collecting {}", collectRequest);
         CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
         if (!verbose && resolutionScope != ResolutionScope.TEST) {
             ArrayList<DependencyNode> childrenToRemove = new ArrayList<>();
@@ -335,7 +336,7 @@ public class ToolboxResolverImpl {
             throw new NullPointerException("one of rootDependency or root must be non-null");
         }
 
-        logger.debug("Collecting depMgt: {}", rootDependency != null ? rootDependency.getArtifact() : root);
+        output.chatter("Collecting depMgt: {}", rootDependency != null ? rootDependency.getArtifact() : root);
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
@@ -347,7 +348,7 @@ public class ToolboxResolverImpl {
         collectRequest.setRequestContext(CTX_TOOLBOX);
         collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
 
-        logger.debug("Collecting {}", collectRequest);
+        output.chatter("Collecting {}", collectRequest);
         CollectResult result = new CollectResult(collectRequest);
         DefaultDependencyNode rootNode =
                 new DefaultDependencyNode(rootDependency != null ? rootDependency.getArtifact() : root);
@@ -358,9 +359,9 @@ public class ToolboxResolverImpl {
                 .filter(e -> e.getValue().size() > 1)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         if (!conflicts.isEmpty()) {
-            logger.warn("DM conflicts discovered:");
+            output.warn("DM conflicts discovered:");
             for (Map.Entry<String, LinkedHashSet<String>> entry : conflicts.entrySet()) {
-                logger.warn(
+                output.warn(
                         " * {} version {} prevails, but met versions {}",
                         entry.getKey(),
                         entry.getValue().getFirst(),
@@ -421,7 +422,7 @@ public class ToolboxResolverImpl {
         }
 
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
-        logger.debug("Resolving scope: {}", resolutionScope.name());
+        output.chatter("Resolving scope: {}", resolutionScope.name());
 
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
@@ -438,7 +439,7 @@ public class ToolboxResolverImpl {
         DependencyRequest dependencyRequest =
                 new DependencyRequest(collectRequest, resolutionScope.getDependencyFilter());
 
-        logger.debug("Resolving {}", dependencyRequest);
+        output.chatter("Resolving {}", dependencyRequest);
         DependencyResult result = repositorySystem.resolveDependencies(session, dependencyRequest);
         try {
             ArtifactResult rootResult =

@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.File;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -67,8 +66,9 @@ public final class GavInstallMojo extends GavMojoSupport {
     private File javadoc;
 
     @Override
-    protected Result<List<Artifact>> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<List<Artifact>> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.copy(
-                projectArtifacts(gav, jar, pom, sources, javadoc), toolboxCommando.artifactSink("install()"), output);
+                projectArtifacts(gav, jar, pom, sources, javadoc), toolboxCommando.artifactSink("install()"));
     }
 }

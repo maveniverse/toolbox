@@ -83,5 +83,9 @@ public interface Output extends Closeable {
         }
     }
 
+    default void warn(String message, Object... params) {
+        new Marker(this, Verbosity.TIGHT).scary("[W] " + message).say(params);
+    }
+
     void handle(Verbosity verbosity, String message, Object... params);
 }

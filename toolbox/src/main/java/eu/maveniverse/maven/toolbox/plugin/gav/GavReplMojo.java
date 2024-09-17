@@ -11,7 +11,6 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.plugin.CLI;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.nio.file.Path;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -40,10 +39,11 @@ import picocli.shell.jline3.PicocliCommands;
 @Mojo(name = "gav-repl", requiresProject = false, threadSafe = true)
 public class GavReplMojo extends GavMojoSupport {
     @Override
-    public Result<String> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    public Result<String> doExecute() throws Exception {
+        Output output = getOutput();
         Context context = getContext();
 
-        toolboxCommando.dump(output);
+        getToolboxCommando().dump();
 
         // set up JLine built-in commands
         ConfigurationPath configPath = new ConfigurationPath(context.basedir(), context.basedir());
@@ -89,7 +89,7 @@ public class GavReplMojo extends GavMojoSupport {
                 } catch (EndOfFileException e) {
                     return Result.success("eof");
                 } catch (SystemRegistryImpl.UnknownCommandException e) {
-                    output.doTell("REPL Failure: ", e);
+                    output.doTell("REPL: ", e);
                 } catch (Exception e) {
                     systemRegistry.trace(e);
                     return Result.failure(e.getMessage());

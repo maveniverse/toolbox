@@ -92,11 +92,9 @@ import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Output output;
     private final Context context;
     private final RepositorySystemSession session;
     private final VersionScheme versionScheme;
@@ -106,7 +104,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     private final Map<String, RemoteRepository> knownSearchRemoteRepositories;
 
-    public ToolboxCommandoImpl(Context context) {
+    public ToolboxCommandoImpl(Output output, Context context) {
+        this.output = requireNonNull(output, "output");
         this.context = requireNonNull(context, "context");
         this.versionScheme = new GenericVersionScheme();
         this.toolboxSearchApi = new ToolboxSearchApiImpl();
@@ -116,6 +115,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 ChainedRepositoryListener.newInstance(session.getRepositoryListener(), artifactRecorder));
         this.session = session;
         this.toolboxResolver = new ToolboxResolverImpl(
+                output,
                 context.repositorySystem(),
                 session,
                 new MavenModelReader(context),
@@ -126,6 +126,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     public Path basedir() {
         return context.basedir();
+    }
+
+    public Output output() {
+        return output;
     }
 
     public RepositorySystem repositorySystem() {
@@ -176,7 +180,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<String> dump(Output output) {
+    public Result<String> dump() {
         Runtime runtime = context.getRuntime();
         output.marker(Output.Verbosity.TIGHT)
                 .emphasize("Toolbox {}")
@@ -316,14 +320,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             // TODO: this is how Maven behaves, make it configurable?
             return toolboxResolver.mayResolveArtifactVersion(dependency.getArtifact(), ArtifactVersionSelector.last());
         } catch (InvalidVersionSpecificationException | VersionRangeResolutionException e) {
-            logger.warn("Could not resolve artifact version: {}", dependency.getArtifact(), e);
+            output.warn("Could not resolve artifact version: {}", dependency.getArtifact(), e);
             return dependency.getArtifact();
         }
     }
 
     @Override
-    public Result<String> classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, Output output)
-            throws Exception {
+    public Result<String> classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot) throws Exception {
         output.suggest("Resolving {}", resolutionRoot.getArtifact());
         resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
         DependencyResult dependencyResult = toolboxResolver.resolve(
@@ -344,7 +347,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<Artifact>> copy(Source<Artifact> source, Sink<Artifact> sink, Output output) throws Exception {
+    public Result<List<Artifact>> copy(Source<Artifact> source, Sink<Artifact> sink) throws Exception {
         try (source;
                 sink) {
             List<Artifact> resolveResult = toolboxResolver
@@ -361,10 +364,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<List<Artifact>> copyTransitive(
-            ResolutionScope resolutionScope,
-            Collection<ResolutionRoot> resolutionRoots,
-            Sink<Artifact> sink,
-            Output output)
+            ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots, Sink<Artifact> sink)
             throws Exception {
         ArrayList<Artifact> artifactResults = new ArrayList<>();
         for (ResolutionRoot resolutionRoot : resolutionRoots) {
@@ -390,20 +390,18 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                             .map(ArtifactResult::getArtifact)
                             .toList());
         }
-        return copy(artifactResults::stream, sink, output);
+        return copy(artifactResults::stream, sink);
     }
 
     @Override
-    public Result<List<Artifact>> copyRecorded(boolean stopRecording, Sink<Artifact> sink, Output output)
-            throws Exception {
+    public Result<List<Artifact>> copyRecorded(boolean stopRecording, Sink<Artifact> sink) throws Exception {
         artifactRecorder.setActive(!stopRecording);
-        return copy(artifactRecorder, sink, output);
+        return copy(artifactRecorder, sink);
     }
 
     @Override
     public Result<Map<String, List<RemoteRepository>>> listRepositories(
-            ResolutionScope resolutionScope, Map<String, ResolutionRoot> resolutionRoots, Output output)
-            throws Exception {
+            ResolutionScope resolutionScope, Map<String, ResolutionRoot> resolutionRoots) throws Exception {
         HashMap<String, List<RemoteRepository>> result = new HashMap<>();
         for (Map.Entry<String, ResolutionRoot> entry : resolutionRoots.entrySet()) {
             String contextName = entry.getKey();
@@ -467,7 +465,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<Artifact>> listAvailablePlugins(Collection<String> groupIds, Output output) throws Exception {
+    public Result<List<Artifact>> listAvailablePlugins(Collection<String> groupIds) throws Exception {
         output.suggest("Listing plugins in groupIds: {}", groupIds);
         List<Artifact> plugins = toolboxResolver.listAvailablePlugins(groupIds);
         plugins.forEach(p -> output.tell(p.toString()));
@@ -475,7 +473,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<String> recordStart(Output output) {
+    public Result<String> recordStart() {
         boolean result = artifactRecorder.setActive(true);
         if (result) {
             artifactRecorder.clear();
@@ -487,7 +485,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<RecordStats> recordStats(Output output) {
+    public Result<RecordStats> recordStats() {
         boolean active = artifactRecorder.isActive();
         int recordedCount = artifactRecorder.recordedCount();
         output.tell("Recorder is {}; recorded {} artifacts so far", active ? "started" : "stopped", recordedCount);
@@ -495,7 +493,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<String> recordStop(Output output) {
+    public Result<String> recordStop() {
         boolean result = artifactRecorder.setActive(false);
         if (result) {
             output.tell("Stopped recorder, recorded {} artifacts", artifactRecorder.recordedCount());
@@ -507,12 +505,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<List<Artifact>> resolve(
-            Source<Artifact> artifactSource,
-            boolean sources,
-            boolean javadoc,
-            boolean signature,
-            Sink<Artifact> sink,
-            Output output)
+            Source<Artifact> artifactSource, boolean sources, boolean javadoc, boolean signature, Sink<Artifact> sink)
             throws Exception {
         List<Artifact> result = new ArrayList<>();
         List<Artifact> artifacts = artifactSource.get().toList();
@@ -567,8 +560,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
-            Sink<Artifact> sink,
-            Output output)
+            Sink<Artifact> sink)
             throws Exception {
         ArtifactSinks.StatArtifactSink stat = ArtifactSinks.statArtifactSink(0, false, output);
         try (Sink<Artifact> artifactSink = ArtifactSinks.teeArtifactSink(sink, stat)) {
@@ -581,8 +573,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         signature,
                         ArtifactSinks.teeArtifactSink(
                                 ArtifactSinks.nonClosingArtifactSink(artifactSink),
-                                ArtifactSinks.statArtifactSink(1, true, output)),
-                        output);
+                                ArtifactSinks.statArtifactSink(1, true, output)));
             }
         }
         return stat.getSeenArtifacts().isEmpty()
@@ -596,8 +587,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean sources,
             boolean javadoc,
             boolean signature,
-            Sink<Artifact> sink,
-            Output output)
+            Sink<Artifact> sink)
             throws Exception {
         try (Sink<Artifact> artifactSink = sink) {
             output.suggest("Resolving {}", resolutionRoot.getArtifact());
@@ -656,8 +646,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<CollectResult> tree(
-            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree, Output output)
-            throws Exception {
+            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree) throws Exception {
         output.suggest("Loading root of: {}", resolutionRoot.getArtifact());
         ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
         output.suggest("Collecting graph of: {}", resolutionRoot.getArtifact());
@@ -682,8 +671,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
             boolean verboseTree,
-            ArtifactMatcher artifactMatcher,
-            Output output)
+            ArtifactMatcher artifactMatcher)
             throws Exception {
         output.suggest("Loading root of: {}", resolutionRoot.getArtifact());
         ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
@@ -715,8 +703,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<Dependency>> dmList(ResolutionRoot resolutionRoot, boolean verboseList, Output output)
-            throws Exception {
+    public Result<List<Dependency>> dmList(ResolutionRoot resolutionRoot, boolean verboseList) throws Exception {
         AtomicInteger counter = new AtomicInteger(0);
         List<Dependency> result = toolboxResolver.loadRoot(resolutionRoot).getManagedDependencies();
         result.forEach(d -> output.tell(
@@ -725,8 +712,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<CollectResult> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree, Output output)
-            throws Exception {
+    public Result<CollectResult> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree) throws Exception {
         resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
         CollectResult collectResult = toolboxResolver.collectDm(
                 resolutionRoot.getArtifact(), resolutionRoot.getManagedDependencies(), verboseTree);
@@ -754,8 +740,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean javadoc,
             boolean signature,
             boolean allRequired,
-            String repositoryVendor,
-            Output output)
+            String repositoryVendor)
             throws IOException {
         HashMap<Artifact, Boolean> result = new HashMap<>();
         ArrayList<Artifact> missingOnes = new ArrayList<>();
@@ -827,8 +812,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<Map<String, Artifact>> identify(
-            RemoteRepository remoteRepository, Collection<String> targets, boolean decorated, Output output)
-            throws IOException {
+            RemoteRepository remoteRepository, Collection<String> targets, boolean decorated) throws IOException {
         HashMap<String, Artifact> result = new HashMap<>();
         HashMap<String, String> sha1s = new HashMap<>();
         for (String target : targets) {
@@ -898,8 +882,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<String>> list(
-            RemoteRepository remoteRepository, String gavoid, String repositoryVendor, Output output)
+    public Result<List<String>> list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor)
             throws IOException {
         ArrayList<String> result = new ArrayList<>();
         try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(
@@ -947,8 +930,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<Artifact>> search(RemoteRepository remoteRepository, String expression, Output output)
-            throws IOException {
+    public Result<List<Artifact>> search(RemoteRepository remoteRepository, String expression) throws IOException {
         ArrayList<Artifact> result = new ArrayList<>();
         try (SearchBackend backend =
                 toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
@@ -983,8 +965,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<Boolean> verify(
-            RemoteRepository remoteRepository, String gav, String sha1, String repositoryVendor, Output output)
+    public Result<Boolean> verify(RemoteRepository remoteRepository, String gav, String sha1, String repositoryVendor)
             throws IOException {
         try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(
                 context.repositorySystemSession(), remoteRepository, repositoryVendor)) {
@@ -1007,8 +988,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean upToDate,
             Predicate<Version> versionPredicate,
             BiFunction<Artifact, List<Version>, String> artifactVersionSelector,
-            String repositoryVendor,
-            Output output)
+            String repositoryVendor)
             throws Exception {
         ArrayList<SearchBackend> searchBackends = new ArrayList<>();
         for (RemoteRepository remoteRepository : context.remoteRepositories()) {
@@ -1065,8 +1045,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<Map<Artifact, List<Version>>> versions(
-            String context, Source<Artifact> artifactSource, Predicate<Version> versionPredicate, Output output)
-            throws Exception {
+            String context, Source<Artifact> artifactSource, Predicate<Version> versionPredicate) throws Exception {
         List<Artifact> artifacts = artifactSource.get().toList();
         HashMap<Artifact, List<Version>> result = new HashMap<>();
         output.tell("Checking newest versions of {} ({})", context, artifacts.size());

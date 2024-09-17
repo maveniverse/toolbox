@@ -12,7 +12,6 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -34,13 +33,14 @@ public class PluginTreeMojo extends MPPluginMojoSupport {
     private boolean verboseTree;
 
     @Override
-    protected Result<Boolean> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<Boolean> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
         if (root != null) {
-            toolboxCommando.tree(ResolutionScope.parse(scope), root, verboseTree, output);
+            toolboxCommando.tree(ResolutionScope.parse(scope), root, verboseTree);
         } else {
             for (ResolutionRoot resolutionRoot : allProjectPluginsAsResolutionRoots(toolboxCommando)) {
-                toolboxCommando.tree(ResolutionScope.parse(scope), resolutionRoot, verboseTree, output);
+                toolboxCommando.tree(ResolutionScope.parse(scope), resolutionRoot, verboseTree);
             }
         }
         return Result.success(true);

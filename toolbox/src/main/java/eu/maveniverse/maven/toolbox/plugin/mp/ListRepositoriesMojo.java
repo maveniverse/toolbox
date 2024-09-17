@@ -10,8 +10,6 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
-import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -29,9 +27,8 @@ public final class ListRepositoriesMojo extends MPMojoSupport {
     private String scope;
 
     @Override
-    protected Result<List<RemoteRepository>> doExecute(Output output, ToolboxCommando toolboxCommando)
-            throws Exception {
-        return toolboxCommando.listRepositories(
-                ResolutionScope.parse(scope), "project", projectAsResolutionRoot(), output);
+    protected Result<List<RemoteRepository>> doExecute() throws Exception {
+        return getToolboxCommando()
+                .listRepositories(ResolutionScope.parse(scope), "project", projectAsResolutionRoot());
     }
 }

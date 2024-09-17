@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -35,12 +34,12 @@ public final class CopyMojo extends MPMojoSupport {
     private String depSpec;
 
     @Override
-    protected Result<List<Artifact>> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception {
+    protected Result<List<Artifact>> doExecute() throws Exception {
+        ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.copy(
                 () -> projectAsResolutionRoot().getDependencies().stream()
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
                         .map(toolboxCommando::toArtifact),
-                toolboxCommando.artifactSink(sinkSpec),
-                output);
+                toolboxCommando.artifactSink(sinkSpec));
     }
 }

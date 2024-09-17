@@ -201,7 +201,7 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     }
 
     protected ToolboxCommando getToolboxCommando() {
-        return getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getContext()));
+        return getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getOutput(), getContext()));
     }
 
     /**
@@ -219,10 +219,10 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         boolean seeded = CONTEXT.compareAndSet(null, new HashMap<>());
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
-        getOrCreate(Output.class, () -> OutputFactory.createOutput(batch, errors, verbosity));
+        getOrCreate(Output.class, () -> OutputFactory.createCliOutput(batch, errors, verbosity));
 
         try {
-            Result<?> result = doExecute(getOutput(), getToolboxCommando());
+            Result<?> result = doExecute();
             if (!result.isSuccess() && failOnLogicalFailure) {
                 return 1;
             } else {
@@ -270,12 +270,12 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         getOrCreate(Context.class, () -> get(Runtime.class).create(createMojoContextOverrides()));
         getOrCreate(
                 Output.class,
-                () -> OutputFactory.createOutput(
+                () -> OutputFactory.createMojoOutput(
                         !mavenSession.getRequest().isInteractiveMode(),
                         mavenSession.getRequest().isShowErrors(),
                         verbosity));
         try {
-            Result<?> result = doExecute(getOutput(), getToolboxCommando());
+            Result<?> result = doExecute();
             if (!result.isSuccess() && failOnLogicalFailure) {
                 throw new MojoFailureException("Operation failed: " + result.getMessage());
             }
@@ -297,5 +297,5 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         }
     }
 
-    protected abstract Result<?> doExecute(Output output, ToolboxCommando toolboxCommando) throws Exception;
+    protected abstract Result<?> doExecute() throws Exception;
 }

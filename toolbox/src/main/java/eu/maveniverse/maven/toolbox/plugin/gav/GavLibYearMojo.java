@@ -78,15 +78,6 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     private boolean transitive;
 
     /**
-     * Make libyear quiet.
-     */
-    @CommandLine.Option(
-            names = {"--quiet"},
-            description = "Make command quiet")
-    @Parameter(property = "quiet", defaultValue = "false")
-    private boolean quiet;
-
-    /**
      * Make libyear show up-to-date libraries with age as well.
      */
     @CommandLine.Option(
@@ -103,7 +94,6 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
                 ResolutionScope.parse(scope),
                 toolboxCommando.loadGav(gav, slurp(boms)),
                 transitive,
-                quiet,
                 upToDate,
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),

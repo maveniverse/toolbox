@@ -48,12 +48,6 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
     private boolean transitive;
 
     /**
-     * Make libyear quiet.
-     */
-    @Parameter(property = "quiet", defaultValue = "false")
-    private boolean quiet;
-
-    /**
      * Make libyear show up-to-date libraries with age as well.
      */
     @Parameter(property = "upToDate", defaultValue = "false")
@@ -75,7 +69,6 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
                     ResolutionScope.RUNTIME,
                     root,
                     transitive,
-                    quiet,
                     upToDate,
                     artifactVersionMatcher,
                     artifactVersionSelector,
@@ -89,7 +82,6 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
                     ResolutionScope.RUNTIME,
                     root,
                     transitive,
-                    quiet,
                     upToDate,
                     artifactVersionMatcher,
                     artifactVersionSelector,

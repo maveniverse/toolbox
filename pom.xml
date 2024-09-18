@@ -37,6 +37,8 @@
   <modules>
     <module>shared</module>
     <module>toolbox</module>
+    <module>toolbox-plugin-its</module>
+    <module>toolbox-cli-its</module>
   </modules>
 
   <scm>
@@ -314,14 +316,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>run-its</id>
-      <modules>
-        <module>toolbox-plugin-its</module>
-        <module>toolbox-cli-its</module>
-      </modules>
-    </profile>
-  </profiles>
 </project>

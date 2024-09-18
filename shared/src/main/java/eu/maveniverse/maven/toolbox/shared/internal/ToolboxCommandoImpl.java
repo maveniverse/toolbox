@@ -27,6 +27,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
+import eu.maveniverse.maven.toolbox.shared.ProjectLocator;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
@@ -721,6 +722,34 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .accept(new DependencyGraphDumper(
                         output::tell,
                         DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
+                        output.tool(
+                                DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
+        return Result.success(collectResult);
+    }
+
+    @Override
+    public Result<CollectResult> projectInheritanceTree(ProjectLocator projectLocator) {
+        CollectResult collectResult = toolboxResolver.collectProjectInheritance(projectLocator);
+        collectResult
+                .getRoot()
+                .accept(new DependencyGraphDumper(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(DependencyGraphDumper.artifactProperties(List.of("source"))),
+                        output.tool(
+                                DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
+        return Result.success(collectResult);
+    }
+
+    @Override
+    public Result<CollectResult> projectModuleDependencyTree(
+            ProjectLocator projectLocator, ResolutionScope scope, boolean showExternal) {
+        CollectResult collectResult =
+                toolboxResolver.collectProjectModuleDependency(projectLocator, scope, showExternal);
+        collectResult
+                .getRoot()
+                .accept(new DependencyGraphDumper(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(DependencyGraphDumper.artifactProperties(List.of("source"))),
                         output.tool(
                                 DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
         return Result.success(collectResult);

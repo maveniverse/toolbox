@@ -1042,17 +1042,23 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             String context, Source<Artifact> artifactSource, Predicate<Version> versionPredicate) throws Exception {
         List<Artifact> artifacts = artifactSource.get().toList();
         HashMap<Artifact, List<Version>> result = new HashMap<>();
-        output.tell("Checking newest versions of {} ({})", context, artifacts.size());
+        output.marker(Output.Verbosity.NORMAL)
+                .emphasize("Checking newest versions of {} ({})")
+                .say(context, artifacts.size());
         for (Artifact artifact : artifacts) {
             List<Version> newer = toolboxResolver.findNewerVersions(artifact, versionPredicate);
             result.put(artifact, newer);
             if (!newer.isEmpty()) {
                 Version latest = newer.getLast();
                 String all = newer.stream().map(Object::toString).collect(Collectors.joining(", "));
-                output.tell("* {} -> {}", ArtifactIdUtils.toId(artifact), latest);
-                output.tell("  Available: {}", all);
+                output.marker(Output.Verbosity.NORMAL).scary("* {} -> {}").say(ArtifactIdUtils.toId(artifact), latest);
+                output.marker(Output.Verbosity.SUGGEST)
+                        .detail("  Available: {}")
+                        .say(all);
             } else {
-                output.tell("* {} is up to date", ArtifactIdUtils.toId(artifact));
+                output.marker(Output.Verbosity.NORMAL)
+                        .outstanding("* {} is up to date")
+                        .say(ArtifactIdUtils.toId(artifact));
             }
         }
         return Result.success(result);

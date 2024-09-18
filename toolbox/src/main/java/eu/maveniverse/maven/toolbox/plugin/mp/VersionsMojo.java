@@ -9,7 +9,6 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
-import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -20,12 +19,6 @@ import org.apache.maven.plugins.annotations.Parameter;
  */
 @Mojo(name = "versions", threadSafe = true)
 public class VersionsMojo extends MPMojoSupport {
-    /**
-     * Resolution scope to resolve (default 'test').
-     */
-    @Parameter(property = "scope", defaultValue = "test", required = true)
-    private String scope;
-
     /**
      * The dependency matcher spec.
      */
@@ -41,22 +34,17 @@ public class VersionsMojo extends MPMojoSupport {
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        ResolutionScope resolutionScope = ResolutionScope.parse(scope);
         toolboxCommando.versions(
                 "managed dependencies",
                 () ->
-                        projectManagedDependenciesAsResolutionRoots(
-                                        resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec))
+                        projectManagedDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec))
                                 .stream()
                                 .map(ResolutionRoot::getArtifact),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
         toolboxCommando.versions(
                 "dependencies",
-                () ->
-                        projectDependenciesAsResolutionRoots(
-                                        resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec))
-                                .stream()
-                                .map(ResolutionRoot::getArtifact),
+                () -> projectDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec)).stream()
+                        .map(ResolutionRoot::getArtifact),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
         return Result.success(true);
     }

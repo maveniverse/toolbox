@@ -46,8 +46,7 @@ public final class CopyTransitiveMojo extends MPMojoSupport {
         ResolutionScope resolutionScope = ResolutionScope.parse(scope);
         return toolboxCommando.copyTransitive(
                 resolutionScope,
-                projectDependenciesAsResolutionRoots(
-                        resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec)),
+                projectDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec)),
                 toolboxCommando.artifactSink(sinkSpec));
     }
 }

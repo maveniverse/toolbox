@@ -63,8 +63,7 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
         ResolutionScope resolutionScope = ResolutionScope.parse(scope);
         return toolboxCommando.resolveTransitive(
                 resolutionScope,
-                projectDependenciesAsResolutionRoots(
-                        resolutionScope, toolboxCommando.parseDependencyMatcherSpec(depSpec)),
+                projectDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec)),
                 sources,
                 javadoc,
                 signature,

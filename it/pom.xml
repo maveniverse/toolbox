@@ -17,10 +17,16 @@
     <version>0.3.1-SNAPSHOT</version>
   </parent>
 
-  <artifactId>toolbox-plugin-its</artifactId>
+  <groupId>eu.maveniverse.maven.toolbox.it</groupId>
+  <artifactId>it</artifactId>
   <packaging>pom</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
+
+  <modules>
+    <module>toolbox-plugin-its</module>
+    <module>toolbox-cli-its</module>
+  </modules>
 
   <properties>
     <requireBuildtimeJavaVersion.version>[8,)</requireBuildtimeJavaVersion.version>
@@ -29,13 +35,6 @@
     <maven.install.skip>true</maven.install.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
-
-  <dependencies>
-    <dependency>
-      <groupId>eu.maveniverse.maven.plugins</groupId>
-      <artifactId>toolbox</artifactId>
-    </dependency>
-  </dependencies>
 
   <profiles>
     <profile>
@@ -53,34 +52,6 @@
                   <goal>check</goal>
                 </goals>
                 <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-invoker-plugin</artifactId>
-            <configuration>
-              <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
-              <cloneClean>true</cloneClean>
-              <pomIncludes>
-                <pomInclude>*/pom.xml</pomInclude>
-              </pomIncludes>
-              <preBuildHookScript>setup</preBuildHookScript>
-              <postBuildHookScript>verify</postBuildHookScript>
-              <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
-              <settingsFile>src/it/settings.xml</settingsFile>
-              <addTestClassPath>true</addTestClassPath>
-              <scriptVariables>
-                <projectVersion>${project.version}</projectVersion>
-              </scriptVariables>
-            </configuration>
-            <executions>
-              <execution>
-                <id>integration-test</id>
-                <goals>
-                  <goal>install</goal>
-                  <goal>run</goal>
-                </goals>
               </execution>
             </executions>
           </plugin>

@@ -37,8 +37,7 @@
   <modules>
     <module>shared</module>
     <module>toolbox</module>
-    <module>toolbox-plugin-its</module>
-    <module>toolbox-cli-its</module>
+    <module>it</module>
   </modules>
 
   <scm>

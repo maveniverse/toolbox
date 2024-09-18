@@ -978,7 +978,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
             boolean transitive,
-            boolean quiet,
             boolean upToDate,
             Predicate<Version> versionPredicate,
             BiFunction<Artifact, List<Version>, String> artifactVersionSelector,
@@ -996,7 +995,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 context,
                 toolboxResolver,
                 toolboxSearchApi,
-                quiet,
                 upToDate,
                 versionPredicate,
                 artifactVersionSelector,
@@ -1015,7 +1013,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     collectResult.getRoot().accept(new DependencyVisitor() {
                         @Override
                         public boolean visitEnter(DependencyNode node) {
-                            artifacts.add(node.getArtifact());
+                            if (node != collectResult.getRoot()) {
+                                artifacts.add(node.getArtifact());
+                            }
                             return true;
                         }
 

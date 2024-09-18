@@ -314,7 +314,6 @@ public interface ToolboxCommando {
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
             boolean transitive,
-            boolean quiet,
             boolean upToDate,
             Predicate<Version> versionPredicate,
             BiFunction<Artifact, List<Version>, String> artifactVersionSelector,

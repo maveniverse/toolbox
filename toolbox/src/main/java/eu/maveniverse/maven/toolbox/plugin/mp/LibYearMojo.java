@@ -44,12 +44,6 @@ public class LibYearMojo extends MPMojoSupport {
     private boolean transitive;
 
     /**
-     * Make libyear quiet.
-     */
-    @Parameter(property = "quiet", defaultValue = "false")
-    private boolean quiet;
-
-    /**
      * Make libyear show up-to-date libraries with age as well.
      */
     @Parameter(property = "upToDate", defaultValue = "false")
@@ -63,7 +57,6 @@ public class LibYearMojo extends MPMojoSupport {
                 ResolutionScope.parse(scope),
                 projectAsResolutionRoot(),
                 transitive,
-                quiet,
                 upToDate,
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),

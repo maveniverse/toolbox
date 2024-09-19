@@ -758,8 +758,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<CollectResult> projectDependenciesTree(ReactorLocator reactorLocator, boolean showExternal) {
-        CollectResult collectResult = toolboxResolver.projectDependenciesTree(reactorLocator, showExternal);
+    public Result<CollectResult> projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) {
+        CollectResult collectResult = toolboxResolver.projectDependencyTree(reactorLocator, showExternal);
         collectResult
                 .getRoot()
                 .accept(new DependencyGraphDumper(

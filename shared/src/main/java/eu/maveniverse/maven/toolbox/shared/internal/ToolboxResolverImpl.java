@@ -331,17 +331,17 @@ public class ToolboxResolverImpl {
         }
     }
 
-    public CollectResult projectDependenciesTree(ReactorLocator reactorLocator, boolean showExternal) {
+    public CollectResult projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) {
         CollectRequest collectRequest = new CollectRequest();
         ProjectLocator.Project rootProject = reactorLocator.getCurrentProject();
         collectRequest.setRoot(new Dependency(source(rootProject), ""));
         CollectResult result = new CollectResult(collectRequest);
         result.setRoot(new DefaultDependencyNode(collectRequest.getRoot()));
-        projectDependenciesTree(result.getRoot(), reactorLocator, rootProject, showExternal, new HashSet<>());
+        projectDependencyTree(result.getRoot(), reactorLocator, rootProject, showExternal, new HashSet<>());
         return result;
     }
 
-    private void projectDependenciesTree(
+    private void projectDependencyTree(
             DependencyNode node,
             ReactorLocator reactorLocator,
             ProjectLocator.Project current,
@@ -369,7 +369,7 @@ public class ToolboxResolverImpl {
             DependencyNode recursiveNode = recursiveNodes.pop();
             ProjectLocator.Project recursiveProject =
                     (ProjectLocator.Project) recursiveNode.getData().get(ProjectLocator.Project.class);
-            projectDependenciesTree(recursiveNode, reactorLocator, recursiveProject, showExternal, seen);
+            projectDependencyTree(recursiveNode, reactorLocator, recursiveProject, showExternal, seen);
         }
     }
 

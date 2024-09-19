@@ -24,38 +24,49 @@ public class Marker {
         this.message = new StringBuilder();
     }
 
-    public Marker word(String word) {
+    public enum Intent {
+        EMPHASIZE,
+        OUTSTANDING,
+        NORMAL,
+        DETAIL,
+        UNIMPORTANT,
+        SCARY,
+        BLOODY
+    }
+
+    public Marker word(Intent intent, String word) {
+        requireNonNull(intent, "intent");
         requireNonNull(word, "word");
         message.append(word);
         return this;
     }
 
     public Marker emphasize(String word) {
-        return word(word);
+        return word(Intent.EMPHASIZE, word);
     }
 
     public Marker outstanding(String word) {
-        return word(word);
+        return word(Intent.OUTSTANDING, word);
     }
 
     public Marker normal(String word) {
-        return word(word);
+        return word(Intent.NORMAL, word);
     }
 
     public Marker detail(String word) {
-        return word(word);
+        return word(Intent.DETAIL, word);
     }
 
     public Marker unimportant(String word) {
-        return word(word);
+        return word(Intent.UNIMPORTANT, word);
     }
 
     public Marker scary(String word) {
-        return word(word);
+        return word(Intent.SCARY, word);
     }
 
     public Marker bloody(String word) {
-        return word(word);
+        return word(Intent.BLOODY, word);
     }
 
     public void say(Object... params) {

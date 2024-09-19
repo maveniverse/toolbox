@@ -259,6 +259,21 @@ public interface ToolboxCommando {
      */
     Result<CollectResult> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree) throws Exception;
 
+    /**
+     * Returns the project inheritance tree of given root.
+     */
+    Result<CollectResult> parentChildTree(ReactorLocator reactorLocator) throws Exception;
+
+    /**
+     * Returns the project collect tree of given root.
+     */
+    Result<CollectResult> subprojectTree(ReactorLocator reactorLocator) throws Exception;
+
+    /**
+     * Returns the project module dependency tree of given root.
+     */
+    Result<CollectResult> projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) throws Exception;
+
     // Search API related commands: they target one single RemoteRepository
 
     /**

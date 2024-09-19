@@ -27,6 +27,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
+import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
@@ -662,7 +663,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         output::tell,
                         DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
                         output.tool(
-                                DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
+                                DependencyGraphDecorators.TreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
         return Result.success(collectResult);
     }
 
@@ -722,7 +724,50 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         output::tell,
                         DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
                         output.tool(
-                                DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
+                                DependencyGraphDecorators.DmTreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
+        return Result.success(collectResult);
+    }
+
+    @Override
+    public Result<CollectResult> parentChildTree(ReactorLocator reactorLocator) {
+        CollectResult collectResult = toolboxResolver.parentChildTree(reactorLocator);
+        collectResult
+                .getRoot()
+                .accept(new DependencyGraphDumper(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(),
+                        output.tool(
+                                DependencyGraphDecorators.ParentChildTreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
+        return Result.success(collectResult);
+    }
+
+    @Override
+    public Result<CollectResult> subprojectTree(ReactorLocator reactorLocator) throws Exception {
+        CollectResult collectResult = toolboxResolver.subprojectTree(reactorLocator);
+        collectResult
+                .getRoot()
+                .accept(new DependencyGraphDumper(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(),
+                        output.tool(
+                                DependencyGraphDecorators.SubprojectTreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
+        return Result.success(collectResult);
+    }
+
+    @Override
+    public Result<CollectResult> projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) {
+        CollectResult collectResult = toolboxResolver.projectDependencyTree(reactorLocator, showExternal);
+        collectResult
+                .getRoot()
+                .accept(new DependencyGraphDumper(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(),
+                        output.tool(
+                                DependencyGraphDecorators.ProjectDependenciesTreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
         return Result.success(collectResult);
     }
 

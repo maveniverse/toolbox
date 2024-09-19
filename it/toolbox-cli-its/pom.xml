@@ -27,6 +27,13 @@
     <itDir>${project.basedir}/src/it</itDir>
   </properties>
 
+  <dependencies>
+    <dependency>
+      <groupId>eu.maveniverse.maven.plugins</groupId>
+      <artifactId>toolbox</artifactId>
+    </dependency>
+  </dependencies>
+
   <profiles>
     <profile>
       <id>windows</id>

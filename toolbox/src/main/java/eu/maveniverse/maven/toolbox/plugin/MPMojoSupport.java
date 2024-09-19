@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin;
 
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
+import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import java.util.List;
 import java.util.Objects;
@@ -102,5 +103,9 @@ public abstract class MPMojoSupport extends MojoSupport {
                                 p.getArtifactId(), dependency.getArtifact().getArtifactId())
                         && Objects.equals(
                                 p.getVersion(), dependency.getArtifact().getVersion()));
+    }
+
+    protected ReactorLocator getReactorLocator() {
+        return new MavenReactorLocator(mavenSession);
     }
 }

@@ -53,7 +53,7 @@ public interface Output extends Closeable {
     /**
      * Get a "tool" from output. This method may return "improved" tool than the one supplier would create.
      */
-    <T> T tool(Class<T> klazz, Supplier<T> supplier);
+    <T> T tool(Class<? extends T> klazz, Supplier<T> supplier);
 
     /**
      * Returns "text marker" to build simple messages.

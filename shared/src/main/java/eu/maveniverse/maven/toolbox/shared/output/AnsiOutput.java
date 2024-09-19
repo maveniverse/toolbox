@@ -2,6 +2,7 @@ package eu.maveniverse.maven.toolbox.shared.output;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.toolbox.shared.internal.DependencyGraphDecorators;
 import eu.maveniverse.maven.toolbox.shared.internal.DependencyGraphDumper;
 import java.util.Deque;
 import java.util.List;
@@ -25,9 +26,19 @@ public class AnsiOutput extends OutputSupport {
     }
 
     @Override
-    public <T> T tool(Class<T> klazz, Supplier<T> supplier) {
-        if (DependencyGraphDumper.LineFormatter.class.equals(klazz)) {
-            return klazz.cast(new AnsiTreeFormatter(marker(Verbosity.NORMAL)));
+    public <T> T tool(Class<? extends T> klazz, Supplier<T> supplier) {
+        if (DependencyGraphDumper.LineFormatter.class.isAssignableFrom(klazz)) {
+            if (DependencyGraphDecorators.TreeDecorator.class.equals(klazz)) {
+                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new TreeIntentMapper());
+            } else if (DependencyGraphDecorators.DmTreeDecorator.class.equals(klazz)) {
+                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new DmTreeIntentMapper());
+            } else if (DependencyGraphDecorators.ParentChildTreeDecorator.class.equals(klazz)) {
+                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
+            } else if (DependencyGraphDecorators.SubprojectTreeDecorator.class.equals(klazz)) {
+                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
+            } else if (DependencyGraphDecorators.ProjectDependenciesTreeDecorator.class.equals(klazz)) {
+                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
+            }
         }
         return supplier.get();
     }
@@ -132,56 +143,91 @@ public class AnsiOutput extends OutputSupport {
     // Tree
 
     private static class AnsiTreeFormatter extends DependencyGraphDumper.LineFormatter {
-        private final Function<DependencyNode, String> winner = DependencyGraphDumper.winnerNode();
-        private final Function<DependencyNode, Boolean> premanaged = DependencyGraphDumper.isPremanaged();
         private final Marker marker;
+        private final Function<Deque<DependencyNode>, Marker.Intent> intentMapper;
 
-        public AnsiTreeFormatter(Marker marker) {
+        public AnsiTreeFormatter(Marker marker, Function<Deque<DependencyNode>, Marker.Intent> intentMapper) {
             this.marker = marker;
+            this.intentMapper = intentMapper;
         }
 
         @Override
         public String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            String indentationStr = formatIndentation(nodes, "╰─", "├─", "  ", "│ ");
+            String nodeStr = formatNode(nodes, decorators);
+            Marker.Intent intent = intentMapper.apply(nodes);
+            String result = "";
+            switch (intent) {
+                case EMPHASIZE -> {
+                    result = indentationStr + marker.emphasize(nodeStr).toString();
+                }
+                case OUTSTANDING -> {
+                    result = indentationStr + marker.outstanding(nodeStr).toString();
+                }
+                case NORMAL -> {
+                    result = indentationStr + marker.normal(nodeStr).toString();
+                }
+                case DETAIL -> {
+                    result = indentationStr + marker.detail(nodeStr).toString();
+                }
+                case UNIMPORTANT -> {
+                    result = indentationStr + marker.unimportant(nodeStr).toString();
+                }
+                case SCARY -> {
+                    result = indentationStr + marker.scary(nodeStr).toString();
+                }
+                case BLOODY -> {
+                    result = indentationStr + marker.bloody(nodeStr).toString();
+                }
+            }
+            return result;
+        }
+    }
+
+    private static class TreeIntentMapper implements Function<Deque<DependencyNode>, Marker.Intent> {
+        private final Function<DependencyNode, String> winner = DependencyGraphDumper.winnerNode();
+        private final Function<DependencyNode, Boolean> premanaged = DependencyGraphDumper.isPremanaged();
+
+        @Override
+        public Marker.Intent apply(Deque<DependencyNode> nodes) {
             DependencyNode node = requireNonNull(nodes.peek(), "bug");
             if (nodes.size() == 1) {
-                return winner(formatNode(nodes, decorators));
+                return Marker.Intent.OUTSTANDING;
             }
-            boolean loser = isLoser(node);
-            String nodeStr = formatNode(nodes, decorators);
-            return formatIndentation(nodes, "╰─", "├─", "  ", "│ ")
-                    + (loser
-                            ? loser(nodeStr)
-                            : (isProvided(node)
-                                    ? provided(nodeStr)
-                                    : (isModded(node) ? modified(nodeStr) : winner(nodeStr))));
+            if (winner.apply(node) != null) {
+                return Marker.Intent.UNIMPORTANT;
+            } else if (JavaScopes.PROVIDED.equals(node.getDependency().getScope())) {
+                return Marker.Intent.DETAIL;
+            } else if (premanaged.apply(node)) {
+                return Marker.Intent.SCARY;
+            } else {
+                return Marker.Intent.OUTSTANDING;
+            }
         }
+    }
 
-        private boolean isLoser(DependencyNode node) {
-            return winner.apply(node) != null;
+    private static class DmTreeIntentMapper implements Function<Deque<DependencyNode>, Marker.Intent> {
+        @Override
+        public Marker.Intent apply(Deque<DependencyNode> nodes) {
+            DependencyNode node = requireNonNull(nodes.peek(), "bug");
+            if (node.getDependency() != null
+                    && "import".equals(node.getDependency().getScope())) {
+                return Marker.Intent.SCARY;
+            } else {
+                return Marker.Intent.OUTSTANDING;
+            }
         }
+    }
 
-        private boolean isModded(DependencyNode node) {
-            return premanaged.apply(node);
-        }
-
-        private boolean isProvided(DependencyNode node) {
-            return JavaScopes.PROVIDED.equals(node.getDependency().getScope());
-        }
-
-        private String winner(String string) {
-            return marker.outstanding(string).toString();
-        }
-
-        private String provided(String string) {
-            return marker.detail(string).toString();
-        }
-
-        private String modified(String string) {
-            return marker.scary(string).toString();
-        }
-
-        private String loser(String string) {
-            return marker.unimportant(string).toString();
+    private static class SourceTreeIntentMapper implements Function<Deque<DependencyNode>, Marker.Intent> {
+        @Override
+        public Marker.Intent apply(Deque<DependencyNode> nodes) {
+            DependencyNode node = requireNonNull(nodes.peek(), "bug");
+            if ("external".equals(node.getArtifact().getProperty("source", ""))) {
+                return Marker.Intent.UNIMPORTANT;
+            } else {
+                return Marker.Intent.OUTSTANDING;
+            }
         }
     }
 

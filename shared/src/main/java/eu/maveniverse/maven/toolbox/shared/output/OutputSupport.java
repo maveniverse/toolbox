@@ -37,7 +37,7 @@ public abstract class OutputSupport implements Output {
     @Override
     public void close() throws IOException {}
 
-    public <T> T tool(Class<T> klazz, Supplier<T> supplier) {
+    public <T> T tool(Class<? extends T> klazz, Supplier<T> supplier) {
         requireNonNull(supplier, "supplier");
         return supplier.get();
     }

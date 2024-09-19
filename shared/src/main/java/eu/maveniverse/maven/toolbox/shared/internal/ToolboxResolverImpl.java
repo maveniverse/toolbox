@@ -354,14 +354,13 @@ public class ToolboxResolverImpl {
             if (seen.add(key)) {
                 if (depProject.isPresent()) {
                     ProjectLocator.Project subProject = depProject.orElseThrow();
-                    DependencyNode subNode = new DefaultDependencyNode(
-                            dependency.setArtifact(source(dependency.getArtifact(), "internal")));
+                    DependencyNode subNode = new DefaultDependencyNode(dependency.setArtifact(source(subProject)));
                     subNode.setData(ProjectLocator.Project.class, subProject);
                     node.getChildren().add(subNode);
                     recursiveNodes.add(subNode);
                 } else if (showExternal) {
-                    DependencyNode subNode = new DefaultDependencyNode(
-                            dependency.setArtifact(source(dependency.getArtifact(), "external")));
+                    DependencyNode subNode =
+                            new DefaultDependencyNode(dependency.setArtifact(source(dependency.getArtifact(), true)));
                     node.getChildren().add(subNode);
                 }
             }
@@ -375,12 +374,12 @@ public class ToolboxResolverImpl {
     }
 
     private Artifact source(ProjectLocator.Project project) {
-        return source(project.artifact(), project.origin() == this.projectLocator ? "external" : "internal");
+        return source(project.artifact(), project.origin() == this.projectLocator);
     }
 
-    private Artifact source(Artifact artifact, String source) {
+    private Artifact source(Artifact artifact, boolean external) {
         HashMap<String, String> properties = new HashMap<>(artifact.getProperties());
-        properties.put("source", source);
+        properties.put("source", external ? "external" : "internal");
         return artifact.setProperties(properties);
     }
 

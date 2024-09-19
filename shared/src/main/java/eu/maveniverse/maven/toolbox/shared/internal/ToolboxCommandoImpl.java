@@ -663,7 +663,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         output::tell,
                         DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
                         output.tool(
-                                DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
+                                DependencyGraphDecorators.TreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
         return Result.success(collectResult);
     }
 
@@ -723,7 +724,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         output::tell,
                         DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
                         output.tool(
-                                DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
+                                DependencyGraphDecorators.DmTreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
         return Result.success(collectResult);
     }
 
@@ -734,9 +736,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .getRoot()
                 .accept(new DependencyGraphDumper(
                         output::tell,
-                        DependencyGraphDumper.defaultsWith(DependencyGraphDumper.artifactProperties(List.of("source"))),
+                        DependencyGraphDumper.defaultsWith(),
                         output.tool(
-                                DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
+                                DependencyGraphDecorators.ParentChildTreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
         return Result.success(collectResult);
     }
 
@@ -747,9 +750,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .getRoot()
                 .accept(new DependencyGraphDumper(
                         output::tell,
-                        DependencyGraphDumper.defaultsWith(DependencyGraphDumper.artifactProperties(List.of("source"))),
+                        DependencyGraphDumper.defaultsWith(),
                         output.tool(
-                                DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
+                                DependencyGraphDecorators.SubprojectTreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
         return Result.success(collectResult);
     }
 
@@ -760,9 +764,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .getRoot()
                 .accept(new DependencyGraphDumper(
                         output::tell,
-                        DependencyGraphDumper.defaultsWith(DependencyGraphDumper.artifactProperties(List.of("source"))),
+                        DependencyGraphDumper.defaultsWith(),
                         output.tool(
-                                DependencyGraphDumper.LineFormatter.class, DependencyGraphDumper.LineFormatter::new)));
+                                DependencyGraphDecorators.ProjectDependenciesTreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
         return Result.success(collectResult);
     }
 

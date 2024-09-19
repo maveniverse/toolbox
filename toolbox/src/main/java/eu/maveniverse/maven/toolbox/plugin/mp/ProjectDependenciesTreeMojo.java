@@ -8,7 +8,6 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -26,15 +25,8 @@ public class ProjectDependenciesTreeMojo extends MPMojoSupport {
     @Parameter(property = "showExternal", defaultValue = "false", required = true)
     private boolean showExternal;
 
-    /**
-     * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
-     */
-    @Parameter(property = "scope", defaultValue = "runtime", required = true)
-    private String scope;
-
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
-        return getToolboxCommando()
-                .projectDependenciesTree(getReactorLocator(), ResolutionScope.parse(scope), showExternal);
+        return getToolboxCommando().projectDependenciesTree(getReactorLocator(), showExternal);
     }
 }

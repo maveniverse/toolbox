@@ -272,8 +272,7 @@ public interface ToolboxCommando {
     /**
      * Returns the project module dependency tree of given root.
      */
-    Result<CollectResult> projectDependenciesTree(
-            ReactorLocator reactorLocator, ResolutionScope scope, boolean showExternal) throws Exception;
+    Result<CollectResult> projectDependenciesTree(ReactorLocator reactorLocator, boolean showExternal) throws Exception;
 
     // Search API related commands: they target one single RemoteRepository
 

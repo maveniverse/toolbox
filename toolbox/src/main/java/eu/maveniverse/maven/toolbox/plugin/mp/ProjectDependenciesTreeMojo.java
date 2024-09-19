@@ -17,8 +17,8 @@ import org.eclipse.aether.collection.CollectResult;
 /**
  * Displays project interdependencies of Maven Projects.
  */
-@Mojo(name = "pm-tree", threadSafe = true)
-public class PMTreeMojo extends MPMojoSupport {
+@Mojo(name = "project-dependencies-tree", threadSafe = true)
+public class ProjectDependenciesTreeMojo extends MPMojoSupport {
 
     /**
      * Set it {@code true} for verbose tree.
@@ -35,6 +35,6 @@ public class PMTreeMojo extends MPMojoSupport {
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
         return getToolboxCommando()
-                .projectModuleDependencyTree(getReactorLocator(), ResolutionScope.parse(scope), showExternal);
+                .projectDependenciesTree(getReactorLocator(), ResolutionScope.parse(scope), showExternal);
     }
 }

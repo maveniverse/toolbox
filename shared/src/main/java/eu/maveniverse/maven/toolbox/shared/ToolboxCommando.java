@@ -262,17 +262,17 @@ public interface ToolboxCommando {
     /**
      * Returns the project inheritance tree of given root.
      */
-    Result<CollectResult> projectInheritanceTree(ReactorLocator reactorLocator) throws Exception;
+    Result<CollectResult> parentChildTree(ReactorLocator reactorLocator) throws Exception;
 
     /**
      * Returns the project collect tree of given root.
      */
-    Result<CollectResult> projectCollectTree(ReactorLocator reactorLocator) throws Exception;
+    Result<CollectResult> subprojectTree(ReactorLocator reactorLocator) throws Exception;
 
     /**
      * Returns the project module dependency tree of given root.
      */
-    Result<CollectResult> projectModuleDependencyTree(
+    Result<CollectResult> projectDependenciesTree(
             ReactorLocator reactorLocator, ResolutionScope scope, boolean showExternal) throws Exception;
 
     // Search API related commands: they target one single RemoteRepository

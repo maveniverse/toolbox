@@ -728,8 +728,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<CollectResult> projectInheritanceTree(ReactorLocator reactorLocator) {
-        CollectResult collectResult = toolboxResolver.collectProjectInheritance(reactorLocator);
+    public Result<CollectResult> parentChildTree(ReactorLocator reactorLocator) {
+        CollectResult collectResult = toolboxResolver.parentChildTree(reactorLocator);
         collectResult
                 .getRoot()
                 .accept(new DependencyGraphDumper(
@@ -741,8 +741,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<CollectResult> projectCollectTree(ReactorLocator reactorLocator) throws Exception {
-        CollectResult collectResult = toolboxResolver.collectProjectCollect(reactorLocator);
+    public Result<CollectResult> subprojectTree(ReactorLocator reactorLocator) throws Exception {
+        CollectResult collectResult = toolboxResolver.subprojectTree(reactorLocator);
         collectResult
                 .getRoot()
                 .accept(new DependencyGraphDumper(
@@ -754,10 +754,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<CollectResult> projectModuleDependencyTree(
+    public Result<CollectResult> projectDependenciesTree(
             ReactorLocator reactorLocator, ResolutionScope scope, boolean showExternal) {
-        CollectResult collectResult =
-                toolboxResolver.collectProjectModuleDependency(reactorLocator, scope, showExternal);
+        CollectResult collectResult = toolboxResolver.projectDependenciesTree(reactorLocator, scope, showExternal);
         collectResult
                 .getRoot()
                 .accept(new DependencyGraphDumper(

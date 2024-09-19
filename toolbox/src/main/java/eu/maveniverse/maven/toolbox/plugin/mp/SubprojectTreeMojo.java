@@ -13,12 +13,12 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.eclipse.aether.collection.CollectResult;
 
 /**
- * Displays project inheritance of Maven Projects.
+ * Displays subproject collection of Maven Projects.
  */
-@Mojo(name = "pi-tree", threadSafe = true)
-public class PITreeMojo extends MPMojoSupport {
+@Mojo(name = "subproject-tree", threadSafe = true)
+public class SubprojectTreeMojo extends MPMojoSupport {
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
-        return getToolboxCommando().projectInheritanceTree(getReactorLocator());
+        return getToolboxCommando().subprojectTree(getReactorLocator());
     }
 }

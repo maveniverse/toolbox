@@ -265,7 +265,7 @@ public class ToolboxResolverImpl {
         return doCollectDm(root, null, managedDependencies, remoteRepositories, verbose);
     }
 
-    public CollectResult collectProjectInheritance(ReactorLocator reactorLocator) {
+    public CollectResult parentChildTree(ReactorLocator reactorLocator) {
         CollectRequest collectRequest = new CollectRequest();
         ProjectLocator.Project startingProject = reactorLocator.getCurrentProject();
         collectRequest.setRoot(new Dependency(source(startingProject), ""));
@@ -297,53 +297,52 @@ public class ToolboxResolverImpl {
 
             parentArtifact = currentProject != null ? currentProject.getParent() : Optional.empty();
         }
-        collectProjectInheritance(leaf, reactorLocator, startingProject);
+        parentChildTree(leaf, reactorLocator, startingProject);
         return result;
     }
 
-    private void collectProjectInheritance(
+    private void parentChildTree(
             DependencyNode parentNode, ReactorLocator reactorLocator, ProjectLocator.Project parent) {
         List<ProjectLocator.Project> children = reactorLocator.locateChildren(parent);
         for (ProjectLocator.Project child : children) {
             DependencyNode childNode = new DefaultDependencyNode(new Dependency(source(child), ""));
             parentNode.getChildren().add(childNode);
-            collectProjectInheritance(childNode, reactorLocator, child);
+            parentChildTree(childNode, reactorLocator, child);
         }
     }
 
-    public CollectResult collectProjectCollect(ReactorLocator reactorLocator) {
+    public CollectResult subprojectTree(ReactorLocator reactorLocator) {
         CollectRequest collectRequest = new CollectRequest();
         ProjectLocator.Project startingProject = reactorLocator.getCurrentProject();
         collectRequest.setRoot(new Dependency(source(startingProject), ""));
         CollectResult result = new CollectResult(collectRequest);
         result.setRoot(new DefaultDependencyNode(collectRequest.getRoot()));
-        collectProjectCollect(result.getRoot(), reactorLocator, startingProject);
+        subprojectTree(result.getRoot(), reactorLocator, startingProject);
         return result;
     }
 
-    private void collectProjectCollect(
+    private void subprojectTree(
             DependencyNode parentNode, ReactorLocator reactorLocator, ProjectLocator.Project parent) {
         List<ProjectLocator.Project> children = reactorLocator.locateCollected(parent);
         for (ProjectLocator.Project child : children) {
             DependencyNode childNode = new DefaultDependencyNode(new Dependency(source(child), ""));
             parentNode.getChildren().add(childNode);
-            collectProjectInheritance(childNode, reactorLocator, child);
+            subprojectTree(childNode, reactorLocator, child);
         }
     }
 
-    public CollectResult collectProjectModuleDependency(
+    public CollectResult projectDependenciesTree(
             ReactorLocator reactorLocator, ResolutionScope scope, boolean showExternal) {
         CollectRequest collectRequest = new CollectRequest();
         ProjectLocator.Project rootProject = reactorLocator.getCurrentProject();
         collectRequest.setRoot(new Dependency(source(rootProject), ""));
         CollectResult result = new CollectResult(collectRequest);
         result.setRoot(new DefaultDependencyNode(collectRequest.getRoot()));
-        collectProjectModuleDependency(
-                result.getRoot(), reactorLocator, rootProject, scope, showExternal, new HashSet<>());
+        projectDependenciesTree(result.getRoot(), reactorLocator, rootProject, scope, showExternal, new HashSet<>());
         return result;
     }
 
-    private void collectProjectModuleDependency(
+    private void projectDependenciesTree(
             DependencyNode node,
             ReactorLocator reactorLocator,
             ProjectLocator.Project current,
@@ -373,7 +372,7 @@ public class ToolboxResolverImpl {
             DependencyNode recursiveNode = recursiveNodes.pop();
             ProjectLocator.Project recursiveProject =
                     (ProjectLocator.Project) recursiveNode.getData().get(ProjectLocator.Project.class);
-            collectProjectModuleDependency(recursiveNode, reactorLocator, recursiveProject, scope, showExternal, seen);
+            projectDependenciesTree(recursiveNode, reactorLocator, recursiveProject, scope, showExternal, seen);
         }
     }
 

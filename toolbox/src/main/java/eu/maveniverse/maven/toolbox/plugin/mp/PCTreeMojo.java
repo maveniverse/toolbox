@@ -13,12 +13,12 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.eclipse.aether.collection.CollectResult;
 
 /**
- * Displays project inheritance of Maven Projects.
+ * Displays project collection of Maven Projects.
  */
-@Mojo(name = "pi-tree", threadSafe = true)
-public class PITreeMojo extends MPMojoSupport {
+@Mojo(name = "pc-tree", threadSafe = true)
+public class PCTreeMojo extends MPMojoSupport {
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
-        return getToolboxCommando().projectInheritanceTree(getReactorLocator());
+        return getToolboxCommando().projectCollectTree(getReactorLocator());
     }
 }

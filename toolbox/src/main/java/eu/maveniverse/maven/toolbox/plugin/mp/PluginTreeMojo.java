@@ -27,6 +27,12 @@ public class PluginTreeMojo extends MPPluginMojoSupport {
     private String scope;
 
     /**
+     * The dependency matcher if you want to filter as eager as Lenny wants.
+     */
+    @Parameter(property = "dependencyMatcher", defaultValue = "any()", required = true)
+    private String dependencyMatcher;
+
+    /**
      * Set it {@code true} for verbose tree.
      */
     @Parameter(property = "verboseTree", defaultValue = "false", required = true)
@@ -37,10 +43,18 @@ public class PluginTreeMojo extends MPPluginMojoSupport {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
         if (root != null) {
-            toolboxCommando.tree(ResolutionScope.parse(scope), root, verboseTree);
+            toolboxCommando.tree(
+                    ResolutionScope.parse(scope),
+                    root,
+                    verboseTree,
+                    toolboxCommando.parseDependencyMatcherSpec(dependencyMatcher));
         } else {
             for (ResolutionRoot resolutionRoot : allProjectPluginsAsResolutionRoots(toolboxCommando)) {
-                toolboxCommando.tree(ResolutionScope.parse(scope), resolutionRoot, verboseTree);
+                toolboxCommando.tree(
+                        ResolutionScope.parse(scope),
+                        resolutionRoot,
+                        verboseTree,
+                        toolboxCommando.parseDependencyMatcherSpec(dependencyMatcher));
             }
         }
         return Result.success(true);

@@ -236,7 +236,11 @@ public interface ToolboxCommando {
     /**
      * Returns the tree of root.
      */
-    Result<CollectResult> tree(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree)
+    Result<CollectResult> tree(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean verboseTree,
+            DependencyMatcher dependencyMatcher)
             throws Exception;
 
     /**

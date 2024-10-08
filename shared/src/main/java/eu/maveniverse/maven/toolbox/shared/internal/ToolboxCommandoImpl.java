@@ -73,6 +73,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -84,6 +85,8 @@ import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.util.ChecksumUtils;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.util.artifact.SubArtifact;
+import org.eclipse.aether.util.graph.visitor.CloningDependencyVisitor;
+import org.eclipse.aether.util.graph.visitor.FilteringDependencyVisitor;
 import org.eclipse.aether.util.graph.visitor.PathRecordingDependencyVisitor;
 import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
@@ -647,7 +650,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<CollectResult> tree(
-            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot, boolean verboseTree) throws Exception {
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean verboseTree,
+            DependencyMatcher dependencyMatcher)
+            throws Exception {
         output.suggest("Loading root of: {}", resolutionRoot.getArtifact());
         ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
         output.suggest("Collecting graph of: {}", resolutionRoot.getArtifact());
@@ -657,14 +664,21 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 root.getDependencies(),
                 root.getManagedDependencies(),
                 verboseTree);
-        collectResult
-                .getRoot()
-                .accept(new DependencyGraphDumper(
-                        output::tell,
-                        DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
-                        output.tool(
-                                DependencyGraphDecorators.TreeDecorator.class,
-                                DependencyGraphDecorators.defaultSupplier())));
+        CloningDependencyVisitor cloningDependencyVisitor = new CloningDependencyVisitor();
+        collectResult.getRoot().accept(new FilteringDependencyVisitor(cloningDependencyVisitor, new DependencyFilter() {
+            @Override
+            public boolean accept(DependencyNode node, List<DependencyNode> parents) {
+                return node.getDependency() == null || dependencyMatcher.test(node.getDependency());
+            }
+        }));
+
+        DependencyNode clone = cloningDependencyVisitor.getRootNode();
+        clone.accept(new DependencyGraphDumper(
+                output::tell,
+                DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
+                output.tool(
+                        DependencyGraphDecorators.TreeDecorator.class, DependencyGraphDecorators.defaultSupplier())));
+        collectResult.setRoot(clone);
         return Result.success(collectResult);
     }
 

@@ -244,6 +244,17 @@ public interface ToolboxCommando {
             throws Exception;
 
     /**
+     * Returns the dirty-tree of root. Note: this command is OOM prone, so "level limiting" is applied.
+     */
+    Result<CollectResult> dirtyTree(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            int maxLevel,
+            boolean verboseTree,
+            DependencyMatcher dependencyMatcher)
+            throws Exception;
+
+    /**
      * Creates tree for given root and searches for artifacts using matcher, returns list of paths to hits.
      */
     Result<List<List<Artifact>>> treeFind(

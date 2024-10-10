@@ -683,6 +683,42 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public Result<CollectResult> dirtyTree(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            int maxLevel,
+            boolean verboseTree,
+            DependencyMatcher dependencyMatcher)
+            throws Exception {
+        output.suggest("Loading root of: {}", resolutionRoot.getArtifact());
+        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+        output.suggest("Collecting graph of: {}", resolutionRoot.getArtifact());
+        CollectResult collectResult = toolboxResolver.collect(
+                resolutionScope,
+                root.getArtifact(),
+                root.getDependencies(),
+                root.getManagedDependencies(),
+                maxLevel,
+                verboseTree);
+        CloningDependencyVisitor cloningDependencyVisitor = new CloningDependencyVisitor();
+        collectResult.getRoot().accept(new FilteringDependencyVisitor(cloningDependencyVisitor, new DependencyFilter() {
+            @Override
+            public boolean accept(DependencyNode node, List<DependencyNode> parents) {
+                return node.getDependency() == null || dependencyMatcher.test(node.getDependency());
+            }
+        }));
+
+        DependencyNode clone = cloningDependencyVisitor.getRootNode();
+        clone.accept(new DependencyGraphDumper(
+                output::tell,
+                DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
+                output.tool(
+                        DependencyGraphDecorators.TreeDecorator.class, DependencyGraphDecorators.defaultSupplier())));
+        collectResult.setRoot(clone);
+        return Result.success(collectResult);
+    }
+
+    @Override
     public Result<List<List<Artifact>>> treeFind(
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,

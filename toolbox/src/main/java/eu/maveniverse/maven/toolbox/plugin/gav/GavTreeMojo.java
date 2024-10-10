@@ -50,6 +50,12 @@ public class GavTreeMojo extends GavMojoSupport {
     private String boms;
 
     /**
+     * The dependency matcher if you want to filter as eager as Lenny wants.
+     */
+    @Parameter(property = "dependencyMatcher", defaultValue = "any()", required = true)
+    private String dependencyMatcher;
+
+    /**
      * Set it {@code true} for verbose tree.
      */
     @CommandLine.Option(
@@ -63,6 +69,9 @@ public class GavTreeMojo extends GavMojoSupport {
     protected Result<CollectResult> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.tree(
-                ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)), verboseTree);
+                ResolutionScope.parse(scope),
+                toolboxCommando.loadGav(gav, slurp(boms)),
+                verboseTree,
+                toolboxCommando.parseDependencyMatcherSpec(dependencyMatcher));
     }
 }

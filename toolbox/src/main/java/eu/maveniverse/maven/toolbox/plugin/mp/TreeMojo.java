@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.collection.CollectResult;
@@ -26,6 +27,12 @@ public class TreeMojo extends MPMojoSupport {
     private String scope;
 
     /**
+     * The dependency matcher if you want to filter as eager as Lenny wants.
+     */
+    @Parameter(property = "dependencyMatcher", defaultValue = "any()", required = true)
+    private String dependencyMatcher;
+
+    /**
      * Set it {@code true} for verbose tree.
      */
     @Parameter(property = "verboseTree", defaultValue = "false", required = true)
@@ -33,6 +40,11 @@ public class TreeMojo extends MPMojoSupport {
 
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
-        return getToolboxCommando().tree(ResolutionScope.parse(scope), projectAsResolutionRoot(), verboseTree);
+        ToolboxCommando toolboxCommando = getToolboxCommando();
+        return toolboxCommando.tree(
+                ResolutionScope.parse(scope),
+                projectAsResolutionRoot(),
+                verboseTree,
+                toolboxCommando.parseDependencyMatcherSpec(dependencyMatcher));
     }
 }

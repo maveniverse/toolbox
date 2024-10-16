@@ -242,7 +242,27 @@ public class ToolboxResolverImpl {
             List<Dependency> managedDependencies,
             boolean verbose)
             throws DependencyCollectionException {
-        return doCollect(resolutionScope, null, root, dependencies, managedDependencies, remoteRepositories, verbose);
+        return doCollect(
+                resolutionScope, null, root, dependencies, managedDependencies, remoteRepositories, -1, verbose);
+    }
+
+    public CollectResult collect(
+            ResolutionScope resolutionScope,
+            Artifact root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            int dirtyMaxLevel,
+            boolean verbose)
+            throws DependencyCollectionException {
+        return doCollect(
+                resolutionScope,
+                null,
+                root,
+                dependencies,
+                managedDependencies,
+                remoteRepositories,
+                dirtyMaxLevel,
+                verbose);
     }
 
     public CollectResult collect(
@@ -252,7 +272,27 @@ public class ToolboxResolverImpl {
             List<Dependency> managedDependencies,
             boolean verbose)
             throws DependencyCollectionException {
-        return doCollect(resolutionScope, root, null, dependencies, managedDependencies, remoteRepositories, verbose);
+        return doCollect(
+                resolutionScope, root, null, dependencies, managedDependencies, remoteRepositories, -1, verbose);
+    }
+
+    public CollectResult collect(
+            ResolutionScope resolutionScope,
+            Dependency root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            int dirtyMaxLevel,
+            boolean verbose)
+            throws DependencyCollectionException {
+        return doCollect(
+                resolutionScope,
+                root,
+                null,
+                dependencies,
+                managedDependencies,
+                remoteRepositories,
+                dirtyMaxLevel,
+                verbose);
     }
 
     public CollectResult collectDm(Artifact root, List<Dependency> managedDependencies, boolean verbose)
@@ -408,6 +448,7 @@ public class ToolboxResolverImpl {
             List<Dependency> dependencies,
             List<Dependency> managedDependencies,
             List<RemoteRepository> remoteRepositories,
+            int dirtyMaxLevel,
             boolean verbose)
             throws DependencyCollectionException {
         requireNonNull(resolutionScope);
@@ -420,14 +461,23 @@ public class ToolboxResolverImpl {
         if (verbose) {
             session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
         }
+        boolean dirtyTree = dirtyMaxLevel > 0;
+        if (dirtyTree) {
+            session.setDependencySelector(new LevelDependencySelector(dirtyMaxLevel));
+            session.setDependencyGraphTransformer(null);
+        }
         CollectRequest collectRequest = new CollectRequest();
         if (rootDependency != null) {
             root = rootDependency.getArtifact();
         }
         collectRequest.setRootArtifact(root);
-        collectRequest.setDependencies(dependencies.stream()
-                .filter(d -> !resolutionScope.isEliminateTest() || !JavaScopes.TEST.equals(d.getScope()))
-                .collect(Collectors.toList()));
+        if (dirtyTree) {
+            collectRequest.setDependencies(dependencies);
+        } else {
+            collectRequest.setDependencies(dependencies.stream()
+                    .filter(d -> !resolutionScope.isEliminateTest() || !JavaScopes.TEST.equals(d.getScope()))
+                    .collect(Collectors.toList()));
+        }
         collectRequest.setManagedDependencies(managedDependencies);
         collectRequest.setRepositories(remoteRepositories);
         collectRequest.setRequestContext(CTX_TOOLBOX);
@@ -435,7 +485,7 @@ public class ToolboxResolverImpl {
 
         output.chatter("Collecting {} @ {}", collectRequest, resolutionScope.name());
         CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
-        if (!verbose && resolutionScope != ResolutionScope.TEST) {
+        if (!dirtyTree && !verbose && resolutionScope != ResolutionScope.TEST) {
             ArrayList<DependencyNode> childrenToRemove = new ArrayList<>();
             for (DependencyNode node : result.getRoot().getChildren()) {
                 if (!resolutionScope

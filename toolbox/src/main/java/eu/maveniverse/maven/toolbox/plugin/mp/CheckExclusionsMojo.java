@@ -13,8 +13,6 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -38,7 +36,7 @@ public class CheckExclusionsMojo extends MPPluginMojoSupport {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         ResolutionRoot project = projectAsResolutionRoot();
         for (Dependency dependency : project.getDependencies()) {
-            if (!dependency.getExclusions().isEmpty()) {
+            for (Exclusion exclusion : dependency.getExclusions()) {
                 ResolutionRoot dependencyRoot;
                 if (isReactorDependency(dependency)) {
                     dependencyRoot =
@@ -48,29 +46,21 @@ public class CheckExclusionsMojo extends MPPluginMojoSupport {
                             ResolutionRoot.ofLoaded(dependency.getArtifact()).build();
                 }
                 Result<List<List<Artifact>>> paths = toolboxCommando.treeFind(
-                        ResolutionScope.RUNTIME,
-                        dependencyRoot,
-                        verboseTree,
-                        artifactMatcher(dependency.getExclusions()));
+                        ResolutionScope.RUNTIME, dependencyRoot, verboseTree, artifactMatcher(exclusion));
                 if (paths.getData().isPresent() && paths.getData().orElseThrow().isEmpty()) {
-                    getOutput().doTell("Exclusion of dependency {} is unused", dependency);
+                    getOutput().doTell("Exclusion {} of dependency {} is unused", exclusion, dependency);
                 } else {
-                    getOutput()
-                            .doTell("Exclusion of dependency {} excludes: {}", dependency, dependency.getExclusions());
+                    getOutput().doTell("Exclusion {} of dependency {} is used", exclusion, dependency);
                 }
             }
         }
         return Result.success(true);
     }
 
-    protected ArtifactMatcher artifactMatcher(Collection<Exclusion> exclusions) {
-        ArrayList<ArtifactMatcher> result = new ArrayList<>(exclusions.size());
-        for (Exclusion exclusion : exclusions) {
-            result.add(ArtifactMatcher.artifact(asteriskOrString(exclusion.getGroupId()) + ":"
-                    + asteriskOrString(exclusion.getArtifactId()) + ":" + asteriskOrString(exclusion.getClassifier())
-                    + ":" + asteriskOrString(exclusion.getExtension()) + ":*"));
-        }
-        return ArtifactMatcher.or(result);
+    protected ArtifactMatcher artifactMatcher(Exclusion exclusion) {
+        return ArtifactMatcher.artifact(asteriskOrString(exclusion.getGroupId()) + ":"
+                + asteriskOrString(exclusion.getArtifactId()) + ":" + asteriskOrString(exclusion.getClassifier())
+                + ":" + asteriskOrString(exclusion.getExtension()) + ":*");
     }
 
     protected String asteriskOrString(String str) {

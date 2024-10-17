@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -42,9 +43,11 @@ public class TreeFindMojo extends MPMojoSupport {
     @Override
     protected Result<List<List<Artifact>>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
+        ResolutionRoot root = projectAsResolutionRoot();
+        getOutput().doTell("Paths found in project {}", root.getArtifact());
         return toolboxCommando.treeFind(
                 ResolutionScope.parse(scope),
-                projectAsResolutionRoot(),
+                root,
                 verboseTree,
                 toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec));
     }

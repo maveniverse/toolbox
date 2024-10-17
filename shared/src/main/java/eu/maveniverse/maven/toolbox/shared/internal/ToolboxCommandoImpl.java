@@ -739,7 +739,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         collectResult.getRoot().accept(pathRecordingDependencyVisitor);
         List<List<Artifact>> result = new ArrayList<>();
         if (!pathRecordingDependencyVisitor.getPaths().isEmpty()) {
-            output.tell("Paths");
             for (List<DependencyNode> path : pathRecordingDependencyVisitor.getPaths()) {
                 result.add(path.stream().map(DependencyNode::getArtifact).toList());
                 String indent = "";
@@ -748,8 +747,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     indent += "  ";
                 }
             }
-        } else {
-            output.tell("No paths found.");
         }
         return Result.success(result);
     }

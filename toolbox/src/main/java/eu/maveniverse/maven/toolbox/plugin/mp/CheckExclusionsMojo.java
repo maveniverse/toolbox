@@ -13,6 +13,7 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -45,22 +46,44 @@ public class CheckExclusionsMojo extends MPPluginMojoSupport {
                     dependencyRoot =
                             ResolutionRoot.ofLoaded(dependency.getArtifact()).build();
                 }
+                getOutput()
+                        .marker(Output.Verbosity.NORMAL)
+                        .normal("Checking dependency ")
+                        .emphasize(dependency.toString())
+                        .normal(" exclusion ")
+                        .emphasize(exclusion.toString())
+                        .normal(" paths")
+                        .say();
                 Result<List<List<Artifact>>> paths = toolboxCommando.treeFind(
-                        ResolutionScope.RUNTIME, dependencyRoot, verboseTree, artifactMatcher(exclusion));
+                        ResolutionScope.RUNTIME,
+                        dependencyRoot,
+                        verboseTree,
+                        artifactMatcher(dependency.getArtifact(), exclusion));
                 if (paths.getData().isPresent() && paths.getData().orElseThrow().isEmpty()) {
-                    getOutput().doTell("Exclusion {} of dependency {} is unused", exclusion, dependency);
+                    getOutput()
+                            .marker(Output.Verbosity.NORMAL)
+                            .scary("Is unused")
+                            .say();
                 } else {
-                    getOutput().doTell("Exclusion {} of dependency {} is used", exclusion, dependency);
+                    getOutput()
+                            .marker(Output.Verbosity.NORMAL)
+                            .outstanding("Is used")
+                            .say();
                 }
+                getOutput().doTell("");
             }
         }
         return Result.success(true);
     }
 
-    protected ArtifactMatcher artifactMatcher(Exclusion exclusion) {
-        return ArtifactMatcher.artifact(asteriskOrString(exclusion.getGroupId()) + ":"
-                + asteriskOrString(exclusion.getArtifactId()) + ":" + asteriskOrString(exclusion.getClassifier())
-                + ":" + asteriskOrString(exclusion.getExtension()) + ":*");
+    protected ArtifactMatcher artifactMatcher(Artifact root, Exclusion exclusion) {
+        // not(root) && matches
+        return ArtifactMatcher.and(
+                ArtifactMatcher.not(ArtifactMatcher.artifact(root.toString())),
+                ArtifactMatcher.artifact(asteriskOrString(exclusion.getGroupId()) + ":"
+                        + asteriskOrString(exclusion.getArtifactId()) + ":"
+                        + asteriskOrString(exclusion.getClassifier())
+                        + ":" + asteriskOrString(exclusion.getExtension()) + ":*"));
     }
 
     protected String asteriskOrString(String str) {

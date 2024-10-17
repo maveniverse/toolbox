@@ -43,6 +43,7 @@ public class PluginTreeFindMojo extends MPPluginMojoSupport {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
         if (root != null) {
+            getOutput().doTell("Paths found in plugin {}", root.getArtifact());
             toolboxCommando.treeFind(
                     ResolutionScope.parse(scope),
                     root,
@@ -50,6 +51,7 @@ public class PluginTreeFindMojo extends MPPluginMojoSupport {
                     toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec));
         } else {
             for (ResolutionRoot resolutionRoot : allProjectPluginsAsResolutionRoots(toolboxCommando)) {
+                getOutput().doTell("Paths found in plugin {}", resolutionRoot.getArtifact());
                 toolboxCommando.treeFind(
                         ResolutionScope.parse(scope),
                         resolutionRoot,

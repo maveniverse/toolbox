@@ -24,6 +24,7 @@ import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
+import eu.maveniverse.maven.toolbox.shared.ArtifactRecorder;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
@@ -146,6 +147,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     public List<RemoteRepository> remoteRepositories() {
         return context.remoteRepositories();
+    }
+
+    public ArtifactRecorder recorder() {
+        return artifactRecorder;
     }
 
     protected Map<String, RemoteRepository> createKnownSearchRemoteRepositories() {
@@ -303,6 +308,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public Source<Artifact> artifactSource(String spec) {
+        return ArtifactSources.build(context.repositorySystemSession().getConfigProperties(), this, spec);
+    }
+
+    @Override
     public Sink<Artifact> artifactSink(String spec) {
         return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
     }
@@ -347,6 +357,17 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             return Result.failure("No files");
         } else {
             return Result.success(classpath);
+        }
+    }
+
+    @Override
+    public Result<List<Artifact>> copyST(Source<Artifact> source, Sink<Artifact> sink) throws Exception {
+        try (source;
+                sink) {
+            List<Artifact> artifacts = source.get().toList();
+            sink.accept(artifacts);
+            output.tell("Copied {} artifacts", artifacts.size());
+            return artifacts.isEmpty() ? Result.failure("No artifacts") : Result.success(artifacts);
         }
     }
 

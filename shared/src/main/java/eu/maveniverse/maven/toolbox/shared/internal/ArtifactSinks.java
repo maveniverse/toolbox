@@ -82,6 +82,14 @@ public final class ArtifactSinks {
                     params.add(sizingArtifactSink());
                     break;
                 }
+                case "logging": {
+                    params.add(loggingArtifactSink(tc.output()));
+                    break;
+                }
+                case "stat": {
+                    params.add(statArtifactSink(0, booleanParam(node.getValue()), tc.output()));
+                    break;
+                }
                 case "tee": {
                     params.add(teeArtifactSink(typedParams(Artifacts.Sink.class, node.getValue())));
                     break;
@@ -514,6 +522,26 @@ public final class ArtifactSinks {
                     countingArtifactSink.count(),
                     humanReadableByteCountBin(sizingArtifactSink.size()));
             output.tell("{}------------------------------", indent);
+        }
+    }
+
+    /**
+     * Creates a "logging" artifact sink.
+     */
+    public static LoggingArtifactSink loggingArtifactSink(Output output) {
+        return new LoggingArtifactSink(output);
+    }
+
+    public static class LoggingArtifactSink implements Artifacts.Sink {
+        private final Output output;
+
+        private LoggingArtifactSink(Output output) {
+            this.output = requireNonNull(output, "output");
+        }
+
+        @Override
+        public void accept(Artifact artifact) throws IOException {
+            output.doTell(artifact.toString());
         }
     }
 }

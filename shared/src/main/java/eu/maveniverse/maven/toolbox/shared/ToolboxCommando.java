@@ -100,6 +100,11 @@ public interface ToolboxCommando {
     // Resolver related commands: they target current context contained RemoteRepository
 
     /**
+     * Provides {@link Source<Artifact>} according to spec.
+     */
+    Source<Artifact> artifactSource(String spec);
+
+    /**
      * Provides {@link Sink<Artifact>} according to spec.
      */
     Sink<Artifact> artifactSink(String spec);
@@ -147,6 +152,11 @@ public interface ToolboxCommando {
      * Calculates the classpath (returned string is OS FS specific) of given scope and root.
      */
     Result<String> classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot) throws Exception;
+
+    /**
+     * Returns the list of artifacts copied from source to sink.
+     */
+    Result<List<Artifact>> copyST(Source<Artifact> source, Sink<Artifact> sink) throws Exception;
 
     /**
      * Returns the list of artifacts copied from source to sink.

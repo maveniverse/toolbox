@@ -113,7 +113,7 @@ public final class LocalRepositorySource implements Artifacts.Source {
     private Stream<Artifact> collectPomArtifacts(Artifact pom) {
         ArrayList<Artifact> result = new ArrayList<>();
         result.add(pom);
-
+        // TODO: collect all files from the parent of pom file
         return result.stream();
     }
 }

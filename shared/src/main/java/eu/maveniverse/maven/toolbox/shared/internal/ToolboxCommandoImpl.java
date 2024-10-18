@@ -364,10 +364,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<List<Artifact>> copyST(Source<Artifact> source, Sink<Artifact> sink) throws Exception {
         try (source;
                 sink) {
-            List<Artifact> artifacts = source.get().toList();
-            sink.accept(artifacts);
-            output.tell("Copied {} artifacts", artifacts.size());
-            return artifacts.isEmpty() ? Result.failure("No artifacts") : Result.success(artifacts);
+            ArtifactSinks.CollectingArtifactSink collectingArtifactSink = ArtifactSinks.collectingArtifactSink();
+            ArtifactSinks.teeArtifactSink(sink, collectingArtifactSink).accept(source.get());
+            output.tell("Copied {} artifacts", collectingArtifactSink.collect().size());
+            return Result.success(collectingArtifactSink.collect());
         }
     }
 

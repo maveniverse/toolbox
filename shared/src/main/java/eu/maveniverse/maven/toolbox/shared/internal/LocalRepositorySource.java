@@ -20,12 +20,16 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3ReaderEx;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.util.artifact.SubArtifact;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Construction to supply collection of artifacts that are installed in given local repository.
@@ -38,6 +42,7 @@ public final class LocalRepositorySource implements Artifacts.Source {
         return new LocalRepositorySource(directory);
     }
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Path directory;
     private final MavenXpp3ReaderEx reader;
 
@@ -105,7 +110,7 @@ public final class LocalRepositorySource implements Artifacts.Source {
                 return new DefaultArtifact(g, a, null, "pom", v).setFile(file.toFile());
             }
         } catch (IOException | XmlPullParserException e) {
-            // silently skip
+            logger.info("Could not parse POM at {}", file, e);
         }
         return null;
     }
@@ -113,7 +118,34 @@ public final class LocalRepositorySource implements Artifacts.Source {
     private Stream<Artifact> collectPomArtifacts(Artifact pom) {
         ArrayList<Artifact> result = new ArrayList<>();
         result.add(pom);
-        // TODO: collect all files from the parent of pom file
+        String pomFileName = pom.getFile().getName();
+        String fileNamePrefix = pomFileName.substring(0, pom.getFile().getName().length() - 4);
+        try (Stream<Path> files = Files.list(pom.getFile().toPath().getParent())) {
+            files.filter(notItselfAndNotChecksum(pomFileName, fileNamePrefix)).forEach(p -> {
+                String filename = p.getFileName().toString().substring(fileNamePrefix.length());
+                if (filename.startsWith(".")) {
+                    // no classifier, only ext
+                    result.add(new SubArtifact(pom, null, filename.substring(1)).setFile(p.toFile()));
+                } else if (filename.startsWith("-")) {
+                    // classifier + ext
+                    String classifier = filename.substring(1, filename.lastIndexOf("."));
+                    String extension = filename.substring(filename.lastIndexOf(".") + 1);
+                    result.add(new SubArtifact(pom, classifier, extension).setFile(p.toFile()));
+                }
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         return result.stream();
+    }
+
+    private static Predicate<Path> notItselfAndNotChecksum(String fname, String prefix) {
+        return p -> {
+            String filename = p.getFileName().toString();
+            return !fname.equals(filename)
+                    && filename.startsWith(prefix)
+                    && !filename.endsWith(".sha1")
+                    && !filename.endsWith(".md5");
+        };
     }
 }

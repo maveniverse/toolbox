@@ -68,6 +68,11 @@ public final class ArtifactSources {
                     params.add(DirectorySource.directory(p0));
                     break;
                 }
+                case "sessionLocalRepository": {
+                    params.add(LocalRepositorySource.local(
+                            tc.session().getLocalRepository().getBasedir().toPath()));
+                    break;
+                }
                 case "localRepository": {
                     Path p0 = tc.basedir().resolve(stringParam(node.getValue()));
                     params.add(LocalRepositorySource.local(p0));

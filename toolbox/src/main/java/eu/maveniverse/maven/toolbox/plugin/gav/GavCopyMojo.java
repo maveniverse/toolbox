@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.internal.ArtifactSources;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -18,32 +17,28 @@ import org.eclipse.aether.artifact.Artifact;
 import picocli.CommandLine;
 
 /**
- * Resolves a given GAV and copies resulting artifact to target.
+ * Copies artifacts from a specified artifact source to specified artifact sink.
  */
-@CommandLine.Command(name = "copy-gav", description = "Resolves Maven Artifact and copies it to target")
-@Mojo(name = "gav-copy-gav", requiresProject = false, threadSafe = true)
+@CommandLine.Command(name = "copy", description = "Copies from source to target")
+@Mojo(name = "gav-copy", requiresProject = false, threadSafe = true)
 public final class GavCopyMojo extends GavMojoSupport {
+    /**
+     * The source spec.
+     */
+    @CommandLine.Parameters(index = "0", description = "The source spec", arity = "1")
+    @Parameter(property = "sourceSpec", required = true)
+    private String sourceSpec;
+
     /**
      * The sink spec.
      */
-    @CommandLine.Parameters(index = "0", description = "The sink spec", arity = "1")
+    @CommandLine.Parameters(index = "1", description = "The sink spec", arity = "1")
     @Parameter(property = "sinkSpec", required = true)
     private String sinkSpec;
-
-    /**
-     * The comma separated GAVs to resolve.
-     */
-    @CommandLine.Parameters(index = "1", description = "The comma separated GAVs to resolve", arity = "1")
-    @Parameter(property = "gav", required = true)
-    private String gav;
 
     @Override
     protected Result<List<Artifact>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        return toolboxCommando.copy(
-                ArtifactSources.concatArtifactSource(slurp(gav).stream()
-                        .map(ArtifactSources::gavArtifactSource)
-                        .toList()),
-                toolboxCommando.artifactSink(sinkSpec));
+        return toolboxCommando.copy(toolboxCommando.artifactSource(sourceSpec), toolboxCommando.artifactSink(sinkSpec));
     }
 }

@@ -381,7 +381,7 @@ public final class ArtifactSinks {
     }
 
     /**
-     * Creates a counting sink, that simply counts all the accepted artifacts.
+     * Creates a collecting sink, that simply collects all the accepted artifacts into a list.
      */
     public static CollectingArtifactSink collectingArtifactSink() {
         return new CollectingArtifactSink();
@@ -550,7 +550,7 @@ public final class ArtifactSinks {
     }
 
     /**
-     * Creates a "logging" artifact sink.
+     * Creates a "logging" artifact sink that only logs the artifact it receives.
      */
     public static LoggingArtifactSink loggingArtifactSink(Output output) {
         return new LoggingArtifactSink(output);

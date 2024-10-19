@@ -9,8 +9,8 @@ package eu.maveniverse.maven.toolbox.plugin;
 
 import eu.maveniverse.maven.toolbox.plugin.gav.GavClasspathMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyGavMojo;
-import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyRecordedMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyRecordedMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyTransitiveMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavDeployMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavDeployRecordedMojo;

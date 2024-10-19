@@ -156,11 +156,6 @@ public interface ToolboxCommando {
     /**
      * Returns the list of artifacts copied from source to sink.
      */
-    Result<List<Artifact>> copyST(Source<Artifact> source, Sink<Artifact> sink) throws Exception;
-
-    /**
-     * Returns the list of artifacts copied from source to sink.
-     */
     Result<List<Artifact>> copy(Source<Artifact> source, Sink<Artifact> sink) throws Exception;
 
     /**

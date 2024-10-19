@@ -628,6 +628,11 @@ public class ToolboxResolverImpl {
         }
     }
 
+    public ArtifactResult resolveArtifact(Artifact artifact) throws ArtifactResolutionException {
+        requireNonNull(artifact);
+        return resolveArtifacts(Collections.singleton(artifact)).getFirst();
+    }
+
     public List<ArtifactResult> resolveArtifacts(Collection<Artifact> artifacts) throws ArtifactResolutionException {
         requireNonNull(artifacts);
 

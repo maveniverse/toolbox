@@ -33,6 +33,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Construction to supply collection of artifacts that are installed in given local repository.
+ * <p>
+ * Big fat note: "reverse engineering" file paths into GAVs is a risky business, and this code
+ * assumes that Artifact classifiers does not contain {@code "."} (dot). In a moment your classifiers
+ * do have dot character, figuring out extensions becomes much, much harder.
  */
 public final class LocalRepositorySource implements Artifacts.Source {
     /**
@@ -127,9 +131,9 @@ public final class LocalRepositorySource implements Artifacts.Source {
                     // no classifier, only ext
                     result.add(new SubArtifact(pom, null, filename.substring(1)).setFile(p.toFile()));
                 } else if (filename.startsWith("-")) {
-                    // classifier + ext
-                    String classifier = filename.substring(1, filename.lastIndexOf("."));
-                    String extension = filename.substring(filename.lastIndexOf(".") + 1);
+                    // classifier + ext // assuming classifier have no dot!
+                    String classifier = filename.substring(1, filename.indexOf("."));
+                    String extension = filename.substring(filename.indexOf(".") + 1);
                     result.add(new SubArtifact(pom, classifier, extension).setFile(p.toFile()));
                 }
             });

@@ -17,7 +17,7 @@ import org.eclipse.aether.artifact.Artifact;
 import picocli.CommandLine;
 
 /**
- * Resolves a given GAV and copies resulting artifact to target.
+ * Copies artifacts from a specified artifact source to specified artifact sink.
  */
 @CommandLine.Command(name = "copy-st", description = "Copies from source to target")
 @Mojo(name = "gav-copy-st", requiresProject = false, threadSafe = true)
@@ -39,7 +39,6 @@ public final class GavCopySTMojo extends GavMojoSupport {
     @Override
     protected Result<List<Artifact>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        return toolboxCommando.copyST(
-                toolboxCommando.artifactSource(sourceSpec), toolboxCommando.artifactSink(sinkSpec));
+        return toolboxCommando.copy(toolboxCommando.artifactSource(sourceSpec), toolboxCommando.artifactSink(sinkSpec));
     }
 }

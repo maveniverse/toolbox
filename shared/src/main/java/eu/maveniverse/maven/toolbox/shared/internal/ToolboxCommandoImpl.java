@@ -361,29 +361,32 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<Artifact>> copyST(Source<Artifact> source, Sink<Artifact> sink) throws Exception {
-        try (source;
-                sink) {
-            ArtifactSinks.CollectingArtifactSink collectingArtifactSink = ArtifactSinks.collectingArtifactSink();
-            ArtifactSinks.teeArtifactSink(sink, collectingArtifactSink).accept(source.get());
-            output.tell("Copied {} artifacts", collectingArtifactSink.collect().size());
-            return Result.success(collectingArtifactSink.collect());
-        }
-    }
-
-    @Override
     public Result<List<Artifact>> copy(Source<Artifact> source, Sink<Artifact> sink) throws Exception {
         try (source;
                 sink) {
-            List<Artifact> resolveResult = toolboxResolver
-                    .resolveArtifacts(source.get().toList())
-                    .stream()
-                    .filter(ArtifactResult::isResolved)
-                    .map(ArtifactResult::getArtifact)
-                    .toList();
-            sink.accept(resolveResult);
-            output.tell("Resolved {} artifacts", resolveResult.size());
-            return resolveResult.isEmpty() ? Result.failure("No artifacts") : Result.success(resolveResult);
+            ArtifactSinks.CollectingArtifactSink collectingArtifactSink = ArtifactSinks.collectingArtifactSink();
+            ArtifactSinks.teeArtifactSink(sink, collectingArtifactSink)
+                    .accept(source.get()
+                            .map(a -> {
+                                try {
+                                    if (a.getFile() == null) {
+                                        ArtifactResult ar = toolboxResolver.resolveArtifact(a);
+                                        if (ar.isResolved()) {
+                                            return ar.getArtifact();
+                                        } else {
+                                            return null;
+                                        }
+                                    } else {
+                                        return a;
+                                    }
+                                } catch (ArtifactResolutionException e) {
+                                    // TODO: maybe be more permissive? Or allow caller to specify strategy?
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .filter(Objects::nonNull));
+            output.tell("Copied {} artifacts", collectingArtifactSink.collect().size());
+            return Result.success(collectingArtifactSink.collect());
         }
     }
 

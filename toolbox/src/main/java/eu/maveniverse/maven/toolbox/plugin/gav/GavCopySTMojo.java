@@ -19,8 +19,8 @@ import picocli.CommandLine;
 /**
  * Copies artifacts from a specified artifact source to specified artifact sink.
  */
-@CommandLine.Command(name = "copy-st", description = "Copies from source to target")
-@Mojo(name = "gav-copy-st", requiresProject = false, threadSafe = true)
+@CommandLine.Command(name = "copy", description = "Copies from source to target")
+@Mojo(name = "gav-copy", requiresProject = false, threadSafe = true)
 public final class GavCopySTMojo extends GavMojoSupport {
     /**
      * The source spec.

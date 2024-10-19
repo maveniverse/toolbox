@@ -10,18 +10,18 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.internal.ArtifactSources;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import picocli.CommandLine;
 
 /**
  * Resolves a given GAV and copies resulting artifact to target.
  */
-@CommandLine.Command(name = "copy", description = "Resolves Maven Artifact and copies it to target")
-@Mojo(name = "gav-copy", requiresProject = false, threadSafe = true)
+@CommandLine.Command(name = "copy-gav", description = "Resolves Maven Artifact and copies it to target")
+@Mojo(name = "gav-copy-gav", requiresProject = false, threadSafe = true)
 public final class GavCopyMojo extends GavMojoSupport {
     /**
      * The sink spec.
@@ -41,6 +41,9 @@ public final class GavCopyMojo extends GavMojoSupport {
     protected Result<List<Artifact>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.copy(
-                () -> slurp(gav).stream().map(DefaultArtifact::new), toolboxCommando.artifactSink(sinkSpec));
+                ArtifactSources.concatArtifactSource(slurp(gav).stream()
+                        .map(ArtifactSources::gavArtifactSource)
+                        .toList()),
+                toolboxCommando.artifactSink(sinkSpec));
     }
 }

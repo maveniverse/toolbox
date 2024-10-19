@@ -14,11 +14,14 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.Source;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 
 /**
  * Various utility source implementations.
@@ -53,6 +56,11 @@ public final class ArtifactSources {
             switch (node.getValue()) {
                 case "null": {
                     params.add(nullArtifactSource());
+                    break;
+                }
+                case "gav": {
+                    String gav = stringParam(node.getValue());
+                    params.add(gavArtifactSource(gav));
                     break;
                 }
                 case "directory": {
@@ -181,6 +189,67 @@ public final class ArtifactSources {
         @Override
         public Stream<Artifact> get() throws IOException {
             return super.get().map(artifactMapper);
+        }
+    }
+
+    public static Source<Artifact> gavArtifactSource(String gav) {
+        requireNonNull(gav, "gav");
+        return new GavArtifactSource(gav);
+    }
+
+    public static class GavArtifactSource implements Source<Artifact> {
+        private final String gav;
+
+        private GavArtifactSource(String gav) {
+            this.gav = gav;
+        }
+
+        @Override
+        public Stream<Artifact> get() throws IOException {
+            return Stream.of(new DefaultArtifact(gav));
+        }
+    }
+
+    public static Source<Artifact> concatArtifactSource(Collection<Source<Artifact>> sources) {
+        requireNonNull(sources, "sources");
+        return new ConcatArtifactSource(sources);
+    }
+
+    public static class ConcatArtifactSource implements Source<Artifact> {
+        private final Collection<Source<Artifact>> sources;
+
+        private ConcatArtifactSource(Collection<Source<Artifact>> sources) {
+            this.sources = sources;
+        }
+
+        @Override
+        public Stream<Artifact> get() throws IOException {
+            Stream<Artifact> result = null;
+            for (Source<Artifact> source : sources) {
+                if (result == null) {
+                    result = source.get();
+                } else {
+                    result = Stream.concat(result, source.get());
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public void close() throws Exception {
+            ArrayList<Exception> exceptions = new ArrayList<>();
+            sources.forEach(s -> {
+                try {
+                    s.close();
+                } catch (Exception e) {
+                    exceptions.add(e);
+                }
+            });
+            if (!exceptions.isEmpty()) {
+                Exception e = new Exception("Could not close concat() sources: " + exceptions);
+                exceptions.forEach(e::addSuppressed);
+                throw e;
+            }
         }
     }
 }

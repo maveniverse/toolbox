@@ -22,7 +22,7 @@ public final class DirectorySource implements Artifacts.Source {
     /**
      * Creates plain directory source, that supplies all artifacts it has.
      */
-    public static DirectorySource directory(Path path) throws IOException {
+    public static DirectorySource directory(Path path) {
         return new DirectorySource(path);
     }
 

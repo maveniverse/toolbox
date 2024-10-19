@@ -100,6 +100,11 @@ public interface ToolboxCommando {
     // Resolver related commands: they target current context contained RemoteRepository
 
     /**
+     * Provides {@link Source<Artifact>} according to spec.
+     */
+    Source<Artifact> artifactSource(String spec);
+
+    /**
      * Provides {@link Sink<Artifact>} according to spec.
      */
     Sink<Artifact> artifactSink(String spec);

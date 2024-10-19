@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin;
 
 import eu.maveniverse.maven.toolbox.plugin.gav.GavClasspathMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyGavMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyRecordedMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyTransitiveMojo;
@@ -41,6 +42,7 @@ import picocli.CommandLine;
         name = "toolbox",
         subcommands = {
             GavClasspathMojo.class,
+            GavCopyGavMojo.class,
             GavCopyMojo.class,
             GavCopyRecordedMojo.class,
             GavCopyTransitiveMojo.class,

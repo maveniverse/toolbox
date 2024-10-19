@@ -82,6 +82,14 @@ public final class ArtifactSinks {
                     params.add(sizingArtifactSink());
                     break;
                 }
+                case "logging": {
+                    params.add(loggingArtifactSink(tc.output()));
+                    break;
+                }
+                case "stat": {
+                    params.add(statArtifactSink(0, booleanParam(node.getValue()), tc.output()));
+                    break;
+                }
                 case "tee": {
                     params.add(teeArtifactSink(typedParams(Artifacts.Sink.class, node.getValue())));
                     break;
@@ -373,6 +381,30 @@ public final class ArtifactSinks {
     }
 
     /**
+     * Creates a collecting sink, that simply collects all the accepted artifacts into a list.
+     */
+    public static CollectingArtifactSink collectingArtifactSink() {
+        return new CollectingArtifactSink();
+    }
+
+    public static class CollectingArtifactSink implements Artifacts.Sink {
+        private final CopyOnWriteArrayList<Artifact> artifacts;
+
+        private CollectingArtifactSink() {
+            this.artifacts = new CopyOnWriteArrayList<>();
+        }
+
+        @Override
+        public void accept(Artifact artifact) {
+            artifacts.add(artifact);
+        }
+
+        public List<Artifact> collect() {
+            return artifacts;
+        }
+    }
+
+    /**
      * Creates a sizing sink, that simply accumulate byte sizes of all accepted (and resolved) artifacts.
      */
     public static SizingArtifactSink sizingArtifactSink() {
@@ -514,6 +546,26 @@ public final class ArtifactSinks {
                     countingArtifactSink.count(),
                     humanReadableByteCountBin(sizingArtifactSink.size()));
             output.tell("{}------------------------------", indent);
+        }
+    }
+
+    /**
+     * Creates a "logging" artifact sink that only logs the artifact it receives.
+     */
+    public static LoggingArtifactSink loggingArtifactSink(Output output) {
+        return new LoggingArtifactSink(output);
+    }
+
+    public static class LoggingArtifactSink implements Artifacts.Sink {
+        private final Output output;
+
+        private LoggingArtifactSink(Output output) {
+            this.output = requireNonNull(output, "output");
+        }
+
+        @Override
+        public void accept(Artifact artifact) throws IOException {
+            output.doTell(artifact.toString());
         }
     }
 }

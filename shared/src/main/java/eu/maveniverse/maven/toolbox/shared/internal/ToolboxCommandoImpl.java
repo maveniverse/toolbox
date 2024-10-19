@@ -24,6 +24,7 @@ import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
+import eu.maveniverse.maven.toolbox.shared.ArtifactRecorder;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
@@ -146,6 +147,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     public List<RemoteRepository> remoteRepositories() {
         return context.remoteRepositories();
+    }
+
+    public ArtifactRecorder recorder() {
+        return artifactRecorder;
     }
 
     protected Map<String, RemoteRepository> createKnownSearchRemoteRepositories() {
@@ -303,6 +308,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public Source<Artifact> artifactSource(String spec) {
+        return ArtifactSources.build(context.repositorySystemSession().getConfigProperties(), this, spec);
+    }
+
+    @Override
     public Sink<Artifact> artifactSink(String spec) {
         return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
     }
@@ -354,15 +364,29 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<List<Artifact>> copy(Source<Artifact> source, Sink<Artifact> sink) throws Exception {
         try (source;
                 sink) {
-            List<Artifact> resolveResult = toolboxResolver
-                    .resolveArtifacts(source.get().toList())
-                    .stream()
-                    .filter(ArtifactResult::isResolved)
-                    .map(ArtifactResult::getArtifact)
-                    .toList();
-            sink.accept(resolveResult);
-            output.tell("Resolved {} artifacts", resolveResult.size());
-            return resolveResult.isEmpty() ? Result.failure("No artifacts") : Result.success(resolveResult);
+            ArtifactSinks.CollectingArtifactSink collectingArtifactSink = ArtifactSinks.collectingArtifactSink();
+            ArtifactSinks.teeArtifactSink(sink, collectingArtifactSink)
+                    .accept(source.get()
+                            .map(a -> {
+                                try {
+                                    if (a.getFile() == null) {
+                                        ArtifactResult ar = toolboxResolver.resolveArtifact(a);
+                                        if (ar.isResolved()) {
+                                            return ar.getArtifact();
+                                        } else {
+                                            return null;
+                                        }
+                                    } else {
+                                        return a;
+                                    }
+                                } catch (ArtifactResolutionException e) {
+                                    // TODO: maybe be more permissive? Or allow caller to specify strategy?
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .filter(Objects::nonNull));
+            output.tell("Copied {} artifacts", collectingArtifactSink.collect().size());
+            return Result.success(collectingArtifactSink.collect());
         }
     }
 

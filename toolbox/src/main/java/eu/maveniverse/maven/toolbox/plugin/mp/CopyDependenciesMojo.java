@@ -18,8 +18,8 @@ import org.eclipse.aether.artifact.Artifact;
 /**
  * Resolves selected dependencies and copies resulting artifacts to target.
  */
-@Mojo(name = "copy", threadSafe = true)
-public final class CopyMojo extends MPMojoSupport {
+@Mojo(name = "copy-dependencies", threadSafe = true)
+public final class CopyDependenciesMojo extends MPMojoSupport {
 
     /**
      * The artifact sink spec (default: "null()").

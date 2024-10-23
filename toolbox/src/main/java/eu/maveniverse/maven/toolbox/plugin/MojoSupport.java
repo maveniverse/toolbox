@@ -226,8 +226,12 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
             } else {
                 return 0;
             }
+        } catch (RuntimeException e) {
+            System.err.println("Error: " + e.getClass() + ": " + e.getMessage());
+            e.printStackTrace(System.err);
+            return 1;
         } catch (Exception e) {
-            System.err.println(e.getMessage());
+            System.err.println("Error: " + e.getClass() + ": " + e.getMessage());
             if (errors) {
                 e.printStackTrace(System.err);
             }

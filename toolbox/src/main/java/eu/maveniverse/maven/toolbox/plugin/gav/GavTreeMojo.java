@@ -52,6 +52,10 @@ public class GavTreeMojo extends GavMojoSupport {
     /**
      * The dependency matcher if you want to filter as eager as Lenny wants.
      */
+    @CommandLine.Option(
+            names = {"--dependencyMatcher"},
+            defaultValue = "any()",
+            description = "Dependency matcher spec")
     @Parameter(property = "dependencyMatcher", defaultValue = "any()", required = true)
     private String dependencyMatcher;
 

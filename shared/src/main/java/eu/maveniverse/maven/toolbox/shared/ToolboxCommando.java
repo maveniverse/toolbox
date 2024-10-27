@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.graph.Dependency;
@@ -293,6 +294,11 @@ public interface ToolboxCommando {
      * Returns the project module dependency tree of given root.
      */
     Result<CollectResult> projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) throws Exception;
+
+    /**
+     * Returns the effective model. Works only for "loaded" roots naturally, as it needs POM.
+     */
+    Result<Model> effectiveModel(ResolutionRoot resolutionRoot) throws Exception;
 
     // Search API related commands: they target one single RemoteRepository
 

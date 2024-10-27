@@ -8,11 +8,11 @@
 
 StringBuilder out = new StringBuilder()
 StringBuilder err = new StringBuilder()
-String[] args = ["${java}", '-jar', "${cli}", "-e", "help"]
+String[] args = ["${java}", '-jar', "${cli}", "-e", "-h"]
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()
 process.consumeProcessOutput(out, err)
 process.waitFor()
 
-assert err.contains('Usage: toolbox')
+assert out.contains('Usage: toolbox')

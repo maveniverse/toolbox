@@ -150,25 +150,33 @@ public final class UnpackSink implements Artifacts.Sink {
             }
             switch (artifact.getExtension()) {
                 case "jar": {
-                    unjar(target, artifact.getFile().toPath());
+                    if (!dryRun) {
+                        unjar(target, artifact.getFile().toPath());
+                    }
                     break;
                 }
                 case "zip": {
-                    unzip(target, artifact.getFile().toPath());
+                    if (!dryRun) {
+                        unzip(target, artifact.getFile().toPath());
+                    }
                     break;
                 }
                 case "tar.gz": {
-                    untar(
-                            target,
-                            new GzipCompressorInputStream(new BufferedInputStream(
-                                    Files.newInputStream(artifact.getFile().toPath()))));
+                    if (!dryRun) {
+                        untar(
+                                target,
+                                new GzipCompressorInputStream(new BufferedInputStream(
+                                        Files.newInputStream(artifact.getFile().toPath()))));
+                    }
                     break;
                 }
                 case "tar.bz2": {
-                    untar(
-                            target,
-                            new BZip2CompressorInputStream(new BufferedInputStream(
-                                    Files.newInputStream(artifact.getFile().toPath()))));
+                    if (!dryRun) {
+                        untar(
+                                target,
+                                new BZip2CompressorInputStream(new BufferedInputStream(
+                                        Files.newInputStream(artifact.getFile().toPath()))));
+                    }
                     break;
                 }
                 default:
@@ -263,6 +271,9 @@ public final class UnpackSink implements Artifacts.Sink {
 
     @Override
     public void cleanup(Exception e) {
+        if (dryRun) {
+            return;
+        }
         writtenPaths.forEach(p -> {
             try (Stream<Path> stream = Files.walk(p).sorted(Comparator.reverseOrder())) {
                 stream.forEach(f -> {

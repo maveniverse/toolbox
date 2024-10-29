@@ -187,6 +187,9 @@ public final class PurgingSink implements Artifacts.Sink {
     private boolean purgeExact(Artifact artifact) throws IOException {
         // maintain repository state
         // purge artifact file and additional sub-files (hashes, signatures, lastUpdated...)
+        if (dryRun) {
+            return true;
+        }
         int deleted = 0;
         Path path = session.getLocalRepository()
                 .getBasedir()
@@ -224,6 +227,9 @@ public final class PurgingSink implements Artifacts.Sink {
     private boolean purgeGAV(Artifact artifact) throws IOException {
         // purge artifact GAV directory (but watch out for subdirectories)
         // no need to maintain anything as whole directory is gone
+        if (dryRun) {
+            return true;
+        }
         return deleteDirectory(session.getLocalRepository()
                         .getBasedir()
                         .toPath()

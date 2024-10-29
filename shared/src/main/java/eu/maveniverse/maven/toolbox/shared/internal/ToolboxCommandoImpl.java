@@ -65,16 +65,13 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.apache.maven.model.InputLocation;
-import org.apache.maven.model.InputSource;
 import org.apache.maven.model.Model;
-import org.apache.maven.model.io.xpp3.MavenXpp3WriterEx;
+import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
 import org.apache.maven.search.api.SearchResponse;
 import org.apache.maven.search.api.request.Query;
-import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -858,27 +855,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         ModelResponse response = toolboxResolver.readModel(resolutionRoot.getArtifact());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        MavenXpp3WriterEx mavenXpp3WriterEx = new MavenXpp3WriterEx();
-        mavenXpp3WriterEx.setStringFormatter(new InputLocation.StringFormatter() {
-            @Override
-            public String toString(InputLocation inputLocation) {
-                InputSource source = inputLocation.getSource();
-
-                String s = source.getModelId(); // by default, display modelId
-
-                if (StringUtils.isBlank(s) || s.contains("[unknown-version]")) {
-                    // unless it is blank or does not provide version information
-                    s = source.toString();
-                }
-
-                return '}'
-                        + s
-                        + ((inputLocation.getLineNumber() >= 0) ? ", line " + inputLocation.getLineNumber() : "")
-                        + " ";
-            }
-        });
-        mavenXpp3WriterEx.write(baos, response.getEffectiveModel());
-        output.doTell(baos.toString(StandardCharsets.UTF_8));
+        MavenXpp3Writer mavenXpp3Writer = new MavenXpp3Writer();
+        mavenXpp3Writer.write(baos, response.getEffectiveModel());
+        output.doTell("Effective model:\n{}", baos.toString(StandardCharsets.UTF_8));
 
         return Result.success(response.getEffectiveModel());
     }

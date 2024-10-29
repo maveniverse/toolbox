@@ -113,6 +113,14 @@ public class ToolboxResolverImpl {
         return repositorySystem.readArtifactDescriptor(session, artifactDescriptorRequest);
     }
 
+    public ModelResponse readModel(Artifact artifact)
+            throws ArtifactDescriptorException, ArtifactResolutionException, VersionResolutionException {
+        return mavenModelReader.readModel(ModelRequest.builder()
+                .setArtifact(artifact)
+                .setRequestContext(CTX_TOOLBOX)
+                .build());
+    }
+
     public List<Dependency> importBOMs(Collection<String> boms) throws ArtifactDescriptorException {
         HashSet<String> keys = new HashSet<>();
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);

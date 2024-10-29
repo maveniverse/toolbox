@@ -21,6 +21,7 @@ import eu.maveniverse.maven.mima.context.MavenUserHome;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.internal.RuntimeSupport;
 import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
+import eu.maveniverse.maven.mima.extensions.mmr.ModelResponse;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
@@ -36,9 +37,11 @@ import eu.maveniverse.maven.toolbox.shared.Sink;
 import eu.maveniverse.maven.toolbox.shared.Source;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -62,6 +65,8 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
@@ -840,6 +845,21 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                                 DependencyGraphDecorators.ProjectDependenciesTreeDecorator.class,
                                 DependencyGraphDecorators.defaultSupplier())));
         return Result.success(collectResult);
+    }
+
+    @Override
+    public Result<Model> effectiveModel(ResolutionRoot resolutionRoot) throws Exception {
+        if (!resolutionRoot.isLoad()) {
+            throw new IllegalArgumentException("only loaded roots can be shown as effective model");
+        }
+        ModelResponse response = toolboxResolver.readModel(resolutionRoot.getArtifact());
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        MavenXpp3Writer mavenXpp3Writer = new MavenXpp3Writer();
+        mavenXpp3Writer.write(baos, response.getEffectiveModel());
+        output.doTell("Effective model:\n{}", baos.toString(StandardCharsets.UTF_8));
+
+        return Result.success(response.getEffectiveModel());
     }
 
     @Override

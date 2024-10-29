@@ -65,6 +65,6 @@ public final class GavCopyTransitiveMojo extends GavMojoSupport {
         return toolboxCommando.copyTransitive(
                 ResolutionScope.parse(scope),
                 toolboxCommando.loadGavs(slurp(gav), slurp(boms)),
-                toolboxCommando.artifactSink(sinkSpec));
+                toolboxCommando.artifactSink(sinkSpec, dryRun));
     }
 }

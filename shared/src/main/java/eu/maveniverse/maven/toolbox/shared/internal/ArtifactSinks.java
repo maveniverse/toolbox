@@ -41,21 +41,23 @@ import org.eclipse.aether.repository.LocalRepositoryManager;
 public final class ArtifactSinks {
     private ArtifactSinks() {}
 
-    public static Artifacts.Sink build(Map<String, ?> properties, ToolboxCommandoImpl tc, String spec) {
+    public static Artifacts.Sink build(Map<String, ?> properties, ToolboxCommandoImpl tc, boolean dryRun, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(tc, "tc");
         requireNonNull(spec, "spec");
-        ArtifactSinkBuilder builder = new ArtifactSinkBuilder(properties, tc);
+        ArtifactSinkBuilder builder = new ArtifactSinkBuilder(properties, tc, dryRun);
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
 
     static class ArtifactSinkBuilder extends SpecParser.Builder {
         private final ToolboxCommandoImpl tc;
+        private final boolean dryRun;
 
-        public ArtifactSinkBuilder(Map<String, ?> properties, ToolboxCommandoImpl tc) {
+        public ArtifactSinkBuilder(Map<String, ?> properties, ToolboxCommandoImpl tc, boolean dryRun) {
             super(properties);
             this.tc = tc;
+            this.dryRun = dryRun;
         }
 
         @Override
@@ -134,7 +136,7 @@ public final class ArtifactSinks {
                 }
                 case "install": {
                     if (node.getChildren().isEmpty()) {
-                        params.add(InstallingSink.installing(tc.output(), tc.repositorySystem(), tc.session()));
+                        params.add(InstallingSink.installing(tc.output(), tc.repositorySystem(), tc.session(), dryRun));
                     } else if (node.getChildren().size() == 1) {
                         String p0 = stringParam(node.getValue());
                         Path altLocalRepository = tc.basedir().resolve(p0);
@@ -143,7 +145,7 @@ public final class ArtifactSinks {
                                 tc.repositorySystem().newLocalRepositoryManager(tc.session(), localRepository);
                         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(tc.session());
                         session.setLocalRepositoryManager(lrm);
-                        params.add(InstallingSink.installing(tc.output(), tc.repositorySystem(), session));
+                        params.add(InstallingSink.installing(tc.output(), tc.repositorySystem(), session, dryRun));
                     } else {
                         throw new IllegalArgumentException("op install accepts only 0..1 argument");
                     }
@@ -154,7 +156,8 @@ public final class ArtifactSinks {
                             tc.output(),
                             tc.repositorySystem(),
                             tc.session(),
-                            tc.parseRemoteRepository(stringParam(node.getValue()))));
+                            tc.parseRemoteRepository(stringParam(node.getValue())),
+                            dryRun));
                     break;
                 }
                 case "purge": {
@@ -198,7 +201,7 @@ public final class ArtifactSinks {
                             new ArtifactMatcher.ArtifactMatcherBuilder(properties);
                     node.getChildren().getFirst().accept(matcherBuilder);
                     ArtifactMatcher matcher = matcherBuilder.build();
-                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc);
+                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc, dryRun);
                     node.getChildren().get(1).accept(sinkBuilder);
                     Artifacts.Sink delegate = sinkBuilder.build();
                     params.add(matchingArtifactSink(matcher, delegate));
@@ -213,7 +216,7 @@ public final class ArtifactSinks {
                             new ArtifactMapper.ArtifactMapperBuilder(properties);
                     node.getChildren().getFirst().accept(mapperBuilder);
                     ArtifactMapper mapper = mapperBuilder.build();
-                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc);
+                    ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc, dryRun);
                     node.getChildren().get(1).accept(sinkBuilder);
                     Artifacts.Sink delegate = sinkBuilder.build();
                     params.add(mappingArtifactSink(mapper, delegate));

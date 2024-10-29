@@ -44,6 +44,6 @@ public final class GavCopyGavMojo extends GavMojoSupport {
                 ArtifactSources.concatArtifactSource(slurp(gav).stream()
                         .map(ArtifactSources::gavArtifactSource)
                         .toList()),
-                toolboxCommando.artifactSink(sinkSpec));
+                toolboxCommando.artifactSink(sinkSpec, dryRun));
     }
 }

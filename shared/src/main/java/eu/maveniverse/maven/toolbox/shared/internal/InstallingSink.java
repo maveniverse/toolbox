@@ -30,21 +30,24 @@ public final class InstallingSink implements Artifacts.Sink {
     /**
      * Creates installing sink that installs into passed in session local repository.
      */
-    public static InstallingSink installing(Output output, RepositorySystem system, RepositorySystemSession session) {
-        return new InstallingSink(output, system, session);
+    public static InstallingSink installing(
+            Output output, RepositorySystem system, RepositorySystemSession session, boolean dryRun) {
+        return new InstallingSink(output, system, session, dryRun);
     }
 
     private final Output output;
     private final RepositorySystem system;
     private final RepositorySystemSession session;
     private final InstallRequest installRequest;
+    private final boolean dryRun;
 
-    private InstallingSink(Output output, RepositorySystem system, RepositorySystemSession session) {
+    private InstallingSink(Output output, RepositorySystem system, RepositorySystemSession session, boolean dryRun) {
         this.output = requireNonNull(output, "output");
         this.system = requireNonNull(system, "system");
         this.session = requireNonNull(session, "session");
         this.installRequest = new InstallRequest();
         this.installRequest.setTrace(RequestTrace.newChild(null, this));
+        this.dryRun = dryRun;
     }
 
     public LocalRepository getLocalRepository() {
@@ -66,6 +69,8 @@ public final class InstallingSink implements Artifacts.Sink {
     @Override
     public void close() throws InstallationException {
         output.chatter("Installing {} artifacts", installRequest.getArtifacts().size());
-        system.install(session, installRequest);
+        if (!dryRun) {
+            system.install(session, installRequest);
+        }
     }
 }

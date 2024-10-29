@@ -27,23 +27,33 @@ public final class DeployingSink implements Artifacts.Sink {
      * Creates installing sink that installs into passed in session local repository.
      */
     public static DeployingSink deploying(
-            Output output, RepositorySystem system, RepositorySystemSession session, RemoteRepository repository) {
-        return new DeployingSink(output, system, session, repository);
+            Output output,
+            RepositorySystem system,
+            RepositorySystemSession session,
+            RemoteRepository repository,
+            boolean dryRun) {
+        return new DeployingSink(output, system, session, repository, dryRun);
     }
 
     private final Output output;
     private final RepositorySystem system;
     private final RepositorySystemSession session;
     private final DeployRequest deployRequest;
+    private final boolean dryRun;
 
     private DeployingSink(
-            Output output, RepositorySystem system, RepositorySystemSession session, RemoteRepository repository) {
+            Output output,
+            RepositorySystem system,
+            RepositorySystemSession session,
+            RemoteRepository repository,
+            boolean dryRun) {
         this.output = requireNonNull(output, "output");
         this.system = requireNonNull(system, "system");
         this.session = requireNonNull(session, "session");
         this.deployRequest = new DeployRequest();
         this.deployRequest.setRepository(repository);
         this.deployRequest.setTrace(RequestTrace.newChild(null, this));
+        this.dryRun = dryRun;
     }
 
     public RemoteRepository getRemoteRepository() {
@@ -65,6 +75,8 @@ public final class DeployingSink implements Artifacts.Sink {
     @Override
     public void close() throws DeploymentException {
         output.chatter("Deploying {} artifacts", deployRequest.getArtifacts().size());
-        system.deploy(session, deployRequest);
+        if (!dryRun) {
+            system.deploy(session, deployRequest);
+        }
     }
 }

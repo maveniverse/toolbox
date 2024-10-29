@@ -318,13 +318,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Sink<Artifact> artifactSink(String spec) {
-        return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
+    public Sink<Artifact> artifactSink(String spec, boolean dryRun) {
+        return ArtifactSinks.build(context.repositorySystemSession().getConfigProperties(), this, dryRun, spec);
     }
 
     @Override
-    public Sink<Dependency> dependencySink(String spec) {
-        return DependencySinks.build(context.repositorySystemSession().getConfigProperties(), this, spec);
+    public Sink<Dependency> dependencySink(String spec, boolean dryRun) {
+        return DependencySinks.build(context.repositorySystemSession().getConfigProperties(), this, dryRun, spec);
     }
 
     @Override

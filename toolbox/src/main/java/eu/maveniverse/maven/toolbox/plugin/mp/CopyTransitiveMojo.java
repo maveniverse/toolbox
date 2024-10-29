@@ -47,6 +47,6 @@ public final class CopyTransitiveMojo extends MPMojoSupport {
         return toolboxCommando.copyTransitive(
                 resolutionScope,
                 projectDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec)),
-                toolboxCommando.artifactSink(sinkSpec));
+                toolboxCommando.artifactSink(sinkSpec, dryRun));
     }
 }

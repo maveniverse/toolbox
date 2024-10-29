@@ -34,6 +34,7 @@ public final class GavDeployRecordedMojo extends GavMojoSupport {
     @Override
     protected Result<List<Artifact>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        return toolboxCommando.copyRecorded(true, toolboxCommando.artifactSink("deploy(" + remoteRepositorySpec + ")"));
+        return toolboxCommando.copyRecorded(
+                true, toolboxCommando.artifactSink("deploy(" + remoteRepositorySpec + ")", dryRun));
     }
 }

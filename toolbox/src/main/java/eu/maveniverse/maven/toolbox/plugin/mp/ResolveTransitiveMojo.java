@@ -67,6 +67,6 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
                 sources,
                 javadoc,
                 signature,
-                toolboxCommando.artifactSink(sinkSpec));
+                toolboxCommando.artifactSink(sinkSpec, dryRun));
     }
 }

@@ -26,11 +26,12 @@ import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 public final class IndexFileWriter implements AutoCloseable {
     private final Path indexFile;
     private final Path file;
+    private final boolean dryRun;
     private final AtomicBoolean failed;
     private final AtomicBoolean closed;
     private final PrintWriter printWriter;
 
-    public IndexFileWriter(Path indexFile, boolean append) throws IOException {
+    public IndexFileWriter(Path indexFile, boolean append, boolean dryRun) throws IOException {
         this.indexFile = requireNonNull(indexFile, "indexFile").toAbsolutePath();
         this.file = indexFile
                 .getParent()
@@ -38,6 +39,7 @@ public final class IndexFileWriter implements AutoCloseable {
         if (Files.isRegularFile(this.indexFile) && append) {
             Files.copy(this.indexFile, this.file);
         }
+        this.dryRun = dryRun;
         this.failed = new AtomicBoolean(false);
         this.closed = new AtomicBoolean(false);
 
@@ -58,7 +60,7 @@ public final class IndexFileWriter implements AutoCloseable {
         if (closed.get()) {
             throw new IllegalStateException("already closed");
         }
-        if (!failed.get()) {
+        if (!failed.get() && !dryRun) {
             printWriter.println(ArtifactIdUtils.toId(artifact) + " >> " + path);
         }
     }

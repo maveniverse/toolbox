@@ -24,7 +24,7 @@ import org.junit.jupiter.api.io.TempDir;
 public class DirectorySinkTest {
     @Test
     void flat(@TempDir Path source, @TempDir Path target) throws IOException {
-        try (DirectorySink sink = DirectorySink.flat(NopOutput.INSTANCE, target, ArtifactNameMapper.GACE())) {
+        try (DirectorySink sink = DirectorySink.flat(NopOutput.INSTANCE, target, ArtifactNameMapper.GACE(), false)) {
             Path a1 = source.resolve("a1");
             Path a2 = source.resolve("a2");
             Files.writeString(a1, "one", StandardCharsets.UTF_8);
@@ -44,7 +44,7 @@ public class DirectorySinkTest {
 
     @Test
     void repository(@TempDir Path source, @TempDir Path target) throws IOException {
-        try (DirectorySink sink = DirectorySink.repository(NopOutput.INSTANCE, target)) {
+        try (DirectorySink sink = DirectorySink.repository(NopOutput.INSTANCE, target, false)) {
             Path a1 = source.resolve("a1");
             Path a2 = source.resolve("a2");
             Files.writeString(a1, "one", StandardCharsets.UTF_8);
@@ -65,12 +65,12 @@ public class DirectorySinkTest {
     @Test
     void flatSameADifferentGAccepted(@TempDir Path source, @TempDir Path target) throws IOException {
         sameADifferentGAccepted(
-                source, target, DirectorySink.flat(NopOutput.INSTANCE, target, ArtifactNameMapper.GACE()));
+                source, target, DirectorySink.flat(NopOutput.INSTANCE, target, ArtifactNameMapper.GACE(), false));
     }
 
     @Test
     void repositorySameADifferentGAccepted(@TempDir Path source, @TempDir Path target) throws IOException {
-        sameADifferentGAccepted(source, target, DirectorySink.repository(NopOutput.INSTANCE, target));
+        sameADifferentGAccepted(source, target, DirectorySink.repository(NopOutput.INSTANCE, target, false));
     }
 
     private void sameADifferentGAccepted(Path source, Path target, DirectorySink sink) throws IOException {

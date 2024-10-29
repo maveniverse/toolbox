@@ -118,7 +118,7 @@ public final class ArtifactSinks {
                         } else {
                             throw new IllegalArgumentException("op flat accepts only 1..2 argument");
                         }
-                        params.add(DirectorySink.flat(tc.output(), p0, p1));
+                        params.add(DirectorySink.flat(tc.output(), p0, p1, dryRun));
                         node.getChildren().clear();
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
@@ -128,7 +128,7 @@ public final class ArtifactSinks {
                 case "repository": {
                     try {
                         Path p0 = tc.basedir().resolve(stringParam(node.getValue()));
-                        params.add(DirectorySink.repository(tc.output(), p0));
+                        params.add(DirectorySink.repository(tc.output(), p0, dryRun));
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -167,7 +167,8 @@ public final class ArtifactSinks {
                             tc.session(),
                             stringParams(node.getValue()).stream()
                                     .map(tc::parseRemoteRepository)
-                                    .collect(Collectors.toList())));
+                                    .collect(Collectors.toList()),
+                            dryRun));
                     break;
                 }
                 case "unpack": {
@@ -175,7 +176,7 @@ public final class ArtifactSinks {
                         if (node.getChildren().size() == 1) {
                             Path p0 = tc.basedir()
                                     .resolve(node.getChildren().getFirst().getValue());
-                            params.add(UnpackSink.unpack(tc.output(), p0, ArtifactNameMapper.ACVE(), true));
+                            params.add(UnpackSink.unpack(tc.output(), p0, ArtifactNameMapper.ACVE(), true, dryRun));
                         } else if (node.getChildren().size() == 2) {
                             ArtifactNameMapper.ArtifactNameMapperBuilder mapperBuilder =
                                     new ArtifactNameMapper.ArtifactNameMapperBuilder(properties);
@@ -183,7 +184,7 @@ public final class ArtifactSinks {
                             ArtifactNameMapper p1 = mapperBuilder.build();
                             Path p0 = tc.basedir()
                                     .resolve(node.getChildren().getFirst().getValue());
-                            params.add(UnpackSink.unpack(tc.output(), p0, p1, true));
+                            params.add(UnpackSink.unpack(tc.output(), p0, p1, true, dryRun));
                         } else {
                             throw new IllegalArgumentException("op unpack accepts only 1..2 argument");
                         }

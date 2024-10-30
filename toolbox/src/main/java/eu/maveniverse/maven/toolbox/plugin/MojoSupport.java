@@ -263,10 +263,13 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     @Parameter(defaultValue = "${session.request.showErrors}", readonly = true, required = true)
     protected boolean mojoErrors;
 
+    /**
+     * Option to run potentially destructive commands without performing any IO.
+     */
     @CommandLine.Option(
             names = {"--dry-run"},
             defaultValue = "false",
-            description = "Perform in dry run (do not perform any write/destructive IO)")
+            description = "Option to run potentially destructive commands without performing any IO")
     @Parameter(property = "dryRun", defaultValue = "false")
     protected boolean dryRun;
 

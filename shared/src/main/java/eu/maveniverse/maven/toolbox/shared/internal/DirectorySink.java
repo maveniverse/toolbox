@@ -178,6 +178,9 @@ public final class DirectorySink implements Artifacts.Sink {
     @Override
     public void cleanup(Exception e) {
         indexFileWriter.fail();
+        if (dryRun) {
+            return;
+        }
         writtenPaths.forEach(p -> {
             try {
                 Files.deleteIfExists(p);

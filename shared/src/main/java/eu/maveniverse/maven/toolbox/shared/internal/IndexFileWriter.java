@@ -43,15 +43,21 @@ public final class IndexFileWriter implements AutoCloseable {
         this.failed = new AtomicBoolean(false);
         this.closed = new AtomicBoolean(false);
 
-        this.printWriter = new PrintWriter(Files.newBufferedWriter(
-                file,
-                append
-                        ? new StandardOpenOption[] {
-                            StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND
-                        }
-                        : new StandardOpenOption[] {
-                            StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING
-                        }));
+        if (dryRun) {
+            this.printWriter = null;
+        } else {
+            this.printWriter = new PrintWriter(Files.newBufferedWriter(
+                    file,
+                    append
+                            ? new StandardOpenOption[] {
+                                StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND
+                            }
+                            : new StandardOpenOption[] {
+                                StandardOpenOption.CREATE,
+                                StandardOpenOption.WRITE,
+                                StandardOpenOption.TRUNCATE_EXISTING
+                            }));
+        }
     }
 
     public void write(Artifact artifact, String path) {
@@ -72,6 +78,9 @@ public final class IndexFileWriter implements AutoCloseable {
     @Override
     public void close() throws IOException {
         if (closed.compareAndSet(false, true)) {
+            if (dryRun) {
+                return;
+            }
             printWriter.flush();
             printWriter.close();
             if (failed.get()) {

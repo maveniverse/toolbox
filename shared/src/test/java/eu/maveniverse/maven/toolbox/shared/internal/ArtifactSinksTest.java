@@ -35,61 +35,61 @@ public class ArtifactSinksTest {
             properties.put("groupId", "org.some.group");
             Sink<Artifact> artifactSink;
 
-            artifactSink = ArtifactSinks.build(properties, tc, "null()");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "null()");
             assertInstanceOf(ArtifactSinks.NullArtifactSink.class, artifactSink);
 
-            artifactSink = ArtifactSinks.build(properties, tc, "matching(any(),null())");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "matching(any(),null())");
             assertInstanceOf(ArtifactSinks.MatchingArtifactSink.class, artifactSink);
 
-            artifactSink = ArtifactSinks.build(properties, tc, "mapping(baseVersion(), matching(any(),null()))");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "mapping(baseVersion(), matching(any(),null()))");
             assertInstanceOf(ArtifactSinks.MappingArtifactSink.class, artifactSink);
 
-            artifactSink = ArtifactSinks.build(properties, tc, "tee(counting(), sizing())");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "tee(counting(), sizing())");
             assertInstanceOf(ArtifactSinks.TeeArtifactSink.class, artifactSink);
 
-            artifactSink = ArtifactSinks.build(properties, tc, "install()");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "install()");
             assertInstanceOf(InstallingSink.class, artifactSink);
             assertEquals(
                     ((InstallingSink) artifactSink).getLocalRepository().getBasedir(),
                     context.repositorySystemSession().getLocalRepository().getBasedir());
 
-            artifactSink = ArtifactSinks.build(properties, tc, "install(some/path)");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "install(some/path)");
             assertInstanceOf(InstallingSink.class, artifactSink);
             assertEquals(
                     ((InstallingSink) artifactSink).getLocalRepository().getBasedir(),
                     context.basedir().resolve("some/path").toFile());
 
-            artifactSink = ArtifactSinks.build(properties, tc, "deploy(test::https://somewhere.com)");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "deploy(test::https://somewhere.com)");
             assertInstanceOf(DeployingSink.class, artifactSink);
             assertEquals(
                     ((DeployingSink) artifactSink).getRemoteRepository(),
                     new RemoteRepository.Builder("test", "default", "https://somewhere.com").build());
 
-            artifactSink = ArtifactSinks.build(properties, tc, "unpack(some/path)");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "unpack(some/path)");
             assertInstanceOf(UnpackSink.class, artifactSink);
             assertEquals(
                     ((UnpackSink) artifactSink).getDirectory(),
                     context.basedir().resolve("some/path"));
 
-            artifactSink = ArtifactSinks.build(properties, tc, "unpack(some/path,ACE())");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "unpack(some/path,ACE())");
             assertInstanceOf(UnpackSink.class, artifactSink);
             assertEquals(
                     ((UnpackSink) artifactSink).getDirectory(),
                     context.basedir().resolve("some/path"));
 
-            artifactSink = ArtifactSinks.build(properties, tc, "repository(some/path)");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "repository(some/path)");
             assertInstanceOf(DirectorySink.class, artifactSink);
             assertEquals(
                     ((DirectorySink) artifactSink).getDirectory(),
                     context.basedir().resolve("some/path"));
 
-            artifactSink = ArtifactSinks.build(properties, tc, "flat(some/path)");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "flat(some/path)");
             assertInstanceOf(DirectorySink.class, artifactSink);
             assertEquals(
                     ((DirectorySink) artifactSink).getDirectory(),
                     context.basedir().resolve("some/path"));
 
-            artifactSink = ArtifactSinks.build(properties, tc, "flat(some/path,GACVE())");
+            artifactSink = ArtifactSinks.build(properties, tc, false, "flat(some/path,GACVE())");
             assertInstanceOf(DirectorySink.class, artifactSink);
             assertEquals(
                     ((DirectorySink) artifactSink).getDirectory(),

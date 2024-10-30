@@ -45,8 +45,9 @@ public final class PurgingSink implements Artifacts.Sink {
             Output output,
             RepositorySystem system,
             RepositorySystemSession session,
-            List<RemoteRepository> remoteRepositories) {
-        return purging(output, Mode.WHOLE, false, system, session, remoteRepositories);
+            List<RemoteRepository> remoteRepositories,
+            boolean dryRun) {
+        return purging(output, Mode.WHOLE, false, system, session, remoteRepositories, dryRun);
     }
 
     /**
@@ -58,8 +59,9 @@ public final class PurgingSink implements Artifacts.Sink {
             boolean enforceOrigin,
             RepositorySystem system,
             RepositorySystemSession session,
-            List<RemoteRepository> remoteRepositories) {
-        return new PurgingSink(output, mode, enforceOrigin, system, session, remoteRepositories);
+            List<RemoteRepository> remoteRepositories,
+            boolean dryRun) {
+        return new PurgingSink(output, mode, enforceOrigin, system, session, remoteRepositories, dryRun);
     }
 
     /**
@@ -93,6 +95,7 @@ public final class PurgingSink implements Artifacts.Sink {
     private final RepositorySystem system;
     private final RepositorySystemSession session;
     private final List<RemoteRepository> remoteRepositories;
+    private final boolean dryRun;
     private final ArrayList<Artifact> artifacts;
     private final Predicate<Artifact> artifactMatcher;
     private final AtomicInteger purgedArtifacts;
@@ -103,7 +106,8 @@ public final class PurgingSink implements Artifacts.Sink {
             boolean enforceOrigin,
             RepositorySystem system,
             RepositorySystemSession session,
-            List<RemoteRepository> remoteRepositories) {
+            List<RemoteRepository> remoteRepositories,
+            boolean dryRun) {
         this.output = requireNonNull(output, "output");
         this.mode = requireNonNull(mode, "mode");
         this.enforceOrigin = enforceOrigin;
@@ -111,6 +115,7 @@ public final class PurgingSink implements Artifacts.Sink {
         this.system = requireNonNull(system, "system");
         this.session = requireNonNull(session, "session");
         this.remoteRepositories = requireNonNull(remoteRepositories, "remoteRepositories");
+        this.dryRun = dryRun;
         this.artifacts = new ArrayList<>();
         this.purgedArtifacts = new AtomicInteger(-1);
 
@@ -182,6 +187,9 @@ public final class PurgingSink implements Artifacts.Sink {
     private boolean purgeExact(Artifact artifact) throws IOException {
         // maintain repository state
         // purge artifact file and additional sub-files (hashes, signatures, lastUpdated...)
+        if (dryRun) {
+            return true;
+        }
         int deleted = 0;
         Path path = session.getLocalRepository()
                 .getBasedir()
@@ -219,6 +227,9 @@ public final class PurgingSink implements Artifacts.Sink {
     private boolean purgeGAV(Artifact artifact) throws IOException {
         // purge artifact GAV directory (but watch out for subdirectories)
         // no need to maintain anything as whole directory is gone
+        if (dryRun) {
+            return true;
+        }
         return deleteDirectory(session.getLocalRepository()
                         .getBasedir()
                         .toPath()

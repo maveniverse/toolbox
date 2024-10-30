@@ -30,21 +30,24 @@ import org.eclipse.aether.graph.Dependency;
 public final class DependencySinks {
     private DependencySinks() {}
 
-    public static Dependencies.Sink build(Map<String, ?> properties, ToolboxCommandoImpl tc, String spec) {
+    public static Dependencies.Sink build(
+            Map<String, ?> properties, ToolboxCommandoImpl tc, boolean dryRun, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(tc, "tc");
         requireNonNull(spec, "spec");
-        DependencySinkBuilder builder = new DependencySinkBuilder(properties, tc);
+        DependencySinkBuilder builder = new DependencySinkBuilder(properties, tc, dryRun);
         SpecParser.parse(spec).accept(builder);
         return builder.build();
     }
 
     static class DependencySinkBuilder extends SpecParser.Builder {
         private final ToolboxCommandoImpl tc;
+        private final boolean dryRun;
 
-        public DependencySinkBuilder(Map<String, ?> properties, ToolboxCommandoImpl tc) {
+        public DependencySinkBuilder(Map<String, ?> properties, ToolboxCommandoImpl tc, boolean dryRun) {
             super(properties);
             this.tc = tc;
+            this.dryRun = dryRun;
         }
 
         @Override
@@ -79,7 +82,7 @@ public final class DependencySinks {
                             new DependencyMatcher.DependencyMatcherBuilder(properties);
                     node.getChildren().getFirst().accept(matcherBuilder);
                     DependencyMatcher matcher = matcherBuilder.build();
-                    DependencySinkBuilder sinkBuilder = new DependencySinkBuilder(properties, tc);
+                    DependencySinkBuilder sinkBuilder = new DependencySinkBuilder(properties, tc, dryRun);
                     node.getChildren().get(1).accept(sinkBuilder);
                     Dependencies.Sink delegate = sinkBuilder.build();
                     params.add(matchingDependencySink(matcher, delegate));
@@ -94,7 +97,7 @@ public final class DependencySinks {
                             new DependencyMapper.DependencyMapperBuilder(properties);
                     node.getChildren().getFirst().accept(mapperBuilder);
                     DependencyMapper mapper = mapperBuilder.build();
-                    DependencySinkBuilder sinkBuilder = new DependencySinkBuilder(properties, tc);
+                    DependencySinkBuilder sinkBuilder = new DependencySinkBuilder(properties, tc, dryRun);
                     node.getChildren().get(1).accept(sinkBuilder);
                     Dependencies.Sink delegate = sinkBuilder.build();
                     params.add(mappingDependencySink(mapper, delegate));

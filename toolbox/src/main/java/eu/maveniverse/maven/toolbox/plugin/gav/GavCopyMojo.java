@@ -39,6 +39,7 @@ public final class GavCopyMojo extends GavMojoSupport {
     @Override
     protected Result<List<Artifact>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        return toolboxCommando.copy(toolboxCommando.artifactSource(sourceSpec), toolboxCommando.artifactSink(sinkSpec));
+        return toolboxCommando.copy(
+                toolboxCommando.artifactSource(sourceSpec), toolboxCommando.artifactSink(sinkSpec, dryRun));
     }
 }

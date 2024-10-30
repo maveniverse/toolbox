@@ -69,6 +69,6 @@ public final class GavInstallMojo extends GavMojoSupport {
     protected Result<List<Artifact>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.copy(
-                projectArtifacts(gav, jar, pom, sources, javadoc), toolboxCommando.artifactSink("install()"));
+                projectArtifacts(gav, jar, pom, sources, javadoc), toolboxCommando.artifactSink("install()", dryRun));
     }
 }

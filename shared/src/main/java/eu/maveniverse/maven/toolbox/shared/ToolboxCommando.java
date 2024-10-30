@@ -108,12 +108,12 @@ public interface ToolboxCommando {
     /**
      * Provides {@link Sink<Artifact>} according to spec.
      */
-    Sink<Artifact> artifactSink(String spec);
+    Sink<Artifact> artifactSink(String spec, boolean dryRun);
 
     /**
      * Provides {@link Sink<Dependency>} according to spec.
      */
-    Sink<Dependency> dependencySink(String spec);
+    Sink<Dependency> dependencySink(String spec, boolean dryRun);
 
     /**
      * Shorthand method, creates {@link ResolutionRoot} out of passed in artifact.

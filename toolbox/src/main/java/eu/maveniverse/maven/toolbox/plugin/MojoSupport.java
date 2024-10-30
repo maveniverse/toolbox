@@ -264,6 +264,16 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     protected boolean mojoErrors;
 
     /**
+     * Option to run potentially destructive commands without performing any IO.
+     */
+    @CommandLine.Option(
+            names = {"--dry-run"},
+            defaultValue = "false",
+            description = "Option to run potentially destructive commands without performing any IO")
+    @Parameter(property = "dryRun", defaultValue = "false")
+    protected boolean dryRun;
+
+    /**
      * Maven Mojo entry point.
      * <p>
      * Maven Mojos are not re-entrant (Mojo cannot, or should not, call itself).

@@ -77,6 +77,6 @@ public final class GavDeployMojo extends GavMojoSupport {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.copy(
                 projectArtifacts(gav, jar, pom, sources, javadoc),
-                toolboxCommando.artifactSink("deploy(" + remoteRepositorySpec + ")"));
+                toolboxCommando.artifactSink("deploy(" + remoteRepositorySpec + ")", dryRun));
     }
 }

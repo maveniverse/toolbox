@@ -32,7 +32,6 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.io.IOUtils;
 import org.eclipse.aether.artifact.Artifact;
 
 /**
@@ -49,7 +48,11 @@ public final class UnpackSink implements Artifacts.Sink {
      * @param allowEntryOverwrite Does this sink allow entry overlap (among unpacked archives) or not?
      */
     public static UnpackSink unpack(
-            Output output, Path path, Function<Artifact, String> artifactRootMapper, boolean allowEntryOverwrite)
+            Output output,
+            Path path,
+            Function<Artifact, String> artifactRootMapper,
+            boolean allowEntryOverwrite,
+            boolean dryRun)
             throws IOException {
         return new UnpackSink(
                 output,
@@ -60,7 +63,8 @@ public final class UnpackSink implements Artifacts.Sink {
                 artifactRootMapper,
                 Function.identity(),
                 true,
-                allowEntryOverwrite);
+                allowEntryOverwrite,
+                dryRun);
     }
 
     private final Output output;
@@ -73,7 +77,9 @@ public final class UnpackSink implements Artifacts.Sink {
     private final Function<String, String> fileNameMapper;
     private final boolean allowRootOverwrite;
     private final boolean allowEntryOverwrite;
+    private final boolean dryRun;
     private final HashSet<Path> writtenPaths;
+
     /**
      * Creates a directory sink.
      *
@@ -97,7 +103,8 @@ public final class UnpackSink implements Artifacts.Sink {
             Function<Artifact, String> artifactRootMapper,
             Function<String, String> fileNameMapper,
             boolean allowRootOverwrite,
-            boolean allowEntryOverwrite)
+            boolean allowEntryOverwrite,
+            boolean dryRun)
             throws IOException {
         this.output = requireNonNull(output, "output");
         this.directory = requireNonNull(directory, "directory").toAbsolutePath();
@@ -118,6 +125,7 @@ public final class UnpackSink implements Artifacts.Sink {
         this.fileNameMapper = requireNonNull(fileNameMapper, "fileNameMapper");
         this.allowRootOverwrite = allowRootOverwrite;
         this.allowEntryOverwrite = allowEntryOverwrite;
+        this.dryRun = dryRun;
         this.writtenPaths = new HashSet<>();
     }
 
@@ -142,25 +150,33 @@ public final class UnpackSink implements Artifacts.Sink {
             }
             switch (artifact.getExtension()) {
                 case "jar": {
-                    unjar(target, artifact.getFile().toPath());
+                    if (!dryRun) {
+                        unjar(target, artifact.getFile().toPath());
+                    }
                     break;
                 }
                 case "zip": {
-                    unzip(target, artifact.getFile().toPath());
+                    if (!dryRun) {
+                        unzip(target, artifact.getFile().toPath());
+                    }
                     break;
                 }
                 case "tar.gz": {
-                    untar(
-                            target,
-                            new GzipCompressorInputStream(new BufferedInputStream(
-                                    Files.newInputStream(artifact.getFile().toPath()))));
+                    if (!dryRun) {
+                        untar(
+                                target,
+                                new GzipCompressorInputStream(new BufferedInputStream(
+                                        Files.newInputStream(artifact.getFile().toPath()))));
+                    }
                     break;
                 }
                 case "tar.bz2": {
-                    untar(
-                            target,
-                            new BZip2CompressorInputStream(new BufferedInputStream(
-                                    Files.newInputStream(artifact.getFile().toPath()))));
+                    if (!dryRun) {
+                        untar(
+                                target,
+                                new BZip2CompressorInputStream(new BufferedInputStream(
+                                        Files.newInputStream(artifact.getFile().toPath()))));
+                    }
                     break;
                 }
                 default:
@@ -246,7 +262,7 @@ public final class UnpackSink implements Artifacts.Sink {
             throw new IOException("Entry overwrite prevented; overlap in archives");
         }
         try (OutputStream o = Files.newOutputStream(target)) {
-            IOUtils.copy(inputStream, o);
+            inputStream.transferTo(o);
             if (fileTime != null) {
                 Files.setLastModifiedTime(target, fileTime);
             }
@@ -255,6 +271,9 @@ public final class UnpackSink implements Artifacts.Sink {
 
     @Override
     public void cleanup(Exception e) {
+        if (dryRun) {
+            return;
+        }
         writtenPaths.forEach(p -> {
             try (Stream<Path> stream = Files.walk(p).sorted(Comparator.reverseOrder())) {
                 stream.forEach(f -> {

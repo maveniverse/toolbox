@@ -96,6 +96,6 @@ public class GavResolveTransitiveMojo extends GavMojoSupport {
                 sources,
                 javadoc,
                 signature,
-                toolboxCommando.artifactSink(sinkSpec));
+                toolboxCommando.artifactSink(sinkSpec, dryRun));
     }
 }

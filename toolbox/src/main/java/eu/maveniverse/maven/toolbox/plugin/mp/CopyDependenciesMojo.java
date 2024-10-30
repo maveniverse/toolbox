@@ -40,6 +40,6 @@ public final class CopyDependenciesMojo extends MPMojoSupport {
                 () -> projectAsResolutionRoot().getDependencies().stream()
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
                         .map(toolboxCommando::toArtifact),
-                toolboxCommando.artifactSink(sinkSpec));
+                toolboxCommando.artifactSink(sinkSpec, dryRun));
     }
 }

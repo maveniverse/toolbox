@@ -29,9 +29,10 @@ public final class DirectorySink implements Artifacts.Sink {
      * Creates plain "flat" directory sink, that accepts all artifacts and copies them out having filenames according
      * to supplied {@link ArtifactNameMapper} and prevents overwrite (what you usually want).
      */
-    public static DirectorySink flat(Output output, Path path, ArtifactNameMapper artifactNameMapper)
+    public static DirectorySink flat(Output output, Path path, ArtifactNameMapper artifactNameMapper, boolean dryRun)
             throws IOException {
-        return new DirectorySink(output, path, Mode.COPY, ArtifactMatcher.unique(), false, artifactNameMapper, false);
+        return new DirectorySink(
+                output, path, Mode.COPY, ArtifactMatcher.unique(), false, artifactNameMapper, false, dryRun);
     }
 
     /**
@@ -42,7 +43,7 @@ public final class DirectorySink implements Artifacts.Sink {
      * only, and fails with snapshot ones, as this is not equivalent to deploy them (no timestamped version is
      * created).
      */
-    public static DirectorySink repository(Output output, Path path) throws IOException {
+    public static DirectorySink repository(Output output, Path path, boolean dryRun) throws IOException {
         return new DirectorySink(
                 output,
                 path,
@@ -50,7 +51,8 @@ public final class DirectorySink implements Artifacts.Sink {
                 ArtifactMatcher.and(ArtifactMatcher.not(ArtifactMatcher.snapshot()), ArtifactMatcher.unique()),
                 true,
                 ArtifactNameMapper.repositoryDefault(),
-                false);
+                false,
+                dryRun);
     }
 
     /**
@@ -74,6 +76,7 @@ public final class DirectorySink implements Artifacts.Sink {
     private final Path indexFile;
     private final IndexFileWriter indexFileWriter;
     private final StandardCopyOption[] copyFlags;
+    private final boolean dryRun;
 
     /**
      * Creates a directory sink.
@@ -94,7 +97,8 @@ public final class DirectorySink implements Artifacts.Sink {
             Predicate<Artifact> artifactMatcher,
             boolean failIfUnmatched,
             Function<Artifact, String> artifactNameMapper,
-            boolean allowOverwrite)
+            boolean allowOverwrite,
+            boolean dryRun)
             throws IOException {
         this.output = requireNonNull(output, "output");
         this.directory = requireNonNull(directory, "directory").toAbsolutePath();
@@ -115,10 +119,11 @@ public final class DirectorySink implements Artifacts.Sink {
         this.allowOverwrite = allowOverwrite;
         this.writtenPaths = new HashSet<>();
         this.indexFile = directory.resolve(".index");
-        this.indexFileWriter = new IndexFileWriter(indexFile, !directoryCreated);
+        this.indexFileWriter = new IndexFileWriter(indexFile, !directoryCreated, dryRun);
         this.copyFlags = allowOverwrite
                 ? new StandardCopyOption[] {StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES}
                 : new StandardCopyOption[] {StandardCopyOption.COPY_ATTRIBUTES};
+        this.dryRun = dryRun;
     }
 
     public Path getDirectory() {
@@ -146,13 +151,19 @@ public final class DirectorySink implements Artifacts.Sink {
             Files.createDirectories(target.getParent());
             switch (mode) {
                 case COPY:
-                    Files.copy(artifact.getFile().toPath(), target, copyFlags);
+                    if (!dryRun) {
+                        Files.copy(artifact.getFile().toPath(), target, copyFlags);
+                    }
                     break;
                 case LINK:
-                    Files.createLink(target, artifact.getFile().toPath());
+                    if (!dryRun) {
+                        Files.createLink(target, artifact.getFile().toPath());
+                    }
                     break;
                 case SYMLINK:
-                    Files.createSymbolicLink(target, artifact.getFile().toPath());
+                    if (!dryRun) {
+                        Files.createSymbolicLink(target, artifact.getFile().toPath());
+                    }
                     break;
                 default:
                     throw new IllegalArgumentException("unknown mode");
@@ -167,6 +178,9 @@ public final class DirectorySink implements Artifacts.Sink {
     @Override
     public void cleanup(Exception e) {
         indexFileWriter.fail();
+        if (dryRun) {
+            return;
+        }
         writtenPaths.forEach(p -> {
             try {
                 Files.deleteIfExists(p);

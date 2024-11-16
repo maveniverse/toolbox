@@ -183,11 +183,11 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         }
     }
 
-    private static boolean isAny(String str) {
+    static boolean isAny(String str) {
         return "*".equals(str);
     }
 
-    private static boolean matches(String pattern, String str) {
+    static boolean matches(String pattern, String str) {
         if (isAny(pattern)) {
             return true;
         } else if (pattern.endsWith("*")) {
@@ -199,7 +199,7 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         }
     }
 
-    private static Artifact parsePrototype(String coordinate) {
+    static Artifact parsePrototype(String coordinate) {
         requireNonNull(coordinate, "coordinate");
         Artifact s;
         String[] parts = coordinate.split(":", -1);

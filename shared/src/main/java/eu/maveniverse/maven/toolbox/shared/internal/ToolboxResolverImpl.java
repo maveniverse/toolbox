@@ -546,7 +546,7 @@ public class ToolboxResolverImpl {
                 output.warn(
                         " * {} version {} prevails, but met versions {}",
                         entry.getKey(),
-                        entry.getValue().getFirst(),
+                        entry.getValue().iterator().next(),
                         entry.getValue());
             }
         }
@@ -624,12 +624,12 @@ public class ToolboxResolverImpl {
         DependencyResult result = repositorySystem.resolveDependencies(session, dependencyRequest);
         try {
             ArtifactResult rootResult =
-                    resolveArtifacts(Collections.singletonList(root)).getFirst();
+                    resolveArtifacts(Collections.singletonList(root)).get(0);
 
             DefaultDependencyNode newRoot = new DefaultDependencyNode(new Dependency(rootResult.getArtifact(), ""));
             newRoot.setChildren(result.getRoot().getChildren());
             result.setRoot(newRoot);
-            result.getArtifactResults().addFirst(rootResult);
+            result.getArtifactResults().add(0, rootResult);
             return result;
         } catch (ArtifactResolutionException e) {
             throw new DependencyResolutionException(result, e);
@@ -638,7 +638,7 @@ public class ToolboxResolverImpl {
 
     public ArtifactResult resolveArtifact(Artifact artifact) throws ArtifactResolutionException {
         requireNonNull(artifact);
-        return resolveArtifacts(Collections.singleton(artifact)).getFirst();
+        return resolveArtifacts(Collections.singleton(artifact)).get(0);
     }
 
     public List<ArtifactResult> resolveArtifacts(Collection<Artifact> artifacts) throws ArtifactResolutionException {

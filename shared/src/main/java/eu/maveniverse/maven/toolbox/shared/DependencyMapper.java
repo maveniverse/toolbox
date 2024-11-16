@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.Exclusion;
@@ -73,7 +74,7 @@ public interface DependencyMapper extends Function<Dependency, Dependency> {
                 return dependency.setExclusions(exclusions.stream()
                         .map(a -> new DefaultArtifact(a + ":irrelevant"))
                         .map(a -> new Exclusion(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension()))
-                        .toList());
+                        .collect(Collectors.toList()));
             }
         };
     }

@@ -55,7 +55,8 @@ public class DependencyGraphDumper implements DependencyVisitor {
             DependencyNode parent = iter.hasNext() ? iter.next() : null;
             DependencyNode child = iter.hasNext() ? iter.next() : null;
             while (parent != null && child != null) {
-                boolean lastChild = parent.getChildren().getLast() == child;
+                boolean lastChild =
+                        parent.getChildren().get(parent.getChildren().size() - 1) == child;
                 boolean end = child == nodes.peekFirst();
                 String indent;
                 if (end) {

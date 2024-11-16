@@ -195,7 +195,7 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
         }
     }
 
-    private static Function<String, String> mf(String target) {
+    static Function<String, String> mf(String target) {
         requireNonNull(target, "target");
         if ("*".equals(target)) {
             return Function.identity();

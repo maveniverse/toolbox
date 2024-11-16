@@ -421,7 +421,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     .stream()
                             .filter(ArtifactResult::isResolved)
                             .map(ArtifactResult::getArtifact)
-                            .toList());
+                            .collect(Collectors.toList()));
         }
         return copy(artifactResults::stream, sink);
     }
@@ -541,13 +541,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Source<Artifact> artifactSource, boolean sources, boolean javadoc, boolean signature, Sink<Artifact> sink)
             throws Exception {
         List<Artifact> result = new ArrayList<>();
-        List<Artifact> artifacts = artifactSource.get().toList();
+        List<Artifact> artifacts = artifactSource.get().collect(Collectors.toList());
         output.suggest("Resolving {}", artifacts);
         try (Sink<Artifact> artifactSink =
                 ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, output))) {
             List<Artifact> artifactResults = toolboxResolver.resolveArtifacts(artifacts).stream()
                     .map(ArtifactResult::getArtifact)
-                    .toList();
+                    .collect(Collectors.toList());
             result.addAll(artifactResults);
             artifactSink.accept(artifactResults);
             if (sources || javadoc || signature) {
@@ -568,7 +568,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     try {
                         List<Artifact> subartifactResults = toolboxResolver.resolveArtifacts(subartifacts).stream()
                                 .map(ArtifactResult::getArtifact)
-                                .toList();
+                                .collect(Collectors.toList());
                         result.addAll(subartifactResults);
                         artifactSink.accept(subartifactResults);
                     } catch (ArtifactResolutionException e) {
@@ -576,7 +576,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         List<Artifact> bestEffort = e.getResults().stream()
                                 .filter(ArtifactResult::isResolved)
                                 .map(ArtifactResult::getArtifact)
-                                .toList();
+                                .collect(Collectors.toList());
                         result.addAll(bestEffort);
                         artifactSink.accept(bestEffort);
                     }
@@ -769,7 +769,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         List<List<Artifact>> result = new ArrayList<>();
         if (!pathRecordingDependencyVisitor.getPaths().isEmpty()) {
             for (List<DependencyNode> path : pathRecordingDependencyVisitor.getPaths()) {
-                result.add(path.stream().map(DependencyNode::getArtifact).toList());
+                result.add(path.stream().map(DependencyNode::getArtifact).collect(Collectors.toList()));
                 String indent = "";
                 for (DependencyNode node : path) {
                     output.tell("{}-> {}", indent, node.getArtifact());
@@ -1163,7 +1163,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 } else {
                     artifacts.addAll(resolutionRoot.getDependencies().stream()
                             .map(this::toArtifact)
-                            .toList());
+                            .collect(Collectors.toList()));
                 }
                 sink.accept(artifacts);
             } catch (Exception e) {
@@ -1176,7 +1176,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public Result<Map<Artifact, List<Version>>> versions(
             String context, Source<Artifact> artifactSource, Predicate<Version> versionPredicate) throws Exception {
-        List<Artifact> artifacts = artifactSource.get().toList();
+        List<Artifact> artifacts = artifactSource.get().collect(Collectors.toList());
         HashMap<Artifact, List<Version>> result = new HashMap<>();
         output.marker(Output.Verbosity.NORMAL)
                 .emphasize("Checking newest versions of {} ({})")
@@ -1185,7 +1185,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             List<Version> newer = toolboxResolver.findNewerVersions(artifact, versionPredicate);
             result.put(artifact, newer);
             if (!newer.isEmpty()) {
-                Version latest = newer.getLast();
+                Version latest = newer.get(newer.size() - 1);
                 String all = newer.stream().map(Object::toString).collect(Collectors.joining(", "));
                 output.marker(Output.Verbosity.NORMAL).scary("* {} -> {}").say(ArtifactIdUtils.toId(artifact), latest);
                 output.marker(Output.Verbosity.SUGGEST)

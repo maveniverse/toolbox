@@ -137,7 +137,7 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
         return isPreviewVersion(version.toString());
     }
 
-    private static boolean isPreviewVersion(String version) {
+    static boolean isPreviewVersion(String version) {
         // most trivial "preview" version is 'a1'
         if (version.length() > 1) {
             String ver = version.toLowerCase(Locale.ENGLISH);
@@ -169,7 +169,7 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
         return isSnapshotVersion(version.toString());
     }
 
-    private static boolean isSnapshotVersion(String version) {
+    static boolean isSnapshotVersion(String version) {
         try {
             return new DefaultArtifact("g:a:" + version).isSnapshot();
         } catch (IllegalArgumentException e) {

@@ -64,7 +64,7 @@
     Build time: latest stable Maven and latest Java LTS.
     Run time: "not so old" Maven (3.6.3+) and latest Java LTS.
     -->
-    <maven.compiler.release>21</maven.compiler.release>
+    <maven.compiler.release>11</maven.compiler.release>
     <requireBuildtimeJavaVersion.version>[21.0.3,)</requireBuildtimeJavaVersion.version>
     <requireBuildtimeMavenVersion.version>[3.9.9,)</requireBuildtimeMavenVersion.version>
     <requireRuntimeMavenVersion.version>[3.6.3,)</requireRuntimeMavenVersion.version>

@@ -12,6 +12,7 @@ import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.internal.ArtifactSources;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
@@ -43,7 +44,7 @@ public final class GavCopyGavMojo extends GavMojoSupport {
         return toolboxCommando.copy(
                 ArtifactSources.concatArtifactSource(slurp(gav).stream()
                         .map(ArtifactSources::gavArtifactSource)
-                        .toList()),
+                        .collect(Collectors.toList())),
                 toolboxCommando.artifactSink(sinkSpec, dryRun));
     }
 }

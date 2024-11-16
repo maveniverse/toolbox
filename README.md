@@ -20,7 +20,7 @@ or
 $ jbang toolbox@maveniverse --help
 ```
 
-Or just go over sources...
+or just go over sources...
 
 ## About the project
 

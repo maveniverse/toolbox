@@ -13,14 +13,14 @@ Runtime requirement:
 
 Usage: use the help command/mojo to get help about Toolbox:
 ```
-$ mvn toolbox:help -Ddetail
+$ mvn eu.maveniverse.maven.plugins:toolbox:help -Ddetail
 ```
 or
 ```
 $ jbang toolbox@maveniverse --help
 ```
-
-or just go over sources...
+or you can download the CLI JAR from Maven Central and run it directly.
+Finally, just go over sources to get the idea what is happening.
 
 ## About the project
 
@@ -35,13 +35,3 @@ Structure of the project:
 * Module "toolbox" is a Maven Plugin and a CLI at the same time, that exposes Toolbox operations as Mojos and commands. Each Mojo comes in two
 "flavors": without prefix (i.e. "tree"), that requires project, and uses `MavenProject` to get the data for requests, and "gav-" 
 prefixed ones (i.e. "gav-tree"), that do not require project, and is able to target any existing Artifact out there.
-
-To use it as Maven plugin, introspect available Mojos and parameters:
-```
-$ mvn eu.maveniverse.maven.plugins:toolbox:help -Ddetail
-```
-Or, to use it as CLI:
-```
-$ jbang toolbox@maveniverse
-```
-or you can download the CLI JAR from Maven Central and run it directly.

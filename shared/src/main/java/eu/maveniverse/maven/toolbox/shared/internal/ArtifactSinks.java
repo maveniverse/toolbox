@@ -109,12 +109,10 @@ public final class ArtifactSinks {
                                     new ArtifactNameMapper.ArtifactNameMapperBuilder(properties);
                             node.getChildren().get(1).accept(mapperBuilder);
                             p1 = mapperBuilder.build();
-                            p0 = tc.basedir()
-                                    .resolve(node.getChildren().getFirst().getValue());
+                            p0 = tc.basedir().resolve(node.getChildren().get(0).getValue());
                         } else if (node.getChildren().size() == 1) {
                             p1 = ArtifactNameMapper.AbVCE();
-                            p0 = tc.basedir()
-                                    .resolve(node.getChildren().getFirst().getValue());
+                            p0 = tc.basedir().resolve(node.getChildren().get(0).getValue());
                         } else {
                             throw new IllegalArgumentException("op flat accepts only 1..2 argument");
                         }
@@ -175,7 +173,7 @@ public final class ArtifactSinks {
                     try {
                         if (node.getChildren().size() == 1) {
                             Path p0 = tc.basedir()
-                                    .resolve(node.getChildren().getFirst().getValue());
+                                    .resolve(node.getChildren().get(0).getValue());
                             params.add(UnpackSink.unpack(tc.output(), p0, ArtifactNameMapper.ACVE(), true, dryRun));
                         } else if (node.getChildren().size() == 2) {
                             ArtifactNameMapper.ArtifactNameMapperBuilder mapperBuilder =
@@ -183,7 +181,7 @@ public final class ArtifactSinks {
                             node.getChildren().get(1).accept(mapperBuilder);
                             ArtifactNameMapper p1 = mapperBuilder.build();
                             Path p0 = tc.basedir()
-                                    .resolve(node.getChildren().getFirst().getValue());
+                                    .resolve(node.getChildren().get(0).getValue());
                             params.add(UnpackSink.unpack(tc.output(), p0, p1, true, dryRun));
                         } else {
                             throw new IllegalArgumentException("op unpack accepts only 1..2 argument");
@@ -200,7 +198,7 @@ public final class ArtifactSinks {
                     }
                     ArtifactMatcher.ArtifactMatcherBuilder matcherBuilder =
                             new ArtifactMatcher.ArtifactMatcherBuilder(properties);
-                    node.getChildren().getFirst().accept(matcherBuilder);
+                    node.getChildren().get(0).accept(matcherBuilder);
                     ArtifactMatcher matcher = matcherBuilder.build();
                     ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc, dryRun);
                     node.getChildren().get(1).accept(sinkBuilder);
@@ -215,7 +213,7 @@ public final class ArtifactSinks {
                     }
                     ArtifactMapper.ArtifactMapperBuilder mapperBuilder =
                             new ArtifactMapper.ArtifactMapperBuilder(properties);
-                    node.getChildren().getFirst().accept(mapperBuilder);
+                    node.getChildren().get(0).accept(mapperBuilder);
                     ArtifactMapper mapper = mapperBuilder.build();
                     ArtifactSinkBuilder sinkBuilder = new ArtifactSinkBuilder(properties, tc, dryRun);
                     node.getChildren().get(1).accept(sinkBuilder);

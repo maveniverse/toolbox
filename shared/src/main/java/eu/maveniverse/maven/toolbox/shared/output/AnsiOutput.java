@@ -158,27 +158,29 @@ public class AnsiOutput extends OutputSupport {
             Marker.Intent intent = intentMapper.apply(nodes);
             String result = "";
             switch (intent) {
-                case EMPHASIZE -> {
+                case EMPHASIZE:
                     result = indentationStr + marker.emphasize(nodeStr).toString();
-                }
-                case OUTSTANDING -> {
+                    break;
+                case OUTSTANDING:
                     result = indentationStr + marker.outstanding(nodeStr).toString();
-                }
-                case NORMAL -> {
+                    break;
+                case NORMAL:
                     result = indentationStr + marker.normal(nodeStr).toString();
-                }
-                case DETAIL -> {
+                    break;
+                case DETAIL:
                     result = indentationStr + marker.detail(nodeStr).toString();
-                }
-                case UNIMPORTANT -> {
+                    break;
+                case UNIMPORTANT:
                     result = indentationStr + marker.unimportant(nodeStr).toString();
-                }
-                case SCARY -> {
+                    break;
+                case SCARY:
                     result = indentationStr + marker.scary(nodeStr).toString();
-                }
-                case BLOODY -> {
+                    break;
+                case BLOODY:
                     result = indentationStr + marker.bloody(nodeStr).toString();
-                }
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + intent);
             }
             return result;
         }

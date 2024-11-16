@@ -14,6 +14,7 @@ import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.execution.MavenSession;
@@ -37,7 +38,7 @@ public class MavenReactorLocator implements ReactorLocator {
         requireNonNull(session, "session");
         this.allProjects = session.getAllProjects().stream()
                 .map(p -> convert(session.getRepositorySession(), p))
-                .toList();
+                .collect(Collectors.toList());
         this.topLevel = locateProject(
                         RepositoryUtils.toArtifact(session.getTopLevelProject().getArtifact()))
                 .orElseThrow();
@@ -56,10 +57,10 @@ public class MavenReactorLocator implements ReactorLocator {
         }
         List<Dependency> pd = project.getModel().getDependencies().stream()
                 .map(d -> RepositoryUtils.toDependency(d, session.getArtifactTypeRegistry()))
-                .toList();
+                .collect(Collectors.toList());
         List<Artifact> collected = project.getCollectedProjects().stream()
                 .map(p -> RepositoryUtils.toArtifact(p.getArtifact()))
-                .toList();
+                .collect(Collectors.toList());
         return new MProject(pa, pp, pd, collected, this);
     }
 
@@ -93,12 +94,13 @@ public class MavenReactorLocator implements ReactorLocator {
                     return parentArtifact.isPresent()
                             && ArtifactIdUtils.equalsId(parentArtifact.orElseThrow(), project.artifact());
                 })
-                .toList();
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<Project> locateCollected(Project project) {
-        if (project instanceof MProject mProject) {
+        if (project instanceof MProject) {
+            MProject mProject = (MProject) project;
             List<Project> allOfGrandchildren = mProject.collected().stream()
                     .map(this::locateProject)
                     .filter(Optional::isPresent)
@@ -109,15 +111,15 @@ public class MavenReactorLocator implements ReactorLocator {
                     .map(this::locateProject)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
-                    .toList();
+                    .collect(Collectors.toList());
             return mProject.collected().stream()
                     .map(this::locateProject)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
-                    .toList()
+                    .collect(Collectors.toList())
                     .stream()
                     .filter(p -> !allOfGrandchildren.contains(p))
-                    .toList();
+                    .collect(Collectors.toList());
         }
         return List.of();
     }

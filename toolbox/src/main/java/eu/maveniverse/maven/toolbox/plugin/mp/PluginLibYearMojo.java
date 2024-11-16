@@ -15,6 +15,7 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -63,7 +64,7 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
         for (ResolutionRoot root : allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
                 .filter(r -> artifactMatcher.test(r.getArtifact()))
-                .toList()) {
+                .collect(Collectors.toList())) {
             toolboxCommando.libYear(
                     "managed plugin " + root.getArtifact(),
                     ResolutionScope.RUNTIME,
@@ -76,7 +77,7 @@ public class PluginLibYearMojo extends MPPluginMojoSupport {
         }
         for (ResolutionRoot root : allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
                 .filter(r -> artifactMatcher.test(r.getArtifact()))
-                .toList()) {
+                .collect(Collectors.toList())) {
             toolboxCommando.libYear(
                     "plugin " + root.getArtifact(),
                     ResolutionScope.RUNTIME,

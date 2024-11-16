@@ -14,7 +14,9 @@ import eu.maveniverse.maven.mima.extensions.mmr.ModelRequest;
 import eu.maveniverse.maven.mima.extensions.mmr.ModelResponse;
 import eu.maveniverse.maven.toolbox.shared.ProjectLocator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -57,16 +59,19 @@ public class ProjectLocatorImpl implements ProjectLocator {
             }
             List<Dependency> pd = em.getDependencies().stream()
                     .map(d -> RepositoryUtils.toDependency(d, session.getArtifactTypeRegistry()))
-                    .toList();
+                    .collect(Collectors.toList());
             return Optional.of(new ModelProject(pa, pp, pd, this));
         } catch (Exception e) {
             return Optional.empty();
         }
     }
 
-    private record ModelProject(
-            Artifact artifact, Artifact parent, List<Dependency> dependencies, ProjectLocator origin)
-            implements Project {
+    private static final class ModelProject implements Project {
+        private final Artifact artifact;
+        private final Artifact parent;
+        private final List<Dependency> dependencies;
+        private final ProjectLocator origin;
+
         private ModelProject(Artifact artifact, Artifact parent, List<Dependency> dependencies, ProjectLocator origin) {
             this.artifact = requireNonNull(artifact, "artifact");
             this.parent = parent; // nullable
@@ -77,6 +82,50 @@ public class ProjectLocatorImpl implements ProjectLocator {
         @Override
         public Optional<Artifact> getParent() {
             return Optional.ofNullable(parent);
+        }
+
+        @Override
+        public Artifact artifact() {
+            return artifact;
+        }
+
+        public Artifact parent() {
+            return parent;
+        }
+
+        @Override
+        public List<Dependency> dependencies() {
+            return dependencies;
+        }
+
+        @Override
+        public ProjectLocator origin() {
+            return origin;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (obj == null || obj.getClass() != this.getClass()) return false;
+            ModelProject that = (ModelProject) obj;
+            return Objects.equals(this.artifact, that.artifact)
+                    && Objects.equals(this.parent, that.parent)
+                    && Objects.equals(this.dependencies, that.dependencies)
+                    && Objects.equals(this.origin, that.origin);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(artifact, parent, dependencies, origin);
+        }
+
+        @Override
+        public String toString() {
+            return "ModelProject[" + "artifact="
+                    + artifact + ", " + "parent="
+                    + parent + ", " + "dependencies="
+                    + dependencies + ", " + "origin="
+                    + origin + ']';
         }
     }
 }

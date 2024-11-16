@@ -88,7 +88,7 @@ public final class ArtifactSources {
                     }
                     ArtifactMatcher.ArtifactMatcherBuilder matcherBuilder =
                             new ArtifactMatcher.ArtifactMatcherBuilder(properties);
-                    node.getChildren().getFirst().accept(matcherBuilder);
+                    node.getChildren().get(0).accept(matcherBuilder);
                     ArtifactMatcher matcher = matcherBuilder.build();
                     ArtifactSources.ArtifactSourceBuilder sourceBuilder =
                             new ArtifactSources.ArtifactSourceBuilder(properties, tc);
@@ -104,7 +104,7 @@ public final class ArtifactSources {
                     }
                     ArtifactMapper.ArtifactMapperBuilder mapperBuilder =
                             new ArtifactMapper.ArtifactMapperBuilder(properties);
-                    node.getChildren().getFirst().accept(mapperBuilder);
+                    node.getChildren().get(0).accept(mapperBuilder);
                     ArtifactMapper mapper = mapperBuilder.build();
                     ArtifactSources.ArtifactSourceBuilder sourceBuilder =
                             new ArtifactSources.ArtifactSourceBuilder(properties, tc);

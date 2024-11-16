@@ -178,10 +178,14 @@ public final class PurgingSink implements Artifacts.Sink {
     }
 
     private boolean purgeArtifact(Artifact artifact) throws IOException {
-        return switch (mode) {
-            case EXACT -> purgeExact(artifact);
-            case WHOLE -> purgeGAV(artifact);
-        };
+        switch (mode) {
+            case EXACT:
+                return purgeExact(artifact);
+            case WHOLE:
+                return purgeGAV(artifact);
+            default:
+                throw new IllegalArgumentException();
+        }
     }
 
     private boolean purgeExact(Artifact artifact) throws IOException {

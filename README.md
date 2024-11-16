@@ -1,5 +1,29 @@
 # Toolbox
 
+Toolbox is a multi-faceted (CLI and Maven Plugin) utility that contains useful commands and also showcase usage
+of [Maveniverse MIMA](https://github.com/maveniverse/mima).
+
+Build requirements:
+* Java 21
+* Maven 3.9.9+
+
+Runtime requirement:
+* Java 11+ (CLI and Maven Plugin)
+* Maven 3.6.3+ (Maven Plugin)
+
+Usage: use the help command/mojo to get help about Toolbox:
+```
+$ mvn toolbox:help -Ddetail
+```
+or
+```
+$ jbang toolbox@maveniverse --help
+```
+
+Or just go over sources...
+
+## About the project
+
 The Toolbox project started with manifold aims:
 * replace `MIMA CLI`, provide drop-in replacement, but also continue improving it.
 * provide alternative for `maven-dependency-plugin`, offering similar (sub)set of Mojos

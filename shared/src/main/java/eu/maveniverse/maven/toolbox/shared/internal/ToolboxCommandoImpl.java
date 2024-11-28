@@ -82,6 +82,7 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
+import org.eclipse.aether.metadata.Metadata;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
@@ -534,6 +535,42 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             output.tell("Recorder was not started.");
         }
         return result ? Result.success("Stopped") : Result.failure("No recorder state changed");
+    }
+
+    @Override
+    public Result<Path> localRepository() throws Exception {
+        Result<Path> result =
+                Result.success(session.getLocalRepository().getBasedir().toPath());
+        result.getData().ifPresent(path -> output.tell(path.toString()));
+        return result;
+    }
+
+    @Override
+    public Result<Path> artifactPath(Artifact artifact, RemoteRepository repository) throws Exception {
+        Result<Path> result;
+        if (repository == null) {
+            result =
+                    Result.success(Paths.get(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
+        } else {
+            result = Result.success(Paths.get(
+                    session.getLocalRepositoryManager().getPathForRemoteArtifact(artifact, repository, "toolbox")));
+        }
+        result.getData().ifPresent(path -> output.tell(path.toString()));
+        return result;
+    }
+
+    @Override
+    public Result<Path> metadataPath(Metadata metadata, RemoteRepository repository) throws Exception {
+        Result<Path> result;
+        if (repository == null) {
+            result =
+                    Result.success(Paths.get(session.getLocalRepositoryManager().getPathForLocalMetadata(metadata)));
+        } else {
+            result = Result.success(Paths.get(
+                    session.getLocalRepositoryManager().getPathForRemoteMetadata(metadata, repository, "toolbox")));
+        }
+        result.getData().ifPresent(path -> output.tell(path.toString()));
+        return result;
     }
 
     @Override

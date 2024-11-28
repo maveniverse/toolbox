@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.plugin;
 
+import eu.maveniverse.maven.toolbox.plugin.gav.GavArtifactPathMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavClasspathMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyGavMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyMojo;
@@ -25,6 +26,8 @@ import eu.maveniverse.maven.toolbox.plugin.gav.GavLibYearMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavListAvailablePluginsMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavListMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavListRepositoriesMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavLocalRepositoryPathMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavMetadataPathMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavRecordMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavReplMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavResolveMojo;
@@ -42,6 +45,7 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "toolbox",
         subcommands = {
+            GavArtifactPathMojo.class,
             GavClasspathMojo.class,
             GavCopyGavMojo.class,
             GavCopyMojo.class,
@@ -60,6 +64,8 @@ import picocli.CommandLine;
             GavListAvailablePluginsMojo.class,
             GavListMojo.class,
             GavListRepositoriesMojo.class,
+            GavLocalRepositoryPathMojo.class,
+            GavMetadataPathMojo.class,
             GavRecordMojo.class,
             GavReplMojo.class,
             GavResolveMojo.class,

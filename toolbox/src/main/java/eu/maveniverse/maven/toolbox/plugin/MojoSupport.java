@@ -263,6 +263,9 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     @Parameter(defaultValue = "${session.request.showErrors}", readonly = true, required = true)
     protected boolean mojoErrors;
 
+    @Parameter(property = "forceStdout")
+    protected boolean forceStdout;
+
     /**
      * Option to run potentially destructive commands without performing any IO.
      */
@@ -283,7 +286,12 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
         CONTEXT.compareAndSet(null, new HashMap<>());
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createMojoContextOverrides()));
-        getOrCreate(Output.class, () -> OutputFactory.createMojoOutput(!mojoInteractiveMode, mojoErrors, verbosity));
+        if (forceStdout) {
+            getOrCreate(Output.class, () -> OutputFactory.createCliOutput(!mojoInteractiveMode, mojoErrors, verbosity));
+        } else {
+            getOrCreate(
+                    Output.class, () -> OutputFactory.createMojoOutput(!mojoInteractiveMode, mojoErrors, verbosity));
+        }
         try {
             Result<?> result = doExecute();
             if (!result.isSuccess() && failOnLogicalFailure) {

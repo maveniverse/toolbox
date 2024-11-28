@@ -31,16 +31,6 @@ public class GavResolveMojo extends GavMojoSupport {
     private String gav;
 
     /**
-     * Comma separated list of BOMs to apply.
-     */
-    @CommandLine.Option(
-            names = {"--boms"},
-            defaultValue = "",
-            description = "Comma separated list of BOMs to apply")
-    @Parameter(property = "boms")
-    private String boms;
-
-    /**
      * Resolve sources JAR as well (derive coordinates from GAV).
      */
     @CommandLine.Option(

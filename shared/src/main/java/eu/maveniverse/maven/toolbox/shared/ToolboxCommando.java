@@ -13,6 +13,7 @@ import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,6 +26,7 @@ import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.metadata.Metadata;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
@@ -219,6 +221,25 @@ public interface ToolboxCommando {
      * Stops the recorder.
      */
     Result<String> recordStop();
+
+    /**
+     * Returns the base path of local repository.
+     */
+    Result<Path> localRepository() throws Exception;
+
+    /**
+     * Returns the path in local repository of requested artifact. Remote repository is nullable, if present,
+     * a "remote artifact" (cached) path will be returned, otherwise "local artifact".
+     * The returned path is relative to local repository base.
+     */
+    Result<Path> artifactPath(Artifact artifact, RemoteRepository repository) throws Exception;
+
+    /**
+     * Returns the path in local repository of requested metadata. Remote repository is nullable, if present,
+     * a "remote metadata" (cached) path will be returned, otherwise "local metadata".
+     * The returned path is relative to local repository base.
+     */
+    Result<Path> metadataPath(Metadata metadata, RemoteRepository repository) throws Exception;
 
     /**
      * Resolves given artifacts.

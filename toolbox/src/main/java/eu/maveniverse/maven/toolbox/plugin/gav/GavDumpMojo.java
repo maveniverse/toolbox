@@ -9,7 +9,15 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Properties;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import picocli.CommandLine;
 
 /**
@@ -18,8 +26,43 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "dump", description = "Dump MIMA environment")
 @Mojo(name = "gav-dump", requiresProject = false, threadSafe = true)
 public class GavDumpMojo extends GavMojoSupport {
+    /**
+     * Output it as Java Properties format.
+     */
+    @CommandLine.Option(
+            names = {"--asProperties"},
+            defaultValue = "false",
+            description = "Output it as Java Properties format")
+    @Parameter(property = "asProperties", defaultValue = "false", required = true)
+    private boolean asProperties;
+
+    /**
+     * Output it into given file (only if asProperties=true).
+     */
+    @CommandLine.Option(
+            names = {"--toFile"},
+            description = "Output it into given file (only if asProperties=true)")
+    @Parameter(property = "toFile")
+    private File toFile;
+
     @Override
-    protected Result<String> doExecute() {
-        return getToolboxCommando().dump();
+    protected Result<String> doExecute() throws IOException {
+        if (asProperties) {
+            Result<Map<String, String>> result = getToolboxCommando().dumpAsMap();
+            Properties properties = new Properties();
+            properties.putAll(result.getData().orElse(Collections.emptyMap()));
+            if (toFile != null) {
+                toFile.getParentFile().mkdirs();
+                try (OutputStream fos = Files.newOutputStream(toFile.toPath())) {
+                    properties.store(fos, "Toolbox dump");
+                }
+            } else {
+                properties.store(System.out, "Toolbox dump");
+            }
+            return Result.success("success");
+        } else {
+            // dumps to console for human consumption
+            return getToolboxCommando().dump();
+        }
     }
 }

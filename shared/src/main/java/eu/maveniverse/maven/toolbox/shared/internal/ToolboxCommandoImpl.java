@@ -276,6 +276,73 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         return Result.success("Success");
     }
 
+    public Result<Map<String, String>> dumpAsMap() {
+        HashMap<String, String> result = new HashMap<>();
+        result.put("toolbox.version", getVersion());
+
+        Runtime runtime = context.getRuntime();
+        result.put("mima.runtime.name", runtime.name());
+        result.put("mima.runtime.version", runtime.version());
+
+        result.put("maven.version", runtime.mavenVersion());
+        result.put("maven.managed", String.valueOf(runtime.managedRepositorySystem()));
+        if (context.mavenSystemHome() != null) {
+            result.put("maven.home", String.valueOf(context.mavenSystemHome().basedir()));
+            result.put(
+                    "maven.settings", String.valueOf(context.mavenSystemHome().settingsXml()));
+            result.put(
+                    "maven.toolchains", String.valueOf(context.mavenSystemHome().toolchainsXml()));
+        }
+        result.put("user.home", String.valueOf(context.mavenUserHome().basedir()));
+        result.put("user.settings", String.valueOf(context.mavenUserHome().settingsXml()));
+        result.put("user.toolchains", String.valueOf(context.mavenUserHome().toolchainsXml()));
+        result.put(
+                "user.settingsSecurity", String.valueOf(context.mavenUserHome().settingsSecurityXml()));
+        result.put("user.repository", String.valueOf(context.mavenUserHome().localRepository()));
+
+        result.put(
+                "profiles.active", String.join(",", context.contextOverrides().getActiveProfileIds()));
+        result.put(
+                "profiles.inactive", String.join(",", context.contextOverrides().getInactiveProfileIds()));
+
+        result.put("basedir", String.valueOf(context.basedir()));
+
+        result.put(
+                "session.offline",
+                String.valueOf(context.repositorySystemSession().isOffline()));
+
+        int counter = 1;
+        for (RemoteRepository repository : context.remoteRepositories()) {
+            String repoPrefix = "repository." + counter++ + ".";
+            result.put(repoPrefix + "id", repository.getId());
+            result.put(repoPrefix + "url", repository.getUrl());
+            result.put(repoPrefix + "contentType", repository.getContentType());
+            result.put(
+                    repoPrefix + "release",
+                    String.valueOf(repository.getPolicy(false).isEnabled()));
+            result.put(
+                    repoPrefix + "snapshot",
+                    String.valueOf(repository.getPolicy(true).isEnabled()));
+            if (!repository.getMirroredRepositories().isEmpty()) {
+                repoPrefix += "mirroring.";
+                for (RemoteRepository mirrored : repository.getMirroredRepositories()) {
+                    result.put(repoPrefix + "id", mirrored.getId());
+                    result.put(repoPrefix + "url", mirrored.getUrl());
+                }
+            }
+        }
+
+        if (context.httpProxy() != null) {
+            HTTPProxy proxy = context.httpProxy();
+            result.put(
+                    "session.httpProxy",
+                    String.format("%s://%s:%s", proxy.getProtocol(), proxy.getHost(), proxy.getPort()));
+            result.put("session.nonProxyHosts", proxy.getNonProxyHosts());
+        }
+
+        return Result.success(result);
+    }
+
     @Override
     public ArtifactMapper parseArtifactMapperSpec(String spec) {
         return ArtifactMapper.build(context.repositorySystemSession().getConfigProperties(), spec);

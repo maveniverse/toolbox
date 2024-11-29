@@ -130,7 +130,7 @@
       </dependency>
       <dependency>
         <groupId>eu.maveniverse.maven.mima.runtime</groupId>
-        <artifactId>standalone-static-uber</artifactId>
+        <artifactId>standalone-sisu-uber</artifactId>
         <version>${version.mima}</version>
       </dependency>
       <dependency>
@@ -272,6 +272,24 @@
         <version>${version.jline}</version>
       </dependency>
 
+      <!-- DI -->
+      <dependency>
+        <groupId>javax.inject</groupId>
+        <artifactId>javax.inject</artifactId>
+        <version>1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.sisu</groupId>
+        <artifactId>org.eclipse.sisu.inject</artifactId>
+        <version>${version.sisu}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.inject</groupId>
+        <artifactId>guice</artifactId>
+        <version>6.0.0</version>
+      </dependency>
+
+      <!-- Test -->
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>

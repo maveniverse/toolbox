@@ -62,6 +62,8 @@ public interface ToolboxCommando {
 
     Result<String> dump();
 
+    Result<Map<String, String>> dumpAsMap();
+
     // Parsers
 
     /**

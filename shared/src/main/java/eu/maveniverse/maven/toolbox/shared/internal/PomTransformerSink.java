@@ -36,13 +36,28 @@ public final class PomTransformerSink implements Artifacts.Sink {
     }
 
     /**
-     * Creates "transform" sink, that accepts all artifacts and applies provided transformations to artifacts as-is.
+     * Creates trivial "transform" sink, that accepts all artifacts and applies provided transformations to artifacts as-is.
+     * If no POM file exists, will provide a plain/trivial "blank" POM.
      */
     public static PomTransformerSink transform(
             Output output, Path pom, Function<Artifact, PomTransformer.Transformation> transformations)
             throws IOException {
-        return new PomTransformerSink(
+        return transform(
                 output, pom, () -> BLANK_POM, ArtifactMatcher.any(), ArtifactMapper.identity(), transformations);
+    }
+
+    /**
+     * Creates "transform" sink, fully customizable.
+     */
+    public static PomTransformerSink transform(
+            Output output,
+            Path pom,
+            Supplier<String> pomSupplier,
+            Predicate<Artifact> artifactMatcher,
+            Function<Artifact, Artifact> artifactMapper,
+            Function<Artifact, PomTransformer.Transformation> transformations)
+            throws IOException {
+        return new PomTransformerSink(output, pom, pomSupplier, artifactMatcher, artifactMapper, transformations);
     }
 
     private static final String BLANK_POM = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //

@@ -20,6 +20,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
 import org.l2x6.pom.tuner.PomTransformer;
 
@@ -40,7 +41,8 @@ public final class PomTransformerSink implements Artifacts.Sink {
     public static PomTransformerSink transform(
             Output output, Path pom, Function<Artifact, PomTransformer.Transformation> transformations)
             throws IOException {
-        return new PomTransformerSink(output, pom, ArtifactMatcher.any(), ArtifactMapper.identity(), transformations);
+        return new PomTransformerSink(
+                output, pom, () -> BLANK_POM, ArtifactMatcher.any(), ArtifactMapper.identity(), transformations);
     }
 
     private static final String BLANK_POM = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
@@ -67,6 +69,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
      *
      * @param output The output.
      * @param pom The POM path, if not existing, will be created (as "blank").
+     * @param blankPomSupplier Required, if pom path points to a non-existent POM file.
      * @param artifactMatcher The artifact matcher.
      * @param artifactMapper The artifact mapper.
      * @param transformations The transformations to apply.
@@ -75,6 +78,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
     private PomTransformerSink(
             Output output,
             Path pom,
+            Supplier<String> blankPomSupplier,
             Predicate<Artifact> artifactMatcher,
             Function<Artifact, Artifact> artifactMapper,
             Function<Artifact, PomTransformer.Transformation> transformations)
@@ -89,7 +93,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
                     StandardCopyOption.REPLACE_EXISTING);
         } else {
             Files.createDirectories(pom.getParent());
-            Files.writeString(pom, BLANK_POM);
+            Files.writeString(pom, blankPomSupplier.get(), StandardCharsets.UTF_8);
             existingPom = false;
         }
         this.artifactMatcher = requireNonNull(artifactMatcher, "artifactMatcher");
@@ -121,7 +125,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
             Files.deleteIfExists(pom);
             if (existingPom) {
                 // return existing one backup
-                Files.copy(
+                Files.move(
                         pom.getParent().resolve(getPomPath().getFileName() + ".bak"),
                         pom,
                         StandardCopyOption.REPLACE_EXISTING);

@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -160,7 +159,6 @@ public final class PomTransformerSink implements Artifacts.Sink {
 
     private final Output output;
     private final Path pom;
-    private final boolean existingPom;
     private final Predicate<Artifact> artifactMatcher;
     private final Function<Artifact, Artifact> artifactMapper;
     private final Function<Artifact, PomTransformer.Transformation> transformations;
@@ -188,16 +186,9 @@ public final class PomTransformerSink implements Artifacts.Sink {
             throws IOException {
         this.output = requireNonNull(output, "output");
         this.pom = requireNonNull(pom, "pom").toAbsolutePath();
-        if (Files.isRegularFile(pom)) {
-            existingPom = true;
-            Files.copy(
-                    pom,
-                    pom.getParent().resolve(getPomPath().getFileName() + ".bak"),
-                    StandardCopyOption.REPLACE_EXISTING);
-        } else {
+        if (!Files.isRegularFile(pom)) {
             Files.createDirectories(pom.getParent());
             Files.writeString(pom, blankPomSupplier.get(), StandardCharsets.UTF_8);
-            existingPom = false;
         }
         this.artifactMatcher = requireNonNull(artifactMatcher, "artifactMatcher");
         this.artifactMapper = requireNonNull(artifactMapper, "artifactMapper");
@@ -226,13 +217,6 @@ public final class PomTransformerSink implements Artifacts.Sink {
     public void cleanup(Exception e) {
         try {
             Files.deleteIfExists(pom);
-            if (existingPom) {
-                // return existing one backup
-                Files.move(
-                        pom.getParent().resolve(getPomPath().getFileName() + ".bak"),
-                        pom,
-                        StandardCopyOption.REPLACE_EXISTING);
-            }
         } catch (IOException ex) {
             // ignore
         }

@@ -60,6 +60,7 @@
             <id>my-repo</id>
             <url>file:${basedir}/my-repo</url>
             <releases>
+                <checksumPolicy>warn</checksumPolicy>
                 <enabled>true</enabled>
             </releases>
             <snapshots>

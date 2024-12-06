@@ -108,6 +108,12 @@
       <artifactId>search-backend-smo</artifactId>
     </dependency>
 
+    <!-- POM edit -->
+    <dependency>
+      <groupId>org.l2x6.pom-tuner</groupId>
+      <artifactId>pom-tuner</artifactId>
+    </dependency>
+
     <!-- Commons Compress (unpack) -->
     <dependency>
       <groupId>org.apache.commons</groupId>

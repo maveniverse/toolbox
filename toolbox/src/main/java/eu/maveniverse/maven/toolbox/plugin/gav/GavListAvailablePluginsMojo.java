@@ -9,6 +9,8 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
+import eu.maveniverse.maven.toolbox.shared.internal.PomTransformerSink;
+import java.io.File;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -32,11 +34,27 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
     @Parameter(property = "groupIds")
     private String groupIds;
 
+    /**
+     * Generate POM out of results.
+     */
+    @CommandLine.Option(
+            names = {"--toPom"},
+            description = "Output it into given POM")
+    @Parameter(property = "toPom")
+    private File toPom;
+
     @Override
     protected Result<List<Artifact>> doExecute() throws Exception {
         if (groupIds == null || groupIds.trim().isEmpty()) {
             groupIds = String.join(",", mojoSettings.getPluginGroups());
         }
-        return getToolboxCommando().listAvailablePlugins(csv(groupIds));
+        Result<List<Artifact>> result = getToolboxCommando().listAvailablePlugins(csv(groupIds));
+        if (result.isSuccess() && toPom != null) {
+            try (PomTransformerSink sink =
+                    PomTransformerSink.transform(getOutput(), toPom.toPath(), PomTransformerSink.addManagedPlugin())) {
+                sink.accept(result.getData().orElseThrow());
+            }
+        }
+        return result;
     }
 }

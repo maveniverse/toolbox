@@ -240,7 +240,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
 
     @Override
     public void close() throws IOException {
-        new PomTransformer(pom, StandardCharsets.UTF_8, PomTransformer.SimpleElementWhitespace.EMPTY)
+        new PomTransformer(pom, StandardCharsets.UTF_8, PomTransformer.SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY)
                 .transform(applicableTransformations);
     }
 }

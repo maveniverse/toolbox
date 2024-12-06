@@ -35,7 +35,7 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
     private String groupIds;
 
     /**
-     * Generate POM out of results.
+     * Generate POM w/ pluginManagement out of results.
      */
     @CommandLine.Option(
             names = {"--toPom"},

@@ -36,6 +36,8 @@ import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.Sink;
 import eu.maveniverse.maven.toolbox.shared.Source;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
+import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -276,6 +278,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         return Result.success("Success");
     }
 
+    @Override
     public Result<Map<String, String>> dumpAsMap() {
         HashMap<String, String> result = new HashMap<>();
         result.put("toolbox.version", getVersion());
@@ -341,6 +344,16 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }
 
         return Result.success(result);
+    }
+
+    @Override
+    public ToolboxResolver getToolboxResolver() {
+        return toolboxResolver;
+    }
+
+    @Override
+    public ToolboxSearchApi getToolboxSearchApi() {
+        return toolboxSearchApi;
     }
 
     @Override

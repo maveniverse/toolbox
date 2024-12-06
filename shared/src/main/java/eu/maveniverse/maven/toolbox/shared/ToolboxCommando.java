@@ -64,6 +64,12 @@ public interface ToolboxCommando {
 
     Result<Map<String, String>> dumpAsMap();
 
+    // helpers
+
+    ToolboxResolver getToolboxResolver();
+
+    ToolboxSearchApi getToolboxSearchApi();
+
     // Parsers
 
     /**

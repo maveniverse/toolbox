@@ -12,6 +12,7 @@ import static org.apache.maven.search.api.request.BooleanQuery.and;
 import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 
 import eu.maveniverse.maven.mima.context.ContextOverrides;
+import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ import org.eclipse.aether.artifact.ArtifactType;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 
-public class ToolboxSearchApiImpl {
+public class ToolboxSearchApiImpl implements ToolboxSearchApi {
     private final Output output;
 
     public ToolboxSearchApiImpl(Output output) {

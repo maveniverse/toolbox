@@ -162,7 +162,7 @@
       <artifactId>search-backend-smo</artifactId>
     </dependency>
 
-    <!-- POM edit -->
+    <!-- POM tuner -->
     <dependency>
       <groupId>org.l2x6.pom-tuner</groupId>
       <artifactId>pom-tuner</artifactId>

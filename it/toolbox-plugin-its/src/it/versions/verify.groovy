@@ -9,5 +9,5 @@ String buildLog = new File(basedir, 'build.log').text
 assert !buildLog.contains('ERROR')
 
 String pom = new File(basedir, 'pom.xml').text
-assert pom.contains('>1.1<')
-assert !pom.contains('>1.0<')
+String expectedPom = new File(basedir, 'expected-pom.xml').text
+assert pom != null && expectedPom != null && pom.equals(expectedPom)

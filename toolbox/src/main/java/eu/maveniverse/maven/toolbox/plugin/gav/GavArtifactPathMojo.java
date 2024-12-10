@@ -20,7 +20,7 @@ import picocli.CommandLine;
 /**
  * Prints Maven Artifact path in local repository.
  */
-@CommandLine.Command(name = "artifact-path", description = "Prints path of Maven Artifacts in local repository")
+@CommandLine.Command(name = "artifact-path", description = "Prints expected relvative path for a given Maven coordinate in a local repository")
 @Mojo(name = "gav-artifact-path", requiresProject = false, threadSafe = true)
 public class GavArtifactPathMojo extends GavMojoSupport {
     /**

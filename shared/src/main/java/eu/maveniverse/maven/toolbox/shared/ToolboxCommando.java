@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
@@ -395,4 +397,50 @@ public interface ToolboxCommando {
      */
     Result<Map<Artifact, List<Version>>> versions(
             String context, Source<Artifact> artifacts, Predicate<Version> versionPredicate) throws Exception;
+
+    // POM editing
+
+    /**
+     * The version operation mode to apply.
+     */
+    enum Op {
+        /**
+         * Always add: if exists "update" version, if not exist, create new entry with it.
+         */
+        UPSERT,
+        /**
+         * Add only if it exists: "update" version, otherwise no-op.
+         */
+        UPDATE,
+        /**
+         * Remove if exists.
+         */
+        DELETE
+    }
+
+    interface EditSession extends Closeable {
+        Path editedPom();
+    }
+
+    EditSession createEditSession(Path pom) throws IOException;
+
+    /**
+     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate)} query result.
+     */
+    default List<Artifact> calculateUpdates(Map<Artifact, List<Version>> versions) {
+        return versions.entrySet().stream()
+                .filter(e -> !e.getValue().isEmpty())
+                .map(e -> e.getKey()
+                        .setVersion(e.getValue().get(e.getValue().size() - 1).toString()))
+                .collect(Collectors.toList());
+    }
+    ;
+
+    Result<List<Artifact>> doManagedPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception;
+
+    Result<List<Artifact>> doPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception;
+
+    Result<List<Artifact>> doManagedDependencies(EditSession es, Op op, Source<Artifact> artifacts) throws Exception;
+
+    Result<List<Artifact>> doDependencies(EditSession es, Op op, Source<Artifact> artifacts) throws Exception;
 }

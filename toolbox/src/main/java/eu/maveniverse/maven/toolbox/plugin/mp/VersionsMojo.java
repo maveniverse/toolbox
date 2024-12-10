@@ -11,8 +11,12 @@ import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.util.List;
+import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.version.Version;
 
 /**
  * Lists available versions of Maven Project dependencies.
@@ -31,21 +35,47 @@ public class VersionsMojo extends MPMojoSupport {
     @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
     private String artifactVersionMatcherSpec;
 
+    /**
+     * Apply results to POM.
+     */
+    @Parameter(property = "applyToPom")
+    private boolean applyToPom;
+
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        toolboxCommando.versions(
+        Result<Map<Artifact, List<Version>>> managedDependencies = toolboxCommando.versions(
                 "managed dependencies",
                 () ->
                         projectManagedDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec))
                                 .stream()
                                 .map(ResolutionRoot::getArtifact),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
-        toolboxCommando.versions(
+        Result<Map<Artifact, List<Version>>> dependencies = toolboxCommando.versions(
                 "dependencies",
                 () -> projectDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec)).stream()
                         .map(ResolutionRoot::getArtifact),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
+
+        if (applyToPom) {
+            List<Artifact> managedDependenciesUpdates = toolboxCommando.calculateUpdates(
+                    managedDependencies.getData().orElseThrow());
+            List<Artifact> dependenciesUpdates =
+                    toolboxCommando.calculateUpdates(dependencies.getData().orElseThrow());
+            if (!managedDependenciesUpdates.isEmpty() || !dependenciesUpdates.isEmpty()) {
+                try (ToolboxCommando.EditSession editSession =
+                        toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
+                    if (!managedDependenciesUpdates.isEmpty()) {
+                        toolboxCommando.doManagedDependencies(
+                                editSession, ToolboxCommando.Op.UPDATE, managedDependenciesUpdates::stream);
+                    }
+                    if (!dependenciesUpdates.isEmpty()) {
+                        toolboxCommando.doDependencies(
+                                editSession, ToolboxCommando.Op.UPDATE, dependenciesUpdates::stream);
+                    }
+                }
+            }
+        }
         return Result.success(true);
     }
 }

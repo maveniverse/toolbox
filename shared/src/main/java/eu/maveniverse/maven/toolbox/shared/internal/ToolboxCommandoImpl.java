@@ -29,6 +29,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactRecorder;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
+import eu.maveniverse.maven.toolbox.shared.FileUtils;
 import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
@@ -65,6 +66,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
@@ -105,6 +107,7 @@ import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
+import org.l2x6.pom.tuner.PomTransformer;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Output output;
@@ -1315,6 +1318,115 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             }
         }
         return Result.success(result);
+    }
+
+    // POM editing
+
+    @Override
+    public EditSession createEditSession(Path pom) throws IOException {
+        return new EditSession() {
+            final FileUtils.CollocatedTempFile ctf = FileUtils.newTempFile(pom, true);
+
+            @Override
+            public Path editedPom() {
+                return ctf.getPath();
+            }
+
+            @Override
+            public void close() throws IOException {
+                ctf.move();
+                ctf.close();
+            }
+        };
+    }
+
+    protected Result<List<Artifact>> doEdit(
+            EditSession es,
+            Function<Artifact, PomTransformer.Transformation> transformation,
+            Source<Artifact> artifacts)
+            throws Exception {
+        try (PomTransformerSink sink = PomTransformerSink.transform(output, es.editedPom(), transformation)) {
+            List<Artifact> res = artifacts.get().collect(Collectors.toList());
+            sink.accept(res);
+            return Result.success(res);
+        }
+    }
+
+    @Override
+    public Result<List<Artifact>> doManagedPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
+        Function<Artifact, PomTransformer.Transformation> transformation;
+        switch (op) {
+            case UPSERT:
+                transformation = PomTransformerSink.updateManagedPlugin(true);
+                break;
+            case UPDATE:
+                transformation = PomTransformerSink.updateManagedPlugin(false);
+                break;
+            case DELETE:
+                transformation = PomTransformerSink.deleteManagedPlugin();
+                break;
+            default:
+                throw new IllegalStateException("Unsupported operation");
+        }
+        return doEdit(es, transformation, artifacts);
+    }
+
+    @Override
+    public Result<List<Artifact>> doPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
+        Function<Artifact, PomTransformer.Transformation> transformation;
+        switch (op) {
+            case UPSERT:
+                transformation = PomTransformerSink.updatePlugin(true);
+                break;
+            case UPDATE:
+                transformation = PomTransformerSink.updatePlugin(false);
+                break;
+            case DELETE:
+                transformation = PomTransformerSink.deletePlugin();
+                break;
+            default:
+                throw new IllegalStateException("Unsupported operation");
+        }
+        return doEdit(es, transformation, artifacts);
+    }
+
+    @Override
+    public Result<List<Artifact>> doManagedDependencies(EditSession es, Op op, Source<Artifact> artifacts)
+            throws Exception {
+        Function<Artifact, PomTransformer.Transformation> transformation;
+        switch (op) {
+            case UPSERT:
+                transformation = PomTransformerSink.updateManagedDependency(true);
+                break;
+            case UPDATE:
+                transformation = PomTransformerSink.updateManagedDependency(false);
+                break;
+            case DELETE:
+                transformation = PomTransformerSink.deleteManagedDependency();
+                break;
+            default:
+                throw new IllegalStateException("Unsupported operation");
+        }
+        return doEdit(es, transformation, artifacts);
+    }
+
+    @Override
+    public Result<List<Artifact>> doDependencies(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
+        Function<Artifact, PomTransformer.Transformation> transformation;
+        switch (op) {
+            case UPSERT:
+                transformation = PomTransformerSink.updateDependency(true);
+                break;
+            case UPDATE:
+                transformation = PomTransformerSink.updateDependency(false);
+                break;
+            case DELETE:
+                transformation = PomTransformerSink.deleteDependency();
+                break;
+            default:
+                throw new IllegalStateException("Unsupported operation");
+        }
+        return doEdit(es, transformation, artifacts);
     }
 
     // Utils

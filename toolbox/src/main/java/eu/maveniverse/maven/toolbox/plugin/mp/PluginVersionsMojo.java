@@ -12,8 +12,12 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.util.List;
+import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.version.Version;
 
 /**
  * Lists available versions of Maven Project plugins.
@@ -32,22 +36,47 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
     private String artifactVersionMatcherSpec;
 
+    /**
+     * Apply results to POM.
+     */
+    @Parameter(property = "applyToPom")
+    private boolean applyToPom;
+
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
-        toolboxCommando.versions(
+        Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
                 "managed plugins",
                 () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
-        toolboxCommando.versions(
+        Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
                 "plugins",
                 () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
+
+        if (applyToPom) {
+            List<Artifact> managedPluginsUpdates =
+                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow());
+            List<Artifact> pluginsUpdates =
+                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow());
+            if (!managedPluginsUpdates.isEmpty() || !pluginsUpdates.isEmpty()) {
+                try (ToolboxCommando.EditSession editSession =
+                        toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
+                    if (!managedPluginsUpdates.isEmpty()) {
+                        toolboxCommando.doManagedPlugins(
+                                editSession, ToolboxCommando.Op.UPDATE, managedPluginsUpdates::stream);
+                    }
+                    if (!pluginsUpdates.isEmpty()) {
+                        toolboxCommando.doPlugins(editSession, ToolboxCommando.Op.UPDATE, pluginsUpdates::stream);
+                    }
+                }
+            }
+        }
         return Result.success(true);
     }
 }

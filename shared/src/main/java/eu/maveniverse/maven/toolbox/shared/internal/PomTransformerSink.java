@@ -25,149 +25,193 @@ import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.model.Ga;
+import org.l2x6.pom.tuner.model.Gavtcs;
 import org.w3c.dom.Document;
 
 /**
  * Construction to accept collection of artifacts, and applies it to some POM based on provided transformations.
  */
 public final class PomTransformerSink implements Artifacts.Sink {
-    public static Function<Artifact, PomTransformer.Transformation> upsertManagedPlugin() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
-    }
+    public static Function<Artifact, PomTransformer.Transformation> updateManagedPlugin(boolean upsert) {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {
+            List<Ga> gas = List.of(Ga.of(a.getGroupId(), a.getArtifactId()));
+            final PomTransformer.ContainerElement targetSection = context.getContainerElement("build")
+                    .flatMap(e -> e.getChildContainerElement("pluginManagement"))
+                    .flatMap(e -> e.getChildContainerElement("plugins"))
+                    .orElse(null);
 
-    public static Function<Artifact, PomTransformer.Transformation> updateManagedPlugin() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+            boolean present = false;
+            if (targetSection != null) {
+                for (PomTransformer.ContainerElement element : targetSection.childElements()) {
+                    final Ga ga = element.asGavtcs().toGa();
+                    if (gas.contains(ga)) {
+                        present = true;
+                        Optional<PomTransformer.ContainerElement> versionNode = element.childElementsStream()
+                                .filter(ch -> "version".equals(ch.getNode().getLocalName()))
+                                .findFirst();
+                        if (versionNode.isEmpty()) {
+                            // nothing to do; is managed
+                        } else {
+                            String value = versionNode.orElseThrow().getNode().getTextContent();
+                            if (value != null && value.startsWith("${") && value.endsWith("}")) {
+                                // nothing to do, is expression
+                                String versionProperty = value.substring(2, value.length() - 1);
+                                PomTransformer.Transformation.addOrSetProperty(versionProperty, a.getVersion())
+                                        .perform(document, context);
+                            } else {
+                                versionNode.orElseThrow().getNode().setTextContent(a.getVersion());
+                            }
+                        }
+                    }
+                }
+            }
+            if (upsert && !present) {
+                context.getOrAddContainerElement("build")
+                        .getOrAddChildContainerElement("pluginManagement")
+                        .getOrAddChildContainerElement("plugins")
+                        .addGavtcs(new Gavtcs(a.getGroupId(), a.getArtifactId(), a.getVersion()));
+            }
+        };
     }
 
     public static Function<Artifact, PomTransformer.Transformation> deleteManagedPlugin() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+        // TODO:
+        // return a -> PomTransformer.Transformation.removeManagedPlugins(null, true, true,
+        // Gavtcs.equalGroupIdAndArtifactId(a.getGroupId(), a.getArtifactId()));
+        throw new RuntimeException("not implemented");
     }
 
-    public static Function<Artifact, PomTransformer.Transformation> upsertPlugin() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
-    }
+    public static Function<Artifact, PomTransformer.Transformation> updatePlugin(boolean upsert) {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {
+            List<Ga> gas = List.of(Ga.of(a.getGroupId(), a.getArtifactId()));
+            final PomTransformer.ContainerElement targetSection = context.getContainerElement("build")
+                    .flatMap(e -> e.getChildContainerElement("plugins"))
+                    .orElse(null);
 
-    public static Function<Artifact, PomTransformer.Transformation> updatePlugin() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+            boolean present = false;
+            if (targetSection != null) {
+                for (PomTransformer.ContainerElement element : targetSection.childElements()) {
+                    final Ga ga = element.asGavtcs().toGa();
+                    if (gas.contains(ga)) {
+                        present = true;
+                        Optional<PomTransformer.ContainerElement> versionNode = element.childElementsStream()
+                                .filter(ch -> "version".equals(ch.getNode().getLocalName()))
+                                .findFirst();
+                        if (versionNode.isEmpty()) {
+                            // nothing to do; is managed
+                        } else {
+                            String value = versionNode.orElseThrow().getNode().getTextContent();
+                            if (value != null && value.startsWith("${") && value.endsWith("}")) {
+                                // nothing to do, is expression
+                                String versionProperty = value.substring(2, value.length() - 1);
+                                PomTransformer.Transformation.addOrSetProperty(versionProperty, a.getVersion())
+                                        .perform(document, context);
+                            } else {
+                                versionNode.orElseThrow().getNode().setTextContent(a.getVersion());
+                            }
+                        }
+                    }
+                }
+            }
+            if (upsert && !present) {
+                context.getOrAddContainerElement("build")
+                        .getOrAddChildContainerElement("plugins")
+                        .addGavtcs(new Gavtcs(a.getGroupId(), a.getArtifactId(), a.getVersion()));
+            }
+        };
     }
 
     public static Function<Artifact, PomTransformer.Transformation> deletePlugin() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+        return a -> PomTransformer.Transformation.removePlugins(
+                null, true, true, Gavtcs.equalGroupIdAndArtifactId(a.getGroupId(), a.getArtifactId()));
     }
 
-    public static Function<Artifact, PomTransformer.Transformation> upsertManagedDependency() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
-    }
+    public static Function<Artifact, PomTransformer.Transformation> updateManagedDependency(boolean upsert) {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {
+            List<Ga> gas = List.of(Ga.of(a.getGroupId(), a.getArtifactId()));
+            final PomTransformer.ContainerElement targetSection = context.getContainerElement("dependencyManagement")
+                    .flatMap(e -> e.getChildContainerElement("dependencies"))
+                    .orElse(null);
 
-    public static Function<Artifact, PomTransformer.Transformation> updateManagedDependency() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+            boolean present = false;
+            if (targetSection != null) {
+                for (PomTransformer.ContainerElement element : targetSection.childElements()) {
+                    final Ga ga = element.asGavtcs().toGa();
+                    if (gas.contains(ga)) {
+                        present = true;
+                        Optional<PomTransformer.ContainerElement> versionNode = element.childElementsStream()
+                                .filter(ch -> "version".equals(ch.getNode().getLocalName()))
+                                .findFirst();
+                        if (versionNode.isEmpty()) {
+                            // nothing to do; is managed
+                        } else {
+                            String value = versionNode.orElseThrow().getNode().getTextContent();
+                            if (value != null && value.startsWith("${") && value.endsWith("}")) {
+                                // nothing to do, is expression
+                                String versionProperty = value.substring(2, value.length() - 1);
+                                PomTransformer.Transformation.addOrSetProperty(versionProperty, a.getVersion())
+                                        .perform(document, context);
+                            } else {
+                                versionNode.orElseThrow().getNode().setTextContent(a.getVersion());
+                            }
+                        }
+                    }
+                }
+            }
+            if (upsert && !present) {
+                context.getOrAddContainerElement("dependencyManagement")
+                        .getOrAddChildContainerElement("dependencies")
+                        .addGavtcs(new Gavtcs(a.getGroupId(), a.getArtifactId(), a.getVersion()));
+            }
+        };
     }
 
     public static Function<Artifact, PomTransformer.Transformation> deleteManagedDependency() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+        return a -> PomTransformer.Transformation.removeManagedDependencies(
+                null, true, true, Gavtcs.equalGroupIdAndArtifactId(a.getGroupId(), a.getArtifactId()));
     }
 
-    public static Function<Artifact, PomTransformer.Transformation> upsertDependency() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
-    }
+    public static Function<Artifact, PomTransformer.Transformation> updateDependency(boolean upsert) {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {
+            List<Ga> gas = List.of(Ga.of(a.getGroupId(), a.getArtifactId()));
+            final PomTransformer.ContainerElement targetSection =
+                    context.getContainerElement("dependencies").orElse(null);
 
-    public static Function<Artifact, PomTransformer.Transformation> updateDependency() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+            boolean present = false;
+            if (targetSection != null) {
+                for (PomTransformer.ContainerElement element : targetSection.childElements()) {
+                    final Ga ga = element.asGavtcs().toGa();
+                    if (gas.contains(ga)) {
+                        present = true;
+                        Optional<PomTransformer.ContainerElement> versionNode = element.childElementsStream()
+                                .filter(ch -> "version".equals(ch.getNode().getLocalName()))
+                                .findFirst();
+                        if (versionNode.isEmpty()) {
+                            // nothing to do; is managed
+                        } else {
+                            String value = versionNode.orElseThrow().getNode().getTextContent();
+                            if (value != null && value.startsWith("${") && value.endsWith("}")) {
+                                // nothing to do, is expression
+                                String versionProperty = value.substring(2, value.length() - 1);
+                                PomTransformer.Transformation.addOrSetProperty(versionProperty, a.getVersion())
+                                        .perform(document, context);
+                            } else {
+                                versionNode.orElseThrow().getNode().setTextContent(a.getVersion());
+                            }
+                        }
+                    }
+                }
+            }
+            if (upsert && !present) {
+                context.getOrAddContainerElement("dependencies")
+                        .addGavtcs(new Gavtcs(a.getGroupId(), a.getArtifactId(), a.getVersion()));
+            }
+        };
     }
 
     public static Function<Artifact, PomTransformer.Transformation> deleteDependency() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
-    }
-
-    /**
-     * Transformation to add received artifact as managed plugin.
-     */
-    public static Function<Artifact, PomTransformer.Transformation> addManagedPlugin() {
-        return a -> PomTransformer.Transformation.addManagedPlugin(a.getGroupId(), a.getArtifactId(), a.getVersion());
-    }
-
-    /**
-     * Transformation to set received dependency artifact version on POM dependency artifact.
-     */
-    public static Function<Artifact, PomTransformer.Transformation> updateDependencyVersion() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {
-            List<Ga> gas = List.of(Ga.of(a.getGroupId(), a.getArtifactId()));
-            final PomTransformer.ContainerElement profileParent =
-                    context.getProfileParent(null).orElse(null);
-            String versionProperty = null;
-            if (profileParent != null) {
-                final PomTransformer.ContainerElement dependencyManagementDeps =
-                        profileParent.getChildContainerElement("dependencies").orElse(null);
-
-                if (dependencyManagementDeps != null) {
-                    for (PomTransformer.ContainerElement dep : dependencyManagementDeps.childElements()) {
-                        final Ga ga = dep.asGavtcs().toGa();
-                        if (gas.contains(ga)) {
-                            Optional<PomTransformer.ContainerElement> versionNode = dep.childElementsStream()
-                                    .filter(ch -> "version".equals(ch.getNode().getLocalName()))
-                                    .findFirst();
-                            if (versionNode.isEmpty()) {
-                                // nothing to do; is managed
-                            } else {
-                                String value =
-                                        versionNode.orElseThrow().getNode().getTextContent();
-                                if (value != null && value.startsWith("${") && value.endsWith("}")) {
-                                    // nothing to do, is expression
-                                    versionProperty = value.substring(2, value.length() - 1);
-                                    PomTransformer.Transformation.addOrSetProperty(versionProperty, a.getVersion())
-                                            .perform(document, context);
-                                } else {
-                                    versionNode.orElseThrow().getNode().setTextContent(a.getVersion());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        };
-    }
-
-    /**
-     * Transformation to set received dependency artifact version on POM dependency artifact.
-     */
-    public static Function<Artifact, PomTransformer.Transformation> updateManagedDependencyVersion() {
-        return a -> (Document document, PomTransformer.TransformationContext context) -> {
-            List<Ga> gas = List.of(Ga.of(a.getGroupId(), a.getArtifactId()));
-            final PomTransformer.ContainerElement profileParent =
-                    context.getProfileParent(null).orElse(null);
-            String versionProperty = null;
-            if (profileParent != null) {
-                final PomTransformer.ContainerElement dependencyManagementDeps = profileParent
-                        .getChildContainerElement("dependencyManagement")
-                        .flatMap(e -> e.getChildContainerElement("dependencies"))
-                        .orElse(null);
-
-                if (dependencyManagementDeps != null) {
-                    for (PomTransformer.ContainerElement dep : dependencyManagementDeps.childElements()) {
-                        final Ga ga = dep.asGavtcs().toGa();
-                        if (gas.contains(ga)) {
-                            Optional<PomTransformer.ContainerElement> versionNode = dep.childElementsStream()
-                                    .filter(ch -> "version".equals(ch.getNode().getLocalName()))
-                                    .findFirst();
-                            if (versionNode.isEmpty()) {
-                                // nothing to do; is managed
-                            } else {
-                                String value =
-                                        versionNode.orElseThrow().getNode().getTextContent();
-                                if (value != null && value.startsWith("${") && value.endsWith("}")) {
-                                    // nothing to do, is expression
-                                    versionProperty = value.substring(2, value.length() - 1);
-                                    PomTransformer.Transformation.addOrSetProperty(versionProperty, a.getVersion())
-                                            .perform(document, context);
-                                } else {
-                                    versionNode.orElseThrow().getNode().setTextContent(a.getVersion());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        };
+        return a -> PomTransformer.Transformation.removeDependencies(
+                null, true, true, Gavtcs.equalGroupIdAndArtifactId(a.getGroupId(), a.getArtifactId()));
     }
 
     /**

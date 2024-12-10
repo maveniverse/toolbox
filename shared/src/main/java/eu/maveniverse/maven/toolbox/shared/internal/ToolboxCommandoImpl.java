@@ -1357,10 +1357,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         Function<Artifact, PomTransformer.Transformation> transformation;
         switch (op) {
             case UPSERT:
-                transformation = PomTransformerSink.upsertManagedPlugin();
+                transformation = PomTransformerSink.updateManagedPlugin(true);
                 break;
             case UPDATE:
-                transformation = PomTransformerSink.updateManagedPlugin();
+                transformation = PomTransformerSink.updateManagedPlugin(false);
                 break;
             case DELETE:
                 transformation = PomTransformerSink.deleteManagedPlugin();
@@ -1376,10 +1376,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         Function<Artifact, PomTransformer.Transformation> transformation;
         switch (op) {
             case UPSERT:
-                transformation = PomTransformerSink.upsertPlugin();
+                transformation = PomTransformerSink.updatePlugin(true);
                 break;
             case UPDATE:
-                transformation = PomTransformerSink.updatePlugin();
+                transformation = PomTransformerSink.updatePlugin(false);
                 break;
             case DELETE:
                 transformation = PomTransformerSink.deletePlugin();
@@ -1396,10 +1396,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         Function<Artifact, PomTransformer.Transformation> transformation;
         switch (op) {
             case UPSERT:
-                transformation = PomTransformerSink.upsertManagedDependency();
+                transformation = PomTransformerSink.updateManagedDependency(true);
                 break;
             case UPDATE:
-                transformation = PomTransformerSink.updateManagedDependency();
+                transformation = PomTransformerSink.updateManagedDependency(false);
                 break;
             case DELETE:
                 transformation = PomTransformerSink.deleteManagedDependency();
@@ -1415,10 +1415,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         Function<Artifact, PomTransformer.Transformation> transformation;
         switch (op) {
             case UPSERT:
-                transformation = PomTransformerSink.upsertDependency();
+                transformation = PomTransformerSink.updateDependency(true);
                 break;
             case UPDATE:
-                transformation = PomTransformerSink.updateDependency();
+                transformation = PomTransformerSink.updateDependency(false);
                 break;
             case DELETE:
                 transformation = PomTransformerSink.deleteDependency();

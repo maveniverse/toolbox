@@ -9,7 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
-import eu.maveniverse.maven.toolbox.shared.internal.PomTransformerSink;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.File;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -43,6 +43,15 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
     @Parameter(property = "toPom")
     private File toPom;
 
+    /**
+     * Whether to update existing only, or upsert.
+     */
+    @CommandLine.Option(
+            names = {"--upsert"},
+            description = "Whether to update existing only, or upsert")
+    @Parameter(property = "upsert")
+    private boolean upsert;
+
     @Override
     protected Result<List<Artifact>> doExecute() throws Exception {
         if (groupIds == null || groupIds.trim().isEmpty()) {
@@ -50,9 +59,12 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
         }
         Result<List<Artifact>> result = getToolboxCommando().listAvailablePlugins(csv(groupIds));
         if (result.isSuccess() && toPom != null) {
-            try (PomTransformerSink sink =
-                    PomTransformerSink.transform(getOutput(), toPom.toPath(), PomTransformerSink.addManagedPlugin())) {
-                sink.accept(result.getData().orElseThrow());
+            try (ToolboxCommando.EditSession es = getToolboxCommando().createEditSession(toPom.toPath())) {
+                return getToolboxCommando()
+                        .doManagedPlugins(
+                                es,
+                                upsert ? ToolboxCommando.Op.UPSERT : ToolboxCommando.Op.UPDATE,
+                                () -> result.getData().orElseThrow().stream());
             }
         }
         return result;

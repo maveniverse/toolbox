@@ -272,7 +272,7 @@
         <version>${version.jline}</version>
       </dependency>
 
-      <!-- POM magic -->
+      <!-- POM edit -->
       <dependency>
         <groupId>org.l2x6.pom-tuner</groupId>
         <artifactId>pom-tuner</artifactId>

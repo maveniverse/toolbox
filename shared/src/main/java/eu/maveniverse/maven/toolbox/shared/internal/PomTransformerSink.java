@@ -31,6 +31,54 @@ import org.w3c.dom.Document;
  * Construction to accept collection of artifacts, and applies it to some POM based on provided transformations.
  */
 public final class PomTransformerSink implements Artifacts.Sink {
+    public static Function<Artifact, PomTransformer.Transformation> upsertManagedPlugin() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
+    public static Function<Artifact, PomTransformer.Transformation> updateManagedPlugin() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
+    public static Function<Artifact, PomTransformer.Transformation> deleteManagedPlugin() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
+    public static Function<Artifact, PomTransformer.Transformation> upsertPlugin() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
+    public static Function<Artifact, PomTransformer.Transformation> updatePlugin() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
+    public static Function<Artifact, PomTransformer.Transformation> deletePlugin() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
+    public static Function<Artifact, PomTransformer.Transformation> upsertManagedDependency() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
+    public static Function<Artifact, PomTransformer.Transformation> updateManagedDependency() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
+    public static Function<Artifact, PomTransformer.Transformation> deleteManagedDependency() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
+    public static Function<Artifact, PomTransformer.Transformation> upsertDependency() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
+    public static Function<Artifact, PomTransformer.Transformation> updateDependency() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
+    public static Function<Artifact, PomTransformer.Transformation> deleteDependency() {
+        return a -> (Document document, PomTransformer.TransformationContext context) -> {};
+    }
+
     /**
      * Transformation to add received artifact as managed plugin.
      */

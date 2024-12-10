@@ -8,11 +8,9 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.FileUtils;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.internal.PomTransformerSink;
 import java.util.List;
 import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -60,27 +58,22 @@ public class VersionsMojo extends MPMojoSupport {
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
 
         if (applyToPom) {
-            try (FileUtils.CollocatedTempFile pom =
-                    FileUtils.newTempFile(mavenProject.getFile().toPath(), true)) {
-                try (PomTransformerSink sink = PomTransformerSink.transform(
-                        getOutput(), pom.getPath(), PomTransformerSink.updateManagedDependencyVersion())) {
-                    sink.accept(managedDependencies.getData().orElseThrow().entrySet().stream()
-                            .filter(e -> !e.getValue().isEmpty())
-                            .map(e -> e.getKey()
-                                    .setVersion(e.getValue()
-                                            .get(e.getValue().size() - 1)
-                                            .toString())));
+            List<Artifact> managedDependenciesUpdates = toolboxCommando.calculateUpdates(
+                    managedDependencies.getData().orElseThrow());
+            List<Artifact> dependenciesUpdates =
+                    toolboxCommando.calculateUpdates(dependencies.getData().orElseThrow());
+            if (!managedDependenciesUpdates.isEmpty() || !dependenciesUpdates.isEmpty()) {
+                try (ToolboxCommando.EditSession editSession =
+                        toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
+                    if (!managedDependenciesUpdates.isEmpty()) {
+                        toolboxCommando.doManagedDependencies(
+                                editSession, ToolboxCommando.Op.UPDATE, managedDependenciesUpdates::stream);
+                    }
+                    if (!dependenciesUpdates.isEmpty()) {
+                        toolboxCommando.doDependencies(
+                                editSession, ToolboxCommando.Op.UPDATE, dependenciesUpdates::stream);
+                    }
                 }
-                try (PomTransformerSink sink = PomTransformerSink.transform(
-                        getOutput(), pom.getPath(), PomTransformerSink.updateDependencyVersion())) {
-                    sink.accept(dependencies.getData().orElseThrow().entrySet().stream()
-                            .filter(e -> !e.getValue().isEmpty())
-                            .map(e -> e.getKey()
-                                    .setVersion(e.getValue()
-                                            .get(e.getValue().size() - 1)
-                                            .toString())));
-                }
-                pom.move();
             }
         }
         return Result.success(true);

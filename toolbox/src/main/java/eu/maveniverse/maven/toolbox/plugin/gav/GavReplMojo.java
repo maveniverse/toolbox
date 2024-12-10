@@ -15,8 +15,8 @@ import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.nio.file.Path;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.jline.builtins.ConfigurationPath;
-import org.jline.console.SystemRegistry;
 import org.jline.console.impl.Builtins;
+import org.jline.console.impl.SimpleSystemRegistryImpl;
 import org.jline.console.impl.SystemRegistryImpl;
 import org.jline.keymap.KeyMap;
 import org.jline.reader.Binding;
@@ -27,10 +27,14 @@ import org.jline.reader.MaskingCallback;
 import org.jline.reader.Parser;
 import org.jline.reader.Reference;
 import org.jline.reader.UserInterruptException;
+import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.AttributedStringBuilder;
+import org.jline.utils.AttributedStyle;
+import org.jline.utils.InfoCmp;
 import org.jline.widget.TailTipWidgets;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
@@ -54,22 +58,30 @@ public class GavReplMojo extends GavMojoSupport {
         // set up picocli commands
         CommandLine cmd = new CommandLine(new CLI());
         PicocliCommands picocliCommands = new PicocliCommands(cmd);
+        picocliCommands.name("Maveniverse Toolbox");
         Parser parser = new DefaultParser();
 
         try (Terminal terminal = TerminalBuilder.builder().name("Toolbox").build()) {
-            SystemRegistry systemRegistry = new SystemRegistryImpl(parser, terminal, context::basedir, configPath);
+            SimpleSystemRegistryImpl systemRegistry =
+                    new SimpleSystemRegistryImpl(parser, terminal, context::basedir, configPath);
             systemRegistry.setCommandRegistries(builtins, picocliCommands);
 
             Path history = context.mavenUserHome().basedir().resolve(".mima_history");
             LineReader reader = LineReaderBuilder.builder()
                     .terminal(terminal)
                     .history(new DefaultHistory())
+                    .highlighter(new ReplHighlighter())
                     .completer(systemRegistry.completer())
                     .parser(parser)
                     .variable(LineReader.LIST_MAX, 50) // max tab completion candidates
                     .variable(LineReader.HISTORY_FILE, history)
+                    .variable(LineReader.OTHERS_GROUP_NAME, "Others")
+                    .variable(LineReader.COMPLETION_STYLE_GROUP, "fg:blue,bold")
+                    .variable("HELP_COLORS", "ti=1;34:co=38:ar=3:op=33:de=90")
+                    .option(LineReader.Option.GROUP_PERSIST, true)
                     .build();
             builtins.setLineReader(reader);
+            systemRegistry.setLineReader(reader);
             new TailTipWidgets(reader, systemRegistry::commandDescription, 5, TailTipWidgets.TipType.COMPLETER);
             KeyMap<Binding> keyMap = reader.getKeyMaps().get("main");
             keyMap.bind(new Reference("tailtip-toggle"), KeyMap.alt("s"));
@@ -94,6 +106,21 @@ public class GavReplMojo extends GavMojoSupport {
                     systemRegistry.trace(e);
                     return Result.failure(e.getMessage());
                 }
+            }
+        }
+    }
+
+    static class ReplHighlighter extends DefaultHighlighter {
+        @Override
+        protected void commandStyle(LineReader reader, AttributedStringBuilder sb, boolean enable) {
+            if (enable) {
+                if (reader.getTerminal().getNumericCapability(InfoCmp.Capability.max_colors) >= 256) {
+                    sb.style(AttributedStyle.DEFAULT.bold().foreground(69));
+                } else {
+                    sb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.CYAN));
+                }
+            } else {
+                sb.style(AttributedStyle.DEFAULT.boldOff().foregroundOff());
             }
         }
     }

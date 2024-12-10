@@ -14,9 +14,9 @@ import org.apache.maven.plugins.annotations.Mojo;
 import picocli.CommandLine;
 
 /**
- * Prints Maven Local Repository path.
+ * Prints Maven Local Repository basedir.
  */
-@CommandLine.Command(name = "local-repository-path", description = "Prints path of Maven Local Repository")
+@CommandLine.Command(name = "local-repository-path", description = "Prints Maven Local Repository basedir")
 @Mojo(name = "gav-local-repository-path", requiresProject = false, threadSafe = true)
 public class GavLocalRepositoryPathMojo extends GavMojoSupport {
     @Override

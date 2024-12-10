@@ -19,9 +19,11 @@ import org.eclipse.aether.repository.RemoteRepository;
 import picocli.CommandLine;
 
 /**
- * Prints Maven Metadata path in local repository.
+ * Prints expected relative path for a given Maven Metadata in a local repository.
  */
-@CommandLine.Command(name = "metadata-path", description = "Prints path of Maven Metadata in local repository")
+@CommandLine.Command(
+        name = "metadata-path",
+        description = "Prints expected relative path for a given Maven Metadata in a local repository")
 @Mojo(name = "gav-metadata-path", requiresProject = false, threadSafe = true)
 public class GavMetadataPathMojo extends GavMojoSupport {
     /**

@@ -18,9 +18,11 @@ import org.eclipse.aether.repository.RemoteRepository;
 import picocli.CommandLine;
 
 /**
- * Prints Maven Artifact path in local repository.
+ * Prints expected relative path for a given Maven Artifact in a local repository.
  */
-@CommandLine.Command(name = "artifact-path", description = "Prints path of Maven Artifacts in local repository")
+@CommandLine.Command(
+        name = "artifact-path",
+        description = "Prints expected relative path for a given Maven Artifact in a local repository")
 @Mojo(name = "gav-artifact-path", requiresProject = false, threadSafe = true)
 public class GavArtifactPathMojo extends GavMojoSupport {
     /**

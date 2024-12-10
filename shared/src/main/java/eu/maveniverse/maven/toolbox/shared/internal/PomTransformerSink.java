@@ -35,9 +35,8 @@ public final class PomTransformerSink implements Artifacts.Sink {
     public static Function<Artifact, PomTransformer.Transformation> updateManagedPlugin(boolean upsert) {
         return a -> (Document document, PomTransformer.TransformationContext context) -> {
             List<Ga> gas = List.of(Ga.of(a.getGroupId(), a.getArtifactId()));
-            final PomTransformer.ContainerElement targetSection = context.getContainerElement("build")
-                    .flatMap(e -> e.getChildContainerElement("pluginManagement"))
-                    .flatMap(e -> e.getChildContainerElement("plugins"))
+            final PomTransformer.ContainerElement targetSection = context.getContainerElement(
+                            "project", "build", "pluginManagement", "plugins")
                     .orElse(null);
 
             boolean present = false;
@@ -84,9 +83,8 @@ public final class PomTransformerSink implements Artifacts.Sink {
     public static Function<Artifact, PomTransformer.Transformation> updatePlugin(boolean upsert) {
         return a -> (Document document, PomTransformer.TransformationContext context) -> {
             List<Ga> gas = List.of(Ga.of(a.getGroupId(), a.getArtifactId()));
-            final PomTransformer.ContainerElement targetSection = context.getContainerElement("build")
-                    .flatMap(e -> e.getChildContainerElement("plugins"))
-                    .orElse(null);
+            final PomTransformer.ContainerElement targetSection =
+                    context.getContainerElement("project", "build", "plugins").orElse(null);
 
             boolean present = false;
             if (targetSection != null) {
@@ -129,8 +127,8 @@ public final class PomTransformerSink implements Artifacts.Sink {
     public static Function<Artifact, PomTransformer.Transformation> updateManagedDependency(boolean upsert) {
         return a -> (Document document, PomTransformer.TransformationContext context) -> {
             List<Ga> gas = List.of(Ga.of(a.getGroupId(), a.getArtifactId()));
-            final PomTransformer.ContainerElement targetSection = context.getContainerElement("dependencyManagement")
-                    .flatMap(e -> e.getChildContainerElement("dependencies"))
+            final PomTransformer.ContainerElement targetSection = context.getContainerElement(
+                            "project", "dependencyManagement", "dependencies")
                     .orElse(null);
 
             boolean present = false;
@@ -175,7 +173,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
         return a -> (Document document, PomTransformer.TransformationContext context) -> {
             List<Ga> gas = List.of(Ga.of(a.getGroupId(), a.getArtifactId()));
             final PomTransformer.ContainerElement targetSection =
-                    context.getContainerElement("dependencies").orElse(null);
+                    context.getContainerElement("project", "dependencies").orElse(null);
 
             boolean present = false;
             if (targetSection != null) {

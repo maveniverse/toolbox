@@ -425,7 +425,8 @@ public interface ToolboxCommando {
     EditSession createEditSession(Path pom) throws IOException;
 
     /**
-     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate)} query result.
+     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate)} query result
+     * Contains only artifacts that have updates.
      */
     default List<Artifact> calculateUpdates(Map<Artifact, List<Version>> versions) {
         return versions.entrySet().stream()
@@ -434,7 +435,22 @@ public interface ToolboxCommando {
                         .setVersion(e.getValue().get(e.getValue().size() - 1).toString()))
                 .collect(Collectors.toList());
     }
-    ;
+
+    /**
+     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate)} query result.
+     * Contains every artifact, even those that are already "latest".
+     */
+    default List<Artifact> calculateLatest(Map<Artifact, List<Version>> versions) {
+        return versions.entrySet().stream()
+                .map(e -> e.getKey()
+                        .setVersion(
+                                e.getValue().isEmpty()
+                                        ? e.getKey().getVersion()
+                                        : e.getValue()
+                                                .get(e.getValue().size() - 1)
+                                                .toString()))
+                .collect(Collectors.toList());
+    }
 
     Result<List<Artifact>> doManagedPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception;
 

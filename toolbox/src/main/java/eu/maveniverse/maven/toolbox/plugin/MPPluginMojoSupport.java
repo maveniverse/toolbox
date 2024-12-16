@@ -24,6 +24,7 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.Profile;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
@@ -158,19 +159,51 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
     }
 
     protected List<ResolutionRoot> allProjectManagedPluginsAsResolutionRoots(ToolboxCommando toolboxCommando) {
+        return allProjectManagedPluginsAsResolutionRoots(toolboxCommando, mavenProject);
+    }
+
+    protected List<ResolutionRoot> allProjectPluginsAsResolutionRoots(ToolboxCommando toolboxCommando) {
+        return allProjectPluginsAsResolutionRoots(toolboxCommando, mavenProject);
+    }
+
+    protected List<ResolutionRoot> allProjectManagedPluginsAsResolutionRoots(
+            ToolboxCommando toolboxCommando, MavenProject mavenProject) {
         return pluginResolutionRoots(
                 projectBuildBaseSelector(),
                 buildManagedPluginsExtractor(),
                 definedInModel(mavenProject.getModel()),
-                pluginToResolutionRoot(toolboxCommando));
+                pluginToResolutionRoot(toolboxCommando),
+                mavenProject);
     }
 
-    protected List<ResolutionRoot> allProjectPluginsAsResolutionRoots(ToolboxCommando toolboxCommando) {
+    protected List<ResolutionRoot> allProjectPluginsAsResolutionRoots(
+            ToolboxCommando toolboxCommando, MavenProject mavenProject) {
         return pluginResolutionRoots(
                 projectBuildBaseSelector(),
                 buildPluginsExtractor(),
                 definedInModel(mavenProject.getModel()),
-                pluginToResolutionRoot(toolboxCommando));
+                pluginToResolutionRoot(toolboxCommando),
+                mavenProject);
+    }
+
+    protected List<ResolutionRoot> allManagedPluginsAsResolutionRoots(
+            ToolboxCommando toolboxCommando, MavenProject mavenProject) {
+        return pluginResolutionRoots(
+                projectBuildBaseSelector(),
+                buildManagedPluginsExtractor(),
+                p -> true,
+                pluginToResolutionRoot(toolboxCommando),
+                mavenProject);
+    }
+
+    protected List<ResolutionRoot> allPluginsAsResolutionRoots(
+            ToolboxCommando toolboxCommando, MavenProject mavenProject) {
+        return pluginResolutionRoots(
+                projectBuildBaseSelector(),
+                buildPluginsExtractor(),
+                p -> true,
+                pluginToResolutionRoot(toolboxCommando),
+                mavenProject);
     }
 
     protected List<ResolutionRoot> allProfileManagedPluginsAsResolutionRoots(
@@ -179,7 +212,8 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                 profileBuildBaseSelector(profileId),
                 buildManagedPluginsExtractor(),
                 definedInModel(mavenProject.getModel()),
-                pluginToResolutionRoot(toolboxCommando));
+                pluginToResolutionRoot(toolboxCommando),
+                mavenProject);
     }
 
     protected List<ResolutionRoot> allProfilePluginsAsResolutionRoots(
@@ -188,14 +222,16 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                 profileBuildBaseSelector(profileId),
                 buildPluginsExtractor(),
                 definedInModel(mavenProject.getModel()),
-                pluginToResolutionRoot(toolboxCommando));
+                pluginToResolutionRoot(toolboxCommando),
+                mavenProject);
     }
 
     private <T> List<T> pluginResolutionRoots(
             Function<Model, BuildBase> selector,
             Function<BuildBase, List<Plugin>> extractor,
             Predicate<Plugin> predicate,
-            Function<Plugin, T> transformer) {
+            Function<Plugin, T> transformer,
+            MavenProject mavenProject) {
         List<T> result = new ArrayList<>();
         List<Plugin> plugins = extractor.apply(selector.apply(mavenProject.getModel()));
         if (plugins != null) {

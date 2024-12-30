@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.mvnsh;
 
+import eu.maveniverse.maven.mima.context.Runtimes;
+import eu.maveniverse.maven.mima.runtime.standalonestatic.StandaloneStaticRuntime;
 import eu.maveniverse.maven.toolbox.plugin.CLI;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -24,6 +26,7 @@ import picocli.shell.jline3.PicocliCommands;
 public class ToolboxShellCommandRegistryFactory implements ShellCommandRegistryFactory {
     @Override
     public CommandRegistry createShellCommandRegistry(LookupContext lookupContext) {
+        Runtimes.INSTANCE.registerRuntime(new StandaloneStaticRuntime());
         CommandLine cmd = new CommandLine(new CLI());
         PicocliCommands picocliCommands = new PicocliCommands(cmd);
         picocliCommands.name("Maveniverse Toolbox");

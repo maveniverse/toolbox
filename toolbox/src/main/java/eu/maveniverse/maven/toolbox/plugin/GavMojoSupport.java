@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,7 +39,7 @@ public abstract class GavMojoSupport extends MojoSupport {
             return Collections.emptyList();
         }
         try {
-            Path target = Paths.get(csv).toAbsolutePath();
+            Path target = Path.of(csv).toAbsolutePath();
             if (Files.isRegularFile(target) && Files.size(target) < 5_000_000) {
                 return Files.readAllLines(target);
             }

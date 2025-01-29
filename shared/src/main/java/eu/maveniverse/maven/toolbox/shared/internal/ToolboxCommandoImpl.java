@@ -41,13 +41,11 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.CharacterIterator;
@@ -632,10 +630,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<Path> artifactPath(Artifact artifact, RemoteRepository repository) throws Exception {
         Result<Path> result;
         if (repository == null) {
-            result =
-                    Result.success(Paths.get(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
+            result = Result.success(Path.of(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
         } else {
-            result = Result.success(Paths.get(
+            result = Result.success(Path.of(
                     session.getLocalRepositoryManager().getPathForRemoteArtifact(artifact, repository, "toolbox")));
         }
         result.getData().ifPresent(path -> output.tell(path.toString()));
@@ -646,10 +643,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<Path> metadataPath(Metadata metadata, RemoteRepository repository) throws Exception {
         Result<Path> result;
         if (repository == null) {
-            result =
-                    Result.success(Paths.get(session.getLocalRepositoryManager().getPathForLocalMetadata(metadata)));
+            result = Result.success(Path.of(session.getLocalRepositoryManager().getPathForLocalMetadata(metadata)));
         } else {
-            result = Result.success(Paths.get(
+            result = Result.success(Path.of(
                     session.getLocalRepositoryManager().getPathForRemoteMetadata(metadata, repository, "toolbox")));
         }
         result.getData().ifPresent(path -> output.tell(path.toString()));
@@ -1084,13 +1080,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             RemoteRepository remoteRepository, Collection<String> targets, boolean decorated) throws IOException {
         HashMap<String, String> sha1s = new HashMap<>();
         for (String target : targets) {
-            if (Files.exists(Paths.get(target))) {
+            if (Files.exists(Path.of(target))) {
                 try {
                     output.tell("Calculating SHA1 of file {}", target);
                     MessageDigest sha1md = MessageDigest.getInstance("SHA-1");
                     byte[] buf = new byte[8192];
                     int read;
-                    try (FileInputStream fis = new FileInputStream(target)) {
+                    try (InputStream fis = Files.newInputStream(Path.of(target))) {
                         read = fis.read(buf);
                         while (read != -1) {
                             sha1md.update(buf, 0, read);

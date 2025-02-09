@@ -1291,7 +1291,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<Map<Artifact, List<Version>>> versions(
-            String context, Source<Artifact> artifactSource, Predicate<Version> versionPredicate) throws Exception {
+            String context,
+            Source<Artifact> artifactSource,
+            Predicate<Version> versionPredicate,
+            BiFunction<Artifact, List<Version>, String> versionSelector)
+            throws Exception {
         List<Artifact> artifacts = artifactSource.get().collect(Collectors.toList());
         HashMap<Artifact, List<Version>> result = new HashMap<>();
         output.marker(Output.Verbosity.NORMAL)
@@ -1301,17 +1305,21 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             List<Version> newer = toolboxResolver.findNewerVersions(artifact, versionPredicate);
             result.put(artifact, newer);
             if (!newer.isEmpty()) {
-                Version latest = newer.get(newer.size() - 1);
-                String all = newer.stream().map(Object::toString).collect(Collectors.joining(", "));
-                output.marker(Output.Verbosity.NORMAL).scary("* {} -> {}").say(ArtifactIdUtils.toId(artifact), latest);
-                output.marker(Output.Verbosity.SUGGEST)
-                        .detail("  Available: {}")
-                        .say(all);
-            } else {
-                output.marker(Output.Verbosity.NORMAL)
-                        .outstanding("* {} is up to date")
-                        .say(ArtifactIdUtils.toId(artifact));
+                String selected = versionSelector.apply(artifact, newer);
+                boolean changed = !Objects.equals(selected, artifact.getVersion());
+                if (changed) {
+                    output.marker(Output.Verbosity.NORMAL)
+                            .scary("* {} -> {}")
+                            .say(ArtifactIdUtils.toId(artifact), selected);
+                    output.marker(Output.Verbosity.SUGGEST)
+                            .detail("  Available: {}")
+                            .say(newer.stream().map(Object::toString).collect(Collectors.joining(", ")));
+                    continue;
+                }
             }
+            output.marker(Output.Verbosity.NORMAL)
+                    .outstanding("* {} is up to date")
+                    .say(ArtifactIdUtils.toId(artifact));
         }
         return Result.success(result);
     }

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -396,7 +397,11 @@ public interface ToolboxCommando {
      * Finds newer versions for artifacts from source.
      */
     Result<Map<Artifact, List<Version>>> versions(
-            String context, Source<Artifact> artifacts, Predicate<Version> versionPredicate) throws Exception;
+            String context,
+            Source<Artifact> artifacts,
+            Predicate<Version> versionPredicate,
+            BiFunction<Artifact, List<Version>, String> versionSelector)
+            throws Exception;
 
     // POM editing
 
@@ -425,30 +430,36 @@ public interface ToolboxCommando {
     EditSession createEditSession(Path pom) throws IOException;
 
     /**
-     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate)} query result
+     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate, BiFunction)} query result
      * Contains only artifacts that have updates.
      */
-    default List<Artifact> calculateUpdates(Map<Artifact, List<Version>> versions) {
+    default List<Artifact> calculateUpdates(
+            Map<Artifact, List<Version>> versions, BiFunction<Artifact, List<Version>, String> versionSelector) {
         return versions.entrySet().stream()
                 .filter(e -> !e.getValue().isEmpty())
-                .map(e -> e.getKey()
-                        .setVersion(e.getValue().get(e.getValue().size() - 1).toString()))
+                .map(e -> {
+                    String selected = versionSelector.apply(e.getKey(), e.getValue());
+                    if (Objects.equals(selected, e.getKey().getVersion())) {
+                        return null;
+                    }
+                    return e.getKey().setVersion(versionSelector.apply(e.getKey(), e.getValue()));
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate)} query result.
+     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate, BiFunction)} query result.
      * Contains every artifact, even those that are already "latest".
      */
-    default List<Artifact> calculateLatest(Map<Artifact, List<Version>> versions) {
+    default List<Artifact> calculateLatest(
+            Map<Artifact, List<Version>> versions, BiFunction<Artifact, List<Version>, String> versionSelector) {
         return versions.entrySet().stream()
                 .map(e -> e.getKey()
                         .setVersion(
                                 e.getValue().isEmpty()
                                         ? e.getKey().getVersion()
-                                        : e.getValue()
-                                                .get(e.getValue().size() - 1)
-                                                .toString()))
+                                        : versionSelector.apply(e.getKey(), e.getValue())))
                 .collect(Collectors.toList());
     }
 

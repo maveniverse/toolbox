@@ -18,6 +18,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.Version;
+import picocli.CommandLine;
 
 /**
  * Lists available versions of Maven Project plugins.
@@ -37,6 +38,16 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     private String artifactVersionMatcherSpec;
 
     /**
+     * Artifact version selector spec string to select the version from candidates, default is 'last()'.
+     */
+    @CommandLine.Option(
+            names = {"--artifactVersionSelectorSpec"},
+            defaultValue = "last()",
+            description = "Artifact version selector spec (default 'last()')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+    private String artifactVersionSelectorSpec;
+
+    /**
      * Apply results to POM.
      */
     @Parameter(property = "applyToPom")
@@ -51,13 +62,15 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
                 () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
+                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec));
         Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
                 "plugins",
                 () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
+                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec));
 
         if (applyToPom) {
             List<Artifact> managedPluginsUpdates =

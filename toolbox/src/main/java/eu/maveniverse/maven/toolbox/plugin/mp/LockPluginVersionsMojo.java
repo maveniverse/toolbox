@@ -20,6 +20,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.Version;
+import picocli.CommandLine;
 
 /**
  * Locks available versions of Maven Project used plugins.
@@ -39,6 +40,16 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
     private String artifactVersionMatcherSpec;
 
     /**
+     * Artifact version selector spec string to select the version from candidates, default is 'last()'.
+     */
+    @CommandLine.Option(
+            names = {"--artifactVersionSelectorSpec"},
+            defaultValue = "last()",
+            description = "Artifact version selector spec (default 'last()')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+    private String artifactVersionSelectorSpec;
+
+    /**
      * Apply results to POM.
      */
     @Parameter(property = "applyToPom")
@@ -56,7 +67,8 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
                     () -> allManagedPluginsAsResolutionRoots(toolboxCommando, project).stream()
                             .map(ResolutionRoot::getArtifact)
                             .filter(artifactMatcher),
-                    toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
+                    toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
+                    toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec));
             if (managedPlugins.isSuccess()) {
                 allPlugins.putAll(managedPlugins.getData().orElseThrow());
             } else {
@@ -67,7 +79,8 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
                     () -> allPluginsAsResolutionRoots(toolboxCommando, project).stream()
                             .map(ResolutionRoot::getArtifact)
                             .filter(artifactMatcher),
-                    toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
+                    toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
+                    toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec));
             if (plugins.isSuccess()) {
                 allPlugins.putAll(plugins.getData().orElseThrow());
             } else {

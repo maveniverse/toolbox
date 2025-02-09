@@ -396,7 +396,11 @@ public interface ToolboxCommando {
      * Finds newer versions for artifacts from source.
      */
     Result<Map<Artifact, List<Version>>> versions(
-            String context, Source<Artifact> artifacts, Predicate<Version> versionPredicate) throws Exception;
+            String context,
+            Source<Artifact> artifacts,
+            Predicate<Version> versionPredicate,
+            BiFunction<Artifact, List<Version>, String> versionSelector)
+            throws Exception;
 
     // POM editing
 

@@ -70,7 +70,7 @@
     <requireRuntimeMavenVersion.version>[3.6.3,)</requireRuntimeMavenVersion.version>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.21</version.mima>
+    <version.mima>2.4.22</version.mima>
     <version.maven>3.9.9</version.maven>
     <version.resolver>1.9.22</version.resolver>
     <version.mavenIndexer>7.1.5</version.mavenIndexer>
@@ -309,19 +309,6 @@
               <goal>main-index</goal>
               <goal>test-index</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.gaul</groupId>
-        <artifactId>modernizer-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>modernizer</id>
-            <goals>
-              <goal>modernizer</goal>
-            </goals>
-            <phase>verify</phase>
           </execution>
         </executions>
       </plugin>

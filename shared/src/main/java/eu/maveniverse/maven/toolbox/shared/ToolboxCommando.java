@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -436,7 +437,14 @@ public interface ToolboxCommando {
             Map<Artifact, List<Version>> versions, BiFunction<Artifact, List<Version>, String> versionSelector) {
         return versions.entrySet().stream()
                 .filter(e -> !e.getValue().isEmpty())
-                .map(e -> e.getKey().setVersion(versionSelector.apply(e.getKey(), e.getValue())))
+                .map(e -> {
+                    String selected = versionSelector.apply(e.getKey(), e.getValue());
+                    if (Objects.equals(selected, e.getKey().getVersion())) {
+                        return null;
+                    }
+                    return e.getKey().setVersion(versionSelector.apply(e.getKey(), e.getValue()));
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 

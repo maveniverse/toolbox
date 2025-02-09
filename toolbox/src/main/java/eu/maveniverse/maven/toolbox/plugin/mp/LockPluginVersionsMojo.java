@@ -9,6 +9,8 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -59,6 +61,10 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
+        ArtifactVersionMatcher artifactVersionMatcher =
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec);
+        ArtifactVersionSelector artifactVersionSelector =
+                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
 
         Map<Artifact, List<Version>> allPlugins = new HashMap<>();
         for (MavenProject project : mavenSession.getProjects()) {
@@ -67,8 +73,8 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
                     () -> allManagedPluginsAsResolutionRoots(toolboxCommando, project).stream()
                             .map(ResolutionRoot::getArtifact)
                             .filter(artifactMatcher),
-                    toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                    toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec));
+                    artifactVersionMatcher,
+                    artifactVersionSelector);
             if (managedPlugins.isSuccess()) {
                 allPlugins.putAll(managedPlugins.getData().orElseThrow());
             } else {
@@ -79,8 +85,8 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
                     () -> allPluginsAsResolutionRoots(toolboxCommando, project).stream()
                             .map(ResolutionRoot::getArtifact)
                             .filter(artifactMatcher),
-                    toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                    toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec));
+                    artifactVersionMatcher,
+                    artifactVersionSelector);
             if (plugins.isSuccess()) {
                 allPlugins.putAll(plugins.getData().orElseThrow());
             } else {
@@ -89,7 +95,7 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
         }
 
         if (applyToPom) {
-            List<Artifact> pluginsUpdates = toolboxCommando.calculateLatest(allPlugins);
+            List<Artifact> pluginsUpdates = toolboxCommando.calculateLatest(allPlugins, artifactVersionSelector);
             if (!pluginsUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {

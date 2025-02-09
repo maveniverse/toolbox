@@ -1303,19 +1303,24 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .say(context, artifacts.size());
         for (Artifact artifact : artifacts) {
             List<Version> newer = toolboxResolver.findNewerVersions(artifact, versionPredicate);
-            result.put(artifact, newer);
             if (!newer.isEmpty()) {
-                String latest = versionSelector.apply(artifact, newer);
+                String selected = versionSelector.apply(artifact, newer);
                 String all = newer.stream().map(Object::toString).collect(Collectors.joining(", "));
-                output.marker(Output.Verbosity.NORMAL).scary("* {} -> {}").say(ArtifactIdUtils.toId(artifact), latest);
-                output.marker(Output.Verbosity.SUGGEST)
-                        .detail("  Available: {}")
-                        .say(all);
-            } else {
-                output.marker(Output.Verbosity.NORMAL)
-                        .outstanding("* {} is up to date")
-                        .say(ArtifactIdUtils.toId(artifact));
+                boolean changed = !Objects.equals(selected, artifact.getVersion());
+                if (changed) {
+                    result.put(artifact, newer);
+                    output.marker(Output.Verbosity.NORMAL)
+                            .scary("* {} -> {}")
+                            .say(ArtifactIdUtils.toId(artifact), selected);
+                    output.marker(Output.Verbosity.SUGGEST)
+                            .detail("  Available: {}")
+                            .say(all);
+                    continue;
+                }
             }
+            output.marker(Output.Verbosity.NORMAL)
+                    .outstanding("* {} is up to date")
+                    .say(ArtifactIdUtils.toId(artifact));
         }
         return Result.success(result);
     }

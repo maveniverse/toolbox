@@ -9,6 +9,8 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -57,26 +59,31 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
+        ArtifactVersionMatcher artifactVersionMatcher =
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec);
+        ArtifactVersionSelector artifactVersionSelector =
+                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
+
         Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
                 "managed plugins",
                 () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec));
+                artifactVersionMatcher,
+                artifactVersionSelector);
         Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
                 "plugins",
                 () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec));
+                artifactVersionMatcher,
+                artifactVersionSelector);
 
         if (applyToPom) {
             List<Artifact> managedPluginsUpdates =
-                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow());
+                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> pluginsUpdates =
-                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow());
+                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow(), artifactVersionSelector);
             if (!managedPluginsUpdates.isEmpty() || !pluginsUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {

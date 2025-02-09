@@ -8,6 +8,9 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
+import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -55,26 +58,30 @@ public class VersionsMojo extends MPMojoSupport {
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
+        DependencyMatcher dependencyMatcher = toolboxCommando.parseDependencyMatcherSpec(depSpec);
+        ArtifactVersionMatcher artifactVersionMatcher =
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec);
+        ArtifactVersionSelector artifactVersionSelector =
+                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
+
         Result<Map<Artifact, List<Version>>> managedDependencies = toolboxCommando.versions(
                 "managed dependencies",
-                () ->
-                        projectManagedDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec))
-                                .stream()
-                                .map(ResolutionRoot::getArtifact),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec));
+                () -> projectManagedDependenciesAsResolutionRoots(dependencyMatcher).stream()
+                        .map(ResolutionRoot::getArtifact),
+                artifactVersionMatcher,
+                artifactVersionSelector);
         Result<Map<Artifact, List<Version>>> dependencies = toolboxCommando.versions(
                 "dependencies",
-                () -> projectDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec)).stream()
+                () -> projectDependenciesAsResolutionRoots(dependencyMatcher).stream()
                         .map(ResolutionRoot::getArtifact),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
-                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec));
+                artifactVersionMatcher,
+                artifactVersionSelector);
 
         if (applyToPom) {
             List<Artifact> managedDependenciesUpdates = toolboxCommando.calculateUpdates(
-                    managedDependencies.getData().orElseThrow());
+                    managedDependencies.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> dependenciesUpdates =
-                    toolboxCommando.calculateUpdates(dependencies.getData().orElseThrow());
+                    toolboxCommando.calculateUpdates(dependencies.getData().orElseThrow(), artifactVersionSelector);
             if (!managedDependenciesUpdates.isEmpty() || !dependenciesUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {

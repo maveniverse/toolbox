@@ -429,30 +429,29 @@ public interface ToolboxCommando {
     EditSession createEditSession(Path pom) throws IOException;
 
     /**
-     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate)} query result
+     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate, BiFunction)} query result
      * Contains only artifacts that have updates.
      */
-    default List<Artifact> calculateUpdates(Map<Artifact, List<Version>> versions) {
+    default List<Artifact> calculateUpdates(
+            Map<Artifact, List<Version>> versions, BiFunction<Artifact, List<Version>, String> versionSelector) {
         return versions.entrySet().stream()
                 .filter(e -> !e.getValue().isEmpty())
-                .map(e -> e.getKey()
-                        .setVersion(e.getValue().get(e.getValue().size() - 1).toString()))
+                .map(e -> e.getKey().setVersion(versionSelector.apply(e.getKey(), e.getValue())))
                 .collect(Collectors.toList());
     }
 
     /**
-     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate)} query result.
+     * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate, BiFunction)} query result.
      * Contains every artifact, even those that are already "latest".
      */
-    default List<Artifact> calculateLatest(Map<Artifact, List<Version>> versions) {
+    default List<Artifact> calculateLatest(
+            Map<Artifact, List<Version>> versions, BiFunction<Artifact, List<Version>, String> versionSelector) {
         return versions.entrySet().stream()
                 .map(e -> e.getKey()
                         .setVersion(
                                 e.getValue().isEmpty()
                                         ? e.getKey().getVersion()
-                                        : e.getValue()
-                                                .get(e.getValue().size() - 1)
-                                                .toString()))
+                                        : versionSelector.apply(e.getKey(), e.getValue())))
                 .collect(Collectors.toList());
     }
 

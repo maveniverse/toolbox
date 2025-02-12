@@ -64,6 +64,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -105,7 +106,6 @@ import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
-import org.l2x6.pom.tuner.PomTransformer;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Output output;
@@ -1346,7 +1346,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     protected Result<List<Artifact>> doEdit(
             EditSession es,
-            Function<Artifact, PomTransformer.Transformation> transformation,
+            Function<Artifact, Consumer<PomTransformerSink.TransformationContext>> transformation,
             Source<Artifact> artifacts)
             throws Exception {
         try (PomTransformerSink sink = PomTransformerSink.transform(output, es.editedPom(), transformation)) {
@@ -1358,7 +1358,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<List<Artifact>> doManagedPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
-        Function<Artifact, PomTransformer.Transformation> transformation;
+        Function<Artifact, Consumer<PomTransformerSink.TransformationContext>> transformation;
         switch (op) {
             case UPSERT:
                 transformation = PomTransformerSink.updateManagedPlugin(true);
@@ -1377,7 +1377,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<List<Artifact>> doPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
-        Function<Artifact, PomTransformer.Transformation> transformation;
+        Function<Artifact, Consumer<PomTransformerSink.TransformationContext>> transformation;
         switch (op) {
             case UPSERT:
                 transformation = PomTransformerSink.updatePlugin(true);
@@ -1397,7 +1397,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public Result<List<Artifact>> doManagedDependencies(EditSession es, Op op, Source<Artifact> artifacts)
             throws Exception {
-        Function<Artifact, PomTransformer.Transformation> transformation;
+        Function<Artifact, Consumer<PomTransformerSink.TransformationContext>> transformation;
         switch (op) {
             case UPSERT:
                 transformation = PomTransformerSink.updateManagedDependency(true);
@@ -1416,7 +1416,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<List<Artifact>> doDependencies(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
-        Function<Artifact, PomTransformer.Transformation> transformation;
+        Function<Artifact, Consumer<PomTransformerSink.TransformationContext>> transformation;
         switch (op) {
             case UPSERT:
                 transformation = PomTransformerSink.updateDependency(true);

@@ -13,21 +13,22 @@ import eu.maveniverse.maven.toolbox.shared.internal.PomSuppliers;
 import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomDocumentIO;
 import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomEditor;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
 import picocli.CommandLine;
 
 /**
- * Creates a new project.
+ * Creates a new subproject.
  */
-@CommandLine.Command(name = "new-project", description = "Creates a new project")
-@Mojo(name = "new-project", requiresProject = false, threadSafe = true)
-public class NewProject extends HelloMojoSupport {
+@CommandLine.Command(name = "new-subproject", description = "Creates a new subproject")
+@Mojo(name = "new-subproject", requiresProject = false, threadSafe = true)
+public class NewSubProject extends HelloProjectMojoSupport {
     /**
-     * The project GAV.
+     * The subproject GAV.
      */
-    @CommandLine.Parameters(index = "0", description = "The project GAV", arity = "1")
+    @CommandLine.Parameters(index = "0", description = "The subproject GAV", arity = "1")
     @Parameter(property = "gav", required = true)
     private String gav;
 
@@ -41,41 +42,38 @@ public class NewProject extends HelloMojoSupport {
     @Parameter(property = "packaging", defaultValue = "jar", required = true)
     private String packaging;
 
-    /**
-     * Parent.
-     */
-    @CommandLine.Option(
-            names = {"--parent"},
-            description = "Parent")
-    @Parameter(property = "parent")
-    private String parent;
-
     @Override
     protected Result<Boolean> doExecute() throws Exception {
-        if (!force && Files.exists(rootPom)) {
+        Artifact subProjectArtifact = toSubProjectArtifact(gav);
+        Path pomFile = Path.of(subProjectArtifact.getArtifactId(), "pom.xml").toAbsolutePath();
+        if (!force && Files.exists(pomFile)) {
             throw new IllegalStateException("pom.xml already exists in this directory; use --force to overwrite it");
         }
-        Artifact projectArtifact = toRootProjectArtifact(gav);
-        Artifact parentArtifact = toParentArtifact(parent);
-        try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(rootPom)) {
+        Files.createDirectories(pomFile.getParent());
+        try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(pomFile)) {
             editSession.edit(p -> {
                 Files.writeString(
                         p,
                         PomSuppliers.empty400(
-                                projectArtifact.getGroupId(),
-                                projectArtifact.getArtifactId(),
-                                projectArtifact.getVersion()));
+                                subProjectArtifact.getGroupId(),
+                                subProjectArtifact.getArtifactId(),
+                                subProjectArtifact.getVersion()));
                 try (JDomDocumentIO documentIO = new JDomDocumentIO(p)) {
                     if (!"jar".equals(packaging)) {
                         JDomPomEditor.setPackaging(documentIO.getDocument().getRootElement(), packaging);
                     }
-                    if (parentArtifact != null) {
-                        JDomPomEditor.setParent(documentIO.getDocument().getRootElement(), parentArtifact);
-                    }
+                    JDomPomEditor.setParent(documentIO.getDocument().getRootElement(), currentProjectArtifact);
                 }
             });
         }
-
+        try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(rootPom)) {
+            editSession.edit(p -> {
+                try (JDomDocumentIO documentIO = new JDomDocumentIO(p)) {
+                    JDomPomEditor.addSubProject(
+                            documentIO.getDocument().getRootElement(), subProjectArtifact.getArtifactId());
+                }
+            });
+        }
         return Result.success(Boolean.TRUE);
     }
 }

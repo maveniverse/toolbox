@@ -14,6 +14,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.internal.PomTransformerSink;
 import java.util.List;
 import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -88,11 +89,18 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
                     if (!managedPluginsUpdates.isEmpty()) {
-                        toolboxCommando.doManagedPlugins(
-                                editSession, ToolboxCommando.Op.UPDATE, managedPluginsUpdates::stream);
+                        toolboxCommando.doEdit(
+                                editSession,
+                                PomTransformerSink.OpSubject.MANAGED_PLUGINS,
+                                PomTransformerSink.Op.UPDATE,
+                                managedPluginsUpdates::stream);
                     }
                     if (!pluginsUpdates.isEmpty()) {
-                        toolboxCommando.doPlugins(editSession, ToolboxCommando.Op.UPDATE, pluginsUpdates::stream);
+                        toolboxCommando.doEdit(
+                                editSession,
+                                PomTransformerSink.OpSubject.PLUGINS,
+                                PomTransformerSink.Op.UPDATE,
+                                pluginsUpdates::stream);
                     }
                 }
             }

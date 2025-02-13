@@ -14,6 +14,7 @@ import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.internal.PomTransformerSink;
 import java.util.List;
 import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -86,12 +87,18 @@ public class VersionsMojo extends MPMojoSupport {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
                     if (!managedDependenciesUpdates.isEmpty()) {
-                        toolboxCommando.doManagedDependencies(
-                                editSession, ToolboxCommando.Op.UPDATE, managedDependenciesUpdates::stream);
+                        toolboxCommando.doEdit(
+                                editSession,
+                                PomTransformerSink.OpSubject.MANAGED_DEPENDENCIES,
+                                PomTransformerSink.Op.UPDATE,
+                                managedDependenciesUpdates::stream);
                     }
                     if (!dependenciesUpdates.isEmpty()) {
-                        toolboxCommando.doDependencies(
-                                editSession, ToolboxCommando.Op.UPDATE, dependenciesUpdates::stream);
+                        toolboxCommando.doEdit(
+                                editSession,
+                                PomTransformerSink.OpSubject.DEPENDENCIES,
+                                PomTransformerSink.Op.UPDATE,
+                                dependenciesUpdates::stream);
                     }
                 }
             }

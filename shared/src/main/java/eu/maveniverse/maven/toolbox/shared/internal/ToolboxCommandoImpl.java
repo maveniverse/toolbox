@@ -64,8 +64,6 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
@@ -1344,93 +1342,15 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         };
     }
 
-    protected Result<List<Artifact>> doEdit(
-            EditSession es,
-            Function<Artifact, Consumer<PomTransformerSink.TransformationContext>> transformation,
-            Source<Artifact> artifacts)
+    @Override
+    public Result<List<Artifact>> doEdit(
+            EditSession es, PomTransformerSink.OpSubject subject, PomTransformerSink.Op op, Source<Artifact> artifacts)
             throws Exception {
-        try (PomTransformerSink sink = PomTransformerSink.transform(output, es.editedPom(), transformation)) {
+        try (PomTransformerSink sink = PomTransformerSink.transform(output, es.editedPom(), subject, op)) {
             List<Artifact> res = artifacts.get().collect(Collectors.toList());
             sink.accept(res);
             return Result.success(res);
         }
-    }
-
-    @Override
-    public Result<List<Artifact>> doManagedPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
-        Function<Artifact, Consumer<PomTransformerSink.TransformationContext>> transformation;
-        switch (op) {
-            case UPSERT:
-                transformation = PomTransformerSink.updateManagedPlugin(true);
-                break;
-            case UPDATE:
-                transformation = PomTransformerSink.updateManagedPlugin(false);
-                break;
-            case DELETE:
-                transformation = PomTransformerSink.deleteManagedPlugin();
-                break;
-            default:
-                throw new IllegalStateException("Unsupported operation");
-        }
-        return doEdit(es, transformation, artifacts);
-    }
-
-    @Override
-    public Result<List<Artifact>> doPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
-        Function<Artifact, Consumer<PomTransformerSink.TransformationContext>> transformation;
-        switch (op) {
-            case UPSERT:
-                transformation = PomTransformerSink.updatePlugin(true);
-                break;
-            case UPDATE:
-                transformation = PomTransformerSink.updatePlugin(false);
-                break;
-            case DELETE:
-                transformation = PomTransformerSink.deletePlugin();
-                break;
-            default:
-                throw new IllegalStateException("Unsupported operation");
-        }
-        return doEdit(es, transformation, artifacts);
-    }
-
-    @Override
-    public Result<List<Artifact>> doManagedDependencies(EditSession es, Op op, Source<Artifact> artifacts)
-            throws Exception {
-        Function<Artifact, Consumer<PomTransformerSink.TransformationContext>> transformation;
-        switch (op) {
-            case UPSERT:
-                transformation = PomTransformerSink.updateManagedDependency(true);
-                break;
-            case UPDATE:
-                transformation = PomTransformerSink.updateManagedDependency(false);
-                break;
-            case DELETE:
-                transformation = PomTransformerSink.deleteManagedDependency();
-                break;
-            default:
-                throw new IllegalStateException("Unsupported operation");
-        }
-        return doEdit(es, transformation, artifacts);
-    }
-
-    @Override
-    public Result<List<Artifact>> doDependencies(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
-        Function<Artifact, Consumer<PomTransformerSink.TransformationContext>> transformation;
-        switch (op) {
-            case UPSERT:
-                transformation = PomTransformerSink.updateDependency(true);
-                break;
-            case UPDATE:
-                transformation = PomTransformerSink.updateDependency(false);
-                break;
-            case DELETE:
-                transformation = PomTransformerSink.deleteDependency();
-                break;
-            default:
-                throw new IllegalStateException("Unsupported operation");
-        }
-        return doEdit(es, transformation, artifacts);
     }
 
     // Utils

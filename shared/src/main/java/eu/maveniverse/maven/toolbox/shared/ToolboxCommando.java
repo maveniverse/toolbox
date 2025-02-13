@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.toolbox.shared.internal.PomTransformerSink;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.Closeable;
@@ -405,24 +406,6 @@ public interface ToolboxCommando {
 
     // POM editing
 
-    /**
-     * The version operation mode to apply.
-     */
-    enum Op {
-        /**
-         * Always add: if exists "update" version, if not exist, create new entry with it.
-         */
-        UPSERT,
-        /**
-         * Add only if it exists: "update" version, otherwise no-op.
-         */
-        UPDATE,
-        /**
-         * Remove if exists.
-         */
-        DELETE
-    }
-
     interface EditSession extends Closeable {
         Path editedPom();
     }
@@ -463,11 +446,7 @@ public interface ToolboxCommando {
                 .collect(Collectors.toList());
     }
 
-    Result<List<Artifact>> doManagedPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception;
-
-    Result<List<Artifact>> doPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception;
-
-    Result<List<Artifact>> doManagedDependencies(EditSession es, Op op, Source<Artifact> artifacts) throws Exception;
-
-    Result<List<Artifact>> doDependencies(EditSession es, Op op, Source<Artifact> artifacts) throws Exception;
+    Result<List<Artifact>> doEdit(
+            EditSession es, PomTransformerSink.OpSubject subject, PomTransformerSink.Op op, Source<Artifact> artifacts)
+            throws Exception;
 }

@@ -14,6 +14,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.internal.PomTransformerSink;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +100,11 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
             if (!pluginsUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
-                    toolboxCommando.doManagedPlugins(editSession, ToolboxCommando.Op.UPSERT, pluginsUpdates::stream);
+                    toolboxCommando.doEdit(
+                            editSession,
+                            PomTransformerSink.OpSubject.MANAGED_PLUGINS,
+                            PomTransformerSink.Op.UPSERT,
+                            pluginsUpdates::stream);
                 }
             }
         }

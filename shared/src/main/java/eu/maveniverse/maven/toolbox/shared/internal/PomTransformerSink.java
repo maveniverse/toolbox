@@ -35,7 +35,14 @@ public final class PomTransformerSink implements Artifacts.Sink {
      */
     public static PomTransformerSink transform(
             Output output, Path pom, ToolboxCommando.OpSubject subject, ToolboxCommando.Op op) throws IOException {
-        return transform(output, pom, () -> BLANK_POM, ArtifactMatcher.any(), ArtifactMapper.identity(), subject, op);
+        return transform(
+                output,
+                pom,
+                () -> PomSuppliers.empty400("org.acme", "acme", "1.0.0-SNAPSHOT"),
+                ArtifactMatcher.any(),
+                ArtifactMapper.identity(),
+                subject,
+                op);
     }
 
     /**
@@ -174,7 +181,6 @@ public final class PomTransformerSink implements Artifacts.Sink {
 
     @Override
     public void close() throws IOException {
-        JDomPomTransformer jDomPomTransformer = new JDomPomTransformer();
-        jDomPomTransformer.apply(pom, applicableTransformations);
+        new JDomPomTransformer().apply(pom, applicableTransformations);
     }
 }

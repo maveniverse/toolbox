@@ -20,7 +20,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.Version;
-import picocli.CommandLine;
 
 /**
  * Lists available versions of Maven Project dependencies.
@@ -42,10 +41,6 @@ public class VersionsMojo extends MPMojoSupport {
     /**
      * Artifact version selector spec string to select the version from candidates, default is 'last()'.
      */
-    @CommandLine.Option(
-            names = {"--artifactVersionSelectorSpec"},
-            defaultValue = "last()",
-            description = "Artifact version selector spec (default 'last()')")
     @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
     private String artifactVersionSelectorSpec;
 

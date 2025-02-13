@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.toolbox</groupId>
     <artifactId>toolbox</artifactId>
-    <version>0.6.2-SNAPSHOT</version>
+    <version>0.6.4-SNAPSHOT</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.plugins</groupId>
@@ -162,10 +162,10 @@
       <artifactId>search-backend-smo</artifactId>
     </dependency>
 
-    <!-- POM tuner -->
+    <!-- POM editing -->
     <dependency>
-      <groupId>org.l2x6.pom-tuner</groupId>
-      <artifactId>pom-tuner</artifactId>
+      <groupId>org.jdom</groupId>
+      <artifactId>jdom2</artifactId>
     </dependency>
 
     <!-- Test -->

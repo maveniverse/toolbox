@@ -41,13 +41,11 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.CharacterIterator;
@@ -66,7 +64,6 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
@@ -107,7 +104,6 @@ import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
-import org.l2x6.pom.tuner.PomTransformer;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Output output;
@@ -632,10 +628,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<Path> artifactPath(Artifact artifact, RemoteRepository repository) throws Exception {
         Result<Path> result;
         if (repository == null) {
-            result =
-                    Result.success(Paths.get(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
+            result = Result.success(Path.of(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
         } else {
-            result = Result.success(Paths.get(
+            result = Result.success(Path.of(
                     session.getLocalRepositoryManager().getPathForRemoteArtifact(artifact, repository, "toolbox")));
         }
         result.getData().ifPresent(path -> output.tell(path.toString()));
@@ -646,10 +641,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<Path> metadataPath(Metadata metadata, RemoteRepository repository) throws Exception {
         Result<Path> result;
         if (repository == null) {
-            result =
-                    Result.success(Paths.get(session.getLocalRepositoryManager().getPathForLocalMetadata(metadata)));
+            result = Result.success(Path.of(session.getLocalRepositoryManager().getPathForLocalMetadata(metadata)));
         } else {
-            result = Result.success(Paths.get(
+            result = Result.success(Path.of(
                     session.getLocalRepositoryManager().getPathForRemoteMetadata(metadata, repository, "toolbox")));
         }
         result.getData().ifPresent(path -> output.tell(path.toString()));
@@ -1084,13 +1078,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             RemoteRepository remoteRepository, Collection<String> targets, boolean decorated) throws IOException {
         HashMap<String, String> sha1s = new HashMap<>();
         for (String target : targets) {
-            if (Files.exists(Paths.get(target))) {
+            if (Files.exists(Path.of(target))) {
                 try {
                     output.tell("Calculating SHA1 of file {}", target);
                     MessageDigest sha1md = MessageDigest.getInstance("SHA-1");
                     byte[] buf = new byte[8192];
                     int read;
-                    try (FileInputStream fis = new FileInputStream(target)) {
+                    try (InputStream fis = Files.newInputStream(Path.of(target))) {
                         read = fis.read(buf);
                         while (read != -1) {
                             sha1md.update(buf, 0, read);
@@ -1295,7 +1289,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<Map<Artifact, List<Version>>> versions(
-            String context, Source<Artifact> artifactSource, Predicate<Version> versionPredicate) throws Exception {
+            String context,
+            Source<Artifact> artifactSource,
+            Predicate<Version> versionPredicate,
+            BiFunction<Artifact, List<Version>, String> versionSelector)
+            throws Exception {
         List<Artifact> artifacts = artifactSource.get().collect(Collectors.toList());
         HashMap<Artifact, List<Version>> result = new HashMap<>();
         output.marker(Output.Verbosity.NORMAL)
@@ -1305,17 +1303,21 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             List<Version> newer = toolboxResolver.findNewerVersions(artifact, versionPredicate);
             result.put(artifact, newer);
             if (!newer.isEmpty()) {
-                Version latest = newer.get(newer.size() - 1);
-                String all = newer.stream().map(Object::toString).collect(Collectors.joining(", "));
-                output.marker(Output.Verbosity.NORMAL).scary("* {} -> {}").say(ArtifactIdUtils.toId(artifact), latest);
-                output.marker(Output.Verbosity.SUGGEST)
-                        .detail("  Available: {}")
-                        .say(all);
-            } else {
-                output.marker(Output.Verbosity.NORMAL)
-                        .outstanding("* {} is up to date")
-                        .say(ArtifactIdUtils.toId(artifact));
+                String selected = versionSelector.apply(artifact, newer);
+                boolean changed = !Objects.equals(selected, artifact.getVersion());
+                if (changed) {
+                    output.marker(Output.Verbosity.NORMAL)
+                            .scary("* {} -> {}")
+                            .say(ArtifactIdUtils.toId(artifact), selected);
+                    output.marker(Output.Verbosity.SUGGEST)
+                            .detail("  Available: {}")
+                            .say(newer.stream().map(Object::toString).collect(Collectors.joining(", ")));
+                    continue;
+                }
             }
+            output.marker(Output.Verbosity.NORMAL)
+                    .outstanding("* {} is up to date")
+                    .say(ArtifactIdUtils.toId(artifact));
         }
         return Result.success(result);
     }
@@ -1340,93 +1342,14 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         };
     }
 
-    protected Result<List<Artifact>> doEdit(
-            EditSession es,
-            Function<Artifact, PomTransformer.Transformation> transformation,
-            Source<Artifact> artifacts)
+    @Override
+    public Result<List<Artifact>> doEdit(EditSession es, OpSubject subject, Op op, Source<Artifact> artifacts)
             throws Exception {
-        try (PomTransformerSink sink = PomTransformerSink.transform(output, es.editedPom(), transformation)) {
+        try (PomTransformerSink sink = PomTransformerSink.transform(output, es.editedPom(), subject, op)) {
             List<Artifact> res = artifacts.get().collect(Collectors.toList());
             sink.accept(res);
             return Result.success(res);
         }
-    }
-
-    @Override
-    public Result<List<Artifact>> doManagedPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
-        Function<Artifact, PomTransformer.Transformation> transformation;
-        switch (op) {
-            case UPSERT:
-                transformation = PomTransformerSink.updateManagedPlugin(true);
-                break;
-            case UPDATE:
-                transformation = PomTransformerSink.updateManagedPlugin(false);
-                break;
-            case DELETE:
-                transformation = PomTransformerSink.deleteManagedPlugin();
-                break;
-            default:
-                throw new IllegalStateException("Unsupported operation");
-        }
-        return doEdit(es, transformation, artifacts);
-    }
-
-    @Override
-    public Result<List<Artifact>> doPlugins(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
-        Function<Artifact, PomTransformer.Transformation> transformation;
-        switch (op) {
-            case UPSERT:
-                transformation = PomTransformerSink.updatePlugin(true);
-                break;
-            case UPDATE:
-                transformation = PomTransformerSink.updatePlugin(false);
-                break;
-            case DELETE:
-                transformation = PomTransformerSink.deletePlugin();
-                break;
-            default:
-                throw new IllegalStateException("Unsupported operation");
-        }
-        return doEdit(es, transformation, artifacts);
-    }
-
-    @Override
-    public Result<List<Artifact>> doManagedDependencies(EditSession es, Op op, Source<Artifact> artifacts)
-            throws Exception {
-        Function<Artifact, PomTransformer.Transformation> transformation;
-        switch (op) {
-            case UPSERT:
-                transformation = PomTransformerSink.updateManagedDependency(true);
-                break;
-            case UPDATE:
-                transformation = PomTransformerSink.updateManagedDependency(false);
-                break;
-            case DELETE:
-                transformation = PomTransformerSink.deleteManagedDependency();
-                break;
-            default:
-                throw new IllegalStateException("Unsupported operation");
-        }
-        return doEdit(es, transformation, artifacts);
-    }
-
-    @Override
-    public Result<List<Artifact>> doDependencies(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
-        Function<Artifact, PomTransformer.Transformation> transformation;
-        switch (op) {
-            case UPSERT:
-                transformation = PomTransformerSink.updateDependency(true);
-                break;
-            case UPDATE:
-                transformation = PomTransformerSink.updateDependency(false);
-                break;
-            case DELETE:
-                transformation = PomTransformerSink.deleteDependency();
-                break;
-            default:
-                throw new IllegalStateException("Unsupported operation");
-        }
-        return doEdit(es, transformation, artifacts);
     }
 
     // Utils

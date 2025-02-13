@@ -42,12 +42,23 @@ public class GavVersionsMojo extends GavMojoSupport {
     @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
     private String artifactVersionMatcherSpec;
 
+    /**
+     * Artifact version selector spec string to select the version from candidates, default is 'last()'.
+     */
+    @CommandLine.Option(
+            names = {"--artifactVersionSelectorSpec"},
+            defaultValue = "last()",
+            description = "Artifact version selector spec (default 'last()')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+    private String artifactVersionSelectorSpec;
+
     @Override
     protected Result<Map<Artifact, List<Version>>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.versions(
                 "GAV",
                 () -> slurp(gav).stream().map(DefaultArtifact::new),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec),
+                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec));
     }
 }

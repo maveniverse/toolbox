@@ -8,6 +8,9 @@
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
+import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -17,6 +20,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.Version;
+import picocli.CommandLine;
 
 /**
  * Lists available versions of Maven Project dependencies.
@@ -36,6 +40,16 @@ public class VersionsMojo extends MPMojoSupport {
     private String artifactVersionMatcherSpec;
 
     /**
+     * Artifact version selector spec string to select the version from candidates, default is 'last()'.
+     */
+    @CommandLine.Option(
+            names = {"--artifactVersionSelectorSpec"},
+            defaultValue = "last()",
+            description = "Artifact version selector spec (default 'last()')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+    private String artifactVersionSelectorSpec;
+
+    /**
      * Apply results to POM.
      */
     @Parameter(property = "applyToPom")
@@ -44,34 +58,46 @@ public class VersionsMojo extends MPMojoSupport {
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
+        DependencyMatcher dependencyMatcher = toolboxCommando.parseDependencyMatcherSpec(depSpec);
+        ArtifactVersionMatcher artifactVersionMatcher =
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec);
+        ArtifactVersionSelector artifactVersionSelector =
+                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
+
         Result<Map<Artifact, List<Version>>> managedDependencies = toolboxCommando.versions(
                 "managed dependencies",
-                () ->
-                        projectManagedDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec))
-                                .stream()
-                                .map(ResolutionRoot::getArtifact),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
+                () -> projectManagedDependenciesAsResolutionRoots(dependencyMatcher).stream()
+                        .map(ResolutionRoot::getArtifact),
+                artifactVersionMatcher,
+                artifactVersionSelector);
         Result<Map<Artifact, List<Version>>> dependencies = toolboxCommando.versions(
                 "dependencies",
-                () -> projectDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec)).stream()
+                () -> projectDependenciesAsResolutionRoots(dependencyMatcher).stream()
                         .map(ResolutionRoot::getArtifact),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
+                artifactVersionMatcher,
+                artifactVersionSelector);
 
         if (applyToPom) {
             List<Artifact> managedDependenciesUpdates = toolboxCommando.calculateUpdates(
-                    managedDependencies.getData().orElseThrow());
+                    managedDependencies.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> dependenciesUpdates =
-                    toolboxCommando.calculateUpdates(dependencies.getData().orElseThrow());
+                    toolboxCommando.calculateUpdates(dependencies.getData().orElseThrow(), artifactVersionSelector);
             if (!managedDependenciesUpdates.isEmpty() || !dependenciesUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
                     if (!managedDependenciesUpdates.isEmpty()) {
-                        toolboxCommando.doManagedDependencies(
-                                editSession, ToolboxCommando.Op.UPDATE, managedDependenciesUpdates::stream);
+                        toolboxCommando.doEdit(
+                                editSession,
+                                ToolboxCommando.OpSubject.MANAGED_DEPENDENCIES,
+                                ToolboxCommando.Op.UPDATE,
+                                managedDependenciesUpdates::stream);
                     }
                     if (!dependenciesUpdates.isEmpty()) {
-                        toolboxCommando.doDependencies(
-                                editSession, ToolboxCommando.Op.UPDATE, dependenciesUpdates::stream);
+                        toolboxCommando.doEdit(
+                                editSession,
+                                ToolboxCommando.OpSubject.DEPENDENCIES,
+                                ToolboxCommando.Op.UPDATE,
+                                dependenciesUpdates::stream);
                     }
                 }
             }

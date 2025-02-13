@@ -16,7 +16,7 @@ import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.Sink;
 import eu.maveniverse.maven.toolbox.shared.output.NopOutput;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.HashMap;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -27,7 +27,7 @@ public class ArtifactSinksTest {
     void parse() {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create()
-                .withBasedirOverride(Paths.get("target").toAbsolutePath())
+                .withBasedirOverride(Path.of("target").toAbsolutePath())
                 .build())) {
             ToolboxCommandoImpl tc = new ToolboxCommandoImpl(NopOutput.INSTANCE, context);
 

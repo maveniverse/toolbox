@@ -61,8 +61,9 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
         if (result.isSuccess() && toPom != null) {
             try (ToolboxCommando.EditSession es = getToolboxCommando().createEditSession(toPom.toPath())) {
                 return getToolboxCommando()
-                        .doManagedPlugins(
+                        .doEdit(
                                 es,
+                                ToolboxCommando.OpSubject.MANAGED_PLUGINS,
                                 upsert ? ToolboxCommando.Op.UPSERT : ToolboxCommando.Op.UPDATE,
                                 () -> result.getData().orElseThrow().stream());
             }

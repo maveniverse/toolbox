@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.toolbox.it</groupId>
     <artifactId>it</artifactId>
-    <version>0.6.2-SNAPSHOT</version>
+    <version>0.6.4-SNAPSHOT</version>
   </parent>
 
   <artifactId>toolbox-cli-its</artifactId>
@@ -70,7 +70,7 @@
           <plugin>
             <groupId>org.codehaus.gmavenplus</groupId>
             <artifactId>gmavenplus-plugin</artifactId>
-            <version>4.0.1</version>
+            <version>4.1.1</version>
             <configuration>
               <properties>
                 <property>
@@ -103,7 +103,7 @@
               <dependency>
                 <groupId>org.apache.groovy</groupId>
                 <artifactId>groovy-all</artifactId>
-                <version>4.0.24</version>
+                <version>4.0.25</version>
                 <type>pom</type>
                 <scope>runtime</scope>
               </dependency>

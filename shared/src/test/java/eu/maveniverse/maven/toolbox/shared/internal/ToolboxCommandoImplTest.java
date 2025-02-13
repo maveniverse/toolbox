@@ -13,7 +13,7 @@ import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.toolbox.shared.output.NopOutput;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +24,7 @@ public class ToolboxCommandoImplTest {
     void search() throws IOException {
         Runtime runtime = Runtimes.INSTANCE.getRuntime();
         try (Context context = runtime.create(ContextOverrides.create()
-                .withBasedirOverride(Paths.get("target").toAbsolutePath())
+                .withBasedirOverride(Path.of("target").toAbsolutePath())
                 .build())) {
             ToolboxCommandoImpl tc = new ToolboxCommandoImpl(NopOutput.INSTANCE, context);
 

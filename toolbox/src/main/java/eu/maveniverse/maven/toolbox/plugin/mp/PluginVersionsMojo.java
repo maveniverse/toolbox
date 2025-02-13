@@ -9,6 +9,8 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -18,6 +20,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.Version;
+import picocli.CommandLine;
 
 /**
  * Lists available versions of Maven Project plugins.
@@ -37,6 +40,16 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     private String artifactVersionMatcherSpec;
 
     /**
+     * Artifact version selector spec string to select the version from candidates, default is 'last()'.
+     */
+    @CommandLine.Option(
+            names = {"--artifactVersionSelectorSpec"},
+            defaultValue = "last()",
+            description = "Artifact version selector spec (default 'last()')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+    private String artifactVersionSelectorSpec;
+
+    /**
      * Apply results to POM.
      */
     @Parameter(property = "applyToPom")
@@ -46,33 +59,47 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
+        ArtifactVersionMatcher artifactVersionMatcher =
+                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec);
+        ArtifactVersionSelector artifactVersionSelector =
+                toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
+
         Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
                 "managed plugins",
                 () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
+                artifactVersionMatcher,
+                artifactVersionSelector);
         Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
                 "plugins",
                 () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
-                toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
+                artifactVersionMatcher,
+                artifactVersionSelector);
 
         if (applyToPom) {
             List<Artifact> managedPluginsUpdates =
-                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow());
+                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> pluginsUpdates =
-                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow());
+                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow(), artifactVersionSelector);
             if (!managedPluginsUpdates.isEmpty() || !pluginsUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
                     if (!managedPluginsUpdates.isEmpty()) {
-                        toolboxCommando.doManagedPlugins(
-                                editSession, ToolboxCommando.Op.UPDATE, managedPluginsUpdates::stream);
+                        toolboxCommando.doEdit(
+                                editSession,
+                                ToolboxCommando.OpSubject.MANAGED_PLUGINS,
+                                ToolboxCommando.Op.UPDATE,
+                                managedPluginsUpdates::stream);
                     }
                     if (!pluginsUpdates.isEmpty()) {
-                        toolboxCommando.doPlugins(editSession, ToolboxCommando.Op.UPDATE, pluginsUpdates::stream);
+                        toolboxCommando.doEdit(
+                                editSession,
+                                ToolboxCommando.OpSubject.PLUGINS,
+                                ToolboxCommando.Op.UPDATE,
+                                pluginsUpdates::stream);
                     }
                 }
             }

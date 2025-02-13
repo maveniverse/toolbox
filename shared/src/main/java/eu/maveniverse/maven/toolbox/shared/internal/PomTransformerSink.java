@@ -13,21 +13,25 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
+import org.jdom2.CDATA;
+import org.jdom2.Comment;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
+import org.jdom2.filter.ContentFilter;
 import org.jdom2.input.SAXBuilder;
 import org.jdom2.located.LocatedJDOMFactory;
 import org.jdom2.output.Format;
@@ -55,11 +59,32 @@ public final class PomTransformerSink implements Artifacts.Sink {
     private final Transformation removeEmptyElements = ctx -> {};
 
     /**
-     * Helper for GA equality.
+     * Helper for GA equality. To be used with plugins.
      */
     private static boolean equalsGA(Artifact artifact, Element element) {
-        return Objects.equals(artifact.getGroupId(), element.getChildText("groupId", element.getNamespace()))
-                && Objects.equals(artifact.getArtifactId(), element.getChildText("artifactId", element.getNamespace()));
+        String groupId = element.getChildText("groupId", element.getNamespace());
+        String artifactId = element.getChildText("artifactId", element.getNamespace());
+        return Objects.equals(artifact.getGroupId(), groupId) && Objects.equals(artifact.getArtifactId(), artifactId);
+    }
+
+    /**
+     * Helper for GATC equality. To be used with dependencies.
+     */
+    private static boolean equalsGATC(Artifact artifact, Element element) {
+        String groupId = element.getChildText("groupId", element.getNamespace());
+        String artifactId = element.getChildText("artifactId", element.getNamespace());
+        String type = element.getChildText("type", element.getNamespace());
+        if (type == null) {
+            type = "jar";
+        }
+        String classifier = element.getChildText("classifier", element.getNamespace());
+        if (classifier == null) {
+            classifier = "";
+        }
+        return Objects.equals(artifact.getGroupId(), groupId)
+                && Objects.equals(artifact.getArtifactId(), artifactId)
+                && Objects.equals(artifact.getClassifier(), classifier)
+                && Objects.equals(artifact.getExtension(), type);
     }
 
     private static Consumer<TransformationContext> addOrSetProperty(String key, String value) {
@@ -91,7 +116,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
                     project.addContent(project.addContent(build));
                 }
                 if (build != null) {
-                    Element pluginManagement = project.getChild("pluginManagement", project.getNamespace());
+                    Element pluginManagement = build.getChild("pluginManagement", project.getNamespace());
                     if (upsert && pluginManagement == null) {
                         pluginManagement = new Element("pluginManagement", project.getNamespace());
                         build.addContent(pluginManagement);
@@ -234,7 +259,64 @@ public final class PomTransformerSink implements Artifacts.Sink {
 
     public static Function<Artifact, Consumer<TransformationContext>> updateManagedDependency(boolean upsert) {
         return a -> context -> {
-            throw new RuntimeException("not implemented");
+            Element project = context.getDocument().getRootElement();
+            if (project != null) {
+                Element dependencyManagement = project.getChild("dependencyManagement", project.getNamespace());
+                if (upsert && dependencyManagement == null) {
+                    dependencyManagement = new Element("dependencyManagement", project.getNamespace());
+                    project.addContent(dependencyManagement);
+                }
+                if (dependencyManagement != null) {
+                    Element dependencies = dependencyManagement.getChild("dependencies", project.getNamespace());
+                    if (upsert && dependencies == null) {
+                        dependencies = new Element("dependencies", project.getNamespace());
+                        dependencyManagement.addContent(dependencies);
+                    }
+                    if (dependencies != null) {
+                        Element toUpdate = null;
+                        for (Element dependency : dependencies.getChildren("dependency", dependencies.getNamespace())) {
+                            if (equalsGATC(a, dependency)) {
+                                toUpdate = dependency;
+                                break;
+                            }
+                        }
+                        if (upsert && toUpdate == null) {
+                            toUpdate = new Element("dependency", dependencies.getNamespace());
+                            toUpdate.addContent(
+                                    new Element("groupId", dependencies.getNamespace()).setText(a.getGroupId()));
+                            toUpdate.addContent(
+                                    new Element("artifactId", dependencies.getNamespace()).setText(a.getArtifactId()));
+                            toUpdate.addContent(
+                                    new Element("version", dependencies.getNamespace()).setText(a.getVersion()));
+                            if (!"jar".equals(a.getExtension())) {
+                                toUpdate.addContent(
+                                        new Element("type", dependencies.getNamespace()).setText(a.getExtension()));
+                            }
+                            if (!a.getClassifier().isEmpty()) {
+                                toUpdate.addContent(new Element("classifier", dependencies.getNamespace())
+                                        .setText(a.getClassifier()));
+                            }
+                            dependencies.addContent(toUpdate);
+                            return;
+                        }
+                        if (toUpdate != null) {
+                            Element version = toUpdate.getChild("version", dependencies.getNamespace());
+                            if (version != null) {
+                                String versionValue = version.getText();
+                                if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
+                                    String propertyKey = versionValue.substring(2, versionValue.length() - 1);
+                                    addOrSetProperty(propertyKey, a.getVersion())
+                                            .accept(context);
+                                } else {
+                                    version.setText(a.getVersion());
+                                }
+                            } else {
+                                updateManagedDependency(upsert).apply(a).accept(context);
+                            }
+                        }
+                    }
+                }
+            }
         };
     }
 
@@ -248,7 +330,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
                             dependencyManagement.getChild("dependencies", dependencyManagement.getNamespace());
                     if (dependencies != null) {
                         for (Element dependency : dependencies.getChildren("dependency", dependencies.getNamespace())) {
-                            if (equalsGA(a, dependency)) {
+                            if (equalsGATC(a, dependency)) {
                                 dependency.detach();
                             }
                         }
@@ -260,7 +342,56 @@ public final class PomTransformerSink implements Artifacts.Sink {
 
     public static Function<Artifact, Consumer<TransformationContext>> updateDependency(boolean upsert) {
         return a -> context -> {
-            throw new RuntimeException("not implemented");
+            Element project = context.getDocument().getRootElement();
+            if (project != null) {
+                Element dependencies = project.getChild("dependencies", project.getNamespace());
+                if (upsert && dependencies == null) {
+                    dependencies = new Element("dependencies", project.getNamespace());
+                    project.addContent(dependencies);
+                }
+                if (dependencies != null) {
+                    Element toUpdate = null;
+                    for (Element dependency : dependencies.getChildren("dependency", dependencies.getNamespace())) {
+                        if (equalsGATC(a, dependency)) {
+                            toUpdate = dependency;
+                            break;
+                        }
+                    }
+                    if (upsert && toUpdate == null) {
+                        toUpdate = new Element("dependency", dependencies.getNamespace());
+                        toUpdate.addContent(
+                                new Element("groupId", dependencies.getNamespace()).setText(a.getGroupId()));
+                        toUpdate.addContent(
+                                new Element("artifactId", dependencies.getNamespace()).setText(a.getArtifactId()));
+                        toUpdate.addContent(
+                                new Element("version", dependencies.getNamespace()).setText(a.getVersion()));
+                        if (!"jar".equals(a.getExtension())) {
+                            toUpdate.addContent(
+                                    new Element("type", dependencies.getNamespace()).setText(a.getExtension()));
+                        }
+                        if (!a.getClassifier().isEmpty()) {
+                            toUpdate.addContent(
+                                    new Element("classifier", dependencies.getNamespace()).setText(a.getClassifier()));
+                        }
+                        dependencies.addContent(toUpdate);
+                        return;
+                    }
+                    if (toUpdate != null) {
+                        Element version = toUpdate.getChild("version", dependencies.getNamespace());
+                        if (version != null) {
+                            String versionValue = version.getText();
+                            if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
+                                String propertyKey = versionValue.substring(2, versionValue.length() - 1);
+                                addOrSetProperty(propertyKey, a.getVersion()).accept(context);
+                            } else {
+                                version.setText(a.getVersion());
+                            }
+                        } else {
+                            updateManagedDependency(upsert).apply(a).accept(context);
+                        }
+                    }
+                }
+            }
         };
     }
 
@@ -271,7 +402,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
                 Element dependencies = project.getChild("dependencies", project.getNamespace());
                 if (dependencies != null) {
                     for (Element dependency : dependencies.getChildren("dependency", dependencies.getNamespace())) {
-                        if (equalsGA(a, dependency)) {
+                        if (equalsGATC(a, dependency)) {
                             dependency.detach();
                         }
                     }
@@ -383,24 +514,70 @@ public final class PomTransformerSink implements Artifacts.Sink {
     @Override
     public void close() throws IOException {
         if (!applicableTransformations.isEmpty()) {
+            String head = null;
+            String body;
+            String tail = null;
+
+            body = Files.readString(pom, StandardCharsets.UTF_8);
+            body = normalizeLineEndings(body, System.lineSeparator());
+
             SAXBuilder builder = new SAXBuilder();
             builder.setJDOMFactory(new LocatedJDOMFactory());
             Document document;
-            try (InputStream inputStream = Files.newInputStream(pom)) {
-                document = builder.build(inputStream);
+            try {
+                document = builder.build(new StringReader(body));
             } catch (JDOMException e) {
                 throw new IOException(e);
             }
+            normaliseLineEndings(document, System.lineSeparator());
+
+            int headIndex = body.indexOf("<" + document.getRootElement().getName());
+            if (headIndex >= 0) {
+                head = body.substring(0, headIndex);
+            }
+            String lastTag = "</" + document.getRootElement().getName() + ">";
+            int tailIndex = body.lastIndexOf(lastTag);
+            if (tailIndex >= 0) {
+                tail = body.substring(tailIndex + lastTag.length());
+            }
+
             TransformationContext context = () -> document;
             for (Consumer<TransformationContext> transformation : applicableTransformations) {
                 transformation.accept(context);
             }
 
-            XMLOutputter out = new XMLOutputter(Format.getRawFormat());
+            Format format = Format.getRawFormat();
+            format.setLineSeparator(System.lineSeparator());
+            XMLOutputter out = new XMLOutputter(format);
             try (OutputStream outputStream = Files.newOutputStream(pom)) {
-                out.output(document, outputStream);
+                if (head != null) {
+                    outputStream.write(head.getBytes(StandardCharsets.UTF_8));
+                }
+                out.output(document.getRootElement(), outputStream);
+                if (tail != null) {
+                    outputStream.write(tail.getBytes(StandardCharsets.UTF_8));
+                }
                 outputStream.flush();
             }
         }
+    }
+
+    private void normaliseLineEndings(Document document, String lineSeparator) {
+        for (Iterator<?> i = document.getDescendants(new ContentFilter(ContentFilter.COMMENT)); i.hasNext(); ) {
+            Comment c = (Comment) i.next();
+            c.setText(normalizeLineEndings(c.getText(), lineSeparator));
+        }
+        for (Iterator<?> i = document.getDescendants(new ContentFilter(ContentFilter.CDATA)); i.hasNext(); ) {
+            CDATA c = (CDATA) i.next();
+            c.setText(normalizeLineEndings(c.getText(), lineSeparator));
+        }
+    }
+
+    private static String normalizeLineEndings(String text, String separator) {
+        String norm = text;
+        if (text != null) {
+            norm = text.replaceAll("(\r\n)|(\n)|(\r)", separator);
+        }
+        return norm;
     }
 }

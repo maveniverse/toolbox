@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
-import eu.maveniverse.maven.toolbox.shared.internal.PomTransformerSink;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.Closeable;
@@ -445,8 +444,34 @@ public interface ToolboxCommando {
                                         : versionSelector.apply(e.getKey(), e.getValue())))
                 .collect(Collectors.toList());
     }
+    /**
+     * The operation subject to apply to.
+     */
+    enum OpSubject {
+        MANAGED_PLUGINS,
+        PLUGINS,
+        MANAGED_DEPENDENCIES,
+        DEPENDENCIES
+    }
 
-    Result<List<Artifact>> doEdit(
-            EditSession es, PomTransformerSink.OpSubject subject, PomTransformerSink.Op op, Source<Artifact> artifacts)
+    /**
+     * The operation mode to apply.
+     */
+    enum Op {
+        /**
+         * Always alter: like if exists "update" version, if does not exist, create new entry with provided one.
+         */
+        UPSERT,
+        /**
+         * Alter it only if it exists: like "update" version, otherwise no-op.
+         */
+        UPDATE,
+        /**
+         * Remove, if exists.
+         */
+        DELETE
+    }
+
+    Result<List<Artifact>> doEdit(EditSession es, OpSubject subject, Op op, Source<Artifact> artifacts)
             throws Exception;
 }

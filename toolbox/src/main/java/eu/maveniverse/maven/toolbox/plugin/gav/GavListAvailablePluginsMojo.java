@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.internal.PomTransformerSink;
 import java.io.File;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -64,8 +63,8 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
                 return getToolboxCommando()
                         .doEdit(
                                 es,
-                                PomTransformerSink.OpSubject.MANAGED_PLUGINS,
-                                upsert ? PomTransformerSink.Op.UPSERT : PomTransformerSink.Op.UPDATE,
+                                ToolboxCommando.OpSubject.MANAGED_PLUGINS,
+                                upsert ? ToolboxCommando.Op.UPSERT : ToolboxCommando.Op.UPDATE,
                                 () -> result.getData().orElseThrow().stream());
             }
         }

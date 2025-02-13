@@ -1343,8 +1343,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<Artifact>> doEdit(
-            EditSession es, PomTransformerSink.OpSubject subject, PomTransformerSink.Op op, Source<Artifact> artifacts)
+    public Result<List<Artifact>> doEdit(EditSession es, OpSubject subject, Op op, Source<Artifact> artifacts)
             throws Exception {
         try (PomTransformerSink sink = PomTransformerSink.transform(output, es.editedPom(), subject, op)) {
             List<Artifact> res = artifacts.get().collect(Collectors.toList());

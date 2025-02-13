@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
@@ -29,38 +30,11 @@ import org.eclipse.aether.artifact.Artifact;
  */
 public final class PomTransformerSink implements Artifacts.Sink {
     /**
-     * The operation subject to apply to.
-     */
-    public enum OpSubject {
-        MANAGED_PLUGINS,
-        PLUGINS,
-        MANAGED_DEPENDENCIES,
-        DEPENDENCIES
-    }
-
-    /**
-     * The operation mode to apply.
-     */
-    public enum Op {
-        /**
-         * Always alter: like if exists "update" version, if does not exist, create new entry with provided one.
-         */
-        UPSERT,
-        /**
-         * Alter it only if it exists: like "update" version, otherwise no-op.
-         */
-        UPDATE,
-        /**
-         * Remove, if exists.
-         */
-        DELETE
-    }
-
-    /**
      * Creates trivial "transform" sink, that accepts all artifacts and applies provided transformations to artifacts as-is.
      * If no POM file exists, will provide a plain/trivial "blank" POM.
      */
-    public static PomTransformerSink transform(Output output, Path pom, OpSubject subject, Op op) throws IOException {
+    public static PomTransformerSink transform(
+            Output output, Path pom, ToolboxCommando.OpSubject subject, ToolboxCommando.Op op) throws IOException {
         return transform(output, pom, () -> BLANK_POM, ArtifactMatcher.any(), ArtifactMapper.identity(), subject, op);
     }
 
@@ -73,8 +47,8 @@ public final class PomTransformerSink implements Artifacts.Sink {
             Supplier<String> pomSupplier,
             Predicate<Artifact> artifactMatcher,
             Function<Artifact, Artifact> artifactMapper,
-            OpSubject subject,
-            Op op)
+            ToolboxCommando.OpSubject subject,
+            ToolboxCommando.Op op)
             throws IOException {
         return new PomTransformerSink(output, pom, pomSupplier, artifactMatcher, artifactMapper, subject, op);
     }
@@ -115,8 +89,8 @@ public final class PomTransformerSink implements Artifacts.Sink {
             Supplier<String> blankPomSupplier,
             Predicate<Artifact> artifactMatcher,
             Function<Artifact, Artifact> artifactMapper,
-            OpSubject subject,
-            Op op)
+            ToolboxCommando.OpSubject subject,
+            ToolboxCommando.Op op)
             throws IOException {
         this.output = requireNonNull(output, "output");
         this.pom = requireNonNull(pom, "pom").toAbsolutePath();
@@ -135,16 +109,16 @@ public final class PomTransformerSink implements Artifacts.Sink {
             case UPDATE:
                 switch (subject) {
                     case MANAGED_PLUGINS:
-                        tr = JDomPomTransformer.updateManagedPlugin(op == Op.UPSERT);
+                        tr = JDomPomTransformer.updateManagedPlugin(op == ToolboxCommando.Op.UPSERT);
                         break;
                     case PLUGINS:
-                        tr = JDomPomTransformer.updatePlugin(op == Op.UPSERT);
+                        tr = JDomPomTransformer.updatePlugin(op == ToolboxCommando.Op.UPSERT);
                         break;
                     case MANAGED_DEPENDENCIES:
-                        tr = JDomPomTransformer.updateManagedDependency(op == Op.UPSERT);
+                        tr = JDomPomTransformer.updateManagedDependency(op == ToolboxCommando.Op.UPSERT);
                         break;
                     case DEPENDENCIES:
-                        tr = JDomPomTransformer.updateDependency(op == Op.UPSERT);
+                        tr = JDomPomTransformer.updateDependency(op == ToolboxCommando.Op.UPSERT);
                         break;
                 }
                 break;

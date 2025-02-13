@@ -10,28 +10,15 @@ package eu.maveniverse.maven.toolbox.shared.internal.jdom;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.eclipse.aether.artifact.Artifact;
-import org.jdom2.CDATA;
-import org.jdom2.Comment;
 import org.jdom2.Document;
 import org.jdom2.Element;
-import org.jdom2.JDOMException;
-import org.jdom2.filter.ContentFilter;
-import org.jdom2.input.SAXBuilder;
-import org.jdom2.located.LocatedJDOMFactory;
-import org.jdom2.output.Format;
-import org.jdom2.output.XMLOutputter;
 
 /**
  * Construction to accept collection of artifacts, and applies it to some POM based on provided transformations.
@@ -52,19 +39,7 @@ public final class JDomPomTransformer {
      * Removes empty remnant tags, like {@code <plugins />}.
      */
     private static final Consumer<TransformationContext> removeEmptyElements = ctx -> {
-        // Remove empty elements
-        for (String cleanUpEmptyElement : List.of(
-                JDomCfg.POM_ELEMENT_MODULES,
-                JDomCfg.POM_ELEMENT_PROPERTIES,
-                JDomCfg.POM_ELEMENT_PLUGINS,
-                JDomCfg.POM_ELEMENT_PLUGIN_MANAGEMENT,
-                JDomCfg.POM_ELEMENT_DEPENDENCIES,
-                JDomCfg.POM_ELEMENT_DEPENDENCY_MANAGEMENT)) {
-            JDomCleanupHelper.cleanupEmptyElements(ctx.getDocument().getRootElement(), cleanUpEmptyElement);
-        }
-        // Remove empty (i.e. with no elements) profile and profiles tag
-        JDomCleanupHelper.cleanupEmptyProfiles(
-                ctx.getDocument().getRootElement(), List.of(JDomCfg.POM_ELEMENT_PROJECT));
+        JDomCleanupHelper.cleanup(ctx.getDocument().getRootElement());
     };
 
     /**
@@ -443,92 +418,40 @@ public final class JDomPomTransformer {
         requireNonNull(pom, "pom");
         requireNonNull(transformations, "transformations");
         if (!transformations.isEmpty()) {
-            String head = null;
-            String body;
-            String tail = null;
+            try (JDomDocumentIO domDocumentIO = new JDomDocumentIO(pom)) {
+                ArrayList<Consumer<TransformationContext>> postProcessors = new ArrayList<>();
+                TransformationContext context = new TransformationContext() {
+                    @Override
+                    public boolean pomHasParent() {
+                        return domDocumentIO
+                                        .getDocument()
+                                        .getRootElement()
+                                        .getChild(
+                                                "parent",
+                                                domDocumentIO
+                                                        .getDocument()
+                                                        .getRootElement()
+                                                        .getNamespace())
+                                != null;
+                    }
 
-            body = Files.readString(pom, StandardCharsets.UTF_8);
-            body = normalizeLineEndings(body, System.lineSeparator());
+                    @Override
+                    public Document getDocument() {
+                        return domDocumentIO.getDocument();
+                    }
 
-            SAXBuilder builder = new SAXBuilder();
-            builder.setJDOMFactory(new LocatedJDOMFactory());
-            Document document;
-            try {
-                document = builder.build(new StringReader(body));
-            } catch (JDOMException e) {
-                throw new IOException(e);
-            }
-            normaliseLineEndings(document, System.lineSeparator());
-
-            int headIndex = body.indexOf("<" + document.getRootElement().getName());
-            if (headIndex >= 0) {
-                head = body.substring(0, headIndex);
-            }
-            String lastTag = "</" + document.getRootElement().getName() + ">";
-            int tailIndex = body.lastIndexOf(lastTag);
-            if (tailIndex >= 0) {
-                tail = body.substring(tailIndex + lastTag.length());
-            }
-
-            ArrayList<Consumer<TransformationContext>> postProcessors = new ArrayList<>();
-            TransformationContext context = new TransformationContext() {
-                @Override
-                public boolean pomHasParent() {
-                    return document.getRootElement()
-                                    .getChild(
-                                            "parent", document.getRootElement().getNamespace())
-                            != null;
+                    @Override
+                    public void registerPostTransformation(Consumer<TransformationContext> transformation) {
+                        postProcessors.add(transformation);
+                    }
+                };
+                for (Consumer<TransformationContext> transformation : transformations) {
+                    transformation.accept(context);
                 }
-
-                @Override
-                public Document getDocument() {
-                    return document;
+                for (Consumer<TransformationContext> transformation : postProcessors) {
+                    transformation.accept(context);
                 }
-
-                @Override
-                public void registerPostTransformation(Consumer<TransformationContext> transformation) {
-                    postProcessors.add(transformation);
-                }
-            };
-            for (Consumer<TransformationContext> transformation : transformations) {
-                transformation.accept(context);
-            }
-            for (Consumer<TransformationContext> transformation : postProcessors) {
-                transformation.accept(context);
-            }
-
-            Format format = Format.getRawFormat();
-            format.setLineSeparator(System.lineSeparator());
-            XMLOutputter out = new XMLOutputter(format);
-            try (OutputStream outputStream = Files.newOutputStream(pom)) {
-                if (head != null) {
-                    outputStream.write(head.getBytes(StandardCharsets.UTF_8));
-                }
-                out.output(document.getRootElement(), outputStream);
-                if (tail != null) {
-                    outputStream.write(tail.getBytes(StandardCharsets.UTF_8));
-                }
-                outputStream.flush();
             }
         }
-    }
-
-    private static void normaliseLineEndings(Document document, String lineSeparator) {
-        for (Iterator<?> i = document.getDescendants(new ContentFilter(ContentFilter.COMMENT)); i.hasNext(); ) {
-            Comment c = (Comment) i.next();
-            c.setText(normalizeLineEndings(c.getText(), lineSeparator));
-        }
-        for (Iterator<?> i = document.getDescendants(new ContentFilter(ContentFilter.CDATA)); i.hasNext(); ) {
-            CDATA c = (CDATA) i.next();
-            c.setText(normalizeLineEndings(c.getText(), lineSeparator));
-        }
-    }
-
-    private static String normalizeLineEndings(String text, String separator) {
-        String norm = text;
-        if (text != null) {
-            norm = text.replaceAll("(\r\n)|(\n)|(\r)", separator);
-        }
-        return norm;
     }
 }

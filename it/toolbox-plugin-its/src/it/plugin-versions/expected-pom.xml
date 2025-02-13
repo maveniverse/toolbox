@@ -14,6 +14,7 @@
     <artifactId>versions</artifactId>
     <version>1.0.0</version>
     <properties>
+        <data><![CDATA[some data]]></data>
         <first.version>1.1</first.version>
         <third.version>1.1</third.version>
     </properties>

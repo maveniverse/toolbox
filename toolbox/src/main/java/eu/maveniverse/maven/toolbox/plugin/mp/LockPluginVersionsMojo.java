@@ -99,7 +99,11 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
             if (!pluginsUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
-                    toolboxCommando.doManagedPlugins(editSession, ToolboxCommando.Op.UPSERT, pluginsUpdates::stream);
+                    toolboxCommando.doEdit(
+                            editSession,
+                            ToolboxCommando.OpSubject.MANAGED_PLUGINS,
+                            ToolboxCommando.Op.UPSERT,
+                            pluginsUpdates::stream);
                 }
             }
         }

@@ -55,8 +55,9 @@ public final class PomTransformerSink implements Artifacts.Sink {
 
     private static final String BLANK_POM = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
             + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-            + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+            + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
             + "    <modelVersion>4.0.0</modelVersion>\n" //
+            + "\n" //
             + "    <groupId>org.acme</groupId>\n" //
             + "    <artifactId>pom</artifactId>\n" //
             + "    <version>1.0-SNAPSHOT</version>\n" //

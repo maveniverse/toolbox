@@ -46,6 +46,24 @@ import org.jdom2.util.IteratorIterable;
 public class JDomCleanupHelper {
 
     /**
+     * Generic cleanup useful after removal of things.
+     */
+    public static void cleanup(Element rootElement) {
+        // Remove empty elements
+        for (String cleanUpEmptyElement : List.of(
+                JDomCfg.POM_ELEMENT_MODULES,
+                JDomCfg.POM_ELEMENT_PROPERTIES,
+                JDomCfg.POM_ELEMENT_PLUGINS,
+                JDomCfg.POM_ELEMENT_PLUGIN_MANAGEMENT,
+                JDomCfg.POM_ELEMENT_DEPENDENCIES,
+                JDomCfg.POM_ELEMENT_DEPENDENCY_MANAGEMENT)) {
+            JDomCleanupHelper.cleanupEmptyElements(rootElement, cleanUpEmptyElement);
+        }
+        // Remove empty (i.e. with no elements) profile and profiles tag
+        JDomCleanupHelper.cleanupEmptyProfiles(rootElement, List.of(JDomCfg.POM_ELEMENT_PROJECT));
+    }
+
+    /**
      * Remove all empty profiles and profile tags.<br>
      * Empty is defined as
      * <ul>

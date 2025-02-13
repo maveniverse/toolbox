@@ -39,19 +39,7 @@ public final class JDomPomTransformer {
      * Removes empty remnant tags, like {@code <plugins />}.
      */
     private static final Consumer<TransformationContext> removeEmptyElements = ctx -> {
-        // Remove empty elements
-        for (String cleanUpEmptyElement : List.of(
-                JDomCfg.POM_ELEMENT_MODULES,
-                JDomCfg.POM_ELEMENT_PROPERTIES,
-                JDomCfg.POM_ELEMENT_PLUGINS,
-                JDomCfg.POM_ELEMENT_PLUGIN_MANAGEMENT,
-                JDomCfg.POM_ELEMENT_DEPENDENCIES,
-                JDomCfg.POM_ELEMENT_DEPENDENCY_MANAGEMENT)) {
-            JDomCleanupHelper.cleanupEmptyElements(ctx.getDocument().getRootElement(), cleanUpEmptyElement);
-        }
-        // Remove empty (i.e. with no elements) profile and profiles tag
-        JDomCleanupHelper.cleanupEmptyProfiles(
-                ctx.getDocument().getRootElement(), List.of(JDomCfg.POM_ELEMENT_PROJECT));
+        JDomCleanupHelper.cleanup(ctx.getDocument().getRootElement());
     };
 
     /**

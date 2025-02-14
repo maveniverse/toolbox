@@ -16,7 +16,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.collection.CollectResult;
 
 /**
- * Displays dependency tree of Maven Artifact.
+ * Displays dependency tree of Maven Project.
  */
 @Mojo(name = "tree", threadSafe = true)
 public class TreeMojo extends MPMojoSupport {

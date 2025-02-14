@@ -66,7 +66,7 @@ public final class JDomPomEditor {
             Element parent = project.getChild("parent", project.getNamespace());
             if (parent == null) {
                 parent = new Element("parent", project.getNamespace());
-                parent.addContent(new Text("\n  "));
+                parent.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
                 JDomUtils.addElement(parent, project);
             }
             JDomUtils.rewriteElement("groupId", a.getGroupId(), parent);
@@ -90,7 +90,7 @@ public final class JDomPomEditor {
             Element modules = project.getChild("modules", project.getNamespace());
             if (modules == null) {
                 modules = new Element("modules", project.getNamespace());
-                modules.addContent(new Text("\n  "));
+                modules.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
                 JDomUtils.addElement(modules, project);
             }
             Element module = new Element("module", modules.getNamespace());
@@ -119,21 +119,21 @@ public final class JDomPomEditor {
             Element build = project.getChild("build", project.getNamespace());
             if (upsert && build == null) {
                 build = new Element("build", project.getNamespace());
-                build.addContent(new Text("\n  "));
+                build.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
                 JDomUtils.addElement(build, project);
             }
             if (build != null) {
-                Element pluginManagement = build.getChild("pluginManagement", project.getNamespace());
+                Element pluginManagement = build.getChild("pluginManagement", build.getNamespace());
                 if (upsert && pluginManagement == null) {
-                    pluginManagement = new Element("pluginManagement", project.getNamespace());
-                    pluginManagement.addContent(new Text("\n  "));
+                    pluginManagement = new Element("pluginManagement", build.getNamespace());
+                    pluginManagement.addContent(new Text("\n  " + JDomUtils.detectIndentation(build)));
                     JDomUtils.addElement(pluginManagement, build);
                 }
                 if (pluginManagement != null) {
                     Element plugins = pluginManagement.getChild("plugins", pluginManagement.getNamespace());
                     if (upsert && plugins == null) {
                         plugins = new Element("plugins", pluginManagement.getNamespace());
-                        plugins.addContent(new Text("\n  "));
+                        plugins.addContent(new Text("\n  " + JDomUtils.detectIndentation(pluginManagement)));
                         JDomUtils.addElement(plugins, pluginManagement);
                     }
                     if (plugins != null) {
@@ -146,7 +146,7 @@ public final class JDomPomEditor {
                         }
                         if (upsert && toUpdate == null) {
                             toUpdate = new Element("plugin", plugins.getNamespace());
-                            toUpdate.addContent(new Text("\n  "));
+                            toUpdate.addContent(new Text("\n  " + JDomUtils.detectIndentation(plugins)));
                             JDomUtils.addElement(toUpdate, plugins);
                             JDomUtils.addElement(
                                     new Element("groupId", plugins.getNamespace()).setText(a.getGroupId()), toUpdate);
@@ -200,14 +200,14 @@ public final class JDomPomEditor {
             Element build = project.getChild("build", project.getNamespace());
             if (upsert && build == null) {
                 build = new Element("build", project.getNamespace());
-                build.addContent(new Text("\n  "));
+                build.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
                 JDomUtils.addElement(build, project);
             }
             if (build != null) {
                 Element plugins = build.getChild("plugins", build.getNamespace());
                 if (upsert && plugins == null) {
                     plugins = new Element("plugins", build.getNamespace());
-                    plugins.addContent(new Text("\n  "));
+                    plugins.addContent(new Text("\n  " + JDomUtils.detectIndentation(build)));
                     JDomUtils.addElement(plugins, build);
                 }
                 if (plugins != null) {
@@ -220,7 +220,7 @@ public final class JDomPomEditor {
                     }
                     if (upsert && toUpdate == null) {
                         toUpdate = new Element("plugin", plugins.getNamespace());
-                        toUpdate.addContent(new Text("\n  "));
+                        toUpdate.addContent(new Text("\n  " + JDomUtils.detectIndentation(plugins)));
                         JDomUtils.addElement(toUpdate, plugins);
                         JDomUtils.addElement(
                                 new Element("groupId", plugins.getNamespace()).setText(a.getGroupId()), toUpdate);
@@ -267,14 +267,15 @@ public final class JDomPomEditor {
             Element dependencyManagement = project.getChild("dependencyManagement", project.getNamespace());
             if (upsert && dependencyManagement == null) {
                 dependencyManagement = new Element("dependencyManagement", project.getNamespace());
-                dependencyManagement.addContent(new Text("\n  "));
+                dependencyManagement.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
                 JDomUtils.addElement(dependencyManagement, project);
             }
             if (dependencyManagement != null) {
-                Element dependencies = dependencyManagement.getChild("dependencies", project.getNamespace());
+                Element dependencies =
+                        dependencyManagement.getChild("dependencies", dependencyManagement.getNamespace());
                 if (upsert && dependencies == null) {
-                    dependencies = new Element("dependencies", project.getNamespace());
-                    dependencies.addContent(new Text("\n  "));
+                    dependencies = new Element("dependencies", dependencyManagement.getNamespace());
+                    dependencies.addContent(new Text("\n  " + JDomUtils.detectIndentation(dependencyManagement)));
                     JDomUtils.addElement(dependencies, dependencyManagement);
                 }
                 if (dependencies != null) {
@@ -287,7 +288,7 @@ public final class JDomPomEditor {
                     }
                     if (upsert && toUpdate == null) {
                         toUpdate = new Element("dependency", dependencies.getNamespace());
-                        toUpdate.addContent(new Text("\n  "));
+                        toUpdate.addContent(new Text("\n  " + JDomUtils.detectIndentation(dependencies)));
                         JDomUtils.addElement(toUpdate, dependencies);
                         JDomUtils.addElement(
                                 new Element("groupId", dependencies.getNamespace()).setText(a.getGroupId()), toUpdate);
@@ -349,7 +350,7 @@ public final class JDomPomEditor {
             Element dependencies = project.getChild("dependencies", project.getNamespace());
             if (upsert && dependencies == null) {
                 dependencies = new Element("dependencies", project.getNamespace());
-                dependencies.addContent(new Text("\n  "));
+                dependencies.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
                 JDomUtils.addElement(dependencies, project);
             }
             if (dependencies != null) {
@@ -362,7 +363,7 @@ public final class JDomPomEditor {
                 }
                 if (upsert && toUpdate == null) {
                     toUpdate = new Element("dependency", dependencies.getNamespace());
-                    toUpdate.addContent(new Text("\n  "));
+                    toUpdate.addContent(new Text("\n  " + JDomUtils.detectIndentation(dependencies)));
                     JDomUtils.addElement(toUpdate, dependencies);
                     JDomUtils.addElement(
                             new Element("groupId", dependencies.getNamespace()).setText(a.getGroupId()), toUpdate);

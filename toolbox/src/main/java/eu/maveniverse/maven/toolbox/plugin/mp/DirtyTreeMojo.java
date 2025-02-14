@@ -16,10 +16,10 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.collection.CollectResult;
 
 /**
- * Displays dependency tree of Maven Artifact.
+ * Displays dependency dirty tree of Maven Project.
  */
-@Mojo(name = "tree", threadSafe = true)
-public class TreeMojo extends MPMojoSupport {
+@Mojo(name = "dirty-tree", threadSafe = true)
+public class DirtyTreeMojo extends MPMojoSupport {
     /**
      * The resolution scope to display, accepted values are "runtime", "compile", "test", etc.
      */
@@ -38,12 +38,20 @@ public class TreeMojo extends MPMojoSupport {
     @Parameter(property = "verboseTree", defaultValue = "false", required = true)
     private boolean verboseTree;
 
+    /**
+     * The level up to you want to see dirty tree. Note: keep it low, otherwise this call is OOM pronect.
+     * Default: 3
+     */
+    @Parameter(property = "dirtyLevel", defaultValue = "3", required = true)
+    private int dirtyLevel;
+
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        return toolboxCommando.tree(
+        return toolboxCommando.dirtyTree(
                 ResolutionScope.parse(scope),
                 projectAsResolutionRoot(),
+                dirtyLevel,
                 verboseTree,
                 toolboxCommando.parseDependencyMatcherSpec(dependencyMatcher));
     }

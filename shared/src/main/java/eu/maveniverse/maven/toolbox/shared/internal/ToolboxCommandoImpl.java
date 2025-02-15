@@ -854,11 +854,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }));
 
         DependencyNode clone = cloningDependencyVisitor.getRootNode();
-        clone.accept(new DependencyGraphDumper(
+        clone.accept(new TreeDependencyVisitor(new DependencyGraphDumper(
                 output::tell,
                 DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
                 output.tool(
-                        DependencyGraphDecorators.TreeDecorator.class, DependencyGraphDecorators.defaultSupplier())));
+                        DependencyGraphDecorators.TreeDecorator.class, DependencyGraphDecorators.defaultSupplier()))));
         collectResult.setRoot(clone);
         return Result.success(collectResult);
     }

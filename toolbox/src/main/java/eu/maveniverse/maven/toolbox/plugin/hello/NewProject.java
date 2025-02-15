@@ -36,9 +36,8 @@ public class NewProject extends HelloMojoSupport {
      */
     @CommandLine.Option(
             names = {"--packaging"},
-            defaultValue = "jar",
             description = "Packaging")
-    @Parameter(property = "packaging", defaultValue = "jar", required = true)
+    @Parameter(property = "packaging")
     private String packaging;
 
     /**
@@ -57,7 +56,8 @@ public class NewProject extends HelloMojoSupport {
         }
         Artifact projectArtifact = toRootProjectArtifact(gav);
         Artifact parentArtifact = toParentArtifact(parent);
-        try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(rootPom)) {
+        try (ToolboxCommando.EditSession editSession =
+                getToolboxCommando().createEditSession(projectArtifact.getFile().toPath())) {
             editSession.edit(p -> {
                 Files.writeString(
                         p,
@@ -66,7 +66,13 @@ public class NewProject extends HelloMojoSupport {
                                 projectArtifact.getArtifactId(),
                                 projectArtifact.getVersion()));
                 try (JDomDocumentIO documentIO = new JDomDocumentIO(p)) {
-                    if (!"jar".equals(packaging)) {
+                    String effectivePackaging = "jar";
+                    if (packaging != null) {
+                        effectivePackaging = packaging;
+                    } else if (projectArtifact.getGroupId().endsWith("." + projectArtifact.getArtifactId())) {
+                        effectivePackaging = "pom";
+                    }
+                    if (!"jar".equals(effectivePackaging)) {
                         JDomPomEditor.setPackaging(documentIO.getDocument().getRootElement(), packaging);
                     }
                     if (parentArtifact != null) {

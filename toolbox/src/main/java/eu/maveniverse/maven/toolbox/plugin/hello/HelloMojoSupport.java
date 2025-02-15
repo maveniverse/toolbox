@@ -65,7 +65,7 @@ public abstract class HelloMojoSupport extends GavMojoSupport {
      */
     protected Artifact toRootProjectArtifact(String gav) throws Exception {
         try {
-            return new DefaultArtifact(gav);
+            return new DefaultArtifact(gav).setFile(rootPom.toFile());
         } catch (IllegalArgumentException ex) {
             return new DefaultArtifact(gav + ":1.0.0-SNAPSHOT");
         }

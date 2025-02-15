@@ -13,7 +13,6 @@ import eu.maveniverse.maven.toolbox.shared.internal.PomSuppliers;
 import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomDocumentIO;
 import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomEditor;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
@@ -37,20 +36,19 @@ public class NewSubProject extends HelloProjectMojoSupport {
      */
     @CommandLine.Option(
             names = {"--packaging"},
-            defaultValue = "jar",
             description = "Packaging")
-    @Parameter(property = "packaging", defaultValue = "jar", required = true)
+    @Parameter(property = "packaging")
     private String packaging;
 
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         Artifact subProjectArtifact = toSubProjectArtifact(gav);
-        Path pomFile = Path.of(subProjectArtifact.getArtifactId(), "pom.xml").toAbsolutePath();
-        if (!force && Files.exists(pomFile)) {
+        if (!force && Files.exists(subProjectArtifact.getFile().toPath())) {
             throw new IllegalStateException("pom.xml already exists in this directory; use --force to overwrite it");
         }
-        Files.createDirectories(pomFile.getParent());
-        try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(pomFile)) {
+        Files.createDirectories(subProjectArtifact.getFile().toPath().getParent());
+        try (ToolboxCommando.EditSession editSession = getToolboxCommando()
+                .createEditSession(subProjectArtifact.getFile().toPath())) {
             editSession.edit(p -> {
                 Files.writeString(
                         p,
@@ -59,7 +57,13 @@ public class NewSubProject extends HelloProjectMojoSupport {
                                 subProjectArtifact.getArtifactId(),
                                 subProjectArtifact.getVersion()));
                 try (JDomDocumentIO documentIO = new JDomDocumentIO(p)) {
-                    if (!"jar".equals(packaging)) {
+                    String effectivePackaging = "jar";
+                    if (packaging != null) {
+                        effectivePackaging = packaging;
+                    } else if (subProjectArtifact.getGroupId().endsWith("." + subProjectArtifact.getArtifactId())) {
+                        effectivePackaging = "pom";
+                    }
+                    if (!"jar".equals(effectivePackaging)) {
                         JDomPomEditor.setPackaging(documentIO.getDocument().getRootElement(), packaging);
                     }
                     JDomPomEditor.setParent(documentIO.getDocument().getRootElement(), currentProjectArtifact);

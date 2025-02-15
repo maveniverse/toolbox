@@ -42,7 +42,8 @@ public abstract class HelloProjectMojoSupport extends HelloMojoSupport {
             if (version == null && parent != null) {
                 version = JDomUtils.getChildElementTextTrim("version", parent);
             }
-            this.currentProjectArtifact = new DefaultArtifact(groupId, artifactId, "pom", version);
+            this.currentProjectArtifact =
+                    new DefaultArtifact(groupId, artifactId, "pom", version).setFile(rootPom.toFile());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -52,19 +53,26 @@ public abstract class HelloProjectMojoSupport extends HelloMojoSupport {
      * Accepts {@code A}, {@code G:A} or {@code G:A:V}. Missing pieces are combined with current project.
      */
     protected Artifact toSubProjectArtifact(String gav) {
+        Artifact result;
         try {
-            return new DefaultArtifact(gav);
+            result = new DefaultArtifact(gav);
         } catch (IllegalArgumentException ex) {
             try {
-                return new DefaultArtifact(gav + ":" + currentProjectArtifact.getVersion());
+                result = new DefaultArtifact(gav + ":" + currentProjectArtifact.getVersion());
             } catch (IllegalArgumentException ex2) {
                 try {
-                    return new DefaultArtifact(currentProjectArtifact.getGroupId() + ":" + gav + ":"
-                            + currentProjectArtifact.getVersion());
+                    if (gav.startsWith(".") && gav.contains(":")) {
+                        result = new DefaultArtifact(
+                                currentProjectArtifact.getGroupId() + gav + ":" + currentProjectArtifact.getVersion());
+                    } else {
+                        result = new DefaultArtifact(currentProjectArtifact.getGroupId() + ":" + gav + ":"
+                                + currentProjectArtifact.getVersion());
+                    }
                 } catch (IllegalArgumentException ex3) {
                     throw new IllegalArgumentException("Invalid gav: " + gav);
                 }
             }
         }
+        return result.setFile(rootPom.resolve(result.getArtifactId()).toFile());
     }
 }

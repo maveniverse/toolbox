@@ -67,7 +67,7 @@ public abstract class HelloMojoSupport extends GavMojoSupport {
         try {
             return new DefaultArtifact(gav).setFile(rootPom.toFile());
         } catch (IllegalArgumentException ex) {
-            return new DefaultArtifact(gav + ":1.0.0-SNAPSHOT");
+            return new DefaultArtifact(gav + ":1.0.0-SNAPSHOT").setFile(rootPom.toFile());
         }
     }
 

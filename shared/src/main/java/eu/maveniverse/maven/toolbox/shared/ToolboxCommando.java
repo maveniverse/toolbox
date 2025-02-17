@@ -405,8 +405,13 @@ public interface ToolboxCommando {
 
     // POM editing
 
+    @FunctionalInterface
+    interface Editor {
+        void accept(Path path) throws IOException;
+    }
+
     interface EditSession extends Closeable {
-        Path editedPom();
+        void edit(Editor editor) throws IOException;
     }
 
     EditSession createEditSession(Path pom) throws IOException;

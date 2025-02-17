@@ -73,6 +73,7 @@ public abstract class HelloProjectMojoSupport extends HelloMojoSupport {
                 }
             }
         }
-        return result.setFile(rootPom.resolve(result.getArtifactId()).toFile());
+        return result.setFile(
+                rootPom.getParent().resolve(result.getArtifactId()).toFile());
     }
 }

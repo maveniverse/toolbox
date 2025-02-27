@@ -15,7 +15,7 @@ import org.eclipse.aether.collection.CollectResult;
 /**
  * Displays subproject collection of Maven Projects.
  */
-@Mojo(name = "subproject-tree", threadSafe = true)
+@Mojo(name = "subproject-tree", aggregator = true, threadSafe = true)
 public class SubprojectTreeMojo extends MPMojoSupport {
     @Override
     protected Result<CollectResult> doExecute() throws Exception {

@@ -16,7 +16,7 @@ import org.eclipse.aether.collection.CollectResult;
 /**
  * Displays project interdependencies of Maven Projects.
  */
-@Mojo(name = "project-dependency-tree", threadSafe = true)
+@Mojo(name = "project-dependency-tree", aggregator = true, threadSafe = true)
 public class ProjectDependencyTreeMojo extends MPMojoSupport {
 
     /**
@@ -25,8 +25,15 @@ public class ProjectDependencyTreeMojo extends MPMojoSupport {
     @Parameter(property = "showExternal", defaultValue = "false", required = true)
     private boolean showExternal;
 
+    /**
+     * Set the project selector, like {@code -rf} Maven command uses it, can be {@code :A} or {@code G:A}. The selector
+     * string must match ONE project within reactor, otherwise (matches 0 or more than 1) it will fail.
+     */
+    @Parameter(property = "selector")
+    private String selector;
+
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
-        return getToolboxCommando().projectDependencyTree(getReactorLocator(), showExternal);
+        return getToolboxCommando().projectDependencyTree(getReactorLocatorWithSelector(selector), showExternal);
     }
 }

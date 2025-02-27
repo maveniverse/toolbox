@@ -11,9 +11,11 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ProjectLocator;
 import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.maven.RepositoryUtils;
@@ -35,6 +37,10 @@ public class MavenReactorLocator implements ReactorLocator {
     private final List<Project> allProjects;
 
     public MavenReactorLocator(MavenSession session) {
+        this(session, null);
+    }
+
+    public MavenReactorLocator(MavenSession session, String selector) {
         requireNonNull(session, "session");
         this.allProjects = session.getAllProjects().stream()
                 .map(p -> convert(session.getRepositorySession(), p))
@@ -42,9 +48,47 @@ public class MavenReactorLocator implements ReactorLocator {
         this.topLevel = locateProject(
                         RepositoryUtils.toArtifact(session.getTopLevelProject().getArtifact()))
                 .orElseThrow();
-        this.current = locateProject(
-                        RepositoryUtils.toArtifact(session.getCurrentProject().getArtifact()))
-                .orElseThrow();
+        if (selector != null) {
+            List<MavenProject> candidates = session.getAllProjects().stream()
+                    .filter(createSelector(selector))
+                    .collect(Collectors.toList());
+            if (candidates.size() != 1) {
+                List<String> matches = candidates.stream()
+                        .map(p -> ArtifactIdUtils.toId(RepositoryUtils.toArtifact(p.getArtifact())))
+                        .collect(Collectors.toList());
+                throw new IllegalArgumentException("Could not find 1 matching project: " + matches);
+            }
+            this.current = locateProject(
+                    RepositoryUtils.toArtifact(candidates.get(0).getArtifact()))
+                    .orElseThrow();
+        } else {
+            this.current = locateProject(
+                    RepositoryUtils.toArtifact(session.getCurrentProject().getArtifact()))
+                    .orElseThrow();
+        }
+    }
+
+    private Predicate<MavenProject> createSelector(String selector) {
+        String[] elems =
+                Arrays.stream(selector.split(":", -1)).filter(s -> !s.isEmpty()).toArray(String[]::new);
+        if (selector.startsWith(":")) {
+            // :A or :A:V
+            if (elems.length == 1) {
+                return p -> p.getArtifactId().equals(elems[0]);
+            } else if (elems.length == 2) {
+                return p -> p.getArtifactId().equals(elems[0]) && p.getVersion().equals(elems[1]);
+            }
+        } else {
+            // G:A or G:A:V
+            if (elems.length == 2) {
+                return p -> p.getGroupId().equals(elems[0]) && p.getArtifactId().equals(elems[1]);
+            } else if (elems.length == 3) {
+                return p -> p.getGroupId().equals(elems[0])
+                        && p.getArtifactId().equals(elems[1])
+                        && p.getVersion().equals(elems[2]);
+            }
+        }
+        throw new IllegalArgumentException("Unsupported selector expression: '" + selector + "'");
     }
 
     private Project convert(RepositorySystemSession session, MavenProject project) {

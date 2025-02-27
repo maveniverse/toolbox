@@ -108,4 +108,12 @@ public abstract class MPMojoSupport extends MojoSupport {
     protected ReactorLocator getReactorLocator() {
         return new MavenReactorLocator(mavenSession);
     }
+
+    protected ReactorLocator getReactorLocatorWithSelector(String selector) {
+        if (selector == null || selector.trim().isEmpty()) {
+            return getReactorLocator();
+        } else {
+            return new MavenReactorLocator(mavenSession, selector);
+        }
+    }
 }

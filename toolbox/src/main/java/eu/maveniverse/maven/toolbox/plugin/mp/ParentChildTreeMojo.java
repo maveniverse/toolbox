@@ -15,7 +15,7 @@ import org.eclipse.aether.collection.CollectResult;
 /**
  * Displays project inheritance of Maven Projects.
  */
-@Mojo(name = "parent-child-tree", threadSafe = true)
+@Mojo(name = "parent-child-tree", aggregator = true, threadSafe = true)
 public class ParentChildTreeMojo extends MPMojoSupport {
     @Override
     protected Result<CollectResult> doExecute() throws Exception {

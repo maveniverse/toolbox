@@ -19,8 +19,9 @@ import org.eclipse.aether.collection.CollectResult;
 @Mojo(name = "parent-child-tree", aggregator = true, threadSafe = true)
 public class ParentChildTreeMojo extends MPMojoSupport {
     /**
-     * Set the project selector, like {@code -rf} Maven command uses it, can be {@code :A}, {@code G:A}. The selector
-     * string must match ONE project within reactor, otherwise (matches 0 or more than 1) it will fail.
+     * Set the project selector, like {@code -rf} Maven command uses it, can be {@code :A} or {@code G:A}. If the
+     * selector is set, it must match exactly one project within reactor, otherwise it will fail. By default,
+     * selector is {@code null}, and Maven session "current project" is used.
      */
     @Parameter(property = "selector")
     private String selector;

@@ -27,8 +27,11 @@ public class ToolboxShellCommandRegistryFactory implements ShellCommandRegistryF
     @Override
     public CommandRegistry createShellCommandRegistry(LookupContext lookupContext) {
         Runtimes.INSTANCE.registerRuntime(new StandaloneStaticRuntime());
-        CommandLine cmd = new CommandLine(new CLI());
-        PicocliCommands picocliCommands = new PicocliCommands(cmd);
+
+        PicocliCommands.PicocliCommandsFactory factory = new PicocliCommands.PicocliCommandsFactory();
+        factory.setTerminal(lookupContext.terminal);
+
+        PicocliCommands picocliCommands = new PicocliCommands(new CommandLine(new CLI(), factory));
         picocliCommands.name("Maveniverse Toolbox");
         return picocliCommands;
     }

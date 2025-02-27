@@ -36,10 +36,6 @@ public class MavenReactorLocator implements ReactorLocator {
     private final Project current;
     private final List<Project> allProjects;
 
-    public MavenReactorLocator(MavenSession session) {
-        this(session, null);
-    }
-
     public MavenReactorLocator(MavenSession session, String selector) {
         requireNonNull(session, "session");
         this.allProjects = session.getAllProjects().stream()
@@ -59,11 +55,11 @@ public class MavenReactorLocator implements ReactorLocator {
                 throw new IllegalArgumentException("Could not find 1 matching project: " + matches);
             }
             this.current = locateProject(
-                    RepositoryUtils.toArtifact(candidates.get(0).getArtifact()))
+                            RepositoryUtils.toArtifact(candidates.get(0).getArtifact()))
                     .orElseThrow();
         } else {
-            this.current = locateProject(
-                    RepositoryUtils.toArtifact(session.getCurrentProject().getArtifact()))
+            this.current = locateProject(RepositoryUtils.toArtifact(
+                            session.getCurrentProject().getArtifact()))
                     .orElseThrow();
         }
     }

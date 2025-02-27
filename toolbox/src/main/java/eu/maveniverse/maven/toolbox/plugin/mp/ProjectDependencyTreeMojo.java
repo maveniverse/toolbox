@@ -34,6 +34,6 @@ public class ProjectDependencyTreeMojo extends MPMojoSupport {
 
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
-        return getToolboxCommando().projectDependencyTree(getReactorLocatorWithSelector(selector), showExternal);
+        return getToolboxCommando().projectDependencyTree(getReactorLocator(selector), showExternal);
     }
 }

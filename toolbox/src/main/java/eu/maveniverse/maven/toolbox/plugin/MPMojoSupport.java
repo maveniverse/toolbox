@@ -105,7 +105,7 @@ public abstract class MPMojoSupport extends MojoSupport {
                                 p.getVersion(), dependency.getArtifact().getVersion()));
     }
 
-    protected ReactorLocator getReactorLocator() {
-        return new MavenReactorLocator(mavenSession);
+    protected ReactorLocator getReactorLocator(String selector) {
+        return new MavenReactorLocator(mavenSession, selector);
     }
 }

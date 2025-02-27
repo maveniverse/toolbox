@@ -19,7 +19,7 @@
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
   <artifactId>toolbox</artifactId>
-  <version>0.6.4-SNAPSHOT</version>
+  <version>0.6.5-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
@@ -58,7 +58,7 @@
   </ciManagement>
 
   <properties>
-    <project.build.outputTimestamp>2025-02-13T14:03:46Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-02-27T09:49:45Z</project.build.outputTimestamp>
 
     <!--
     Build time: latest stable Maven and latest Java LTS.
@@ -75,7 +75,7 @@
     <version.resolver>1.9.22</version.resolver>
     <version.mavenIndexer>7.1.5</version.mavenIndexer>
     <version.mavenPluginTools>3.15.1</version.mavenPluginTools>
-    <version.slf4j>2.0.16</version.slf4j>
+    <version.slf4j>2.0.17</version.slf4j>
     <version.picocli>4.7.6</version.picocli>
     <version.jline>3.29.0</version.jline>
   </properties>
@@ -282,7 +282,7 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
-        <version>5.11.4</version>
+        <version>5.12.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

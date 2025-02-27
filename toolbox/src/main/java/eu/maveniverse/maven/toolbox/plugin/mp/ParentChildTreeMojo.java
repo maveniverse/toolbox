@@ -10,15 +10,24 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.collection.CollectResult;
 
 /**
  * Displays project inheritance of Maven Projects.
  */
-@Mojo(name = "parent-child-tree", threadSafe = true)
+@Mojo(name = "parent-child-tree", aggregator = true, threadSafe = true)
 public class ParentChildTreeMojo extends MPMojoSupport {
+    /**
+     * Set the project selector, like {@code -rf} Maven command uses it, can be {@code :A} or {@code G:A}. If the
+     * selector is set, it must match exactly one project within reactor, otherwise it will fail. By default,
+     * selector is {@code null}, and Maven session "current project" is used.
+     */
+    @Parameter(property = "selector")
+    private String selector;
+
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
-        return getToolboxCommando().parentChildTree(getReactorLocator());
+        return getToolboxCommando().parentChildTree(getReactorLocator(selector));
     }
 }

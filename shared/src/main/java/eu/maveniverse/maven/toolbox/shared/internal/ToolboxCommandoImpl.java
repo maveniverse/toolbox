@@ -61,7 +61,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -1327,16 +1329,24 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public EditSession createEditSession(Path pom) throws IOException {
         return new EditSession() {
-            final FileUtils.CollocatedTempFile ctf = FileUtils.newTempFile(pom, true);
+            private final FileUtils.CollocatedTempFile ctf = FileUtils.newTempFile(pom, true);
+            private final AtomicBoolean failed = new AtomicBoolean(false);
 
             @Override
-            public Path editedPom() {
-                return ctf.getPath();
+            public void edit(Editor editor) throws IOException {
+                try {
+                    editor.accept(ctf.getPath());
+                } catch (IOException e) {
+                    failed.set(true);
+                    throw e;
+                }
             }
 
             @Override
             public void close() throws IOException {
-                ctf.move();
+                if (!failed.get()) {
+                    ctf.move();
+                }
                 ctf.close();
             }
         };
@@ -1345,11 +1355,15 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public Result<List<Artifact>> doEdit(EditSession es, OpSubject subject, Op op, Source<Artifact> artifacts)
             throws Exception {
-        try (PomTransformerSink sink = PomTransformerSink.transform(output, es.editedPom(), subject, op)) {
-            List<Artifact> res = artifacts.get().collect(Collectors.toList());
-            sink.accept(res);
-            return Result.success(res);
-        }
+        AtomicReference<Result<List<Artifact>>> result = new AtomicReference<>(null);
+        es.edit(pom -> {
+            try (PomTransformerSink sink = PomTransformerSink.transform(output, pom, subject, op)) {
+                List<Artifact> res = artifacts.get().collect(Collectors.toList());
+                sink.accept(res);
+                result.set(Result.success(res));
+            }
+        });
+        return result.get();
     }
 
     // Utils

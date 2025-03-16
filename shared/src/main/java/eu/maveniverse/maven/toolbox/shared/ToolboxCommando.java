@@ -332,6 +332,11 @@ public interface ToolboxCommando {
      */
     Result<Model> effectiveModel(ResolutionRoot resolutionRoot) throws Exception;
 
+    /**
+     * Returns the effective model. Requires reactor locator.
+     */
+    Result<Model> effectiveModel(ReactorLocator reactorLocator) throws Exception;
+
     // Search API related commands: they target one single RemoteRepository
 
     /**

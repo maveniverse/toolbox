@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.plugin.mvnsh;
 import eu.maveniverse.maven.mima.context.Runtimes;
 import eu.maveniverse.maven.mima.runtime.standalonestatic.StandaloneStaticRuntime;
 import eu.maveniverse.maven.toolbox.plugin.CLI;
+import eu.maveniverse.maven.toolbox.plugin.CwdAware;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.maven.cling.invoker.LookupContext;
@@ -28,7 +29,16 @@ public class ToolboxShellCommandRegistryFactory implements ShellCommandRegistryF
     public CommandRegistry createShellCommandRegistry(LookupContext lookupContext) {
         Runtimes.INSTANCE.registerRuntime(new StandaloneStaticRuntime());
 
-        PicocliCommands.PicocliCommandsFactory factory = new PicocliCommands.PicocliCommandsFactory();
+        PicocliCommands.PicocliCommandsFactory factory = new PicocliCommands.PicocliCommandsFactory() {
+            @Override
+            public <K> K create(Class<K> clazz) throws Exception {
+                K result = super.create(clazz);
+                if (result instanceof CwdAware cwdAware) {
+                    cwdAware.setCwd(lookupContext.cwd.get());
+                }
+                return result;
+            }
+        };
         factory.setTerminal(lookupContext.terminal);
 
         PicocliCommands picocliCommands = new PicocliCommands(new CommandLine(new CLI(), factory));

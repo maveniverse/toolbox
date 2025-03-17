@@ -17,6 +17,7 @@ import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommandoVersion;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +37,8 @@ import picocli.CommandLine;
 /**
  * Support class for all Mojos and Commands.
  */
-public abstract class MojoSupport extends AbstractMojo implements Callable<Integer>, CommandLine.IVersionProvider {
+public abstract class MojoSupport extends AbstractMojo
+        implements Callable<Integer>, CwdAware, CommandLine.IVersionProvider {
 
     // CLI
 
@@ -108,6 +110,24 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     @Parameter(property = "failOnLogicalFailure", defaultValue = "true")
     private boolean failOnLogicalFailure;
 
+    // cwd
+
+    private Path cwd;
+
+    @Override
+    public void setCwd(Path cwd) {
+        requireNonNull(cwd, "cwd");
+        if (!Files.isDirectory(cwd)) {
+            throw new IllegalArgumentException("cwd must be an existing directory");
+        }
+        this.cwd = cwd;
+    }
+
+    @Override
+    public Path getCwd() {
+        return cwd;
+    }
+
     private static final AtomicReference<Map<Object, Object>> CONTEXT = new AtomicReference<>(null);
 
     protected <T> T getOrCreate(Class<T> key, Supplier<T> supplier) {
@@ -128,6 +148,9 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     private ContextOverrides createCLIContextOverrides() {
         // create builder with some sane defaults
         ContextOverrides.Builder builder = ContextOverrides.create().withUserSettings(true);
+        if (cwd != null) {
+            builder.withBasedirOverride(cwd);
+        }
         if (offline) {
             builder.offline(true);
         }
@@ -187,7 +210,11 @@ public abstract class MojoSupport extends AbstractMojo implements Callable<Integ
     }
 
     private ContextOverrides createMojoContextOverrides() {
-        return ContextOverrides.create().build();
+        ContextOverrides.Builder contextOverrides = ContextOverrides.create();
+        if (cwd != null) {
+            contextOverrides.withBasedirOverride(cwd);
+        }
+        return contextOverrides.build();
     }
 
     protected Context getContext() {

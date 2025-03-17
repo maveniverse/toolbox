@@ -25,10 +25,8 @@ import picocli.CommandLine;
  * Support class for "hello" Mojos (not needing project).
  */
 public abstract class HelloMojoSupport extends GavMojoSupport {
-    protected final Path rootPom;
-
-    public HelloMojoSupport() {
-        this.rootPom = Path.of("pom.xml").toAbsolutePath();
+    protected Path getRootPom() {
+        return getCwd().resolve("pom.xml");
     }
 
     /**
@@ -65,9 +63,10 @@ public abstract class HelloMojoSupport extends GavMojoSupport {
      */
     protected Artifact toRootProjectArtifact(String gav) throws Exception {
         try {
-            return new DefaultArtifact(gav).setFile(rootPom.toFile());
+            return new DefaultArtifact(gav).setFile(getRootPom().toFile());
         } catch (IllegalArgumentException ex) {
-            return new DefaultArtifact(gav + ":1.0.0-SNAPSHOT").setFile(rootPom.toFile());
+            return new DefaultArtifact(gav + ":1.0.0-SNAPSHOT")
+                    .setFile(getRootPom().toFile());
         }
     }
 

@@ -51,7 +51,7 @@ public class NewProject extends HelloMojoSupport {
 
     @Override
     protected Result<Boolean> doExecute() throws Exception {
-        if (!force && Files.exists(rootPom)) {
+        if (!force && Files.exists(getRootPom())) {
             throw new IllegalStateException("pom.xml already exists in this directory; use --force to overwrite it");
         }
         Artifact projectArtifact = toRootProjectArtifact(gav);
@@ -73,7 +73,7 @@ public class NewProject extends HelloMojoSupport {
                         effectivePackaging = "pom";
                     }
                     if (!"jar".equals(effectivePackaging)) {
-                        JDomPomEditor.setPackaging(documentIO.getDocument().getRootElement(), packaging);
+                        JDomPomEditor.setPackaging(documentIO.getDocument().getRootElement(), effectivePackaging);
                     }
                     if (parentArtifact != null) {
                         JDomPomEditor.setParent(documentIO.getDocument().getRootElement(), parentArtifact);

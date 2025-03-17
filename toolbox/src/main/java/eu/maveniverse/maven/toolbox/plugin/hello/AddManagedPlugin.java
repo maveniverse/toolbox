@@ -32,7 +32,7 @@ public class AddManagedPlugin extends HelloProjectMojoSupport {
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         Artifact plugin = toPluginArtifact(gav);
-        try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(rootPom)) {
+        try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
             editSession.edit(p -> {
                 try (JDomDocumentIO documentIO = new JDomDocumentIO(p)) {
                     JDomPomEditor.updateManagedPlugin(documentIO.getDocument().getRootElement(), plugin, true);

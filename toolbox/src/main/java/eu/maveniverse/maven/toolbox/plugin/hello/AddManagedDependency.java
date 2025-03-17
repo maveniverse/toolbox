@@ -32,7 +32,7 @@ public class AddManagedDependency extends HelloProjectMojoSupport {
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         Artifact dependency = toDependencyArtifact(gav);
-        try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(rootPom)) {
+        try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
             editSession.edit(p -> {
                 try (JDomDocumentIO documentIO = new JDomDocumentIO(p)) {
                     JDomPomEditor.updateManagedDependency(

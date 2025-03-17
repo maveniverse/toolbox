@@ -21,6 +21,11 @@
 
   <name>${project.groupId}:${project.artifactId}</name>
 
+  <properties>
+    <!-- Aligned with Maven 4 -->
+    <maven.compiler.release>17</maven.compiler.release>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.apache.maven</groupId>

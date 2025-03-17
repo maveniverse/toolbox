@@ -36,8 +36,9 @@ public class NewSubProject extends HelloProjectMojoSupport {
      */
     @CommandLine.Option(
             names = {"--packaging"},
-            description = "Packaging")
-    @Parameter(property = "packaging")
+            description = "Packaging",
+            defaultValue = "jar")
+    @Parameter(property = "packaging", defaultValue = "jar")
     private String packaging;
 
     @Override
@@ -64,13 +65,13 @@ public class NewSubProject extends HelloProjectMojoSupport {
                         effectivePackaging = "pom";
                     }
                     if (!"jar".equals(effectivePackaging)) {
-                        JDomPomEditor.setPackaging(documentIO.getDocument().getRootElement(), packaging);
+                        JDomPomEditor.setPackaging(documentIO.getDocument().getRootElement(), effectivePackaging);
                     }
-                    JDomPomEditor.setParent(documentIO.getDocument().getRootElement(), currentProjectArtifact);
+                    JDomPomEditor.setParent(documentIO.getDocument().getRootElement(), getCurrentProjectArtifact());
                 }
             });
         }
-        try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(rootPom)) {
+        try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
             editSession.edit(p -> {
                 try (JDomDocumentIO documentIO = new JDomDocumentIO(p)) {
                     JDomPomEditor.addSubProject(

@@ -20,13 +20,11 @@ import org.jdom2.Element;
  * Support class for "hello" Mojos (with existing project).
  */
 public abstract class HelloProjectMojoSupport extends HelloMojoSupport {
-    protected final Artifact currentProjectArtifact;
-
-    public HelloProjectMojoSupport() {
-        if (!Files.exists(rootPom)) {
+    protected Artifact getCurrentProjectArtifact() {
+        if (!Files.exists(getRootPom())) {
             throw new IllegalStateException("This directory does not contain pom.xml");
         }
-        try (JDomDocumentIO documentIO = new JDomDocumentIO(rootPom)) {
+        try (JDomDocumentIO documentIO = new JDomDocumentIO(getRootPom())) {
             Element project = documentIO.getDocument().getRootElement();
             Element parent = project.getChild("parent", project.getNamespace());
 
@@ -42,8 +40,8 @@ public abstract class HelloProjectMojoSupport extends HelloMojoSupport {
             if (version == null && parent != null) {
                 version = JDomUtils.getChildElementTextTrim("version", parent);
             }
-            this.currentProjectArtifact =
-                    new DefaultArtifact(groupId, artifactId, "pom", version).setFile(rootPom.toFile());
+            return new DefaultArtifact(groupId, artifactId, "pom", version)
+                    .setFile(getRootPom().toFile());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -53,6 +51,7 @@ public abstract class HelloProjectMojoSupport extends HelloMojoSupport {
      * Accepts {@code A}, {@code G:A} or {@code G:A:V}. Missing pieces are combined with current project.
      */
     protected Artifact toSubProjectArtifact(String gav) {
+        Artifact currentProjectArtifact = getCurrentProjectArtifact();
         Artifact result;
         try {
             result = new DefaultArtifact(gav);
@@ -73,7 +72,8 @@ public abstract class HelloProjectMojoSupport extends HelloMojoSupport {
                 }
             }
         }
-        return result.setFile(rootPom.getParent()
+        return result.setFile(getRootPom()
+                .getParent()
                 .resolve(result.getArtifactId())
                 .resolve("pom.xml")
                 .toFile());

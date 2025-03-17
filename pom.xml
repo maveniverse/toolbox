@@ -37,6 +37,7 @@
   <modules>
     <module>shared</module>
     <module>toolbox</module>
+    <module>mvnsh</module>
     <module>it</module>
   </modules>
 
@@ -314,16 +315,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>mvnsh</id>
-      <activation>
-        <jdk>[17,)</jdk>
-      </activation>
-      <modules>
-        <module>mvnsh</module>
-      </modules>
-    </profile>
-  </profiles>
 </project>

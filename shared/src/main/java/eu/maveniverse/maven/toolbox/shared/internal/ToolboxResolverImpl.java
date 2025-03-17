@@ -337,12 +337,12 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         Optional<Artifact> parentArtifact = currentProject.getParent();
         while (parentArtifact.isPresent()) {
             Artifact pa = parentArtifact.orElseThrow();
-            Optional<ProjectLocator.Project> parentProject = reactorLocator.locateProject(pa);
+            Optional<? extends ProjectLocator.Project> parentProject = reactorLocator.locateProject(pa);
             if (parentProject.isPresent()) {
                 currentProject = parentProject.orElseThrow();
                 node = new DefaultDependencyNode(new Dependency(source(currentProject), ""));
             } else {
-                Optional<ProjectLocator.Project> external = projectLocator.locateProject(pa);
+                Optional<? extends ProjectLocator.Project> external = projectLocator.locateProject(pa);
                 if (external.isPresent()) {
                     currentProject = external.orElseThrow();
                     node = new DefaultDependencyNode(new Dependency(source(currentProject), ""));
@@ -362,7 +362,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
 
     private void parentChildTree(
             DependencyNode parentNode, ReactorLocator reactorLocator, ProjectLocator.Project parent) {
-        List<ProjectLocator.Project> children = reactorLocator.locateChildren(parent);
+        List<? extends ProjectLocator.Project> children = reactorLocator.locateChildren(parent);
         for (ProjectLocator.Project child : children) {
             DependencyNode childNode = new DefaultDependencyNode(new Dependency(source(child), ""));
             parentNode.getChildren().add(childNode);
@@ -383,7 +383,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
 
     private void subprojectTree(
             DependencyNode parentNode, ReactorLocator reactorLocator, ProjectLocator.Project parent) {
-        List<ProjectLocator.Project> children = reactorLocator.locateCollected(parent);
+        List<? extends ProjectLocator.Project> children = reactorLocator.locateCollected(parent);
         for (ProjectLocator.Project child : children) {
             DependencyNode childNode = new DefaultDependencyNode(new Dependency(source(child), ""));
             parentNode.getChildren().add(childNode);
@@ -410,7 +410,8 @@ public class ToolboxResolverImpl implements ToolboxResolver {
             HashSet<String> seen) {
         ArrayDeque<DependencyNode> recursiveNodes = new ArrayDeque<>();
         for (Dependency dependency : current.dependencies()) {
-            Optional<ProjectLocator.Project> depProject = reactorLocator.locateProject(dependency.getArtifact());
+            Optional<? extends ProjectLocator.Project> depProject =
+                    reactorLocator.locateProject(dependency.getArtifact());
             String key = ArtifactIdUtils.toId(dependency.getArtifact());
             if (seen.add(key)) {
                 if (depProject.isPresent()) {

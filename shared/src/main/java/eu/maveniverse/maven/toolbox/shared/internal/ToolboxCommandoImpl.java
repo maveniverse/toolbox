@@ -979,6 +979,19 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public Result<Model> effectiveModel(ReactorLocator reactorLocator) throws Exception {
+        requireNonNull(reactorLocator);
+        Result<Model> result = Result.success(reactorLocator.getCurrentProject().effectiveModel());
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        MavenXpp3Writer mavenXpp3Writer = new MavenXpp3Writer();
+        mavenXpp3Writer.write(baos, result.getData().orElseThrow());
+        output.doTell("Effective model:\n{}", baos.toString(StandardCharsets.UTF_8));
+
+        return result;
+    }
+
+    @Override
     public Map<String, RemoteRepository> getKnownSearchRemoteRepositories() {
         return knownSearchRemoteRepositories;
     }

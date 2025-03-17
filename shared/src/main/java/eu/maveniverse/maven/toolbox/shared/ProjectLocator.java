@@ -31,5 +31,5 @@ public interface ProjectLocator {
     /**
      * Locates project by given artifact. If not present, it means artifact is "external" relative to these projects.
      */
-    Optional<Project> locateProject(Artifact artifact);
+    Optional<? extends Project> locateProject(Artifact artifact);
 }

@@ -9,35 +9,40 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import eu.maveniverse.maven.toolbox.shared.internal.Artifacts;
 import java.util.List;
+import org.apache.maven.model.Model;
 
 /**
  * Construction to represent "reactor" abstraction.
  */
 public interface ReactorLocator extends ProjectLocator, Artifacts.Source {
+    interface ReactorProject extends Project {
+        Model effectiveModel();
+    }
+
     /**
      * Returns "top level" project, never {@code null}.
      */
-    Project getTopLevelProject();
+    ReactorProject getTopLevelProject();
 
     /**
      * Returns "current" project, never {@code null}.
      */
-    Project getCurrentProject();
+    ReactorProject getCurrentProject();
 
     /**
      * Returns list of all projects, never {@code null}.
      */
-    List<Project> getAllProjects();
+    List<ReactorProject> getAllProjects();
 
     /**
      * Locates children projects of given project within reactor, that is projects that refer to passed in project
      * as parent.
      */
-    List<Project> locateChildren(Project project);
+    List<ReactorProject> locateChildren(Project project);
 
     /**
      * Locates children projects of given project within reactor, that is projects that are referred from passed in
      * project as modules.
      */
-    List<Project> locateCollected(Project project);
+    List<ReactorProject> locateCollected(Project project);
 }

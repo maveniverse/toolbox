@@ -9,6 +9,8 @@ package eu.maveniverse.maven.toolbox.shared.internal.jdom;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.toolbox.shared.io.IOConsumer;
+import eu.maveniverse.maven.toolbox.shared.io.IOSupplier;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -33,22 +35,30 @@ import org.jdom2.output.XMLOutputter;
  * Class that parses and writes possibly manipulated JDOM to file.
  */
 public final class JDomDocumentIO implements Closeable {
-    private final Path xmlFile;
+    private final IOConsumer<String> consumer;
     private final String lineSeparator;
     private final String body;
     private final String head;
     private final String tail;
     private final Document document;
 
-    public JDomDocumentIO(Path xmlFile) throws IOException {
-        this(xmlFile, System.lineSeparator());
+    public JDomDocumentIO(Path file) throws IOException {
+        this(
+                () -> Files.readString(file, StandardCharsets.UTF_8),
+                s -> Files.writeString(file, s, StandardCharsets.UTF_8));
     }
 
-    public JDomDocumentIO(Path xmlFile, String lineSeparator) throws IOException {
-        this.xmlFile = requireNonNull(xmlFile, "xmlFile");
+    public JDomDocumentIO(IOSupplier<String> supplier, IOConsumer<String> consumer) throws IOException {
+        this(supplier, consumer, System.lineSeparator());
+    }
+
+    public JDomDocumentIO(IOSupplier<String> supplier, IOConsumer<String> consumer, String lineSeparator)
+            throws IOException {
+        requireNonNull(supplier, "supplier");
+        this.consumer = requireNonNull(consumer, "consumer");
         this.lineSeparator = requireNonNull(lineSeparator, "lineSeparator");
 
-        this.body = normalizeLineEndings(Files.readString(xmlFile, StandardCharsets.UTF_8), lineSeparator);
+        this.body = normalizeLineEndings(supplier.get(), lineSeparator);
         SAXBuilder builder = new SAXBuilder();
         builder.setJDOMFactory(new LocatedJDOMFactory());
         try {
@@ -94,7 +104,7 @@ public final class JDomDocumentIO implements Closeable {
         }
         String newBody = output.toString(StandardCharsets.UTF_8);
         if (!Objects.equals(body, newBody)) {
-            Files.writeString(xmlFile, newBody, StandardCharsets.UTF_8);
+            consumer.accept(newBody);
         }
     }
 

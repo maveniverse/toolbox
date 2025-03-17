@@ -37,6 +37,7 @@
   <modules>
     <module>shared</module>
     <module>toolbox</module>
+    <module>mvnsh</module>
     <module>it</module>
   </modules>
 

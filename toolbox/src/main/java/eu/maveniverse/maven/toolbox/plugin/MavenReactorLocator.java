@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.RepositorySystemSession;
@@ -32,9 +33,9 @@ import org.eclipse.aether.util.artifact.ArtifactIdUtils;
  * Maven project locator.
  */
 public class MavenReactorLocator implements ReactorLocator {
-    private final Project topLevel;
-    private final Project current;
-    private final List<Project> allProjects;
+    private final ReactorProject topLevel;
+    private final ReactorProject current;
+    private final List<ReactorProject> allProjects;
 
     public MavenReactorLocator(MavenSession session, String selector) {
         requireNonNull(session, "session");
@@ -87,7 +88,7 @@ public class MavenReactorLocator implements ReactorLocator {
         throw new IllegalArgumentException("Unsupported selector expression: '" + selector + "'");
     }
 
-    private Project convert(RepositorySystemSession session, MavenProject project) {
+    private ReactorProject convert(RepositorySystemSession session, MavenProject project) {
         requireNonNull(project, "project");
         Artifact pa = RepositoryUtils.toArtifact(project.getArtifact());
         Artifact pp = null;
@@ -101,33 +102,33 @@ public class MavenReactorLocator implements ReactorLocator {
         List<Artifact> collected = project.getCollectedProjects().stream()
                 .map(p -> RepositoryUtils.toArtifact(p.getArtifact()))
                 .collect(Collectors.toList());
-        return new MProject(pa, pp, pd, collected, this);
+        return new MProject(pa, pp, pd, collected, this, project.getModel());
     }
 
     @Override
-    public Project getTopLevelProject() {
+    public ReactorProject getTopLevelProject() {
         return topLevel;
     }
 
     @Override
-    public Project getCurrentProject() {
+    public ReactorProject getCurrentProject() {
         return current;
     }
 
     @Override
-    public List<Project> getAllProjects() {
+    public List<ReactorProject> getAllProjects() {
         return allProjects;
     }
 
     @Override
-    public Optional<Project> locateProject(Artifact artifact) {
+    public Optional<ReactorProject> locateProject(Artifact artifact) {
         return allProjects.stream()
                 .filter(p -> ArtifactIdUtils.equalsId(p.artifact(), artifact))
                 .findFirst();
     }
 
     @Override
-    public List<Project> locateChildren(Project project) {
+    public List<ReactorProject> locateChildren(Project project) {
         return allProjects.stream()
                 .filter(p -> {
                     Optional<Artifact> parentArtifact = p.getParent();
@@ -138,7 +139,7 @@ public class MavenReactorLocator implements ReactorLocator {
     }
 
     @Override
-    public List<Project> locateCollected(Project project) {
+    public List<ReactorProject> locateCollected(Project project) {
         if (project instanceof MProject) {
             MProject mProject = (MProject) project;
             List<Project> allOfGrandchildren = mProject.collected().stream()
@@ -169,24 +170,27 @@ public class MavenReactorLocator implements ReactorLocator {
         return getAllProjects().stream().map(Project::artifact);
     }
 
-    private static final class MProject implements Project {
+    private static final class MProject implements ReactorProject {
         private final Artifact artifact;
         private final Artifact parent;
         private final List<Dependency> dependencies;
         private final List<Artifact> collected;
         private final ProjectLocator origin;
+        private final Model effectiveModel;
 
         private MProject(
                 Artifact artifact,
                 Artifact parent,
                 List<Dependency> dependencies,
                 List<Artifact> collected,
-                ProjectLocator origin) {
+                ProjectLocator origin,
+                Model effectiveModel) {
             this.artifact = requireNonNull(artifact, "artifact");
             this.parent = parent; // nullable
             this.dependencies = requireNonNull(dependencies, "dependencies");
             this.collected = requireNonNull(collected, "collected");
             this.origin = origin;
+            this.effectiveModel = requireNonNull(effectiveModel, "effectiveModel");
         }
 
         @Override
@@ -215,6 +219,11 @@ public class MavenReactorLocator implements ReactorLocator {
         @Override
         public ProjectLocator origin() {
             return origin;
+        }
+
+        @Override
+        public Model effectiveModel() {
+            return effectiveModel;
         }
 
         @Override

@@ -1008,6 +1008,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Model resultModel = new MavenXpp3Reader()
                     .read(new StringReader(PomSuppliers.empty400(
                             artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion())));
+            resultModel.setPackaging("pom");
             resultModel.setDependencyManagement(new DependencyManagement());
 
             Model bomModel = result.getData().orElseThrow();

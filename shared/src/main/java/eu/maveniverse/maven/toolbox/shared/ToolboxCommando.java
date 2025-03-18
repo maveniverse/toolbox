@@ -337,6 +337,11 @@ public interface ToolboxCommando {
      */
     Result<Model> effectiveModel(ReactorLocator reactorLocator) throws Exception;
 
+    /**
+     * Returns the effective model flattened BOM. Works only for "loaded" BOMs naturally, so it has to be installed or deployed..
+     */
+    Result<Model> flattenBOM(Artifact artifact, ResolutionRoot resolutionRoot) throws Exception;
+
     // Search API related commands: they target one single RemoteRepository
 
     /**

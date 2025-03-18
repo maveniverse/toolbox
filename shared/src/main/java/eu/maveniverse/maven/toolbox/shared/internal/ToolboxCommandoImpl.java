@@ -43,6 +43,7 @@ import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,7 +69,9 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
@@ -963,31 +966,60 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         return Result.success(collectResult);
     }
 
-    @Override
-    public Result<Model> effectiveModel(ResolutionRoot resolutionRoot) throws Exception {
+    protected void tellModel(String title, Model model) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        MavenXpp3Writer mavenXpp3Writer = new MavenXpp3Writer();
+        mavenXpp3Writer.write(baos, model);
+        output.doTell(
+                title != null && !title.trim().isEmpty() ? title + "\n{}" : "{}",
+                baos.toString(StandardCharsets.UTF_8));
+    }
+
+    protected Result<Model> doEffectiveModel(boolean tell, ResolutionRoot resolutionRoot) throws Exception {
         if (!resolutionRoot.isLoad()) {
             throw new IllegalArgumentException("only loaded roots can be shown as effective model");
         }
         ModelResponse response = toolboxResolver.readModel(resolutionRoot.getArtifact());
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        MavenXpp3Writer mavenXpp3Writer = new MavenXpp3Writer();
-        mavenXpp3Writer.write(baos, response.getEffectiveModel());
-        output.doTell("Effective model:\n{}", baos.toString(StandardCharsets.UTF_8));
-
+        if (tell) {
+            tellModel("Effective model:", response.getEffectiveModel());
+        }
         return Result.success(response.getEffectiveModel());
+    }
+
+    @Override
+    public Result<Model> effectiveModel(ResolutionRoot resolutionRoot) throws Exception {
+        return doEffectiveModel(true, resolutionRoot);
     }
 
     @Override
     public Result<Model> effectiveModel(ReactorLocator reactorLocator) throws Exception {
         requireNonNull(reactorLocator);
         Result<Model> result = Result.success(reactorLocator.getCurrentProject().effectiveModel());
+        tellModel("Effective model:", result.getData().orElseThrow());
+        return result;
+    }
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        MavenXpp3Writer mavenXpp3Writer = new MavenXpp3Writer();
-        mavenXpp3Writer.write(baos, result.getData().orElseThrow());
-        output.doTell("Effective model:\n{}", baos.toString(StandardCharsets.UTF_8));
+    @Override
+    public Result<Model> flattenBOM(Artifact artifact, ResolutionRoot resolutionRoot) throws Exception {
+        requireNonNull(artifact);
+        requireNonNull(resolutionRoot);
+        Result<Model> result = doEffectiveModel(false, resolutionRoot);
+        if (result.isSuccess()) {
+            Model resultModel = new MavenXpp3Reader()
+                    .read(new StringReader(PomSuppliers.empty400(
+                            artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion())));
+            resultModel.setDependencyManagement(new DependencyManagement());
 
+            Model bomModel = result.getData().orElseThrow();
+            if (bomModel.getDependencyManagement() != null) {
+                for (org.apache.maven.model.Dependency dependency :
+                        bomModel.getDependencyManagement().getDependencies()) {
+                    resultModel.getDependencyManagement().addDependency(dependency);
+                }
+            }
+            tellModel("Flattened BOM:", resultModel);
+            return Result.success(resultModel);
+        }
         return result;
     }
 

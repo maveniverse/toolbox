@@ -24,6 +24,28 @@ $ jbang toolbox@maveniverse --help
 or you can download the CLI JAR from Maven Central and run it directly.
 Finally, just go over sources to get the idea what is happening.
 
+To not have to type groupId of the plugin in Maven, just "toolbox", add
+following snippet to your `settings.xml`:
+
+```xml
+  <pluginGroups>
+    <pluginGroup>eu.maveniverse.maven.plugins</pluginGroup>
+  </pluginGroups>
+```
+
+To use mvnsh extension, add this to your `extensions.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<extensions>
+    <extension>
+        <groupId>eu.maveniverse.maven.toolbox</groupId>
+        <artifactId>mvnsh</artifactId>
+        <version>0.7.1</version>
+    </extension>
+</extensions>
+```
+
 ## Requirements
 
 Build requirements:

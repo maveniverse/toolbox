@@ -48,13 +48,13 @@ To use mvnsh extension, add this to your `extensions.xml`:
 
 ## Requirements
 
-Build requirements:
-* Java 21
-* Maven 3.9.9+
-
 Runtime requirement:
 * Java 11+ (CLI and Maven Plugin)
 * Maven 3.6.3+ (Maven Plugin)
+
+Build requirements:
+* Java 21
+* Maven 3.9.9+
 
 ## Project structure
 

@@ -188,13 +188,11 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
     };
 
     private static class ModuleDescriptorImpl implements ModuleDescriptor {
-        private final boolean available;
         private final String name;
         private final boolean automatic;
         private final String moduleNameSource;
 
         private ModuleDescriptorImpl(String name, boolean automatic, String moduleNameSource) {
-            this.available = true;
             this.name = name;
             this.automatic = automatic;
             this.moduleNameSource = moduleNameSource;
@@ -202,7 +200,7 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
 
         @Override
         public boolean available() {
-            return available;
+            return true;
         }
 
         @Override

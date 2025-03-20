@@ -19,7 +19,7 @@
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
   <artifactId>toolbox</artifactId>
-  <version>0.7.2-SNAPSHOT</version>
+  <version>0.7.2</version>
   <packaging>pom</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
@@ -44,7 +44,7 @@
   <scm>
     <connection>scm:git:git@github.com:maveniverse/toolbox.git</connection>
     <developerConnection>scm:git:git@github.com:maveniverse/toolbox.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>release-0.7.2</tag>
     <url>https://github.com/maveniverse/toolbox</url>
   </scm>
 
@@ -59,7 +59,7 @@
   </ciManagement>
 
   <properties>
-    <project.build.outputTimestamp>2025-03-19T11:06:29Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-03-20T16:00:29Z</project.build.outputTimestamp>
 
     <!--
     Build time: latest stable Maven and latest Java LTS.

@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.shared.output;
 
+import java.util.Arrays;
 import org.slf4j.Logger;
 
 /**
@@ -15,19 +16,29 @@ import org.slf4j.Logger;
 public final class LoggerOutput extends OutputSupport {
     private final Logger output;
 
-    public LoggerOutput(Logger output, Verbosity verbosity) {
-        super(verbosity, true);
+    public LoggerOutput(Logger output, boolean errors, Verbosity verbosity) {
+        super(verbosity, errors);
         this.output = output;
     }
 
     @Override
     public void warn(String message, Object... params) {
-        output.warn(message, params);
+        if (!isShowErrors() && params.length > 0 || params[params.length - 1] instanceof Throwable) {
+            Object[] paramsWithoutThrowable = Arrays.copyOf(params, params.length - 1);
+            output.warn(message + " " + ((Throwable) params[params.length - 1]).getMessage(), paramsWithoutThrowable);
+        } else {
+            output.warn(message, params);
+        }
     }
 
     @Override
     public void error(String message, Object... params) {
-        output.error(message, params);
+        if (!isShowErrors() && params.length > 0 || params[params.length - 1] instanceof Throwable) {
+            Object[] paramsWithoutThrowable = Arrays.copyOf(params, params.length - 1);
+            output.error(message + " " + ((Throwable) params[params.length - 1]).getMessage(), paramsWithoutThrowable);
+        } else {
+            output.error(message, params);
+        }
     }
 
     @Override

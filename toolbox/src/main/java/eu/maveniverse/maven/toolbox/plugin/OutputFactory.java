@@ -36,7 +36,7 @@ public final class OutputFactory {
      */
     public static Output createMojoOutput(boolean batchMode, boolean errors, Output.Verbosity verbosity) {
         requireNonNull(verbosity, "verbosity");
-        Output output = new LoggerOutput(LoggerFactory.getLogger(OutputFactory.class), verbosity);
+        Output output = new LoggerOutput(LoggerFactory.getLogger(OutputFactory.class), errors, verbosity);
         if (!batchMode && System.console() != null) {
             if (!Ansi.isEnabled()) {
                 Ansi.setEnabled(true);

@@ -23,9 +23,10 @@ public final class LoggerOutput extends OutputSupport {
 
     @Override
     public void warn(String message, Object... params) {
-        if (!isShowErrors() && params.length > 0 || params[params.length - 1] instanceof Throwable) {
-            Object[] paramsWithoutThrowable = Arrays.copyOf(params, params.length - 1);
-            output.warn(message + " " + ((Throwable) params[params.length - 1]).getMessage(), paramsWithoutThrowable);
+        if (!isShowErrors() && params.length > 0 && params[params.length - 1] instanceof Throwable) {
+            output.warn(
+                    message + " " + ((Throwable) params[params.length - 1]).getMessage(),
+                    Arrays.copyOf(params, params.length - 1));
         } else {
             output.warn(message, params);
         }
@@ -33,9 +34,10 @@ public final class LoggerOutput extends OutputSupport {
 
     @Override
     public void error(String message, Object... params) {
-        if (!isShowErrors() && params.length > 0 || params[params.length - 1] instanceof Throwable) {
-            Object[] paramsWithoutThrowable = Arrays.copyOf(params, params.length - 1);
-            output.error(message + " " + ((Throwable) params[params.length - 1]).getMessage(), paramsWithoutThrowable);
+        if (!isShowErrors() && params.length > 0 && params[params.length - 1] instanceof Throwable) {
+            output.error(
+                    message + " " + ((Throwable) params[params.length - 1]).getMessage(),
+                    Arrays.copyOf(params, params.length - 1));
         } else {
             output.error(message, params);
         }

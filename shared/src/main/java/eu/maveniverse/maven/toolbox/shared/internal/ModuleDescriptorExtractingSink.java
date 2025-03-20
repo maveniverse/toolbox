@@ -11,8 +11,9 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.module.FindException;
+import java.lang.module.ModuleFinder;
+import java.lang.module.ModuleReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -32,10 +33,26 @@ import org.eclipse.aether.graph.DependencyVisitor;
  */
 public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, DependencyVisitor {
     public interface ModuleDescriptor {
+        /**
+         * Returns {@code true} if the module descriptor was found (or derived somehow). Otherwise, it is not available,
+         * and all the others methods return values are undefined.
+         */
+        boolean available();
+
+        /**
+         * If {@link #available()} is {@code true}, the module name.
+         */
         String name();
 
+        /**
+         * If {@link #available()} is {@code true}, return {@code true} if module was automatic module.
+         */
         boolean automatic();
 
+        /**
+         * If {@link #available()} is {@code true}, and {@link #automatic()} is {@code true} as well, returns the
+         * source of automatic module name ("MANIFEST" or "FILENAME").
+         */
         String moduleNameSource();
     }
 
@@ -56,12 +73,17 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
     }
 
     public String formatString(ModuleDescriptor moduleDescriptor) {
-        String moduleInfo = "-- module " + moduleDescriptor.name();
-        if (moduleDescriptor.automatic()) {
-            if ("MANIFEST".equals(moduleDescriptor.moduleNameSource())) {
-                moduleInfo += " [auto]";
-            } else {
-                moduleInfo += " (auto)";
+        String moduleInfo;
+        if (moduleDescriptor == null || !moduleDescriptor.available()) {
+            moduleInfo = "-- n/a";
+        } else {
+            moduleInfo = "-- module " + moduleDescriptor.name();
+            if (moduleDescriptor.automatic()) {
+                if ("MANIFEST".equals(moduleDescriptor.moduleNameSource())) {
+                    moduleInfo += " [automatic; JAR manifest]";
+                } else {
+                    moduleInfo += " (automatic: JAR filename)";
+                }
             }
         }
         return moduleInfo;
@@ -76,61 +98,39 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
     }
 
     private ModuleDescriptor getModuleDescriptor(Path artifactPath) {
-        ModuleDescriptorImpl moduleDescriptor = null;
+        ModuleDescriptor moduleDescriptor = NOT_AVAILABLE;
         try {
-            // Use Java9 code to get moduleName, don't try to do it better with own implementation
-            Class<?> moduleFinderClass = Class.forName("java.lang.module.ModuleFinder");
-
-            Method ofMethod = moduleFinderClass.getMethod("of", java.nio.file.Path[].class);
-            Object moduleFinderInstance = ofMethod.invoke(null, new Object[] {new java.nio.file.Path[] {artifactPath}});
-
-            Method findAllMethod = moduleFinderClass.getMethod("findAll");
-            Set<Object> moduleReferences = (Set<Object>) findAllMethod.invoke(moduleFinderInstance);
+            ModuleFinder moduleFinder = ModuleFinder.of(artifactPath);
+            Set<ModuleReference> moduleReferences = moduleFinder.findAll();
 
             // moduleReferences can be empty when referring to target/classes without module-info.class
             if (!moduleReferences.isEmpty()) {
-                Object moduleReference = moduleReferences.iterator().next();
-                Method descriptorMethod = moduleReference.getClass().getMethod("descriptor");
-                Object moduleDescriptorInstance = descriptorMethod.invoke(moduleReference);
-
-                Method nameMethod = moduleDescriptorInstance.getClass().getMethod("name");
-                String name = (String) nameMethod.invoke(moduleDescriptorInstance);
-
-                moduleDescriptor = new ModuleDescriptorImpl();
-                moduleDescriptor.name = name;
-
-                Method isAutomaticMethod = moduleDescriptorInstance.getClass().getMethod("isAutomatic");
-                moduleDescriptor.automatic = (Boolean) isAutomaticMethod.invoke(moduleDescriptorInstance);
-
-                if (moduleDescriptor.automatic) {
+                ModuleReference moduleReference = moduleReferences.iterator().next();
+                java.lang.module.ModuleDescriptor moduleDescriptorInstance = moduleReference.descriptor();
+                String moduleNameSource = "";
+                if (moduleDescriptorInstance.isAutomatic()) {
                     if (Files.isRegularFile(artifactPath)) {
                         try (JarFile jarFile = new JarFile(artifactPath.toFile())) {
                             Manifest manifest = jarFile.getManifest();
 
                             if (manifest != null
                                     && manifest.getMainAttributes().getValue("Automatic-Module-Name") != null) {
-                                moduleDescriptor.moduleNameSource = "MANIFEST";
+                                moduleNameSource = "MANIFEST";
                             } else {
-                                moduleDescriptor.moduleNameSource = "FILENAME";
+                                moduleNameSource = "FILENAME";
                             }
                         } catch (IOException e) {
                             // noop
                         }
                     }
                 }
+                moduleDescriptor = new ModuleDescriptorImpl(
+                        moduleDescriptorInstance.name(), moduleDescriptorInstance.isAutomatic(), moduleNameSource);
             }
-        } catch (ClassNotFoundException
-                | SecurityException
-                | IllegalAccessException
-                | IllegalArgumentException
-                | NoSuchMethodException e) {
+        } catch (SecurityException | IllegalArgumentException e) {
             output.warn("Ignored Exception:", e);
-        } catch (InvocationTargetException e) {
-            Throwable cause = e.getCause();
-            while (cause.getCause() != null) {
-                cause = cause.getCause();
-            }
-            output.warn("Can't extract module name from {}:", artifactPath.getFileName(), cause);
+        } catch (FindException e) {
+            output.warn("Can't extract module name from {}:", artifactPath.getFileName(), e);
         }
         return moduleDescriptor;
     }
@@ -165,10 +165,43 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
         };
     }
 
+    private static final ModuleDescriptor NOT_AVAILABLE = new ModuleDescriptor() {
+        @Override
+        public boolean available() {
+            return false;
+        }
+
+        @Override
+        public String name() {
+            return "";
+        }
+
+        @Override
+        public boolean automatic() {
+            return false;
+        }
+
+        @Override
+        public String moduleNameSource() {
+            return "";
+        }
+    };
+
     private static class ModuleDescriptorImpl implements ModuleDescriptor {
-        String name;
-        boolean automatic = true;
-        String moduleNameSource;
+        private final String name;
+        private final boolean automatic;
+        private final String moduleNameSource;
+
+        private ModuleDescriptorImpl(String name, boolean automatic, String moduleNameSource) {
+            this.name = name;
+            this.automatic = automatic;
+            this.moduleNameSource = moduleNameSource;
+        }
+
+        @Override
+        public boolean available() {
+            return true;
+        }
 
         @Override
         public String name() {

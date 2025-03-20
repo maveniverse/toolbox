@@ -118,11 +118,7 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
         } catch (SecurityException | IllegalArgumentException e) {
             output.warn("Ignored Exception:", e);
         } catch (FindException e) {
-            Throwable cause = e.getCause();
-            while (cause.getCause() != null) {
-                cause = cause.getCause();
-            }
-            output.warn("Can't extract module name from {}:", artifactPath.getFileName(), cause);
+            output.warn("Can't extract module name from {}:", artifactPath.getFileName(), e);
         }
         return moduleDescriptor;
     }

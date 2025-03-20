@@ -84,7 +84,7 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
     }
 
     private ModuleDescriptor getModuleDescriptor(Path artifactPath) {
-        ModuleDescriptorImpl moduleDescriptor = NOT_AVAILABLE;
+        ModuleDescriptor moduleDescriptor = NOT_AVAILABLE;
         try {
             ModuleFinder moduleFinder = ModuleFinder.of(artifactPath);
             Set<ModuleReference> moduleReferences = moduleFinder.findAll();
@@ -93,27 +93,25 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
             if (!moduleReferences.isEmpty()) {
                 ModuleReference moduleReference = moduleReferences.iterator().next();
                 java.lang.module.ModuleDescriptor moduleDescriptorInstance = moduleReference.descriptor();
-
-                moduleDescriptor = new ModuleDescriptorImpl();
-                moduleDescriptor.name = moduleDescriptorInstance.name();
-                moduleDescriptor.automatic = moduleDescriptorInstance.isAutomatic();
-
-                if (moduleDescriptor.automatic) {
+                String moduleNameSource = "";
+                if (moduleDescriptorInstance.isAutomatic()) {
                     if (Files.isRegularFile(artifactPath)) {
                         try (JarFile jarFile = new JarFile(artifactPath.toFile())) {
                             Manifest manifest = jarFile.getManifest();
 
                             if (manifest != null
                                     && manifest.getMainAttributes().getValue("Automatic-Module-Name") != null) {
-                                moduleDescriptor.moduleNameSource = "MANIFEST";
+                                moduleNameSource = "MANIFEST";
                             } else {
-                                moduleDescriptor.moduleNameSource = "FILENAME";
+                                moduleNameSource = "FILENAME";
                             }
                         } catch (IOException e) {
                             // noop
                         }
                     }
                 }
+                moduleDescriptor = new ModuleDescriptorImpl(
+                        moduleDescriptorInstance.name(), moduleDescriptorInstance.isAutomatic(), moduleNameSource);
             }
         } catch (SecurityException | IllegalArgumentException e) {
             output.warn("Ignored Exception:", e);
@@ -153,7 +151,7 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
         };
     }
 
-    private static final ModuleDescriptorImpl NOT_AVAILABLE = new ModuleDescriptorImpl() {
+    private static final ModuleDescriptor NOT_AVAILABLE = new ModuleDescriptor() {
         @Override
         public boolean available() {
             return false;
@@ -176,13 +174,21 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
     };
 
     private static class ModuleDescriptorImpl implements ModuleDescriptor {
-        String name;
-        boolean automatic = true;
-        String moduleNameSource;
+        private final boolean available;
+        private final String name;
+        private final boolean automatic;
+        private final String moduleNameSource;
+
+        private ModuleDescriptorImpl(String name, boolean automatic, String moduleNameSource) {
+            this.available = true;
+            this.name = name;
+            this.automatic = automatic;
+            this.moduleNameSource = moduleNameSource;
+        }
 
         @Override
         public boolean available() {
-            return true;
+            return available;
         }
 
         @Override

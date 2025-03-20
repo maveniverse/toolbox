@@ -33,12 +33,26 @@ import org.eclipse.aether.graph.DependencyVisitor;
  */
 public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, DependencyVisitor {
     public interface ModuleDescriptor {
+        /**
+         * Returns {@code true} if the module descriptor was found (or derived somehow). Otherwise, it is not available,
+         * and all the others methods return values are undefined.
+         */
         boolean available();
 
+        /**
+         * If {@link #available()} is {@code true}, the module name.
+         */
         String name();
 
+        /**
+         * If {@link #available()} is {@code true}, return {@code true} if module was automatic module.
+         */
         boolean automatic();
 
+        /**
+         * If {@link #available()} is {@code true}, and {@link #automatic()} is {@code true} as well, returns the
+         * source of automatic module name ("MANIFEST" or "FILENAME").
+         */
         String moduleNameSource();
     }
 
@@ -66,9 +80,9 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
             moduleInfo = "-- module " + moduleDescriptor.name();
             if (moduleDescriptor.automatic()) {
                 if ("MANIFEST".equals(moduleDescriptor.moduleNameSource())) {
-                    moduleInfo += " [auto]";
+                    moduleInfo += " [automatic; JAR manifest]";
                 } else {
-                    moduleInfo += " (auto)";
+                    moduleInfo += " (automatic: JAR filename)";
                 }
             }
         }
@@ -159,7 +173,7 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
 
         @Override
         public String name() {
-            return "n/a";
+            return "";
         }
 
         @Override

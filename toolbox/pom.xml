@@ -29,10 +29,6 @@
 
   <properties>
     <mainClass>eu.maveniverse.maven.toolbox.plugin.CLI</mainClass>
-
-    <!-- m-p-p workarounds -->
-    <prerequisiteMaven>${requireRuntimeMavenVersion.version}</prerequisiteMaven>
-    <prerequisiteJava>${maven.compiler.release}</prerequisiteJava>
   </properties>
 
   <dependencies>
@@ -183,8 +179,8 @@
         <artifactId>maven-plugin-plugin</artifactId>
         <configuration>
           <goalPrefix>toolbox</goalPrefix>
-          <requiredMavenVersion>${prerequisiteMaven}</requiredMavenVersion>
-          <requiredJavaVersion>${prerequisiteJava}</requiredJavaVersion>
+          <requiredMavenVersion>${requireRuntimeMavenVersion.version}</requiredMavenVersion>
+          <requiredJavaVersion>${maven.compiler.release}</requiredJavaVersion>
         </configuration>
         <executions>
           <execution>

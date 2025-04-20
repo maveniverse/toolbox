@@ -316,7 +316,7 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
         @Override
         protected void processOp(SpecParser.Node node) {
             switch (node.getValue()) {
-                    // keys
+                // keys
                 case "GAKey":
                     params.add(GAKey());
                     break;
@@ -329,7 +329,7 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
                 case "GACEVKey":
                     params.add(GACEVKey());
                     break;
-                    // mappers
+                // mappers
                 case "G":
                     params.add(G());
                     break;

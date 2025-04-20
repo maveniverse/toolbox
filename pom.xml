@@ -63,13 +63,12 @@
 
     <!--
     Build time: latest stable Maven and latest Java LTS.
-    Run time: "not so old" Maven (3.6.3+) and latest Java LTS.
+    Run time: "not so old" Maven (3.6.3+) and Java 11 (due indexer-api).
     -->
     <maven.compiler.release>11</maven.compiler.release>
-    <requireRuntimeMavenVersion.version>[3.6.3,)</requireRuntimeMavenVersion.version>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.24-SNAPSHOT</version.mima>
+    <version.mima>2.4.24</version.mima>
     <version.maven>3.9.9</version.maven>
     <version.resolver>1.9.22</version.resolver>
     <version.mavenIndexer>7.1.5</version.mavenIndexer>

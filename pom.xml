@@ -63,7 +63,7 @@
 
     <!--
     Build time: latest stable Maven and latest Java LTS.
-    Run time: "not so old" Maven (3.6.3+) and Java 11 (due indexer-api).
+    Run time: "not so old" Maven (3.6.3+) and Java 11 (Indexer API is 11+).
     -->
     <maven.compiler.release>11</maven.compiler.release>
 

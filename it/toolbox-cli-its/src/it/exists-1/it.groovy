@@ -8,7 +8,8 @@
 
 StringBuilder out = new StringBuilder()
 StringBuilder err = new StringBuilder()
-String[] args = ["${java}", '-jar', "${cli}", "-e", "exists", "org.apache.maven:maven-core:3.6.3", "--pom", "--javadoc", "--sources", "--signature", "--all-required"]
+// On Java 24 ANSI kicks in, so must use -B
+String[] args = ["${java}", '-jar', "${cli}", "exists", "-e", "-B", "org.apache.maven:maven-core:3.6.3", "--pom", "--javadoc", "--sources", "--signature", "--all-required"]
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()

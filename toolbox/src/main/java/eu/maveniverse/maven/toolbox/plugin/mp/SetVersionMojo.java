@@ -14,13 +14,15 @@ import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomEditor;
 import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
 import java.util.ArrayList;
 import java.util.function.Consumer;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 
 /**
  * Sets version of current project and all children.
  */
-@Mojo(name = "set-version", threadSafe = true)
+@Mojo(name = "set-version", aggregator = true, threadSafe = true)
 public class SetVersionMojo extends MPMojoSupport {
     /**
      * The new version.
@@ -37,7 +39,6 @@ public class SetVersionMojo extends MPMojoSupport {
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        Result<Boolean> result;
 
         ArrayList<Consumer<JDomPomTransformer.TransformationContext>> transformers = new ArrayList<>();
         transformers.add(c -> JDomPomEditor.setVersion(c.getDocument().getRootElement(), version));
@@ -50,9 +51,15 @@ public class SetVersionMojo extends MPMojoSupport {
             }
         }
 
-        try (ToolboxCommando.EditSession editSession =
-                toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
-            result = toolboxCommando.doEdit(editSession, transformers);
+        Result<Boolean> result = Result.success(true);
+        for (MavenProject project : mavenSession.getProjects()) {
+            try (ToolboxCommando.EditSession editSession =
+                    toolboxCommando.createEditSession(project.getFile().toPath())) {
+                result = toolboxCommando.doEdit(editSession, transformers);
+            }
+            if (!result.isSuccess()) {
+                throw new MojoExecutionException("Failed to update version of " + project.getArtifactId());
+            }
         }
         return result;
     }

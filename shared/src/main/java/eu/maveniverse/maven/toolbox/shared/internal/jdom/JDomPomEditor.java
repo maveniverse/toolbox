@@ -52,13 +52,15 @@ public final class JDomPomEditor {
                 properties = new Element("properties", project.getNamespace());
                 JDomUtils.addElement(properties, project);
             }
-            Element property = properties.getChild(key, properties.getNamespace());
-            if (upsert && property == null) {
-                property = new Element(key, properties.getNamespace());
-                JDomUtils.addElement(property, properties);
-            }
-            if (property != null) {
-                property.setText(value);
+            if (properties != null) {
+                Element property = properties.getChild(key, properties.getNamespace());
+                if (upsert && property == null) {
+                    property = new Element(key, properties.getNamespace());
+                    JDomUtils.addElement(property, properties);
+                }
+                if (property != null) {
+                    property.setText(value);
+                }
             }
         }
     }

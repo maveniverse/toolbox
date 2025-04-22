@@ -40,8 +40,8 @@ public final class JDomPomTransformer {
         JDomCleanupHelper.cleanup(ctx.getDocument().getRootElement());
     };
 
-    private static Consumer<TransformationContext> addOrSetProperty(String key, String value) {
-        return context -> JDomPomEditor.addOrSetProperty(context.getDocument().getRootElement(), key, value);
+    private static Consumer<TransformationContext> setProperty(String key, String value, boolean upsert) {
+        return context -> JDomPomEditor.setProperty(context.getDocument().getRootElement(), key, value, upsert);
     }
 
     public static Function<Artifact, Consumer<TransformationContext>> updateManagedPlugin(boolean upsert) {

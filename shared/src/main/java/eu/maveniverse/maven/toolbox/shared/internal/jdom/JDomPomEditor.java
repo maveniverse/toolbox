@@ -45,19 +45,21 @@ public final class JDomPomEditor {
                 && Objects.equals(artifact.getExtension(), type);
     }
 
-    public static void addOrSetProperty(Element project, String key, String value) {
+    public static void setProperty(Element project, String key, String value, boolean upsert) {
         if (project != null) {
             Element properties = project.getChild("properties", project.getNamespace());
-            if (properties == null) {
+            if (upsert && properties == null) {
                 properties = new Element("properties", project.getNamespace());
                 JDomUtils.addElement(properties, project);
             }
             Element property = properties.getChild(key, properties.getNamespace());
-            if (property == null) {
+            if (upsert && property == null) {
                 property = new Element(key, properties.getNamespace());
                 JDomUtils.addElement(property, properties);
             }
-            property.setText(value);
+            if (property != null) {
+                property.setText(value);
+            }
         }
     }
 
@@ -82,6 +84,25 @@ public final class JDomPomEditor {
             if (version != null && version.getText().equals(a.getVersion())) {
                 JDomUtils.removeChildElement(project, version);
             }
+        }
+    }
+
+    public static void setVersion(Element project, String version) {
+        if (project != null) {
+            Element element = project.getChild("version", project.getNamespace());
+            if (element != null) {
+                element.setText(version);
+                return;
+            }
+            element = project.getChild("parent", project.getNamespace());
+            if (element != null) {
+                element = element.getChild("version", project.getNamespace());
+                if (element != null) {
+                    element.setText(version);
+                    return;
+                }
+            }
+            throw new IllegalStateException("Could not set version");
         }
     }
 
@@ -163,7 +184,7 @@ public final class JDomPomEditor {
                                 String versionValue = version.getText();
                                 if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
                                     String propertyKey = versionValue.substring(2, versionValue.length() - 1);
-                                    addOrSetProperty(project, propertyKey, a.getVersion());
+                                    setProperty(project, propertyKey, a.getVersion(), true);
                                 } else {
                                     version.setText(a.getVersion());
                                 }
@@ -173,7 +194,6 @@ public final class JDomPomEditor {
                 }
             }
         }
-        ;
     }
 
     public static void deleteManagedPlugin(Element project, Artifact a) {
@@ -236,7 +256,7 @@ public final class JDomPomEditor {
                             String versionValue = version.getText();
                             if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
                                 String propertyKey = versionValue.substring(2, versionValue.length() - 1);
-                                addOrSetProperty(project, propertyKey, a.getVersion());
+                                setProperty(project, propertyKey, a.getVersion(), true);
                             } else {
                                 version.setText(a.getVersion());
                             }
@@ -315,7 +335,7 @@ public final class JDomPomEditor {
                             String versionValue = version.getText();
                             if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
                                 String propertyKey = versionValue.substring(2, versionValue.length() - 1);
-                                addOrSetProperty(project, propertyKey, a.getVersion());
+                                setProperty(project, propertyKey, a.getVersion(), true);
                             } else {
                                 version.setText(a.getVersion());
                             }
@@ -389,7 +409,7 @@ public final class JDomPomEditor {
                         String versionValue = version.getText();
                         if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
                             String propertyKey = versionValue.substring(2, versionValue.length() - 1);
-                            addOrSetProperty(project, propertyKey, a.getVersion());
+                            setProperty(project, propertyKey, a.getVersion(), true);
                         } else {
                             version.setText(a.getVersion());
                         }

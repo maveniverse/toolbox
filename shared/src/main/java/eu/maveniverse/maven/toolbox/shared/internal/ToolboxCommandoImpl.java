@@ -39,6 +39,7 @@ import eu.maveniverse.maven.toolbox.shared.Source;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
+import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -67,6 +68,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.model.DependencyManagement;
@@ -1410,6 +1412,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             }
         });
         return result.get();
+    }
+
+    @Override
+    public Result<Boolean> doEdit(EditSession es, List<Consumer<JDomPomTransformer.TransformationContext>> transformers)
+            throws Exception {
+        es.edit(pom -> new JDomPomTransformer().apply(pom, transformers));
+        return Result.success(true);
     }
 
     // Utils

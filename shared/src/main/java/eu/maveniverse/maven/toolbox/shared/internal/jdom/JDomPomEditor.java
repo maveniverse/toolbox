@@ -282,6 +282,20 @@ public final class JDomPomEditor {
         }
     }
 
+    public static void deletePluginVersion(Element project, Artifact a) {
+        if (project != null) {
+            Element plugins = project.getChild("plugins", project.getNamespace());
+            if (plugins != null) {
+                for (Element plugin : plugins.getChildren("plugin", plugins.getNamespace())) {
+                    if (equalsGA(a, plugin)) {
+                        Element version = plugin.getChild("version", plugin.getNamespace());
+                        JDomUtils.removeChildAndItsCommentFromContent(plugin, version);
+                    }
+                }
+            }
+        }
+    }
+
     public static void updateManagedDependency(Element project, Artifact a, boolean upsert) {
         if (project != null) {
             Element dependencyManagement = project.getChild("dependencyManagement", project.getNamespace());

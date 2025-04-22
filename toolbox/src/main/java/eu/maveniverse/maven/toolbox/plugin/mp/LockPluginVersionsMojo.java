@@ -14,9 +14,11 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
@@ -104,6 +106,17 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
                             ToolboxCommando.OpSubject.MANAGED_PLUGINS,
                             ToolboxCommando.Op.UPSERT,
                             pluginsUpdates::stream);
+                }
+                for (MavenProject project : mavenSession.getProjects()) {
+                    try (ToolboxCommando.EditSession editSession =
+                            toolboxCommando.createEditSession(project.getFile().toPath())) {
+                        toolboxCommando.doEdit(
+                                editSession,
+                                pluginsUpdates.stream()
+                                        .map(a -> JDomPomTransformer.deletePluginVersion()
+                                                .apply(a))
+                                        .collect(Collectors.toList()));
+                    }
                 }
             }
         }

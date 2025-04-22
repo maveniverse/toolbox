@@ -67,6 +67,12 @@ public final class JDomPomTransformer {
         };
     }
 
+    public static Function<Artifact, Consumer<TransformationContext>> deletePluginVersion() {
+        return a -> context -> {
+            JDomPomEditor.deletePluginVersion(context.getDocument().getRootElement(), a);
+        };
+    }
+
     public static Function<Artifact, Consumer<TransformationContext>> updateManagedDependency(boolean upsert) {
         return a -> context ->
                 JDomPomEditor.updateManagedDependency(context.getDocument().getRootElement(), a, upsert);

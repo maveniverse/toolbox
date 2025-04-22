@@ -29,9 +29,9 @@ public class SetVersionMojo extends MPMojoSupport {
     private String version;
 
     /**
-     * Comma separated properties, that if found, should be set also to new version.
+     * Optional; comma separated properties, that if found, should be set also to new version.
      */
-    @Parameter(property = "properties", required = true, defaultValue = "")
+    @Parameter(property = "properties")
     private String properties;
 
     @Override
@@ -41,10 +41,12 @@ public class SetVersionMojo extends MPMojoSupport {
 
         ArrayList<Consumer<JDomPomTransformer.TransformationContext>> transformers = new ArrayList<>();
         transformers.add(c -> JDomPomEditor.setVersion(c.getDocument().getRootElement(), version));
-        for (String property : properties.split(",")) {
-            if (!property.trim().isEmpty()) {
-                transformers.add(
-                        c -> JDomPomEditor.setProperty(c.getDocument().getRootElement(), property, version, false));
+        if (properties != null) {
+            for (String property : properties.split(",")) {
+                if (!property.trim().isEmpty()) {
+                    transformers.add(
+                            c -> JDomPomEditor.setProperty(c.getDocument().getRootElement(), property, version, false));
+                }
             }
         }
 

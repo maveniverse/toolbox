@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
+import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.Closeable;
 import java.io.IOException;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
@@ -488,5 +490,8 @@ public interface ToolboxCommando {
     }
 
     Result<List<Artifact>> doEdit(EditSession es, OpSubject subject, Op op, Source<Artifact> artifacts)
+            throws Exception;
+
+    Result<Boolean> doEdit(EditSession es, List<Consumer<JDomPomTransformer.TransformationContext>> transformers)
             throws Exception;
 }

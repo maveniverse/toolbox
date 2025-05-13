@@ -30,6 +30,11 @@ import java.util.List;
 import java.util.Map;
 
 public class JDomCfg {
+    private static final JDomCfg instance = new JDomCfg();
+
+    public static JDomCfg getInstance() {
+        return instance;
+    }
 
     public static final String POM_ELEMENT_ACTIVATION = "activation";
     public static final String POM_ELEMENT_ACTIVE_BY_DEFAULT = "activeByDefault";
@@ -102,9 +107,7 @@ public class JDomCfg {
     public static final String POM_ELEMENT_VALUE = "value";
     public static final String POM_ELEMENT_VERSION = "version";
 
-    private static JDomCfg instance = new JDomCfg();
-
-    private Map<String, List<String>> elementOrder = new HashMap<>();
+    private final Map<String, List<String>> elementOrder = new HashMap<>();
 
     // Singleton
     private JDomCfg() {
@@ -180,10 +183,6 @@ public class JDomCfg {
                         POM_ELEMENT_SYSTEM_PATH,
                         POM_ELEMENT_OPTIONAL,
                         POM_ELEMENT_EXCLUSIONS));
-    }
-
-    public static JDomCfg getInstance() {
-        return instance;
     }
 
     public List<String> getElementOrder(String type) {

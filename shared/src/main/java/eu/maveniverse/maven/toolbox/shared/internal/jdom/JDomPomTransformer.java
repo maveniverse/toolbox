@@ -26,8 +26,6 @@ public final class JDomPomTransformer {
      * The transformation context.
      */
     public interface TransformationContext {
-        boolean pomHasParent();
-
         Document getDocument();
 
         void registerPostTransformation(Consumer<TransformationContext> transformation);
@@ -104,20 +102,6 @@ public final class JDomPomTransformer {
             try (JDomDocumentIO domDocumentIO = new JDomDocumentIO(pom)) {
                 ArrayList<Consumer<TransformationContext>> postProcessors = new ArrayList<>();
                 TransformationContext context = new TransformationContext() {
-                    @Override
-                    public boolean pomHasParent() {
-                        return domDocumentIO
-                                        .getDocument()
-                                        .getRootElement()
-                                        .getChild(
-                                                "parent",
-                                                domDocumentIO
-                                                        .getDocument()
-                                                        .getRootElement()
-                                                        .getNamespace())
-                                != null;
-                    }
-
                     @Override
                     public Document getDocument() {
                         return domDocumentIO.getDocument();

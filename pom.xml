@@ -68,7 +68,7 @@
     <maven.compiler.release>11</maven.compiler.release>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.24</version.mima>
+    <version.mima>2.4.25</version.mima>
     <version.maven>3.9.9</version.maven>
     <version.resolver>1.9.22</version.resolver>
     <version.mavenIndexer>7.1.5</version.mavenIndexer>

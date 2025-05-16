@@ -16,6 +16,8 @@ import org.jdom2.Text;
  * Methods editing JDom POM representation.
  */
 public final class JDomPomEditor {
+    private static final JDomCfg pomCfg = new JDomPomCfg();
+
     /**
      * Helper for GA equality. To be used with plugins.
      */
@@ -50,13 +52,13 @@ public final class JDomPomEditor {
             Element properties = project.getChild("properties", project.getNamespace());
             if (upsert && properties == null) {
                 properties = new Element("properties", project.getNamespace());
-                JDomUtils.addElement(properties, project);
+                JDomUtils.addElement(pomCfg, properties, project);
             }
             if (properties != null) {
                 Element property = properties.getChild(key, properties.getNamespace());
                 if (upsert && property == null) {
                     property = new Element(key, properties.getNamespace());
-                    JDomUtils.addElement(property, properties);
+                    JDomUtils.addElement(pomCfg, property, properties);
                 }
                 if (property != null) {
                     property.setText(value);
@@ -71,11 +73,11 @@ public final class JDomPomEditor {
             if (parent == null) {
                 parent = new Element("parent", project.getNamespace());
                 parent.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
-                JDomUtils.addElement(parent, project);
+                JDomUtils.addElement(pomCfg, parent, project);
             }
-            JDomUtils.rewriteElement("groupId", a.getGroupId(), parent);
-            JDomUtils.rewriteElement("artifactId", a.getArtifactId(), parent);
-            JDomUtils.rewriteElement("version", a.getVersion(), parent);
+            JDomUtils.rewriteElement(pomCfg, "groupId", a.getGroupId(), parent);
+            JDomUtils.rewriteElement(pomCfg, "artifactId", a.getArtifactId(), parent);
+            JDomUtils.rewriteElement(pomCfg, "version", a.getVersion(), parent);
 
             Element groupId = project.getChild("groupId", project.getNamespace());
             if (groupId != null && groupId.getText().equals(a.getGroupId())) {
@@ -114,11 +116,11 @@ public final class JDomPomEditor {
             if (modules == null) {
                 modules = new Element("modules", project.getNamespace());
                 modules.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
-                JDomUtils.addElement(modules, project);
+                JDomUtils.addElement(pomCfg, modules, project);
             }
             Element module = new Element("module", modules.getNamespace());
             module.setText(subproject);
-            JDomUtils.addElement(module, modules);
+            JDomUtils.addElement(pomCfg, module, modules);
         }
     }
 
@@ -127,7 +129,7 @@ public final class JDomPomEditor {
             Element packaging = project.getChild("packaging", project.getNamespace());
             if (packaging == null) {
                 packaging = new Element("packaging", project.getNamespace());
-                JDomUtils.addElement(packaging, project);
+                JDomUtils.addElement(pomCfg, packaging, project);
             }
             if ("jar".equals(value)) {
                 JDomUtils.removeChildAndItsCommentFromContent(project, packaging);
@@ -143,21 +145,21 @@ public final class JDomPomEditor {
             if (upsert && build == null) {
                 build = new Element("build", project.getNamespace());
                 build.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
-                JDomUtils.addElement(build, project);
+                JDomUtils.addElement(pomCfg, build, project);
             }
             if (build != null) {
                 Element pluginManagement = build.getChild("pluginManagement", build.getNamespace());
                 if (upsert && pluginManagement == null) {
                     pluginManagement = new Element("pluginManagement", build.getNamespace());
                     pluginManagement.addContent(new Text("\n  " + JDomUtils.detectIndentation(build)));
-                    JDomUtils.addElement(pluginManagement, build);
+                    JDomUtils.addElement(pomCfg, pluginManagement, build);
                 }
                 if (pluginManagement != null) {
                     Element plugins = pluginManagement.getChild("plugins", pluginManagement.getNamespace());
                     if (upsert && plugins == null) {
                         plugins = new Element("plugins", pluginManagement.getNamespace());
                         plugins.addContent(new Text("\n  " + JDomUtils.detectIndentation(pluginManagement)));
-                        JDomUtils.addElement(plugins, pluginManagement);
+                        JDomUtils.addElement(pomCfg, plugins, pluginManagement);
                     }
                     if (plugins != null) {
                         Element toUpdate = null;
@@ -170,14 +172,19 @@ public final class JDomPomEditor {
                         if (upsert && toUpdate == null) {
                             toUpdate = new Element("plugin", plugins.getNamespace());
                             toUpdate.addContent(new Text("\n  " + JDomUtils.detectIndentation(plugins)));
-                            JDomUtils.addElement(toUpdate, plugins);
+                            JDomUtils.addElement(pomCfg, toUpdate, plugins);
                             JDomUtils.addElement(
-                                    new Element("groupId", plugins.getNamespace()).setText(a.getGroupId()), toUpdate);
+                                    pomCfg,
+                                    new Element("groupId", plugins.getNamespace()).setText(a.getGroupId()),
+                                    toUpdate);
                             JDomUtils.addElement(
+                                    pomCfg,
                                     new Element("artifactId", plugins.getNamespace()).setText(a.getArtifactId()),
                                     toUpdate);
                             JDomUtils.addElement(
-                                    new Element("version", plugins.getNamespace()).setText(a.getVersion()), toUpdate);
+                                    pomCfg,
+                                    new Element("version", plugins.getNamespace()).setText(a.getVersion()),
+                                    toUpdate);
                             return;
                         }
                         if (toUpdate != null) {
@@ -223,14 +230,14 @@ public final class JDomPomEditor {
             if (upsert && build == null) {
                 build = new Element("build", project.getNamespace());
                 build.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
-                JDomUtils.addElement(build, project);
+                JDomUtils.addElement(pomCfg, build, project);
             }
             if (build != null) {
                 Element plugins = build.getChild("plugins", build.getNamespace());
                 if (upsert && plugins == null) {
                     plugins = new Element("plugins", build.getNamespace());
                     plugins.addContent(new Text("\n  " + JDomUtils.detectIndentation(build)));
-                    JDomUtils.addElement(plugins, build);
+                    JDomUtils.addElement(pomCfg, plugins, build);
                 }
                 if (plugins != null) {
                     Element toUpdate = null;
@@ -243,13 +250,19 @@ public final class JDomPomEditor {
                     if (upsert && toUpdate == null) {
                         toUpdate = new Element("plugin", plugins.getNamespace());
                         toUpdate.addContent(new Text("\n  " + JDomUtils.detectIndentation(plugins)));
-                        JDomUtils.addElement(toUpdate, plugins);
+                        JDomUtils.addElement(pomCfg, toUpdate, plugins);
                         JDomUtils.addElement(
-                                new Element("groupId", plugins.getNamespace()).setText(a.getGroupId()), toUpdate);
+                                pomCfg,
+                                new Element("groupId", plugins.getNamespace()).setText(a.getGroupId()),
+                                toUpdate);
                         JDomUtils.addElement(
-                                new Element("artifactId", plugins.getNamespace()).setText(a.getArtifactId()), toUpdate);
+                                pomCfg,
+                                new Element("artifactId", plugins.getNamespace()).setText(a.getArtifactId()),
+                                toUpdate);
                         JDomUtils.addElement(
-                                new Element("version", plugins.getNamespace()).setText(a.getVersion()), toUpdate);
+                                pomCfg,
+                                new Element("version", plugins.getNamespace()).setText(a.getVersion()),
+                                toUpdate);
                         return;
                     }
                     if (toUpdate != null) {
@@ -304,7 +317,7 @@ public final class JDomPomEditor {
             if (upsert && dependencyManagement == null) {
                 dependencyManagement = new Element("dependencyManagement", project.getNamespace());
                 dependencyManagement.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
-                JDomUtils.addElement(dependencyManagement, project);
+                JDomUtils.addElement(pomCfg, dependencyManagement, project);
             }
             if (dependencyManagement != null) {
                 Element dependencies =
@@ -312,7 +325,7 @@ public final class JDomPomEditor {
                 if (upsert && dependencies == null) {
                     dependencies = new Element("dependencies", dependencyManagement.getNamespace());
                     dependencies.addContent(new Text("\n  " + JDomUtils.detectIndentation(dependencyManagement)));
-                    JDomUtils.addElement(dependencies, dependencyManagement);
+                    JDomUtils.addElement(pomCfg, dependencies, dependencyManagement);
                 }
                 if (dependencies != null) {
                     Element toUpdate = null;
@@ -325,21 +338,28 @@ public final class JDomPomEditor {
                     if (upsert && toUpdate == null) {
                         toUpdate = new Element("dependency", dependencies.getNamespace());
                         toUpdate.addContent(new Text("\n  " + JDomUtils.detectIndentation(dependencies)));
-                        JDomUtils.addElement(toUpdate, dependencies);
+                        JDomUtils.addElement(pomCfg, toUpdate, dependencies);
                         JDomUtils.addElement(
-                                new Element("groupId", dependencies.getNamespace()).setText(a.getGroupId()), toUpdate);
+                                pomCfg,
+                                new Element("groupId", dependencies.getNamespace()).setText(a.getGroupId()),
+                                toUpdate);
                         JDomUtils.addElement(
+                                pomCfg,
                                 new Element("artifactId", dependencies.getNamespace()).setText(a.getArtifactId()),
                                 toUpdate);
                         JDomUtils.addElement(
-                                new Element("version", dependencies.getNamespace()).setText(a.getVersion()), toUpdate);
+                                pomCfg,
+                                new Element("version", dependencies.getNamespace()).setText(a.getVersion()),
+                                toUpdate);
                         if (!"jar".equals(a.getExtension())) {
                             JDomUtils.addElement(
+                                    pomCfg,
                                     new Element("type", dependencies.getNamespace()).setText(a.getExtension()),
                                     toUpdate);
                         }
                         if (!a.getClassifier().isEmpty()) {
                             JDomUtils.addElement(
+                                    pomCfg,
                                     new Element("classifier", dependencies.getNamespace()).setText(a.getClassifier()),
                                     toUpdate);
                         }
@@ -387,7 +407,7 @@ public final class JDomPomEditor {
             if (upsert && dependencies == null) {
                 dependencies = new Element("dependencies", project.getNamespace());
                 dependencies.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
-                JDomUtils.addElement(dependencies, project);
+                JDomUtils.addElement(pomCfg, dependencies, project);
             }
             if (dependencies != null) {
                 Element toUpdate = null;
@@ -400,20 +420,28 @@ public final class JDomPomEditor {
                 if (upsert && toUpdate == null) {
                     toUpdate = new Element("dependency", dependencies.getNamespace());
                     toUpdate.addContent(new Text("\n  " + JDomUtils.detectIndentation(dependencies)));
-                    JDomUtils.addElement(toUpdate, dependencies);
+                    JDomUtils.addElement(pomCfg, toUpdate, dependencies);
                     JDomUtils.addElement(
-                            new Element("groupId", dependencies.getNamespace()).setText(a.getGroupId()), toUpdate);
+                            pomCfg,
+                            new Element("groupId", dependencies.getNamespace()).setText(a.getGroupId()),
+                            toUpdate);
                     JDomUtils.addElement(
+                            pomCfg,
                             new Element("artifactId", dependencies.getNamespace()).setText(a.getArtifactId()),
                             toUpdate);
                     JDomUtils.addElement(
-                            new Element("version", dependencies.getNamespace()).setText(a.getVersion()), toUpdate);
+                            pomCfg,
+                            new Element("version", dependencies.getNamespace()).setText(a.getVersion()),
+                            toUpdate);
                     if (!"jar".equals(a.getExtension())) {
                         JDomUtils.addElement(
-                                new Element("type", dependencies.getNamespace()).setText(a.getExtension()), toUpdate);
+                                pomCfg,
+                                new Element("type", dependencies.getNamespace()).setText(a.getExtension()),
+                                toUpdate);
                     }
                     if (!a.getClassifier().isEmpty()) {
                         JDomUtils.addElement(
+                                pomCfg,
                                 new Element("classifier", dependencies.getNamespace()).setText(a.getClassifier()),
                                 toUpdate);
                     }

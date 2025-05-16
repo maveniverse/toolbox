@@ -121,4 +121,11 @@ public abstract class HelloMojoSupport extends GavMojoSupport {
     protected Artifact toPluginArtifact(String gav) throws Exception {
         return toLatestArtifact(gav);
     }
+
+    /**
+     * Accepts {@code G:A:V} or {@code G:A} in which case tries to determine latest V of parent POM.
+     */
+    protected Artifact toCoreExtensionArtifact(String gav) throws Exception {
+        return toLatestArtifact(gav);
+    }
 }

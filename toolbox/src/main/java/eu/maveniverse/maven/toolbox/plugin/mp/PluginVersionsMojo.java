@@ -88,16 +88,16 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
                     if (!managedPluginsUpdates.isEmpty()) {
-                        toolboxCommando.doEdit(
+                        toolboxCommando.editPom(
                                 editSession,
-                                ToolboxCommando.OpSubject.MANAGED_PLUGINS,
+                                ToolboxCommando.PomOpSubject.MANAGED_PLUGINS,
                                 ToolboxCommando.Op.UPDATE,
                                 managedPluginsUpdates::stream);
                     }
                     if (!pluginsUpdates.isEmpty()) {
-                        toolboxCommando.doEdit(
+                        toolboxCommando.editPom(
                                 editSession,
-                                ToolboxCommando.OpSubject.PLUGINS,
+                                ToolboxCommando.PomOpSubject.PLUGINS,
                                 ToolboxCommando.Op.UPDATE,
                                 pluginsUpdates::stream);
                     }

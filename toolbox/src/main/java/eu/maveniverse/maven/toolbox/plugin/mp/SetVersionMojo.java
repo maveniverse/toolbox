@@ -11,7 +11,7 @@ import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomEditor;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
+import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomTransformationContext;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -40,7 +40,7 @@ public class SetVersionMojo extends MPMojoSupport {
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
 
-        ArrayList<Consumer<JDomPomTransformer.TransformationContext>> transformers = new ArrayList<>();
+        ArrayList<Consumer<JDomTransformationContext.JDomPomTransformationContext>> transformers = new ArrayList<>();
         transformers.add(c -> JDomPomEditor.setVersion(c.getDocument().getRootElement(), version));
         if (properties != null) {
             for (String property : properties.split(",")) {
@@ -55,7 +55,7 @@ public class SetVersionMojo extends MPMojoSupport {
         for (MavenProject project : mavenSession.getProjects()) {
             try (ToolboxCommando.EditSession editSession =
                     toolboxCommando.createEditSession(project.getFile().toPath())) {
-                result = toolboxCommando.doEdit(editSession, transformers);
+                result = toolboxCommando.editPom(editSession, transformers);
             }
             if (!result.isSuccess()) {
                 throw new MojoExecutionException("Failed to update version of " + project.getArtifactId());

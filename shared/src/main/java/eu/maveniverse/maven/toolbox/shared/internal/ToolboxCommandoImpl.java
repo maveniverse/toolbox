@@ -39,7 +39,9 @@ import eu.maveniverse.maven.toolbox.shared.Source;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
+import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomExtensionsSource;
 import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
+import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomTransformationContext;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -1401,7 +1403,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<Artifact>> doEdit(EditSession es, OpSubject subject, Op op, Source<Artifact> artifacts)
+    public Result<List<Artifact>> editPom(EditSession es, PomOpSubject subject, Op op, Source<Artifact> artifacts)
             throws Exception {
         AtomicReference<Result<List<Artifact>>> result = new AtomicReference<>(null);
         es.edit(pom -> {
@@ -1415,10 +1417,49 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<Boolean> doEdit(EditSession es, List<Consumer<JDomPomTransformer.TransformationContext>> transformers)
+    public Result<Boolean> editPom(
+            EditSession es, List<Consumer<JDomTransformationContext.JDomPomTransformationContext>> transformers)
             throws Exception {
-        es.edit(pom -> new JDomPomTransformer().apply(pom, transformers));
+        es.edit(pom -> new JDomPomTransformer(pom).apply(transformers));
         return Result.success(true);
+    }
+
+    @Override
+    public Path extensionsPath(ExtensionsScope scope) {
+        switch (scope) {
+            case PROJECT:
+                throw new IllegalStateException("Project scope is not supported");
+            case USER:
+                return context.mavenUserHome().basedir().resolve("extensions.xml");
+            case INSTALL:
+                return context.mavenSystemHome().conf().resolve("extensions.xml");
+            default:
+                throw new IllegalStateException("Unsupported scope " + scope);
+        }
+    }
+
+    @Override
+    public Result<List<Artifact>> listExtensions(Path extensions) throws Exception {
+        requireNonNull(extensions, "extensions");
+        if (Files.isRegularFile(extensions)) {
+            try (JDomExtensionsSource source = new JDomExtensionsSource(extensions)) {
+                return Result.success(source.get().collect(Collectors.toList()));
+            }
+        }
+        return Result.failure("File does not exists");
+    }
+
+    @Override
+    public Result<List<Artifact>> editExtensions(EditSession es, Op op, Source<Artifact> artifacts) throws Exception {
+        AtomicReference<Result<List<Artifact>>> result = new AtomicReference<>(null);
+        es.edit(pom -> {
+            try (ExtensionsTransformerSink sink = ExtensionsTransformerSink.transform(output, pom, op)) {
+                List<Artifact> res = artifacts.get().collect(Collectors.toList());
+                sink.accept(res);
+                result.set(Result.success(res));
+            }
+        });
+        return result.get();
     }
 
     // Utils

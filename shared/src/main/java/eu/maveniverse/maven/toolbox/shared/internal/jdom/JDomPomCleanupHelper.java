@@ -43,7 +43,7 @@ import org.jdom2.util.IteratorIterable;
  * <li>profiles</li>
  * </ol>
  */
-public class JDomCleanupHelper {
+public class JDomPomCleanupHelper {
 
     /**
      * Generic cleanup useful after removal of things.
@@ -51,16 +51,16 @@ public class JDomCleanupHelper {
     public static void cleanup(Element rootElement) {
         // Remove empty elements
         for (String cleanUpEmptyElement : List.of(
-                JDomCfg.POM_ELEMENT_MODULES,
-                JDomCfg.POM_ELEMENT_PROPERTIES,
-                JDomCfg.POM_ELEMENT_PLUGINS,
-                JDomCfg.POM_ELEMENT_PLUGIN_MANAGEMENT,
-                JDomCfg.POM_ELEMENT_DEPENDENCIES,
-                JDomCfg.POM_ELEMENT_DEPENDENCY_MANAGEMENT)) {
-            JDomCleanupHelper.cleanupEmptyElements(rootElement, cleanUpEmptyElement);
+                JDomPomCfg.POM_ELEMENT_MODULES,
+                JDomPomCfg.POM_ELEMENT_PROPERTIES,
+                JDomPomCfg.POM_ELEMENT_PLUGINS,
+                JDomPomCfg.POM_ELEMENT_PLUGIN_MANAGEMENT,
+                JDomPomCfg.POM_ELEMENT_DEPENDENCIES,
+                JDomPomCfg.POM_ELEMENT_DEPENDENCY_MANAGEMENT)) {
+            JDomPomCleanupHelper.cleanupEmptyElements(rootElement, cleanUpEmptyElement);
         }
         // Remove empty (i.e. with no elements) profile and profiles tag
-        JDomCleanupHelper.cleanupEmptyProfiles(rootElement, List.of(JDomCfg.POM_ELEMENT_PROJECT));
+        JDomPomCleanupHelper.cleanupEmptyProfiles(rootElement, List.of(JDomPomCfg.POM_ELEMENT_PROJECT));
     }
 
     /**
@@ -78,7 +78,7 @@ public class JDomCleanupHelper {
      */
     public static void cleanupEmptyProfiles(Element rootElement, List<String> profilesParents) {
         IteratorIterable<Element> filteredElements =
-                rootElement.getDescendants(new ElementFilter(JDomCfg.POM_ELEMENT_PROFILES));
+                rootElement.getDescendants(new ElementFilter(JDomPomCfg.POM_ELEMENT_PROFILES));
         List<Element> profiles = new ArrayList<>();
         for (Element profilesElement : filteredElements) {
             profiles.add(profilesElement);
@@ -89,10 +89,10 @@ public class JDomCleanupHelper {
             }
             removeElementWithEmptyChildren(
                     profilesElement,
-                    JDomCfg.POM_ELEMENT_PROFILE,
-                    Arrays.asList(JDomCfg.POM_ELEMENT_ID, JDomCfg.POM_ELEMENT_ACTIVATION));
+                    JDomPomCfg.POM_ELEMENT_PROFILE,
+                    Arrays.asList(JDomPomCfg.POM_ELEMENT_ID, JDomPomCfg.POM_ELEMENT_ACTIVATION));
             if (!profilesElement
-                    .getDescendants(new ElementFilter(JDomCfg.POM_ELEMENT_PROFILE))
+                    .getDescendants(new ElementFilter(JDomPomCfg.POM_ELEMENT_PROFILE))
                     .hasNext()) {
                 JDomUtils.removeChildAndItsCommentFromContent(profilesElement.getParentElement(), profilesElement);
             }

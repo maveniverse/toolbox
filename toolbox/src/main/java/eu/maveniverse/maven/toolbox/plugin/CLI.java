@@ -36,10 +36,12 @@ import eu.maveniverse.maven.toolbox.plugin.gav.GavSearchMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavTreeMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavVerifyMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavVersionsMojo;
+import eu.maveniverse.maven.toolbox.plugin.hello.AddCoreExtension;
 import eu.maveniverse.maven.toolbox.plugin.hello.AddManagedDependency;
 import eu.maveniverse.maven.toolbox.plugin.hello.AddManagedPlugin;
 import eu.maveniverse.maven.toolbox.plugin.hello.NewProject;
 import eu.maveniverse.maven.toolbox.plugin.hello.NewSubProject;
+import eu.maveniverse.maven.toolbox.plugin.hello.RemoveCoreExtension;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import picocli.CommandLine;
 
@@ -81,7 +83,9 @@ import picocli.CommandLine;
             NewProject.class,
             NewSubProject.class,
             AddManagedDependency.class,
-            AddManagedPlugin.class
+            AddManagedPlugin.class,
+            AddCoreExtension.class,
+            RemoveCoreExtension.class
         },
         versionProvider = CLI.class,
         description = "Toolbox CLI",

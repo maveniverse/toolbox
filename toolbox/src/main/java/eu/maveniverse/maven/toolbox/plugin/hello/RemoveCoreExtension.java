@@ -33,6 +33,10 @@ public class RemoveCoreExtension extends HelloProjectMojoSupport {
     /**
      * The scope where to look.
      */
+    @CommandLine.Option(
+            names = {"scope"},
+            defaultValue = "project",
+            description = "The scope where to look.")
     @Parameter(property = "scope", defaultValue = "project")
     private String scope;
 

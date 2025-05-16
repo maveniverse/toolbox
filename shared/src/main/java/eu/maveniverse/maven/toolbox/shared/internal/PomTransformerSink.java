@@ -13,6 +13,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
+import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomTransformationContext;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -31,10 +32,10 @@ import org.eclipse.aether.artifact.Artifact;
 public final class PomTransformerSink implements Artifacts.Sink {
     /**
      * Creates trivial "transform" sink, that accepts all artifacts and applies provided transformations to artifacts as-is.
-     * If no POM file exists, will provide a plain/trivial "blank" POM.
+     * If no POM file exists, will provide a plain/trivial "blank" POM and work with that.
      */
     public static PomTransformerSink transform(
-            Output output, Path pom, ToolboxCommando.OpSubject subject, ToolboxCommando.Op op) throws IOException {
+            Output output, Path pom, ToolboxCommando.PomOpSubject subject, ToolboxCommando.Op op) throws IOException {
         return transform(
                 output,
                 pom,
@@ -54,7 +55,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
             Supplier<String> pomSupplier,
             Predicate<Artifact> artifactMatcher,
             Function<Artifact, Artifact> artifactMapper,
-            ToolboxCommando.OpSubject subject,
+            ToolboxCommando.PomOpSubject subject,
             ToolboxCommando.Op op)
             throws IOException {
         return new PomTransformerSink(output, pom, pomSupplier, artifactMatcher, artifactMapper, subject, op);
@@ -64,9 +65,9 @@ public final class PomTransformerSink implements Artifacts.Sink {
     private final Path pom;
     private final Predicate<Artifact> artifactMatcher;
     private final Function<Artifact, Artifact> artifactMapper;
-    private final Function<Artifact, Consumer<JDomPomTransformer.TransformationContext>> transformation;
+    private final Function<Artifact, Consumer<JDomTransformationContext.JDomPomTransformationContext>> transformation;
 
-    private final ArrayList<Consumer<JDomPomTransformer.TransformationContext>> applicableTransformations;
+    private final ArrayList<Consumer<JDomTransformationContext.JDomPomTransformationContext>> applicableTransformations;
 
     /**
      * Creates a directory sink.
@@ -86,7 +87,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
             Supplier<String> blankPomSupplier,
             Predicate<Artifact> artifactMatcher,
             Function<Artifact, Artifact> artifactMapper,
-            ToolboxCommando.OpSubject subject,
+            ToolboxCommando.PomOpSubject subject,
             ToolboxCommando.Op op)
             throws IOException {
         this.output = requireNonNull(output, "output");
@@ -100,7 +101,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
         requireNonNull(subject, "subject");
         requireNonNull(op, "op");
 
-        Function<Artifact, Consumer<JDomPomTransformer.TransformationContext>> tr = null;
+        Function<Artifact, Consumer<JDomTransformationContext.JDomPomTransformationContext>> tr = null;
         switch (op) {
             case UPSERT:
             case UPDATE:
@@ -150,7 +151,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
     public void accept(Artifact artifact) throws IOException {
         requireNonNull(artifact, "artifact");
         if (artifactMatcher.test(artifact)) {
-            Consumer<JDomPomTransformer.TransformationContext> transformation =
+            Consumer<JDomTransformationContext.JDomPomTransformationContext> transformation =
                     this.transformation.apply(artifactMapper.apply(artifact));
             if (transformation != null) {
                 output.chatter("Accepted {}", artifact);
@@ -170,6 +171,6 @@ public final class PomTransformerSink implements Artifacts.Sink {
 
     @Override
     public void close() throws IOException {
-        new JDomPomTransformer().apply(pom, applicableTransformations);
+        new JDomPomTransformer(pom).apply(applicableTransformations);
     }
 }

@@ -32,6 +32,7 @@ public class AnsiOutput extends OutputSupport {
         this.output = output;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T tool(Class<? extends T> klazz, Supplier<T> supplier) {
         if (DependencyGraphDumper.LineFormatter.class.isAssignableFrom(klazz)) {

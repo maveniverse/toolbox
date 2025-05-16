@@ -112,7 +112,7 @@ public abstract class MojoSupport extends AbstractMojo
 
     // cwd
 
-    private Path cwd;
+    private Path cwd = Path.of(System.getProperty("user.dir"));
 
     @Override
     public void setCwd(Path cwd) {

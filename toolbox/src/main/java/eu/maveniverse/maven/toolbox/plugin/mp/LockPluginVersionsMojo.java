@@ -101,16 +101,16 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
             if (!pluginsUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
-                    toolboxCommando.doEdit(
+                    toolboxCommando.editPom(
                             editSession,
-                            ToolboxCommando.OpSubject.MANAGED_PLUGINS,
+                            ToolboxCommando.PomOpSubject.MANAGED_PLUGINS,
                             ToolboxCommando.Op.UPSERT,
                             pluginsUpdates::stream);
                 }
                 for (MavenProject project : mavenSession.getProjects()) {
                     try (ToolboxCommando.EditSession editSession =
                             toolboxCommando.createEditSession(project.getFile().toPath())) {
-                        toolboxCommando.doEdit(
+                        toolboxCommando.editPom(
                                 editSession,
                                 pluginsUpdates.stream()
                                         .map(a -> JDomPomTransformer.deletePluginVersion()

@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
+import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomTransformationContext;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.Closeable;
 import java.io.IOException;
@@ -426,7 +426,7 @@ public interface ToolboxCommando {
         void edit(Editor editor) throws IOException;
     }
 
-    EditSession createEditSession(Path pom) throws IOException;
+    EditSession createEditSession(Path path) throws IOException;
 
     /**
      * Calculates list of "latest" artifacts based on {@link #versions(String, Source, Predicate, BiFunction)} query result
@@ -461,10 +461,11 @@ public interface ToolboxCommando {
                                         : versionSelector.apply(e.getKey(), e.getValue())))
                 .collect(Collectors.toList());
     }
+
     /**
      * The operation subject to apply to.
      */
-    enum OpSubject {
+    enum PomOpSubject {
         MANAGED_PLUGINS,
         PLUGINS,
         MANAGED_DEPENDENCIES,
@@ -476,7 +477,7 @@ public interface ToolboxCommando {
      */
     enum Op {
         /**
-         * Always alter: like if exists "update" version, if does not exist, create new entry with provided one.
+         * Always alter: like if exists "update" version, if it does not exist, create new entry with provided one.
          */
         UPSERT,
         /**
@@ -489,9 +490,22 @@ public interface ToolboxCommando {
         DELETE
     }
 
-    Result<List<Artifact>> doEdit(EditSession es, OpSubject subject, Op op, Source<Artifact> artifacts)
+    Result<List<Artifact>> editPom(EditSession es, PomOpSubject subject, Op op, Source<Artifact> artifacts)
             throws Exception;
 
-    Result<Boolean> doEdit(EditSession es, List<Consumer<JDomPomTransformer.TransformationContext>> transformers)
+    Result<Boolean> editPom(
+            EditSession es, List<Consumer<JDomTransformationContext.JDomPomTransformationContext>> transformers)
             throws Exception;
+
+    enum ExtensionsScope {
+        PROJECT,
+        USER,
+        INSTALL
+    }
+
+    Path extensionsPath(ExtensionsScope scope);
+
+    Result<List<Artifact>> listExtensions(Path extensions) throws Exception;
+
+    Result<List<Artifact>> editExtensions(EditSession es, Op op, Source<Artifact> artifacts) throws Exception;
 }

@@ -23,10 +23,21 @@ package eu.maveniverse.maven.toolbox.shared.internal.jdom;
  * limitations under the License.
  */
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public interface JDomCfg {
-    List<String> getElementOrder(String type);
+public class JDomExtensionsCfg implements JDomCfg {
 
-    void setElementOrder(String type, List<String> elementOrder);
+    private final Map<String, List<String>> elementOrder = new HashMap<>();
+
+    @Override
+    public List<String> getElementOrder(String type) {
+        return elementOrder.get(type);
+    }
+
+    @Override
+    public void setElementOrder(String type, List<String> elementOrder) {
+        this.elementOrder.put(type, elementOrder);
+    }
 }

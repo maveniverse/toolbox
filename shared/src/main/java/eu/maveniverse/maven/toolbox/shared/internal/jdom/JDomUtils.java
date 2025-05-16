@@ -65,23 +65,23 @@ public final class JDomUtils {
      * @param element the name of the new element.
      * @param root    the root element.
      */
-    public static void addElement(Element element, Element root) {
-        addElement(element, root, calcNewElementIndex(element.getName(), root));
+    public static void addElement(JDomCfg jDomCfg, Element element, Element root) {
+        addElement(jDomCfg, element, root, calcNewElementIndex(jDomCfg, element.getName(), root));
     }
 
     /**
      * Inserts a new child element to the given root element at the given index.
-     * For details see {@link #addElement(Element, Element)}
+     * For details see {@link #addElement(JDomCfg, Element, Element)}
      *
      * @param element the element to add.
      * @param root    the root element.
      * @param index   the index where the element should be inserted.
      */
-    public static void addElement(Element element, Element root, int index) {
+    public static void addElement(JDomCfg jDomCfg, Element element, Element root, int index) {
         root.addContent(index, element);
 
         String prependingElementName = ((Element) root.getContent(max(0, index - 1))).getName();
-        if (isBlankLineBetweenElements(prependingElementName, element.getName(), root)) {
+        if (isBlankLineBetweenElements(jDomCfg, prependingElementName, element.getName(), root)) {
             root.addContent(index, new Text("\n\n" + detectIndentation(root)));
         } else {
             root.addContent(index, new Text("\n" + detectIndentation(root)));
@@ -114,20 +114,20 @@ public final class JDomUtils {
      * @param root the root element.
      * @return the new element.
      */
-    public static Element insertNewElement(String name, Element root) {
-        return insertNewElement(name, root, calcNewElementIndex(name, root));
+    public static Element insertNewElement(JDomCfg jDomCfg, String name, Element root) {
+        return insertNewElement(jDomCfg, name, root, calcNewElementIndex(jDomCfg, name, root));
     }
 
     /**
      * Inserts a new child element to the given root element at the given index.
-     * For details see {@link #insertNewElement(String, Element)}
+     * For details see {@link #insertNewElement(JDomCfg, String, Element)}
      *
      * @param name  the name of the new element.
      * @param root  the root element.
      * @param index the index where the element should be inserted.
      * @return the new element.
      */
-    public static Element insertNewElement(String name, Element root, int index) {
+    public static Element insertNewElement(JDomCfg jDomCfg, String name, Element root, int index) {
         Element newElement;
 
         String indent = detectIndentation(root);
@@ -137,7 +137,7 @@ public final class JDomUtils {
         root.addContent(index, newElement);
 
         String prependingElementName = ((Element) root.getContent(max(0, index - 1))).getName();
-        if (isBlankLineBetweenElements(prependingElementName, name, root)) {
+        if (isBlankLineBetweenElements(jDomCfg, prependingElementName, name, root)) {
             root.addContent(index, new Text("\n\n" + indent));
         } else {
             root.addContent(index, new Text("\n" + indent));
@@ -153,9 +153,9 @@ public final class JDomUtils {
      * @param tags       the names of the new elements
      * @return the innermost element
      */
-    public static Element insertNewNestedElements(Element jdomParent, String... tags) {
+    public static Element insertNewNestedElements(JDomCfg jDomCfg, Element jdomParent, String... tags) {
         for (String tag : tags) {
-            jdomParent = insertNewElement(tag, jdomParent);
+            jdomParent = insertNewElement(jDomCfg, tag, jdomParent);
         }
         return jdomParent;
     }
@@ -167,17 +167,17 @@ public final class JDomUtils {
      * @param tag        the name of the new element
      * @param text       the content of the new element
      */
-    public static void insertContentElement(Element jdomParent, String tag, String text) {
+    public static void insertContentElement(JDomCfg jDomCfg, Element jdomParent, String tag, String text) {
         if (text != null) {
-            Element jdomVersion = insertNewElement(tag, jdomParent);
+            Element jdomVersion = insertNewElement(jDomCfg, tag, jdomParent);
             jdomVersion.setContent(new Text(text));
         }
     }
 
-    private static int calcNewElementIndex(String name, Element root) {
+    private static int calcNewElementIndex(JDomCfg jDomCfg, String name, Element root) {
         int addIndex = 0;
 
-        List<String> elementOrder = JDomCfg.getInstance().getElementOrder(root.getName());
+        List<String> elementOrder = jDomCfg.getElementOrder(root.getName());
         if (elementOrder == null) {
             addIndex = max(0, getLastElementIndex(root) + 1);
         } else {
@@ -196,8 +196,8 @@ public final class JDomUtils {
         return addIndex;
     }
 
-    private static boolean isBlankLineBetweenElements(String element1, String element2, Element root) {
-        List<String> elementOrder = JDomCfg.getInstance().getElementOrder(root.getName());
+    private static boolean isBlankLineBetweenElements(JDomCfg jDomCfg, String element1, String element2, Element root) {
+        List<String> elementOrder = jDomCfg.getElementOrder(root.getName());
         if (elementOrder != null) {
             return elementOrder
                     .subList(elementOrder.indexOf(element1), elementOrder.indexOf(element2))
@@ -520,7 +520,7 @@ public final class JDomUtils {
         }
     }
 
-    public static Element rewriteElement(String name, String value, Element root) {
+    public static Element rewriteElement(JDomCfg jDomCfg, String name, String value, Element root) {
         Element tagElement = root.getChild(name, root.getNamespace());
         if (tagElement != null) {
             if (value != null) {
@@ -530,7 +530,7 @@ public final class JDomUtils {
             }
         } else {
             if (value != null) {
-                Element element = insertNewElement(name, root);
+                Element element = insertNewElement(jDomCfg, name, root);
                 element.setText(value);
                 tagElement = element;
             }

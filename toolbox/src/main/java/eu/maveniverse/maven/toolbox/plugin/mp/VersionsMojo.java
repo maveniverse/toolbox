@@ -81,16 +81,16 @@ public class VersionsMojo extends MPMojoSupport {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
                     if (!managedDependenciesUpdates.isEmpty()) {
-                        toolboxCommando.doEdit(
+                        toolboxCommando.editPom(
                                 editSession,
-                                ToolboxCommando.OpSubject.MANAGED_DEPENDENCIES,
+                                ToolboxCommando.PomOpSubject.MANAGED_DEPENDENCIES,
                                 ToolboxCommando.Op.UPDATE,
                                 managedDependenciesUpdates::stream);
                     }
                     if (!dependenciesUpdates.isEmpty()) {
-                        toolboxCommando.doEdit(
+                        toolboxCommando.editPom(
                                 editSession,
-                                ToolboxCommando.OpSubject.DEPENDENCIES,
+                                ToolboxCommando.PomOpSubject.DEPENDENCIES,
                                 ToolboxCommando.Op.UPDATE,
                                 dependenciesUpdates::stream);
                     }

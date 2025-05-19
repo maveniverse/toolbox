@@ -96,6 +96,20 @@ public final class JDomPomTransformer {
         };
     }
 
+    public static Function<Artifact, Consumer<JDomTransformationContext.JDomPomTransformationContext>> updateExtension(
+            boolean upsert) {
+        return a ->
+                context -> JDomPomEditor.updateExtension(context.getDocument().getRootElement(), a, upsert);
+    }
+
+    public static Function<Artifact, Consumer<JDomTransformationContext.JDomPomTransformationContext>>
+            deleteExtension() {
+        return a -> context -> {
+            JDomPomEditor.deleteExtension(context.getDocument().getRootElement(), a);
+            context.registerPostTransformation(removeEmptyElements);
+        };
+    }
+
     private final Path pom;
 
     public JDomPomTransformer(Path pom) {

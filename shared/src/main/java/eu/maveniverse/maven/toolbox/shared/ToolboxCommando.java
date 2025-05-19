@@ -469,7 +469,8 @@ public interface ToolboxCommando {
         MANAGED_PLUGINS,
         PLUGINS,
         MANAGED_DEPENDENCIES,
-        DEPENDENCIES
+        DEPENDENCIES,
+        EXTENSIONS,
     }
 
     /**

@@ -118,6 +118,9 @@ public final class PomTransformerSink implements Artifacts.Sink {
                     case DEPENDENCIES:
                         tr = JDomPomTransformer.updateDependency(op == ToolboxCommando.Op.UPSERT);
                         break;
+                    case EXTENSIONS:
+                        tr = JDomPomTransformer.updateExtension(op == ToolboxCommando.Op.UPSERT);
+                        break;
                 }
                 break;
             case DELETE:
@@ -133,6 +136,9 @@ public final class PomTransformerSink implements Artifacts.Sink {
                         break;
                     case DEPENDENCIES:
                         tr = JDomPomTransformer.deleteDependency();
+                        break;
+                    case EXTENSIONS:
+                        tr = JDomPomTransformer.deleteExtension();
                         break;
                 }
         }

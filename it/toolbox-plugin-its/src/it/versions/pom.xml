@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2023-2024 Maveniverse Org.
+    All rights reserved. This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License v2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-v20.html
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.maveniverse.maven.toolbox.it</groupId>
+    <artifactId>dependency-versions</artifactId>
+    <version>1.0.0</version>
+    <properties>
+        <data><![CDATA[some data]]></data>
+        <first.version>1.0</first.version>
+        <third.version>1.0</third.version>
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                <artifactId>second</artifactId>
+                <version>1.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                <artifactId>third</artifactId>
+                <version>${third.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    <dependencies>
+        <!-- not managed; version set directly as property -->
+        <dependency>
+            <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+            <artifactId>first</artifactId>
+            <version>${first.version}</version>
+        </dependency>
+        <!-- managed; version set directly on managed -->
+        <dependency>
+            <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+            <artifactId>second</artifactId>
+        </dependency>
+        <!-- managed; property as version on managed -->
+        <dependency>
+            <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+            <artifactId>third</artifactId>
+        </dependency>
+        <!-- not managed; version set directly -->
+        <dependency>
+            <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+            <artifactId>fourth</artifactId>
+            <version>1.0</version>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>my-repo</id>
+            <url>file:${basedir}/my-repo</url>
+            <releases>
+                <checksumPolicy>warn</checksumPolicy>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <build>
+        <extensions>
+            <extension>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.7.35</version>
+            </extension>
+        </extensions>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                    <artifactId>second</artifactId>
+                    <version>1.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                    <artifactId>third</artifactId>
+                    <version>${third.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <!-- not managed; version set directly as property -->
+            <plugin>
+                <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                <artifactId>first</artifactId>
+                <version>${first.version}</version>
+            </plugin>
+            <!-- managed; version set directly on managed -->
+            <plugin>
+                <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                <artifactId>second</artifactId>
+            </plugin>
+            <!-- managed; property as version on managed -->
+            <plugin>
+                <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                <artifactId>third</artifactId>
+            </plugin>
+            <!-- not managed; version set directly -->
+            <plugin>
+                <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                <artifactId>fourth</artifactId>
+                <version>1.0</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>

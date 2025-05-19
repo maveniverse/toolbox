@@ -23,12 +23,12 @@ import org.eclipse.aether.version.Version;
 import picocli.CommandLine;
 
 /**
- * Lists available versions of Maven Project plugins.
+ * Lists available versions of Maven Project extensions.
  */
-@Mojo(name = "plugin-versions", threadSafe = true)
-public class PluginVersionsMojo extends MPPluginMojoSupport {
+@Mojo(name = "extension-versions", threadSafe = true)
+public class ExtensionVersionsMojo extends MPPluginMojoSupport {
     /**
-     * The plugin matcher spec.
+     * The extension matcher spec.
      */
     @Parameter(property = "artifactMatcherSpec", defaultValue = "any()")
     private String artifactMatcherSpec;
@@ -64,43 +64,25 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
         ArtifactVersionSelector artifactVersionSelector =
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
 
-        Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
-                "managed plugins",
-                () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
-                        .map(ResolutionRoot::getArtifact)
-                        .filter(artifactMatcher),
-                artifactVersionMatcher,
-                artifactVersionSelector);
-        Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
-                "plugins",
-                () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
+        Result<Map<Artifact, List<Version>>> extensions = toolboxCommando.versions(
+                "extensions",
+                () -> allProjectExtensionsAsResolutionRoots(toolboxCommando).stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
                 artifactVersionMatcher,
                 artifactVersionSelector);
 
         if (apply) {
-            List<Artifact> managedPluginsUpdates =
-                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow(), artifactVersionSelector);
-            List<Artifact> pluginsUpdates =
-                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow(), artifactVersionSelector);
-            if (!managedPluginsUpdates.isEmpty() || !pluginsUpdates.isEmpty()) {
+            List<Artifact> extensionUpdates =
+                    toolboxCommando.calculateUpdates(extensions.getData().orElseThrow(), artifactVersionSelector);
+            if (!extensionUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
-                    if (!managedPluginsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(
-                                editSession,
-                                ToolboxCommando.PomOpSubject.MANAGED_PLUGINS,
-                                ToolboxCommando.Op.UPDATE,
-                                managedPluginsUpdates::stream);
-                    }
-                    if (!pluginsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(
-                                editSession,
-                                ToolboxCommando.PomOpSubject.PLUGINS,
-                                ToolboxCommando.Op.UPDATE,
-                                pluginsUpdates::stream);
-                    }
+                    toolboxCommando.editPom(
+                            editSession,
+                            ToolboxCommando.PomOpSubject.EXTENSIONS,
+                            ToolboxCommando.Op.UPDATE,
+                            extensionUpdates::stream);
                 }
             }
         }

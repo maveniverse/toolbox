@@ -286,11 +286,14 @@ public final class JDomPomEditor {
 
     public static void deletePlugin(Element project, Artifact a) {
         if (project != null) {
-            Element plugins = project.getChild("plugins", project.getNamespace());
-            if (plugins != null) {
-                for (Element plugin : plugins.getChildren("plugin", plugins.getNamespace())) {
-                    if (equalsGA(a, plugin)) {
-                        JDomUtils.removeChildAndItsCommentFromContent(plugins, plugin);
+            Element build = project.getChild("build", project.getNamespace());
+            if (build != null) {
+                Element plugins = build.getChild("plugins", build.getNamespace());
+                if (plugins != null) {
+                    for (Element plugin : plugins.getChildren("plugin", plugins.getNamespace())) {
+                        if (equalsGA(a, plugin)) {
+                            JDomUtils.removeChildAndItsCommentFromContent(plugins, plugin);
+                        }
                     }
                 }
             }
@@ -299,12 +302,93 @@ public final class JDomPomEditor {
 
     public static void deletePluginVersion(Element project, Artifact a) {
         if (project != null) {
-            Element plugins = project.getChild("plugins", project.getNamespace());
-            if (plugins != null) {
-                for (Element plugin : plugins.getChildren("plugin", plugins.getNamespace())) {
-                    if (equalsGA(a, plugin)) {
-                        Element version = plugin.getChild("version", plugin.getNamespace());
-                        JDomUtils.removeChildAndItsCommentFromContent(plugin, version);
+            Element build = project.getChild("build", project.getNamespace());
+            if (build != null) {
+                Element plugins = build.getChild("plugins", build.getNamespace());
+                if (plugins != null) {
+                    for (Element plugin : plugins.getChildren("plugin", plugins.getNamespace())) {
+                        if (equalsGA(a, plugin)) {
+                            Element version = plugin.getChild("version", plugin.getNamespace());
+                            if (version != null) {
+                                JDomUtils.removeChildAndItsCommentFromContent(plugin, version);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static void updateExtension(Element project, Artifact a, boolean upsert) {
+        if (project != null) {
+            Element build = project.getChild("build", project.getNamespace());
+            if (upsert && build == null) {
+                build = new Element("build", project.getNamespace());
+                build.addContent(new Text("\n  " + JDomUtils.detectIndentation(project)));
+                JDomUtils.addElement(pomCfg, build, project);
+            }
+            if (build != null) {
+                Element extensions = build.getChild("extensions", build.getNamespace());
+                if (upsert && extensions == null) {
+                    extensions = new Element("extensions", build.getNamespace());
+                    extensions.addContent(new Text("\n  " + JDomUtils.detectIndentation(build)));
+                    JDomUtils.addElement(pomCfg, extensions, build);
+                }
+                if (extensions != null) {
+                    Element toUpdate = null;
+                    for (Element plugin : extensions.getChildren("extension", extensions.getNamespace())) {
+                        if (equalsGA(a, plugin)) {
+                            toUpdate = plugin;
+                            break;
+                        }
+                    }
+                    if (upsert && toUpdate == null) {
+                        toUpdate = new Element("plugin", extensions.getNamespace());
+                        toUpdate.addContent(new Text("\n  " + JDomUtils.detectIndentation(extensions)));
+                        JDomUtils.addElement(pomCfg, toUpdate, extensions);
+                        JDomUtils.addElement(
+                                pomCfg,
+                                new Element("groupId", extensions.getNamespace()).setText(a.getGroupId()),
+                                toUpdate);
+                        JDomUtils.addElement(
+                                pomCfg,
+                                new Element("artifactId", extensions.getNamespace()).setText(a.getArtifactId()),
+                                toUpdate);
+                        JDomUtils.addElement(
+                                pomCfg,
+                                new Element("version", extensions.getNamespace()).setText(a.getVersion()),
+                                toUpdate);
+                        return;
+                    }
+                    if (toUpdate != null) {
+                        Element version = toUpdate.getChild("version", extensions.getNamespace());
+                        if (version != null) {
+                            String versionValue = version.getText();
+                            if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
+                                String propertyKey = versionValue.substring(2, versionValue.length() - 1);
+                                setProperty(project, propertyKey, a.getVersion(), true);
+                            } else {
+                                version.setText(a.getVersion());
+                            }
+                        } else {
+                            updateManagedPlugin(project, a, upsert);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static void deleteExtension(Element project, Artifact a) {
+        if (project != null) {
+            Element build = project.getChild("build", project.getNamespace());
+            if (build != null) {
+                Element extensions = build.getChild("extensions", build.getNamespace());
+                if (extensions != null) {
+                    for (Element extension : extensions.getChildren("extension", extensions.getNamespace())) {
+                        if (equalsGA(a, extension)) {
+                            JDomUtils.removeChildAndItsCommentFromContent(extensions, extension);
+                        }
                     }
                 }
             }

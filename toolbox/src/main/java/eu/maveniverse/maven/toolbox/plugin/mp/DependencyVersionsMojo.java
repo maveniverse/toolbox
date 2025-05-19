@@ -7,10 +7,10 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
-import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
-import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
+import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -20,18 +20,17 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.Version;
-import picocli.CommandLine;
 
 /**
- * Lists available versions of Maven Project plugins.
+ * Lists available versions of Maven Project dependencies.
  */
-@Mojo(name = "plugin-versions", threadSafe = true)
-public class PluginVersionsMojo extends MPPluginMojoSupport {
+@Mojo(name = "dependency-versions", threadSafe = true)
+public class DependencyVersionsMojo extends MPMojoSupport {
     /**
-     * The plugin matcher spec.
+     * The dependency matcher spec.
      */
-    @Parameter(property = "artifactMatcherSpec", defaultValue = "any()")
-    private String artifactMatcherSpec;
+    @Parameter(property = "depSpec", defaultValue = "any()")
+    private String depSpec;
 
     /**
      * Artifact version matcher spec string, default is 'noSnapshotsAndPreviews()'.
@@ -42,10 +41,6 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     /**
      * Artifact version selector spec string to select the version from candidates, default is 'last()'.
      */
-    @CommandLine.Option(
-            names = {"--artifactVersionSelectorSpec"},
-            defaultValue = "last()",
-            description = "Artifact version selector spec (default 'last()')")
     @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
     private String artifactVersionSelectorSpec;
 
@@ -58,48 +53,46 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        ArtifactMatcher artifactMatcher = toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec);
+        DependencyMatcher dependencyMatcher = toolboxCommando.parseDependencyMatcherSpec(depSpec);
         ArtifactVersionMatcher artifactVersionMatcher =
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec);
         ArtifactVersionSelector artifactVersionSelector =
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
 
-        Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
-                "managed plugins",
-                () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
-                        .map(ResolutionRoot::getArtifact)
-                        .filter(artifactMatcher),
+        Result<Map<Artifact, List<Version>>> managedDependencies = toolboxCommando.versions(
+                "managed dependencies",
+                () -> projectManagedDependenciesAsResolutionRoots(dependencyMatcher).stream()
+                        .map(ResolutionRoot::getArtifact),
                 artifactVersionMatcher,
                 artifactVersionSelector);
-        Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
-                "plugins",
-                () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
-                        .map(ResolutionRoot::getArtifact)
-                        .filter(artifactMatcher),
+        Result<Map<Artifact, List<Version>>> dependencies = toolboxCommando.versions(
+                "dependencies",
+                () -> projectDependenciesAsResolutionRoots(dependencyMatcher).stream()
+                        .map(ResolutionRoot::getArtifact),
                 artifactVersionMatcher,
                 artifactVersionSelector);
 
         if (apply) {
-            List<Artifact> managedPluginsUpdates =
-                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow(), artifactVersionSelector);
-            List<Artifact> pluginsUpdates =
-                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow(), artifactVersionSelector);
-            if (!managedPluginsUpdates.isEmpty() || !pluginsUpdates.isEmpty()) {
+            List<Artifact> managedDependenciesUpdates = toolboxCommando.calculateUpdates(
+                    managedDependencies.getData().orElseThrow(), artifactVersionSelector);
+            List<Artifact> dependenciesUpdates =
+                    toolboxCommando.calculateUpdates(dependencies.getData().orElseThrow(), artifactVersionSelector);
+            if (!managedDependenciesUpdates.isEmpty() || !dependenciesUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
-                    if (!managedPluginsUpdates.isEmpty()) {
+                    if (!managedDependenciesUpdates.isEmpty()) {
                         toolboxCommando.editPom(
                                 editSession,
-                                ToolboxCommando.PomOpSubject.MANAGED_PLUGINS,
+                                ToolboxCommando.PomOpSubject.MANAGED_DEPENDENCIES,
                                 ToolboxCommando.Op.UPDATE,
-                                managedPluginsUpdates::stream);
+                                managedDependenciesUpdates::stream);
                     }
-                    if (!pluginsUpdates.isEmpty()) {
+                    if (!dependenciesUpdates.isEmpty()) {
                         toolboxCommando.editPom(
                                 editSession,
-                                ToolboxCommando.PomOpSubject.PLUGINS,
+                                ToolboxCommando.PomOpSubject.DEPENDENCIES,
                                 ToolboxCommando.Op.UPDATE,
-                                pluginsUpdates::stream);
+                                dependenciesUpdates::stream);
                     }
                 }
             }

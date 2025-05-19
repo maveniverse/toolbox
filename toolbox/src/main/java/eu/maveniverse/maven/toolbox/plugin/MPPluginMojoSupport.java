@@ -16,7 +16,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.apache.maven.model.Build;
 import org.apache.maven.model.BuildBase;
+import org.apache.maven.model.Extension;
 import org.apache.maven.model.InputLocation;
 import org.apache.maven.model.InputLocationTracker;
 import org.apache.maven.model.InputSource;
@@ -53,6 +55,15 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                 }
             }
             return false;
+        };
+    }
+
+    protected Function<Model, Build> projectBuildSelector() {
+        return model -> {
+            if (model != null) {
+                return model.getBuild();
+            }
+            return null;
         };
     }
 
@@ -97,6 +108,15 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
         };
     }
 
+    protected Function<Build, List<Extension>> buildExtensionsExtractor() {
+        return build -> {
+            if (build != null) {
+                return build.getExtensions();
+            }
+            return null;
+        };
+    }
+
     protected Function<Plugin, ResolutionRoot> pluginToResolutionRoot(ToolboxCommando toolboxCommando) {
         return plugin -> {
             if (plugin != null) {
@@ -109,6 +129,22 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                                 .build();
                     }
                     return root;
+                } catch (InvalidVersionSpecificationException
+                        | VersionRangeResolutionException
+                        | ArtifactDescriptorException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+            return null;
+        };
+    }
+
+    protected Function<Extension, ResolutionRoot> extensionToResolutionRoot(ToolboxCommando toolboxCommando) {
+        return extension -> {
+            if (extension != null) {
+                try {
+                    return toolboxCommando.loadGav(
+                            extension.getGroupId() + ":" + extension.getArtifactId() + ":" + extension.getVersion());
                 } catch (InvalidVersionSpecificationException
                         | VersionRangeResolutionException
                         | ArtifactDescriptorException e) {
@@ -166,9 +202,13 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
         return allProjectPluginsAsResolutionRoots(toolboxCommando, mavenProject);
     }
 
+    protected List<ResolutionRoot> allProjectExtensionsAsResolutionRoots(ToolboxCommando toolboxCommando) {
+        return allProjectExtensionsAsResolutionRoots(toolboxCommando, mavenProject);
+    }
+
     protected List<ResolutionRoot> allProjectManagedPluginsAsResolutionRoots(
             ToolboxCommando toolboxCommando, MavenProject mavenProject) {
-        return pluginResolutionRoots(
+        return selectExtractResolutionRoots(
                 projectBuildBaseSelector(),
                 buildManagedPluginsExtractor(),
                 definedInModel(mavenProject.getModel()),
@@ -178,7 +218,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
 
     protected List<ResolutionRoot> allProjectPluginsAsResolutionRoots(
             ToolboxCommando toolboxCommando, MavenProject mavenProject) {
-        return pluginResolutionRoots(
+        return selectExtractResolutionRoots(
                 projectBuildBaseSelector(),
                 buildPluginsExtractor(),
                 definedInModel(mavenProject.getModel()),
@@ -186,9 +226,19 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                 mavenProject);
     }
 
+    protected List<ResolutionRoot> allProjectExtensionsAsResolutionRoots(
+            ToolboxCommando toolboxCommando, MavenProject mavenProject) {
+        return selectExtractResolutionRoots(
+                projectBuildSelector(),
+                buildExtensionsExtractor(),
+                definedInModel(mavenProject.getModel()),
+                extensionToResolutionRoot(toolboxCommando),
+                mavenProject);
+    }
+
     protected List<ResolutionRoot> allManagedPluginsAsResolutionRoots(
             ToolboxCommando toolboxCommando, MavenProject mavenProject) {
-        return pluginResolutionRoots(
+        return selectExtractResolutionRoots(
                 projectBuildBaseSelector(),
                 buildManagedPluginsExtractor(),
                 p -> true,
@@ -198,7 +248,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
 
     protected List<ResolutionRoot> allPluginsAsResolutionRoots(
             ToolboxCommando toolboxCommando, MavenProject mavenProject) {
-        return pluginResolutionRoots(
+        return selectExtractResolutionRoots(
                 projectBuildBaseSelector(),
                 buildPluginsExtractor(),
                 p -> true,
@@ -206,9 +256,19 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                 mavenProject);
     }
 
+    protected List<ResolutionRoot> allExtensionsAsResolutionRoots(
+            ToolboxCommando toolboxCommando, MavenProject mavenProject) {
+        return selectExtractResolutionRoots(
+                projectBuildSelector(),
+                buildExtensionsExtractor(),
+                p -> true,
+                extensionToResolutionRoot(toolboxCommando),
+                mavenProject);
+    }
+
     protected List<ResolutionRoot> allProfileManagedPluginsAsResolutionRoots(
             ToolboxCommando toolboxCommando, String profileId) {
-        return pluginResolutionRoots(
+        return selectExtractResolutionRoots(
                 profileBuildBaseSelector(profileId),
                 buildManagedPluginsExtractor(),
                 definedInModel(mavenProject.getModel()),
@@ -218,7 +278,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
 
     protected List<ResolutionRoot> allProfilePluginsAsResolutionRoots(
             ToolboxCommando toolboxCommando, String profileId) {
-        return pluginResolutionRoots(
+        return selectExtractResolutionRoots(
                 profileBuildBaseSelector(profileId),
                 buildPluginsExtractor(),
                 definedInModel(mavenProject.getModel()),
@@ -226,20 +286,20 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                 mavenProject);
     }
 
-    private <T> List<T> pluginResolutionRoots(
-            Function<Model, BuildBase> selector,
-            Function<BuildBase, List<Plugin>> extractor,
-            Predicate<Plugin> predicate,
-            Function<Plugin, T> transformer,
+    private <T, B extends BuildBase, S> List<T> selectExtractResolutionRoots(
+            Function<Model, B> selector,
+            Function<B, List<S>> extractor,
+            Predicate<S> predicate,
+            Function<S, T> transformer,
             MavenProject mavenProject) {
         List<T> result = new ArrayList<>();
-        List<Plugin> plugins = extractor.apply(selector.apply(mavenProject.getModel()));
-        if (plugins != null) {
-            for (Plugin plugin : plugins) {
-                if (!predicate.test(plugin)) {
+        List<S> subjects = extractor.apply(selector.apply(mavenProject.getModel()));
+        if (subjects != null) {
+            for (S subject : subjects) {
+                if (!predicate.test(subject)) {
                     continue;
                 }
-                result.add(transformer.apply(plugin));
+                result.add(transformer.apply(subject));
             }
         }
         return result;

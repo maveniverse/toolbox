@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2023-2024 Maveniverse Org.
+    All rights reserved. This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License v2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-v20.html
+
+-->
+<metadata>
+  <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+  <artifactId>first</artifactId>
+  <versioning>
+    <latest>1.1</latest>
+    <release>1.1</release>
+    <versions>
+      <version>1.0</version>
+      <version>1.1</version>
+    </versions>
+    <lastUpdated>20241206134229</lastUpdated>
+  </versioning>
+</metadata>

@@ -11,7 +11,3 @@ assert !buildLog.contains('ERROR')
 String pom = new File(basedir, 'pom.xml').text
 String expectedPom = new File(basedir, 'expected-pom.xml').text
 assert pom != null && expectedPom != null && pom.equals(expectedPom)
-
-String extensionsXml = new File(basedir, '.mvn/extensions.xml').text
-String expectedExtensionsXml = new File(basedir, '.mvn/expected-extensions.xml').text
-assert extensionsXml != null && expectedExtensionsXml != null && extensionsXml.equals(expectedExtensionsXml)

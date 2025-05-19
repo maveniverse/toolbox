@@ -7,14 +7,17 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
-import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
+import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -22,16 +25,10 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.Version;
 
 /**
- * Lists available versions of Maven Project dependencies.
+ * Lists available updates to everything of Maven Project (including core extensions).
  */
 @Mojo(name = "versions", threadSafe = true)
-public class VersionsMojo extends MPMojoSupport {
-    /**
-     * The dependency matcher spec.
-     */
-    @Parameter(property = "depSpec", defaultValue = "any()")
-    private String depSpec;
-
+public class VersionsMojo extends MPPluginMojoSupport {
     /**
      * Artifact version matcher spec string, default is 'noSnapshotsAndPreviews()'.
      */
@@ -47,39 +44,123 @@ public class VersionsMojo extends MPMojoSupport {
     /**
      * Apply results to POM.
      */
-    @Parameter(property = "applyToPom")
-    private boolean applyToPom;
+    @Parameter(property = "apply")
+    private boolean apply;
 
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        DependencyMatcher dependencyMatcher = toolboxCommando.parseDependencyMatcherSpec(depSpec);
         ArtifactVersionMatcher artifactVersionMatcher =
                 toolboxCommando.parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec);
         ArtifactVersionSelector artifactVersionSelector =
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
 
+        ToolboxCommando.ExtensionsScope extensionsScope = ToolboxCommando.ExtensionsScope.PROJECT;
+
+        Path extensionsXml;
+        if (mavenSession.getRequest().isProjectPresent()) {
+            extensionsXml = mavenSession
+                    .getTopLevelProject()
+                    .getBasedir()
+                    .toPath()
+                    .resolve(".mvn")
+                    .resolve("extensions.xml");
+        } else {
+            extensionsXml = Path.of(".mvn").resolve("extensions.xml");
+        }
+
+        Result<List<Artifact>> coreExtensionsDiscovered = toolboxCommando.listExtensions(extensionsXml);
+        Result<Map<Artifact, List<Version>>> coreExtensions = coreExtensionsDiscovered.isSuccess()
+                ? toolboxCommando.versions(
+                        extensionsScope.name().toLowerCase(Locale.ROOT) + " extensions",
+                        () -> coreExtensionsDiscovered.getData().orElseThrow().stream(),
+                        artifactVersionMatcher,
+                        artifactVersionSelector)
+                : Result.success(Map.of());
+
+        Result<Map<Artifact, List<Version>>> extensions = toolboxCommando.versions(
+                "extensions",
+                () -> allProjectExtensionsAsResolutionRoots(toolboxCommando).stream()
+                        .map(ResolutionRoot::getArtifact),
+                artifactVersionMatcher,
+                artifactVersionSelector);
+
+        Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
+                "managed plugins",
+                () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
+                        .map(ResolutionRoot::getArtifact)
+                        .filter(ArtifactMatcher.any()),
+                artifactVersionMatcher,
+                artifactVersionSelector);
+        Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
+                "plugins",
+                () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
+                        .map(ResolutionRoot::getArtifact)
+                        .filter(ArtifactMatcher.any()),
+                artifactVersionMatcher,
+                artifactVersionSelector);
+
         Result<Map<Artifact, List<Version>>> managedDependencies = toolboxCommando.versions(
                 "managed dependencies",
-                () -> projectManagedDependenciesAsResolutionRoots(dependencyMatcher).stream()
+                () -> projectManagedDependenciesAsResolutionRoots(DependencyMatcher.any()).stream()
                         .map(ResolutionRoot::getArtifact),
                 artifactVersionMatcher,
                 artifactVersionSelector);
         Result<Map<Artifact, List<Version>>> dependencies = toolboxCommando.versions(
                 "dependencies",
-                () -> projectDependenciesAsResolutionRoots(dependencyMatcher).stream()
+                () -> projectDependenciesAsResolutionRoots(DependencyMatcher.any()).stream()
                         .map(ResolutionRoot::getArtifact),
                 artifactVersionMatcher,
                 artifactVersionSelector);
 
-        if (applyToPom) {
+        if (apply) {
+            List<Artifact> coreExtensionsUpdates =
+                    toolboxCommando.calculateUpdates(coreExtensions.getData().orElseThrow(), artifactVersionSelector);
+            if (!coreExtensionsUpdates.isEmpty()) {
+                try (ToolboxCommando.EditSession editSession = toolboxCommando.createEditSession(extensionsXml)) {
+                    toolboxCommando.editExtensions(
+                            editSession, ToolboxCommando.Op.UPDATE, coreExtensionsUpdates::stream);
+                }
+            }
+
+            List<Artifact> extensionUpdates =
+                    toolboxCommando.calculateUpdates(extensions.getData().orElseThrow(), artifactVersionSelector);
+            List<Artifact> managedPluginsUpdates =
+                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow(), artifactVersionSelector);
+            List<Artifact> pluginsUpdates =
+                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> managedDependenciesUpdates = toolboxCommando.calculateUpdates(
                     managedDependencies.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> dependenciesUpdates =
                     toolboxCommando.calculateUpdates(dependencies.getData().orElseThrow(), artifactVersionSelector);
-            if (!managedDependenciesUpdates.isEmpty() || !dependenciesUpdates.isEmpty()) {
+            if (!extensionUpdates.isEmpty()
+                    || !managedPluginsUpdates.isEmpty()
+                    || !pluginsUpdates.isEmpty()
+                    || !managedDependenciesUpdates.isEmpty()
+                    || !dependenciesUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
+                    if (!extensionUpdates.isEmpty()) {
+                        toolboxCommando.editPom(
+                                editSession,
+                                ToolboxCommando.PomOpSubject.EXTENSIONS,
+                                ToolboxCommando.Op.UPDATE,
+                                extensionUpdates::stream);
+                    }
+                    if (!managedPluginsUpdates.isEmpty()) {
+                        toolboxCommando.editPom(
+                                editSession,
+                                ToolboxCommando.PomOpSubject.MANAGED_PLUGINS,
+                                ToolboxCommando.Op.UPDATE,
+                                managedPluginsUpdates::stream);
+                    }
+                    if (!pluginsUpdates.isEmpty()) {
+                        toolboxCommando.editPom(
+                                editSession,
+                                ToolboxCommando.PomOpSubject.PLUGINS,
+                                ToolboxCommando.Op.UPDATE,
+                                pluginsUpdates::stream);
+                    }
                     if (!managedDependenciesUpdates.isEmpty()) {
                         toolboxCommando.editPom(
                                 editSession,

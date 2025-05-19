@@ -50,8 +50,8 @@ public class CoreExtensionVersionsMojo extends MPMojoSupport {
     /**
      * Apply results to extensions file.
      */
-    @Parameter(property = "applyToFile")
-    private boolean applyToFile;
+    @Parameter(property = "apply")
+    private boolean apply;
 
     @Override
     protected Result<Boolean> doExecute() throws Exception {
@@ -94,7 +94,7 @@ public class CoreExtensionVersionsMojo extends MPMojoSupport {
                 artifactVersionMatcher,
                 artifactVersionSelector);
 
-        if (applyToFile) {
+        if (apply) {
             List<Artifact> extensionsUpdates =
                     toolboxCommando.calculateUpdates(extensions.getData().orElseThrow(), artifactVersionSelector);
             if (!extensionsUpdates.isEmpty()) {

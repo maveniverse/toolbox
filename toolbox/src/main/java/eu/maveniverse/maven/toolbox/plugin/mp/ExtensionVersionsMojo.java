@@ -52,7 +52,7 @@ public class ExtensionVersionsMojo extends MPPluginMojoSupport {
     /**
      * Apply results to POM.
      */
-    @Parameter(property = "applyToPom")
+    @Parameter(property = "apply")
     private boolean apply;
 
     @Override

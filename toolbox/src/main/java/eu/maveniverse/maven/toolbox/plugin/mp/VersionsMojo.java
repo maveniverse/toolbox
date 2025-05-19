@@ -47,8 +47,8 @@ public class VersionsMojo extends MPMojoSupport {
     /**
      * Apply results to POM.
      */
-    @Parameter(property = "applyToPom")
-    private boolean applyToPom;
+    @Parameter(property = "apply")
+    private boolean apply;
 
     @Override
     protected Result<Boolean> doExecute() throws Exception {
@@ -72,7 +72,7 @@ public class VersionsMojo extends MPMojoSupport {
                 artifactVersionMatcher,
                 artifactVersionSelector);
 
-        if (applyToPom) {
+        if (apply) {
             List<Artifact> managedDependenciesUpdates = toolboxCommando.calculateUpdates(
                     managedDependencies.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> dependenciesUpdates =

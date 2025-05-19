@@ -56,8 +56,8 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
     /**
      * Apply results to POM.
      */
-    @Parameter(property = "applyToPom")
-    private boolean applyToPom;
+    @Parameter(property = "apply")
+    private boolean apply;
 
     @Override
     protected Result<Boolean> doExecute() throws Exception {
@@ -96,7 +96,7 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
             }
         }
 
-        if (applyToPom) {
+        if (apply) {
             List<Artifact> pluginsUpdates = toolboxCommando.calculateLatest(allPlugins, artifactVersionSelector);
             if (!pluginsUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =

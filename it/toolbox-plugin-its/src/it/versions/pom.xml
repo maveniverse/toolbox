@@ -57,26 +57,12 @@
         </dependency>
     </dependencies>
 
-    <repositories>
-        <repository>
-            <id>my-repo</id>
-            <url>file:${basedir}/my-repo</url>
-            <releases>
-                <checksumPolicy>warn</checksumPolicy>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
     <build>
         <extensions>
             <extension>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>1.7.35</version>
+                <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                <artifactId>fifth</artifactId>
+                <version>1.0</version>
             </extension>
         </extensions>
         <pluginManagement>

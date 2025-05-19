@@ -13,5 +13,5 @@ String expectedPom = new File(basedir, 'expected-pom.xml').text
 assert pom != null && expectedPom != null && pom.equals(expectedPom)
 
 String extensionsXml = new File(basedir, '.mvn/extensions.xml').text
-String originalExtensionsXml = new File(basedir, '.mvn/original-extensions.xml').text
-assert extensionsXml != null && originalExtensionsXml != null && !extensionsXml.equals(originalExtensionsXml)
+String expectedExtensionsXml = new File(basedir, '.mvn/expected-extensions.xml').text
+assert extensionsXml != null && expectedExtensionsXml != null && extensionsXml.equals(expectedExtensionsXml)

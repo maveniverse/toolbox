@@ -42,7 +42,7 @@ public class CoreExtensionVersionsMojo extends MPMojoSupport {
     private String artifactVersionSelectorSpec;
 
     /**
-     * The scope where to look.
+     * The scope where to look for core extensions ("project", "user" or "install").
      */
     @Parameter(property = "scope", defaultValue = "project")
     private String scope;

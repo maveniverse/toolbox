@@ -12,7 +12,7 @@ on:
       java-version:
         description: The java version to use
         required: false
-        default: 22
+        default: 21
       distribution:
         description: The java distribution to use.
         required: false
@@ -21,7 +21,7 @@ on:
 jobs:
   build:
     name: Release
-    uses: maveniverse/parent/.github/workflows/release.yml@release-30
+    uses: maveniverse/parent/.github/workflows/release.yml@release-31
     with:
       version: ${{ github.event.inputs.version }}
       next-version: ${{ github.event.inputs.next-version }}

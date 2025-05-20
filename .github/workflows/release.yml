@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version to release (will be inferred from the pom version by default).
+        required: false
+      next-version:
+        description: The next development version (will be inferred from the pom version by default).
+        required: false
+      java-version:
+        description: The java version to use
+        required: false
+        default: 22
+      distribution:
+        description: The java distribution to use.
+        required: false
+        default: temurin
+
+jobs:
+  build:
+    name: Release
+    uses: maveniverse/parent/.github/workflows/release.yml@release-30
+    with:
+      version: ${{ github.event.inputs.version }}
+      next-version: ${{ github.event.inputs.next-version }}
+      java-version: ${{ github.event.inputs.java-version }}
+      distribution: ${{ github.event.inputs.distribution }}
+

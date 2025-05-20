@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 
 <!--
+  Note: if you plan to (re)use release.yml workflow, you need this file too.
+
   Maven settings to be used with release.yml workflow. Right now, you MUST copy this file to the
   .github/release-settings.xml path of the caller repository, as there is no currently way to make
   this file really shared :(

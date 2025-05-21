@@ -21,7 +21,7 @@ on:
 jobs:
   build:
     name: Release
-    uses: maveniverse/parent/.github/workflows/release.yml@release-32
+    uses: maveniverse/parent/.github/workflows/release.yml@release-33
     secrets: inherit
     with:
       version: ${{ github.event.inputs.version }}

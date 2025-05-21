@@ -42,8 +42,8 @@
   </modules>
 
   <scm>
-    <connection>scm:git:git@github.com:maveniverse/toolbox.git</connection>
-    <developerConnection>scm:git:git@github.com:maveniverse/toolbox.git</developerConnection>
+    <connection>scm:git:https://github.com/maveniverse/toolbox.git</connection>
+    <developerConnection>scm:git:https://github.com/maveniverse/toolbox.git</developerConnection>
     <tag>HEAD</tag>
     <url>https://github.com/maveniverse/toolbox</url>
   </scm>

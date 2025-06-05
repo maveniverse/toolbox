@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
-import eu.maveniverse.maven.toolbox.shared.Source;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -138,9 +137,9 @@ public final class ArtifactSources {
     }
 
     public abstract static class DelegatingArtifactSource implements Artifacts.Source {
-        private final Source<Artifact> delegate;
+        private final Artifacts.Source delegate;
 
-        public DelegatingArtifactSource(final Source<Artifact> delegate) {
+        public DelegatingArtifactSource(final Artifacts.Source delegate) {
             this.delegate = requireNonNull(delegate, "delegate");
         }
 
@@ -156,7 +155,7 @@ public final class ArtifactSources {
     }
 
     public static MatchingArtifactSource matchingArtifactSource(
-            Predicate<Artifact> artifactMatcher, Source<Artifact> delegate) {
+            Predicate<Artifact> artifactMatcher, Artifacts.Source delegate) {
         requireNonNull(artifactMatcher, "artifactMatcher");
         requireNonNull(delegate, "delegate");
         return new MatchingArtifactSource(artifactMatcher, delegate);
@@ -165,7 +164,7 @@ public final class ArtifactSources {
     public static class MatchingArtifactSource extends DelegatingArtifactSource {
         private final Predicate<Artifact> artifactMatcher;
 
-        private MatchingArtifactSource(Predicate<Artifact> artifactMatcher, Source<Artifact> delegate) {
+        private MatchingArtifactSource(Predicate<Artifact> artifactMatcher, Artifacts.Source delegate) {
             super(delegate);
             this.artifactMatcher = artifactMatcher;
         }
@@ -177,7 +176,7 @@ public final class ArtifactSources {
     }
 
     public static MappingArtifactSource mappingArtifactSource(
-            Function<Artifact, Artifact> artifactMapper, Source<Artifact> delegate) {
+            Function<Artifact, Artifact> artifactMapper, Artifacts.Source delegate) {
         requireNonNull(artifactMapper, "artifactMapper");
         requireNonNull(delegate, "delegate");
         return new MappingArtifactSource(artifactMapper, delegate);
@@ -186,7 +185,7 @@ public final class ArtifactSources {
     public static class MappingArtifactSource extends DelegatingArtifactSource {
         private final Function<Artifact, Artifact> artifactMapper;
 
-        private MappingArtifactSource(Function<Artifact, Artifact> artifactMapper, Source<Artifact> delegate) {
+        private MappingArtifactSource(Function<Artifact, Artifact> artifactMapper, Artifacts.Source delegate) {
             super(delegate);
             this.artifactMapper = artifactMapper;
         }
@@ -197,12 +196,12 @@ public final class ArtifactSources {
         }
     }
 
-    public static Source<Artifact> gavArtifactSource(String gav) {
+    public static Artifacts.Source gavArtifactSource(String gav) {
         requireNonNull(gav, "gav");
         return new GavArtifactSource(gav);
     }
 
-    public static class GavArtifactSource implements Source<Artifact> {
+    public static class GavArtifactSource implements Artifacts.Source {
         private final String gav;
 
         private GavArtifactSource(String gav) {
@@ -215,22 +214,22 @@ public final class ArtifactSources {
         }
     }
 
-    public static Source<Artifact> concatArtifactSource(Collection<Source<Artifact>> sources) {
+    public static Artifacts.Source concatArtifactSource(Collection<Artifacts.Source> sources) {
         requireNonNull(sources, "sources");
         return new ConcatArtifactSource(sources);
     }
 
-    public static class ConcatArtifactSource implements Source<Artifact> {
-        private final Collection<Source<Artifact>> sources;
+    public static class ConcatArtifactSource implements Artifacts.Source {
+        private final Collection<Artifacts.Source> sources;
 
-        private ConcatArtifactSource(Collection<Source<Artifact>> sources) {
+        private ConcatArtifactSource(Collection<Artifacts.Source> sources) {
             this.sources = sources;
         }
 
         @Override
         public Stream<Artifact> get() throws IOException {
             Stream<Artifact> result = null;
-            for (Source<Artifact> source : sources) {
+            for (Artifacts.Source source : sources) {
                 if (result == null) {
                     result = source.get();
                 } else {

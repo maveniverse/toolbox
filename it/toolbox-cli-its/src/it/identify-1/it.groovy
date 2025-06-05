@@ -15,4 +15,4 @@ Process process = proc.start()
 process.consumeProcessOutput(out, err)
 process.waitFor()
 
-assert out.contains('org.apache.maven:maven-core:jar:3.6.3')
+assert out.toString().contains('org.apache.maven:maven-core:jar:3.6.3') : out

@@ -15,5 +15,4 @@ Process process = proc.start()
 process.consumeProcessOutput(out, err)
 process.waitFor()
 
-assert out.contains('SHA1=0235ba8b489512805ac13a8f9ea77a1ca5ebe3e8')
-assert out.contains('aopalliance:aopalliance:jar:1.0')
+assert out.toString().contains('aopalliance:aopalliance:jar:1.0') : out

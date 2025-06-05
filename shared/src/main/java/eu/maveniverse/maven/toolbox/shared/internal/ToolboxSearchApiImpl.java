@@ -38,6 +38,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.ArtifactType;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.util.ConfigUtils;
 
 public class ToolboxSearchApiImpl implements ToolboxSearchApi {
     private final Output output;
@@ -127,14 +128,29 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         if (!ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())) {
             throw new IllegalArgumentException("The SMO service is offered for Central only");
         }
-        output.chatter("Creating SMO backend");
-        return SmoSearchBackendFactory.create(
-                remoteRepository.getId() + "-smo",
-                remoteRepository.getId(),
-                "https://search.maven.org/solrsearch/select",
-                new Java11HttpClientTransport(
-                        Java11HttpClientFactory.DEFAULT_TIMEOUT,
-                        Java11HttpClientFactory.buildHttpClient(session, remoteRepository)));
+        String backend =
+                ConfigUtils.getString(session, SmoSearchBackendFactory.CSC_BACKEND_ID, "toolbox.search.smoBackend");
+        if (SmoSearchBackendFactory.CSC_BACKEND_ID.equals(backend)) {
+            output.chatter("Creating CSC backend");
+            return SmoSearchBackendFactory.create(
+                    SmoSearchBackendFactory.CSC_BACKEND_ID,
+                    remoteRepository.getId(),
+                    SmoSearchBackendFactory.CSC_SMO_URI,
+                    new Java11HttpClientTransport(
+                            Java11HttpClientFactory.DEFAULT_TIMEOUT,
+                            Java11HttpClientFactory.buildHttpClient(session, remoteRepository)));
+        } else if (SmoSearchBackendFactory.SMO_BACKEND_ID.equals(backend)) {
+            output.chatter("Creating SMO backend");
+            return SmoSearchBackendFactory.create(
+                    SmoSearchBackendFactory.SMO_BACKEND_ID,
+                    remoteRepository.getId(),
+                    SmoSearchBackendFactory.SMO_SMO_URI,
+                    new Java11HttpClientTransport(
+                            Java11HttpClientFactory.DEFAULT_TIMEOUT,
+                            Java11HttpClientFactory.buildHttpClient(session, remoteRepository)));
+        } else {
+            throw new IllegalArgumentException("Unknown SMO service backend: " + backend);
+        }
     }
 
     public List<String> renderGavoid(List<Record> page, Predicate<String> versionPredicate) {

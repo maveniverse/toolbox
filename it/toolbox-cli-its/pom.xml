@@ -92,10 +92,8 @@
                 <script>${itDir}/dump-1/it.groovy</script>
                 <script>${itDir}/exists-1/it.groovy</script>
                 <script>${itDir}/help-1/it.groovy</script>
-                <!-- SMO is banning us it seems
                 <script>${itDir}/identify-1/it.groovy</script>
                 <script>${itDir}/identify-2/it.groovy</script>
-                -->
                 <script>${itDir}/libyear-1/it.groovy</script>
               </scripts>
             </configuration>

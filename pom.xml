@@ -63,9 +63,9 @@
 
     <!--
     Build time: latest stable Maven and latest Java LTS.
-    Run time: "not so old" Maven (3.6.3+) and Java 11 (Indexer API is 11+).
+    Run time: "not so old" Maven (3.6.3+) and Java 17 (Indexer API is 11+, DOMTrip is 17+).
     -->
-    <maven.compiler.release>11</maven.compiler.release>
+    <maven.compiler.release>17</maven.compiler.release>
 
     <!-- Dependency versions -->
     <version.mima>2.4.29</version.mima>
@@ -267,9 +267,14 @@
 
       <!-- POM editing -->
       <dependency>
-        <groupId>org.jdom</groupId>
-        <artifactId>jdom2</artifactId>
-        <version>2.0.6.1</version>
+        <groupId>eu.maveniverse.maven.domtrip</groupId>
+        <artifactId>domtrip-core</artifactId>
+        <version>0.1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.domtrip</groupId>
+        <artifactId>domtrip-maven</artifactId>
+        <version>0.1.0</version>
       </dependency>
 
       <dependency>

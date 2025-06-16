@@ -11,7 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomTransformationContext;
+import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.Closeable;
 import java.io.IOException;
@@ -494,9 +494,7 @@ public interface ToolboxCommando {
     Result<List<Artifact>> editPom(EditSession es, PomOpSubject subject, Op op, Source<Artifact> artifacts)
             throws Exception;
 
-    Result<Boolean> editPom(
-            EditSession es, List<Consumer<JDomTransformationContext.JDomPomTransformationContext>> transformers)
-            throws Exception;
+    Result<Boolean> editPom(EditSession es, List<Consumer<SmartPomEditor>> transformers) throws Exception;
 
     enum ExtensionsScope {
         PROJECT,

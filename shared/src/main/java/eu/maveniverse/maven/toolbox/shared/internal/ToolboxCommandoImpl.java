@@ -13,6 +13,7 @@ import static org.apache.maven.search.api.request.BooleanQuery.and;
 import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 import static org.apache.maven.search.api.request.Query.query;
 
+import eu.maveniverse.domtrip.Document;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.HTTPProxy;
@@ -39,9 +40,8 @@ import eu.maveniverse.maven.toolbox.shared.Source;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomExtensionsSource;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomTransformationContext;
+import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartExtensionsEditor;
+import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -113,6 +113,7 @@ import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
+import org.maveniverse.domtrip.maven.ExtensionsEditor;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Output output;
@@ -1130,13 +1131,14 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             RemoteRepository remoteRepository, Collection<String> targets, boolean decorated) throws IOException {
         HashMap<String, String> sha1s = new HashMap<>();
         for (String target : targets) {
-            if (Files.exists(Path.of(target))) {
+            Path tgt = Path.of(target);
+            if (Files.exists(tgt)) {
                 try {
                     output.tell("Calculating SHA1 of file {}", target);
                     MessageDigest sha1md = MessageDigest.getInstance("SHA-1");
                     byte[] buf = new byte[8192];
                     int read;
-                    try (InputStream fis = Files.newInputStream(Path.of(target))) {
+                    try (InputStream fis = Files.newInputStream(tgt)) {
                         read = fis.read(buf);
                         while (read != -1) {
                             sha1md.update(buf, 0, read);
@@ -1329,7 +1331,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 } else {
                     artifacts.addAll(resolutionRoot.getDependencies().stream()
                             .map(this::toArtifact)
-                            .collect(Collectors.toList()));
+                            .toList());
                 }
                 sink.accept(artifacts);
             } catch (Exception e) {
@@ -1346,7 +1348,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Predicate<Version> versionPredicate,
             BiFunction<Artifact, List<Version>, String> versionSelector)
             throws Exception {
-        List<Artifact> artifacts = artifactSource.get().collect(Collectors.toList());
+        List<Artifact> artifacts = artifactSource.get().toList();
         HashMap<Artifact, List<Version>> result = new HashMap<>();
         output.marker(Output.Verbosity.NORMAL)
                 .emphasize("Checking newest versions of {} ({})")
@@ -1417,34 +1419,26 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<Boolean> editPom(
-            EditSession es, List<Consumer<JDomTransformationContext.JDomPomTransformationContext>> transformers)
-            throws Exception {
+    public Result<Boolean> editPom(EditSession es, List<Consumer<SmartPomEditor>> transformers) throws Exception {
         es.edit(pom -> new JDomPomTransformer(pom).apply(transformers));
         return Result.success(true);
     }
 
     @Override
     public Path extensionsPath(ExtensionsScope scope) {
-        switch (scope) {
-            case PROJECT:
-                throw new IllegalStateException("Project scope is not supported");
-            case USER:
-                return context.mavenUserHome().basedir().resolve("extensions.xml");
-            case INSTALL:
-                return context.mavenSystemHome().conf().resolve("extensions.xml");
-            default:
-                throw new IllegalStateException("Unsupported scope " + scope);
-        }
+        return switch (scope) {
+            case PROJECT -> throw new IllegalStateException("Project scope is not supported");
+            case USER -> context.mavenUserHome().basedir().resolve("extensions.xml");
+            case INSTALL -> context.mavenSystemHome().conf().resolve("extensions.xml");
+        };
     }
 
     @Override
     public Result<List<Artifact>> listExtensions(Path extensions) throws Exception {
         requireNonNull(extensions, "extensions");
         if (Files.isRegularFile(extensions)) {
-            try (JDomExtensionsSource source = new JDomExtensionsSource(extensions)) {
-                return Result.success(source.get().collect(Collectors.toList()));
-            }
+            return Result.success(
+                    new SmartExtensionsEditor(new ExtensionsEditor(Document.of(extensions))).listExtensions());
         }
         return Result.failure("File does not exists");
     }

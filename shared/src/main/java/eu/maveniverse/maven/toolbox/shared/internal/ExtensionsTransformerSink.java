@@ -9,14 +9,14 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.domtrip.Document;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.shared.FileUtils;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomExtensionsTransformer;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomTransformationContext;
+import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartExtensionsEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
+import org.maveniverse.domtrip.maven.ExtensionsEditor;
 
 /**
  * Construction to accept collection of artifacts, and applies it to some extensions.xml based on provided transformations.
@@ -34,12 +35,11 @@ public final class ExtensionsTransformerSink implements Artifacts.Sink {
      * Creates trivial "transform" sink, that accepts all artifacts and applies provided transformations to artifacts as-is.
      * If no extensions.xml file exists, will provide a plain/trivial "blank" file and work with that.
      */
-    public static ExtensionsTransformerSink transform(Output output, Path extensions, ToolboxCommando.Op op)
-            throws IOException {
+    public static ExtensionsTransformerSink transform(Output output, Path extensions, ToolboxCommando.Op op) {
         return transform(
                 output,
                 extensions,
-                ExtensionsSuppliers::empty110,
+                ExtensionsSuppliers::empty120,
                 ArtifactMatcher.any(),
                 ArtifactMapper.identity(),
                 op);
@@ -54,21 +54,18 @@ public final class ExtensionsTransformerSink implements Artifacts.Sink {
             Supplier<String> extensionsSupplier,
             Predicate<Artifact> artifactMatcher,
             Function<Artifact, Artifact> artifactMapper,
-            ToolboxCommando.Op op)
-            throws IOException {
+            ToolboxCommando.Op op) {
         return new ExtensionsTransformerSink(
                 output, extensions, extensionsSupplier, artifactMatcher, artifactMapper, op);
     }
 
     private final Output output;
     private final Path extensions;
+    private final Supplier<String> extensionsSupplier;
     private final Predicate<Artifact> artifactMatcher;
     private final Function<Artifact, Artifact> artifactMapper;
-    private final Function<Artifact, Consumer<JDomTransformationContext.JdomExtensionsTransformationContext>>
-            transformation;
-
-    private final ArrayList<Consumer<JDomTransformationContext.JdomExtensionsTransformationContext>>
-            applicableTransformations;
+    private final Function<Artifact, Consumer<SmartExtensionsEditor>> transformation;
+    private final ArrayList<Consumer<SmartExtensionsEditor>> applicableTransformations;
 
     /**
      * Creates a directory sink.
@@ -79,7 +76,6 @@ public final class ExtensionsTransformerSink implements Artifacts.Sink {
      * @param artifactMatcher The artifact matcher.
      * @param artifactMapper The artifact mapper.
      * @param op The transformation op.
-     * @throws IOException In case of IO problem.
      */
     private ExtensionsTransformerSink(
             Output output,
@@ -87,31 +83,18 @@ public final class ExtensionsTransformerSink implements Artifacts.Sink {
             Supplier<String> extensionsSupplier,
             Predicate<Artifact> artifactMatcher,
             Function<Artifact, Artifact> artifactMapper,
-            ToolboxCommando.Op op)
-            throws IOException {
+            ToolboxCommando.Op op) {
         this.output = requireNonNull(output, "output");
         this.extensions = requireNonNull(extensions, "extensions").toAbsolutePath();
-        if (!Files.isRegularFile(extensions)) {
-            Files.createDirectories(extensions.getParent());
-            Files.writeString(extensions, extensionsSupplier.get(), StandardCharsets.UTF_8);
-        }
+        this.extensionsSupplier = requireNonNull(extensionsSupplier, "extensionsSupplier");
         this.artifactMatcher = requireNonNull(artifactMatcher, "artifactMatcher");
         this.artifactMapper = requireNonNull(artifactMapper, "artifactMapper");
         requireNonNull(op, "op");
 
-        Function<Artifact, Consumer<JDomTransformationContext.JdomExtensionsTransformationContext>> tr = null;
-        switch (op) {
-            case UPSERT:
-            case UPDATE:
-                tr = JDomExtensionsTransformer.updateExtension(op == ToolboxCommando.Op.UPSERT);
-                break;
-            case DELETE:
-                tr = JDomExtensionsTransformer.deleteExtension();
-        }
-        if (tr == null) {
-            throw new IllegalArgumentException("Unknown op: " + op);
-        }
-        this.transformation = tr;
+        this.transformation = switch (op) {
+            case UPSERT, UPDATE -> a -> (e -> e.updateExtension(op == ToolboxCommando.Op.UPSERT, a));
+            case DELETE -> a -> (e -> e.deleteExtension(a));
+        };
         this.applicableTransformations = new ArrayList<>();
     }
 
@@ -123,8 +106,7 @@ public final class ExtensionsTransformerSink implements Artifacts.Sink {
     public void accept(Artifact artifact) throws IOException {
         requireNonNull(artifact, "artifact");
         if (artifactMatcher.test(artifact)) {
-            Consumer<JDomTransformationContext.JdomExtensionsTransformationContext> transformation =
-                    this.transformation.apply(artifactMapper.apply(artifact));
+            Consumer<SmartExtensionsEditor> transformation = this.transformation.apply(artifactMapper.apply(artifact));
             if (transformation != null) {
                 output.chatter("Accepted {}", artifact);
                 applicableTransformations.add(transformation);
@@ -143,6 +125,20 @@ public final class ExtensionsTransformerSink implements Artifacts.Sink {
 
     @Override
     public void close() throws IOException {
-        new JDomExtensionsTransformer(extensions).apply(applicableTransformations);
+        Document document;
+        if (!Files.isRegularFile(extensions)) {
+            Files.createDirectories(extensions.getParent());
+            document = Document.of(extensionsSupplier.get());
+        } else {
+            document = Document.of(extensions);
+        }
+        SmartExtensionsEditor editor = new SmartExtensionsEditor(new ExtensionsEditor(document));
+        try (FileUtils.CollocatedTempFile tempFile = FileUtils.newTempFile(extensions, false)) {
+            for (Consumer<SmartExtensionsEditor> transformation : applicableTransformations) {
+                transformation.accept(editor);
+            }
+            Files.writeString(tempFile.getPath(), document.toXml());
+            tempFile.move();
+        }
     }
 }

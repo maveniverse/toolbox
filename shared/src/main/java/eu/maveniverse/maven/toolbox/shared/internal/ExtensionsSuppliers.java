@@ -7,13 +7,15 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import org.maveniverse.domtrip.maven.ExtensionsEditor;
+
 /**
  * Some simple suppliers of extensions.
  */
 public final class ExtensionsSuppliers {
-    public static String empty110() {
-        return "<extensions xmlns=\"http://maven.apache.org/EXTENSIONS/1.1.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
-                + "            xsi:schemaLocation=\"http://maven.apache.org/EXTENSIONS/1.1.0 https://maven.apache.org/xsd/core-extensions-1.1.0.xsd\">\n"
-                + "</extensions>\n";
+    public static String empty120() {
+        ExtensionsEditor editor = new ExtensionsEditor();
+        editor.createExtensionsDocument();
+        return editor.toXml();
     }
 }

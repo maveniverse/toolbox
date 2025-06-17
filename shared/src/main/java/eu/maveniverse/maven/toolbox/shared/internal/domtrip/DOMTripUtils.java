@@ -64,6 +64,16 @@ public final class DOMTripUtils {
     }
 
     /**
+     * Constructs GA string out of {@link Element} specific for Maven Plugins (G if absent is "org.apache.maven.plugins").
+     */
+    public static String toPluginGA(Element element) {
+        requireNonNull(element);
+        return optionalTextContentOfDescendant(
+                        element, MavenExtensionsElements.Elements.GROUP_ID, "org.apache.maven.plugins")
+                + ":" + requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.ARTIFACT_ID);
+    }
+
+    /**
      * Constructs GATC string out of {@link Element}.
      */
     public static String toGATC(Element element) {
@@ -83,6 +93,14 @@ public final class DOMTripUtils {
     public static Predicate<Element> predicateGA(Artifact artifact) {
         requireNonNull(artifact);
         return element -> Objects.equals(toGA(element), artifact.getGroupId() + ":" + artifact.getArtifactId());
+    }
+
+    /**
+     * Element matcher predicate for GA.
+     */
+    public static Predicate<Element> predicatePluginGA(Artifact artifact) {
+        requireNonNull(artifact);
+        return element -> Objects.equals(toPluginGA(element), artifact.getGroupId() + ":" + artifact.getArtifactId());
     }
 
     /**

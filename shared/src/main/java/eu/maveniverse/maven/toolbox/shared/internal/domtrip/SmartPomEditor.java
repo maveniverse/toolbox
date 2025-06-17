@@ -9,10 +9,8 @@ package eu.maveniverse.maven.toolbox.shared.internal.domtrip;
 
 import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.predicateGA;
 import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.predicateGATC;
+import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.predicatePluginGA;
 import static java.util.Objects.requireNonNull;
-import static org.maveniverse.domtrip.maven.MavenPomElements.Elements.ARTIFACT_ID;
-import static org.maveniverse.domtrip.maven.MavenPomElements.Elements.GROUP_ID;
-import static org.maveniverse.domtrip.maven.MavenPomElements.Elements.VERSION;
 
 import eu.maveniverse.domtrip.Element;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
@@ -357,12 +355,15 @@ public class SmartPomEditor extends ComponentSupport {
                 }
                 if (plugins != null) {
                     Element plugin = plugins.descendants(MavenPomElements.Elements.PLUGIN)
-                            .filter(predicateGA(artifact))
+                            .filter(predicatePluginGA(artifact))
                             .findFirst()
                             .orElse(null);
                     if (plugin == null && upsert) {
-                        editor.addPlugin(
-                                plugins, artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
+                        plugin = editor.insertMavenElement(plugins, MavenPomElements.Elements.PLUGIN);
+                        editor.insertMavenElement(plugin, MavenPomElements.Elements.GROUP_ID, artifact.getGroupId());
+                        editor.insertMavenElement(
+                                plugin, MavenPomElements.Elements.ARTIFACT_ID, artifact.getArtifactId());
+                        editor.insertMavenElement(plugin, MavenPomElements.Elements.VERSION, artifact.getVersion());
                         return true;
                     }
                     if (plugin != null) {
@@ -397,7 +398,7 @@ public class SmartPomEditor extends ComponentSupport {
                 Element plugins = editor.findChildElement(pluginManagement, MavenPomElements.Elements.PLUGINS);
                 if (plugins != null) {
                     Element plugin = plugins.descendants(MavenPomElements.Elements.PLUGIN)
-                            .filter(predicateGA(artifact))
+                            .filter(predicatePluginGA(artifact))
                             .findFirst()
                             .orElse(null);
                     if (plugin != null) {
@@ -427,7 +428,7 @@ public class SmartPomEditor extends ComponentSupport {
             }
             if (plugins != null) {
                 Element plugin = plugins.descendants(MavenPomElements.Elements.PLUGIN)
-                        .filter(predicateGA(artifact))
+                        .filter(predicatePluginGA(artifact))
                         .findFirst()
                         .orElse(null);
                 if (plugin == null && upsert) {
@@ -464,7 +465,7 @@ public class SmartPomEditor extends ComponentSupport {
             Element plugins = editor.findChildElement(build, MavenPomElements.Elements.PLUGINS);
             if (plugins != null) {
                 Element plugin = plugins.descendants(MavenPomElements.Elements.PLUGIN)
-                        .filter(predicateGA(artifact))
+                        .filter(predicatePluginGA(artifact))
                         .findFirst()
                         .orElse(null);
                 if (plugin != null) {
@@ -500,9 +501,10 @@ public class SmartPomEditor extends ComponentSupport {
                 if (extension == null && upsert) {
                     // TODO: https://github.com/maveniverse/domtrip/issues/32
                     extension = editor.insertMavenElement(extensions, "extension");
-                    editor.insertMavenElement(extension, GROUP_ID, artifact.getGroupId());
-                    editor.insertMavenElement(extension, ARTIFACT_ID, artifact.getArtifactId());
-                    editor.insertMavenElement(extension, VERSION, artifact.getVersion());
+                    editor.insertMavenElement(extension, MavenPomElements.Elements.GROUP_ID, artifact.getGroupId());
+                    editor.insertMavenElement(
+                            extension, MavenPomElements.Elements.ARTIFACT_ID, artifact.getArtifactId());
+                    editor.insertMavenElement(extension, MavenPomElements.Elements.VERSION, artifact.getVersion());
                     return true;
                 }
                 if (extension != null) {

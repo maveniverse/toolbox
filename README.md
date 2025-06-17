@@ -49,7 +49,7 @@ To use mvnsh extension, add this to your `extensions.xml`:
 ## Requirements
 
 Runtime requirement:
-* Java 11+ (CLI and Maven Plugin)
+* Java 17+ (CLI and Maven Plugin)
 * Maven 3.6.3+ (Maven Plugin)
 
 Build requirements:

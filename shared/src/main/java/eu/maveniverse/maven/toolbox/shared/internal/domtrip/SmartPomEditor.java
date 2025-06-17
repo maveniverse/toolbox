@@ -39,6 +39,9 @@ public class SmartPomEditor extends ComponentSupport {
         return editor;
     }
 
+    /**
+     * Updates/inserts value of {@code project/properties/key}.
+     */
     public boolean updateProperty(boolean upsert, String key, String value) {
         requireNonNull(key);
         requireNonNull(value);
@@ -60,9 +63,11 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
-    public boolean deleteProperty(String key, String value) {
+    /**
+     * Removes {@code project/properties/key}.
+     */
+    public boolean deleteProperty(String key) {
         requireNonNull(key);
-        requireNonNull(value);
         Element properties =
                 editor.root().descendant(MavenPomElements.Elements.PROPERTIES).orElse(null);
         if (properties != null) {
@@ -75,6 +80,9 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
+    /**
+     * Sets {@code project/parent} to given GAV.
+     */
     public void setParent(Artifact artifact) {
         requireNonNull(artifact);
         Element parent = editor.findChildElement(editor.root(), MavenPomElements.Elements.PARENT);
@@ -86,6 +94,9 @@ public class SmartPomEditor extends ComponentSupport {
         editor.insertMavenElement(parent, MavenPomElements.Elements.VERSION).textContent(artifact.getVersion());
     }
 
+    /**
+     * Sets {@code project/version} or {@code project/parent/version} (if previous not exists) to given value.
+     */
     public void setVersion(String value) {
         requireNonNull(value);
         Element version = editor.findChildElement(editor.root(), MavenPomElements.Elements.VERSION);
@@ -102,6 +113,9 @@ public class SmartPomEditor extends ComponentSupport {
         throw new IllegalArgumentException("Could not set version");
     }
 
+    /**
+     * Sets {@code project/packaging} to given value.
+     */
     public void setPackaging(String value) {
         requireNonNull(value);
         Element packaging = editor.findChildElement(editor.root(), MavenPomElements.Elements.PACKAGING);
@@ -112,6 +126,9 @@ public class SmartPomEditor extends ComponentSupport {
         }
     }
 
+    /**
+     * Adds a {@code project/modules/module[]} entry with given value, if not present.
+     */
     public boolean addSubProject(String value) {
         requireNonNull(value);
         Element modules = editor.findChildElement(editor.root(), MavenPomElements.Elements.MODULES);
@@ -129,6 +146,9 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
+    /**
+     * Removes a {@code project/modules/module[]} entry with given value, if present.
+     */
     public boolean removeSubProject(String value) {
         requireNonNull(value);
         Element modules = editor.findChildElement(editor.root(), MavenPomElements.Elements.MODULES);
@@ -143,6 +163,9 @@ public class SmartPomEditor extends ComponentSupport {
         return removed.get();
     }
 
+    /**
+     * Searches for {@code project/build/plugins/plugin[]} matching GA and removes {@code version} element of it.
+     */
     public boolean removePluginVersion(Artifact artifact) {
         requireNonNull(artifact);
         Element build = editor.findChildElement(editor.root(), MavenPomElements.Elements.BUILD);
@@ -165,6 +188,10 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
+    /**
+     * Updates/inserts managed dependency. It goes for {@code project/dependencyManagement/dependencies/dependency[]}
+     * matched by GATC. If entry found but version is a property, it goes for {@link #updateProperty(boolean, String, String)}.
+     */
     public boolean updateManagedDependency(boolean upsert, Artifact artifact) {
         requireNonNull(artifact);
         Element dependencyManagement =
@@ -215,6 +242,10 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
+    /**
+     * Removes managed dependency. It goes for {@code project/dependencyManagement/dependencies/dependency[]}
+     * matched by GATC and removes it if present.
+     */
     public boolean deleteManagedDependency(Artifact artifact) {
         requireNonNull(artifact);
         Element dependencyManagement =
@@ -236,6 +267,11 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
+    /**
+     * Updates/inserts dependency. It goes for {@code project/dependencies/dependency[]}
+     * matched by GATC. If entry found but version is a property, it goes for {@link #updateProperty(boolean, String, String)}.
+     * If entry found but has no version element, it goes for {@link #updateManagedDependency(boolean, Artifact)}.
+     */
     public boolean updateDependency(boolean upsert, Artifact artifact) {
         requireNonNull(artifact);
         Element dependencies = editor.findChildElement(editor.root(), MavenPomElements.Elements.DEPENDENCIES);
@@ -272,13 +308,17 @@ public class SmartPomEditor extends ComponentSupport {
                         return true;
                     }
                 } else {
-                    return updateManagedDependency(upsert, artifact);
+                    return updateManagedDependency(false, artifact);
                 }
             }
         }
         return false;
     }
 
+    /**
+     * Removes dependency. It goes for {@code project/dependencies/dependency[]}
+     * matched by GATC and removes it if present.
+     */
     public boolean deleteDependency(Artifact artifact) {
         requireNonNull(artifact);
         Element dependencies = editor.findChildElement(editor.root(), MavenPomElements.Elements.DEPENDENCIES);
@@ -295,6 +335,10 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
+    /**
+     * Updates/inserts managed plugin. It goes for {@code project/build/pluginManagement/plugins/plugin[]} matched
+     * by GA. If entry found, but version is a property, it goes for {@link #updateProperty(boolean, String, String)}.
+     */
     public boolean updateManagedPlugin(boolean upsert, Artifact artifact) {
         requireNonNull(artifact);
         Element build = editor.findChildElement(editor.root(), MavenPomElements.Elements.BUILD);
@@ -340,6 +384,10 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
+    /**
+     * Removes managed plugin. It goes for {@code project/build/pluginManagement/plugins[]}  matched by GA and
+     * removes it if present.
+     */
     public boolean deleteManagedPlugin(Artifact artifact) {
         requireNonNull(artifact);
         Element build = editor.findChildElement(editor.root(), MavenPomElements.Elements.BUILD);
@@ -361,6 +409,11 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
+    /**
+     * Updates/inserts plugin. It goes for {@code project/build/plugins/plugin[]} matched by GA. If entry found, but
+     * version is a property, it goes for {@link #updateProperty(boolean, String, String)}. If found but no
+     * version element present, it goes for {@link #updateManagedPlugin(boolean, Artifact)}.
+     */
     public boolean updatePlugin(boolean upsert, Artifact artifact) {
         requireNonNull(artifact);
         Element build = editor.findChildElement(editor.root(), MavenPomElements.Elements.BUILD);
@@ -401,6 +454,9 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
+    /**
+     * Removes plugin. It goes for {@code project/build/plugins[]}  matched by GA and removes it if present.
+     */
     public boolean deletePlugin(Artifact artifact) {
         requireNonNull(artifact);
         Element build = editor.findChildElement(editor.root(), MavenPomElements.Elements.BUILD);
@@ -419,6 +475,10 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
+    /**
+     * Updates/insert build extension. It goes for {@code project/build/extensions/extension[]} matched by GA.
+     * If present, but version element is a property, it goes for {@link #updateProperty(boolean, String, String)}.
+     */
     public boolean updateExtension(boolean upsert, Artifact artifact) {
         requireNonNull(artifact);
         Element build = editor.findChildElement(editor.root(), MavenPomElements.Elements.BUILD);
@@ -463,6 +523,10 @@ public class SmartPomEditor extends ComponentSupport {
         return false;
     }
 
+    /**
+     * Removes build extension.  It goes for {@code project/build/extensions/extension[]} matched by GA and removes
+     * entry if present.
+     */
     public boolean deleteExtension(Artifact artifact) {
         requireNonNull(artifact);
         Element build = editor.findChildElement(editor.root(), MavenPomElements.Elements.BUILD);

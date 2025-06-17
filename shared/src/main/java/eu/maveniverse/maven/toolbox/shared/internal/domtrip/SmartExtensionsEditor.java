@@ -33,6 +33,9 @@ public class SmartExtensionsEditor extends ComponentSupport {
         return editor;
     }
 
+    /**
+     * Lists enlisted extensions as {@link Artifact} (they are always JARs without classifiers).
+     */
     public List<Artifact> listExtensions() {
         return editor.root()
                 .descendants(MavenExtensionsElements.Elements.EXTENSION)
@@ -40,6 +43,10 @@ public class SmartExtensionsEditor extends ComponentSupport {
                 .toList();
     }
 
+    /**
+     * Updates (existing) or inserts (if upsert and not enlisted) an extension. Existence is checked by GA matching
+     * only (as extensions are JARs and have no classifiers).
+     */
     public boolean updateExtension(boolean upsert, Artifact artifact) {
         requireNonNull(artifact);
         List<Element> matched = editor.root()
@@ -65,6 +72,9 @@ public class SmartExtensionsEditor extends ComponentSupport {
         }
     }
 
+    /**
+     * Removes an extension. Existence is checked by GA matching only (as extensions are JARs and have no classifiers).
+     */
     public boolean deleteExtension(Artifact artifact) {
         requireNonNull(artifact);
         AtomicInteger counter = new AtomicInteger(0);

@@ -40,20 +40,32 @@ public final class DOMTripUtils {
         return textContent(element, null);
     }
 
+    /**
+     * Gets text content of a optional descendant element of given element with given name.
+     */
     public static String optionalTextContentOfDescendant(Element element, String descendant, String defaultValue) {
         return textContent(element.descendant(descendant).orElse(null), defaultValue);
     }
 
+    /**
+     * Gets text content of a mandatory descendant element of given element with given name.
+     */
     public static String requiredTextContentOfDescendant(Element element, String descendant) {
         return textContent(element.descendant(descendant).orElseThrow());
     }
 
+    /**
+     * Constructs GA string out of {@link Element}.
+     */
     public static String toGA(Element element) {
         requireNonNull(element);
         return requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.GROUP_ID) + ":"
                 + requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.ARTIFACT_ID);
     }
 
+    /**
+     * Constructs GATC string out of {@link Element}.
+     */
     public static String toGATC(Element element) {
         requireNonNull(element);
         String type = optionalTextContentOfDescendant(element, MavenExtensionsElements.Elements.TYPE, "jar");
@@ -65,16 +77,26 @@ public final class DOMTripUtils {
         }
     }
 
+    /**
+     * Element matcher predicate for GA.
+     */
     public static Predicate<Element> predicateGA(Artifact artifact) {
         requireNonNull(artifact);
         return element -> Objects.equals(toGA(element), artifact.getGroupId() + ":" + artifact.getArtifactId());
     }
 
+    /**
+     * Element matcher predicate for GATC.
+     */
     public static Predicate<Element> predicateGATC(Artifact artifact) {
         requireNonNull(artifact);
         return element -> Objects.equals(toGATC(element), ArtifactIdUtils.toVersionlessId(artifact));
     }
 
+    /**
+     * Creates a JAR {@link Artifact} out of {@link Element}. This method is usable ONLY when all three elements
+     * are mandatory to be present, like in {@code extensions.xml} or alike.
+     */
     public static Artifact gavToJarArtifact(Element element) {
         requireNonNull(element);
         return new DefaultArtifact(
@@ -84,6 +106,10 @@ public final class DOMTripUtils {
                 requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.VERSION));
     }
 
+    /**
+     * Creates POM {@link Artifact} out of (existing) POM XML file. In reality, it merely reads GAV from it, and creates
+     * {@code G:A:pom:V} artifact. To get G and V it may go for parent as well.
+     */
     public static Artifact fromPom(Path pom) {
         requireNonNull(pom);
         PomEditor pomEditor = new PomEditor(Document.of(pom));

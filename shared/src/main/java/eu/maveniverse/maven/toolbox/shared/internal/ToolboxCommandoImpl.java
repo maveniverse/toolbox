@@ -114,6 +114,7 @@ import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
 import org.maveniverse.domtrip.maven.ExtensionsEditor;
+import org.maveniverse.domtrip.maven.PomEditor;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
     private final Output output;
@@ -1420,7 +1421,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<Boolean> editPom(EditSession es, List<Consumer<SmartPomEditor>> transformers) throws Exception {
-        es.edit(pom -> new JDomPomTransformer(pom).apply(transformers));
+        es.edit(pom -> {
+            SmartPomEditor smartPomEditor = new SmartPomEditor(new PomEditor(Document.of(pom)));
+            for (Consumer<SmartPomEditor> transformer : transformers) {
+                transformer.accept(smartPomEditor);
+            }
+            Files.writeString(pom, smartPomEditor.editor().toXml());
+        });
         return Result.success(true);
     }
 

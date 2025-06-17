@@ -14,11 +14,12 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
+import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
@@ -110,16 +111,19 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
                 for (MavenProject project : mavenSession.getProjects()) {
                     try (ToolboxCommando.EditSession editSession =
                             toolboxCommando.createEditSession(project.getFile().toPath())) {
-                        toolboxCommando.editPom(
-                                editSession,
-                                pluginsUpdates.stream()
-                                        .map(a -> JDomPomTransformer.deletePluginVersion()
-                                                .apply(a))
-                                        .collect(Collectors.toList()));
+                        toolboxCommando.editPom(editSession, toConsumers(pluginsUpdates));
                     }
                 }
             }
         }
         return Result.success(true);
+    }
+
+    private List<Consumer<SmartPomEditor>> toConsumers(List<Artifact> pluginsUpdates) {
+        ArrayList<Consumer<SmartPomEditor>> consumers = new ArrayList<>(pluginsUpdates.size());
+        for (Artifact artifact : pluginsUpdates) {
+            consumers.add(s -> s.removePluginVersion(artifact));
+        }
+        return consumers;
     }
 }

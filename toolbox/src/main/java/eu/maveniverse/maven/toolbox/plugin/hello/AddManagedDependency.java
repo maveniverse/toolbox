@@ -9,8 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin.hello;
 
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomDocumentIO;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomEditor;
+import java.util.Collections;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
@@ -33,12 +32,8 @@ public class AddManagedDependency extends HelloProjectMojoSupport {
     protected Result<Boolean> doExecute() throws Exception {
         Artifact dependency = toDependencyArtifact(gav);
         try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
-            editSession.edit(p -> {
-                try (JDomDocumentIO documentIO = new JDomDocumentIO(p)) {
-                    JDomPomEditor.updateManagedDependency(
-                            documentIO.getDocument().getRootElement(), dependency, true);
-                }
-            });
+            getToolboxCommando()
+                    .editPom(editSession, Collections.singletonList(s -> s.updateManagedDependency(true, dependency)));
         }
         return Result.success(Boolean.TRUE);
     }

@@ -11,7 +11,7 @@ import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.domtrip.Element;
-import eu.maveniverse.maven.shared.core.component.CloseableSupport;
+import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.aether.artifact.Artifact;
@@ -21,7 +21,7 @@ import org.maveniverse.domtrip.maven.MavenExtensionsElements;
 /**
  * Enhanced extensions editor.
  */
-public class SmartExtensionsEditor extends CloseableSupport {
+public class SmartExtensionsEditor extends ComponentSupport {
     private final ExtensionsEditor editor;
 
     public SmartExtensionsEditor(ExtensionsEditor editor) {
@@ -36,7 +36,7 @@ public class SmartExtensionsEditor extends CloseableSupport {
     public List<Artifact> listExtensions() {
         return editor.root()
                 .descendants(MavenExtensionsElements.Elements.EXTENSION)
-                .map(DOMTripUtils::toArtifact)
+                .map(DOMTripUtils::gavToJarArtifact)
                 .toList();
     }
 
@@ -56,10 +56,6 @@ public class SmartExtensionsEditor extends CloseableSupport {
             }
         } else {
             Element element = matched.get(0);
-            editor.findChildElement(element, MavenExtensionsElements.Elements.GROUP_ID)
-                    .textContent(artifact.getGroupId());
-            editor.findChildElement(element, MavenExtensionsElements.Elements.ARTIFACT_ID)
-                    .textContent(artifact.getArtifactId());
             editor.findChildElement(element, MavenExtensionsElements.Elements.VERSION)
                     .textContent(artifact.getVersion());
             if (matched.size() > 1) {

@@ -9,12 +9,17 @@ package eu.maveniverse.maven.toolbox.shared.internal.domtrip;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.domtrip.Document;
 import eu.maveniverse.domtrip.Element;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.maveniverse.domtrip.maven.MavenExtensionsElements;
+import org.maveniverse.domtrip.maven.MavenPomElements;
+import org.maveniverse.domtrip.maven.PomEditor;
 
 /**
  * Utils.
@@ -22,63 +27,82 @@ import org.maveniverse.domtrip.maven.MavenExtensionsElements;
 public final class DOMTripUtils {
     private DOMTripUtils() {}
 
-    public static String textContent(Element element) {
+    public static String textContent(Element element, String defaultValue) {
         if (element != null) {
             if (element.textContent() != null) {
                 return element.textContent();
             }
         }
-        return null;
+        return defaultValue;
+    }
+
+    public static String textContent(Element element) {
+        return textContent(element, null);
+    }
+
+    public static String optionalTextContentOfDescendant(Element element, String descendant, String defaultValue) {
+        return textContent(element.descendant(descendant).orElse(null), defaultValue);
+    }
+
+    public static String requiredTextContentOfDescendant(Element element, String descendant) {
+        return textContent(element.descendant(descendant).orElseThrow());
+    }
+
+    public static String toGA(Element element) {
+        requireNonNull(element);
+        return requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.GROUP_ID) + ":"
+                + requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.ARTIFACT_ID);
+    }
+
+    public static String toGATC(Element element) {
+        requireNonNull(element);
+        String type = optionalTextContentOfDescendant(element, MavenExtensionsElements.Elements.TYPE, "jar");
+        String classifier = optionalTextContentOfDescendant(element, MavenExtensionsElements.Elements.CLASSIFIER, null);
+        if (classifier != null) {
+            return toGA(element) + ":" + type + ":" + classifier;
+        } else {
+            return toGA(element) + ":" + type;
+        }
     }
 
     public static Predicate<Element> predicateGA(Artifact artifact) {
         requireNonNull(artifact);
-        return element -> Objects.equals(
-                        artifact.getGroupId(),
-                        textContent(element.descendant(MavenExtensionsElements.Elements.GROUP_ID)
-                                .orElse(null)))
-                && Objects.equals(
-                        artifact.getArtifactId(),
-                        textContent(element.descendant(MavenExtensionsElements.Elements.ARTIFACT_ID)
-                                .orElse(null)));
+        return element -> Objects.equals(toGA(element), artifact.getGroupId() + ":" + artifact.getArtifactId());
     }
 
     public static Predicate<Element> predicateGATC(Artifact artifact) {
         requireNonNull(artifact);
-        return element -> {
-            String groupId = textContent(element.descendant(MavenExtensionsElements.Elements.GROUP_ID)
-                    .orElse(null));
-            String artifactId = textContent(element.descendant(MavenExtensionsElements.Elements.ARTIFACT_ID)
-                    .orElse(null));
-            String type = textContent(
-                    element.descendant(MavenExtensionsElements.Elements.TYPE).orElse(null));
-            if (type == null) {
-                type = "jar";
-            }
-            String classifier = textContent(element.descendant(MavenExtensionsElements.Elements.CLASSIFIER)
-                    .orElse(null));
-            if (classifier == null) {
-                classifier = "";
-            }
-            return Objects.equals(artifact.getGroupId(), groupId)
-                    && Objects.equals(artifact.getArtifactId(), artifactId)
-                    && Objects.equals(artifact.getClassifier(), classifier)
-                    && Objects.equals(artifact.getExtension(), type);
-        };
+        return element -> Objects.equals(toGATC(element), ArtifactIdUtils.toVersionlessId(artifact));
     }
 
-    public static Artifact toArtifact(Element element) {
+    public static Artifact gavToJarArtifact(Element element) {
         requireNonNull(element);
         return new DefaultArtifact(
-                element.descendant(MavenExtensionsElements.Elements.GROUP_ID)
-                        .orElseThrow()
-                        .textContent(),
-                element.descendant(MavenExtensionsElements.Elements.GROUP_ID)
-                        .orElseThrow()
-                        .textContent(),
+                requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.GROUP_ID),
+                requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.ARTIFACT_ID),
                 "jar",
-                element.descendant(MavenExtensionsElements.Elements.GROUP_ID)
-                        .orElseThrow()
-                        .textContent());
+                requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.VERSION));
+    }
+
+    public static Artifact fromPom(Path pom) {
+        requireNonNull(pom);
+        PomEditor pomEditor = new PomEditor(Document.of(pom));
+        String groupId = optionalTextContentOfDescendant(pomEditor.root(), MavenPomElements.Elements.GROUP_ID, null);
+        String artifactId = requiredTextContentOfDescendant(pomEditor.root(), MavenPomElements.Elements.ARTIFACT_ID);
+        String version = optionalTextContentOfDescendant(pomEditor.root(), MavenPomElements.Elements.VERSION, null);
+        if (groupId == null || version == null) {
+            Element parent = pomEditor.findChildElement(pomEditor.root(), MavenPomElements.Elements.PARENT);
+            if (parent != null) {
+                if (groupId == null) {
+                    groupId = requiredTextContentOfDescendant(parent, MavenPomElements.Elements.GROUP_ID);
+                }
+                if (version == null) {
+                    version = requiredTextContentOfDescendant(parent, MavenPomElements.Elements.VERSION);
+                }
+            } else {
+                throw new IllegalArgumentException("Malformed POM: no groupId found");
+            }
+        }
+        return new DefaultArtifact(groupId, artifactId, "pom", version).setFile(pom.toFile());
     }
 }

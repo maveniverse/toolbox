@@ -47,19 +47,19 @@ public class SmartExtensionsEditor extends ComponentSupport {
                 .filter(predicateGA(artifact))
                 .toList();
         if (matched.isEmpty()) {
-            if (!upsert) {
-                return false;
-            } else {
+            if (upsert) {
                 editor.addExtension(
                         editor.root(), artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
                 return true;
+            } else {
+                return false;
             }
         } else {
             Element element = matched.get(0);
             editor.findChildElement(element, MavenExtensionsElements.Elements.VERSION)
                     .textContent(artifact.getVersion());
             if (matched.size() > 1) {
-                logger.warn("More than one matching extension found: " + matched.size());
+                logger.warn("More than one matching extension found: {}", matched.size());
             }
             return true;
         }

@@ -11,6 +11,7 @@ import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.maven.shared.core.component.CloseableSupport;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,7 +23,7 @@ import org.maveniverse.domtrip.maven.PomEditor;
 /**
  * Enhanced POM editor.
  */
-public class SmartPomEditor {
+public class SmartPomEditor extends CloseableSupport {
     private final PomEditor editor;
 
     public SmartPomEditor(PomEditor editor) {

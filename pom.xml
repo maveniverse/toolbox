@@ -277,6 +277,13 @@
         <version>0.1.0</version>
       </dependency>
 
+      <!-- Shared -->
+      <dependency>
+        <groupId>eu.maveniverse.maven.shared</groupId>
+        <artifactId>core</artifactId>
+        <version>0.1.8</version>
+      </dependency>
+
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>

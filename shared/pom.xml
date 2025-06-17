@@ -114,6 +114,12 @@
       <artifactId>domtrip-maven</artifactId>
     </dependency>
 
+    <!-- Shared -->
+    <dependency>
+      <groupId>eu.maveniverse.maven.shared</groupId>
+      <artifactId>core</artifactId>
+    </dependency>
+
     <!-- Commons Compress (unpack) -->
     <dependency>
       <groupId>org.apache.commons</groupId>

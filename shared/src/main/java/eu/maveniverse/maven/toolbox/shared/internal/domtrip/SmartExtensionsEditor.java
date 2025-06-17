@@ -11,6 +11,7 @@ import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.maven.shared.core.component.CloseableSupport;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.aether.artifact.Artifact;
@@ -20,7 +21,7 @@ import org.maveniverse.domtrip.maven.MavenExtensionsElements;
 /**
  * Enhanced extensions editor.
  */
-public class SmartExtensionsEditor {
+public class SmartExtensionsEditor extends CloseableSupport {
     private final ExtensionsEditor editor;
 
     public SmartExtensionsEditor(ExtensionsEditor editor) {
@@ -54,19 +55,17 @@ public class SmartExtensionsEditor {
                 return true;
             }
         } else {
-            if (matched.size() == 1) {
-                Element element = matched.get(0);
-                editor.findChildElement(element, MavenExtensionsElements.Elements.GROUP_ID)
-                        .textContent(artifact.getGroupId());
-                editor.findChildElement(element, MavenExtensionsElements.Elements.ARTIFACT_ID)
-                        .textContent(artifact.getArtifactId());
-                editor.findChildElement(element, MavenExtensionsElements.Elements.VERSION)
-                        .textContent(artifact.getVersion());
-                return true;
-            } else {
-                // TODO: what here? This is error, so fail? Or just update first match and drop the rest?
-                throw new IllegalArgumentException("More than one matched extensions found");
+            Element element = matched.get(0);
+            editor.findChildElement(element, MavenExtensionsElements.Elements.GROUP_ID)
+                    .textContent(artifact.getGroupId());
+            editor.findChildElement(element, MavenExtensionsElements.Elements.ARTIFACT_ID)
+                    .textContent(artifact.getArtifactId());
+            editor.findChildElement(element, MavenExtensionsElements.Elements.VERSION)
+                    .textContent(artifact.getVersion());
+            if (matched.size() > 1) {
+                logger.warn("More than one matching extension found: " + matched.size());
             }
+            return true;
         }
     }
 

@@ -38,7 +38,7 @@ public class SmartExtensionsEditor extends ComponentSupport {
      */
     public List<Artifact> listExtensions() {
         return editor.root()
-                .descendants(MavenExtensionsElements.Elements.EXTENSION)
+                .children(MavenExtensionsElements.Elements.EXTENSION)
                 .map(DOMTripUtils::gavToJarArtifact)
                 .toList();
     }
@@ -50,7 +50,7 @@ public class SmartExtensionsEditor extends ComponentSupport {
     public boolean updateExtension(boolean upsert, Artifact artifact) {
         requireNonNull(artifact);
         List<Element> matched = editor.root()
-                .descendants(MavenExtensionsElements.Elements.EXTENSION)
+                .children(MavenExtensionsElements.Elements.EXTENSION)
                 .filter(predicateGA(artifact))
                 .toList();
         if (matched.isEmpty()) {
@@ -79,7 +79,7 @@ public class SmartExtensionsEditor extends ComponentSupport {
         requireNonNull(artifact);
         AtomicInteger counter = new AtomicInteger(0);
         editor.root()
-                .descendants(MavenExtensionsElements.Elements.EXTENSION)
+                .children(MavenExtensionsElements.Elements.EXTENSION)
                 .filter(predicateGA(artifact))
                 .peek(e -> counter.incrementAndGet())
                 .forEach(editor::removeElement);

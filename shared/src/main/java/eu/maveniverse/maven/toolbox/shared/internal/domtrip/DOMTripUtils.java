@@ -43,15 +43,15 @@ public final class DOMTripUtils {
     /**
      * Gets text content of a optional descendant element of given element with given name.
      */
-    public static String optionalTextContentOfDescendant(Element element, String descendant, String defaultValue) {
-        return textContent(element.descendant(descendant).orElse(null), defaultValue);
+    public static String optionalTextContentOfchild(Element element, String descendant, String defaultValue) {
+        return textContent(element.child(descendant).orElse(null), defaultValue);
     }
 
     /**
      * Gets text content of a mandatory descendant element of given element with given name.
      */
-    public static String requiredTextContentOfDescendant(Element element, String descendant) {
-        return textContent(element.descendant(descendant).orElseThrow());
+    public static String requiredTextContentOfchild(Element element, String descendant) {
+        return textContent(element.child(descendant).orElseThrow());
     }
 
     /**
@@ -59,8 +59,8 @@ public final class DOMTripUtils {
      */
     public static String toGA(Element element) {
         requireNonNull(element);
-        return requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.GROUP_ID) + ":"
-                + requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.ARTIFACT_ID);
+        return requiredTextContentOfchild(element, MavenExtensionsElements.Elements.GROUP_ID) + ":"
+                + requiredTextContentOfchild(element, MavenExtensionsElements.Elements.ARTIFACT_ID);
     }
 
     /**
@@ -68,9 +68,9 @@ public final class DOMTripUtils {
      */
     public static String toPluginGA(Element element) {
         requireNonNull(element);
-        return optionalTextContentOfDescendant(
+        return optionalTextContentOfchild(
                         element, MavenExtensionsElements.Elements.GROUP_ID, "org.apache.maven.plugins")
-                + ":" + requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.ARTIFACT_ID);
+                + ":" + requiredTextContentOfchild(element, MavenExtensionsElements.Elements.ARTIFACT_ID);
     }
 
     /**
@@ -78,8 +78,8 @@ public final class DOMTripUtils {
      */
     public static String toGATC(Element element) {
         requireNonNull(element);
-        String type = optionalTextContentOfDescendant(element, MavenExtensionsElements.Elements.TYPE, "jar");
-        String classifier = optionalTextContentOfDescendant(element, MavenExtensionsElements.Elements.CLASSIFIER, null);
+        String type = optionalTextContentOfchild(element, MavenExtensionsElements.Elements.TYPE, "jar");
+        String classifier = optionalTextContentOfchild(element, MavenExtensionsElements.Elements.CLASSIFIER, null);
         if (classifier != null) {
             return toGA(element) + ":" + type + ":" + classifier;
         } else {
@@ -118,10 +118,10 @@ public final class DOMTripUtils {
     public static Artifact gavToJarArtifact(Element element) {
         requireNonNull(element);
         return new DefaultArtifact(
-                requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.GROUP_ID),
-                requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.ARTIFACT_ID),
+                requiredTextContentOfchild(element, MavenExtensionsElements.Elements.GROUP_ID),
+                requiredTextContentOfchild(element, MavenExtensionsElements.Elements.ARTIFACT_ID),
                 "jar",
-                requiredTextContentOfDescendant(element, MavenExtensionsElements.Elements.VERSION));
+                requiredTextContentOfchild(element, MavenExtensionsElements.Elements.VERSION));
     }
 
     /**
@@ -131,17 +131,17 @@ public final class DOMTripUtils {
     public static Artifact fromPom(Path pom) {
         requireNonNull(pom);
         PomEditor pomEditor = new PomEditor(Document.of(pom));
-        String groupId = optionalTextContentOfDescendant(pomEditor.root(), MavenPomElements.Elements.GROUP_ID, null);
-        String artifactId = requiredTextContentOfDescendant(pomEditor.root(), MavenPomElements.Elements.ARTIFACT_ID);
-        String version = optionalTextContentOfDescendant(pomEditor.root(), MavenPomElements.Elements.VERSION, null);
+        String groupId = optionalTextContentOfchild(pomEditor.root(), MavenPomElements.Elements.GROUP_ID, null);
+        String artifactId = requiredTextContentOfchild(pomEditor.root(), MavenPomElements.Elements.ARTIFACT_ID);
+        String version = optionalTextContentOfchild(pomEditor.root(), MavenPomElements.Elements.VERSION, null);
         if (groupId == null || version == null) {
             Element parent = pomEditor.findChildElement(pomEditor.root(), MavenPomElements.Elements.PARENT);
             if (parent != null) {
                 if (groupId == null) {
-                    groupId = requiredTextContentOfDescendant(parent, MavenPomElements.Elements.GROUP_ID);
+                    groupId = requiredTextContentOfchild(parent, MavenPomElements.Elements.GROUP_ID);
                 }
                 if (version == null) {
-                    version = requiredTextContentOfDescendant(parent, MavenPomElements.Elements.VERSION);
+                    version = requiredTextContentOfchild(parent, MavenPomElements.Elements.VERSION);
                 }
             } else {
                 throw new IllegalArgumentException("Malformed POM: no groupId found");

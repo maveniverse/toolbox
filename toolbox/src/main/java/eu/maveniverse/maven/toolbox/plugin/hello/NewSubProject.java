@@ -10,9 +10,8 @@ package eu.maveniverse.maven.toolbox.plugin.hello;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.internal.PomSuppliers;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomDocumentIO;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomEditor;
 import java.nio.file.Files;
+import java.util.Collections;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
@@ -48,36 +47,32 @@ public class NewSubProject extends HelloProjectMojoSupport {
             throw new IllegalStateException("pom.xml already exists in this directory; use --force to overwrite it");
         }
         Files.createDirectories(subProjectArtifact.getFile().toPath().getParent());
+        // create POM from scratch
         try (ToolboxCommando.EditSession editSession = getToolboxCommando()
                 .createEditSession(subProjectArtifact.getFile().toPath())) {
-            editSession.edit(p -> {
-                Files.writeString(
-                        p,
-                        PomSuppliers.empty400(
-                                subProjectArtifact.getGroupId(),
-                                subProjectArtifact.getArtifactId(),
-                                subProjectArtifact.getVersion()));
-                try (JDomDocumentIO documentIO = new JDomDocumentIO(p)) {
-                    String effectivePackaging = "jar";
-                    if (packaging != null) {
-                        effectivePackaging = packaging;
-                    } else if (subProjectArtifact.getGroupId().endsWith("." + subProjectArtifact.getArtifactId())) {
-                        effectivePackaging = "pom";
-                    }
-                    if (!"jar".equals(effectivePackaging)) {
-                        JDomPomEditor.setPackaging(documentIO.getDocument().getRootElement(), effectivePackaging);
-                    }
-                    JDomPomEditor.setParent(documentIO.getDocument().getRootElement(), getCurrentProjectArtifact());
+            editSession.edit(p -> Files.writeString(
+                    p,
+                    PomSuppliers.empty400(
+                            subProjectArtifact.getGroupId(),
+                            subProjectArtifact.getArtifactId(),
+                            subProjectArtifact.getVersion())));
+            getToolboxCommando().editPom(editSession, Collections.singletonList(s -> {
+                String effectivePackaging = "jar";
+                if (packaging != null) {
+                    effectivePackaging = packaging;
+                } else if (subProjectArtifact.getGroupId().endsWith("." + subProjectArtifact.getArtifactId())) {
+                    effectivePackaging = "pom";
                 }
-            });
+                s.setPackaging(effectivePackaging);
+                s.setParent(getCurrentProjectArtifact());
+            }));
         }
+        // add subproject to parent
         try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
-            editSession.edit(p -> {
-                try (JDomDocumentIO documentIO = new JDomDocumentIO(p)) {
-                    JDomPomEditor.addSubProject(
-                            documentIO.getDocument().getRootElement(), subProjectArtifact.getArtifactId());
-                }
-            });
+            getToolboxCommando()
+                    .editPom(
+                            editSession,
+                            Collections.singletonList(s -> s.addSubProject(subProjectArtifact.getArtifactId())));
         }
         return Result.success(Boolean.TRUE);
     }

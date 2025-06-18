@@ -7,14 +7,11 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.hello;
 
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomDocumentIO;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomUtils;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.fromPom;
+
 import java.nio.file.Files;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.jdom2.Element;
 
 /**
  * Support class for "hello" Mojos (with existing project).
@@ -24,27 +21,7 @@ public abstract class HelloProjectMojoSupport extends HelloMojoSupport {
         if (!Files.exists(getRootPom())) {
             throw new IllegalStateException("This directory does not contain pom.xml");
         }
-        try (JDomDocumentIO documentIO = new JDomDocumentIO(getRootPom())) {
-            Element project = documentIO.getDocument().getRootElement();
-            Element parent = project.getChild("parent", project.getNamespace());
-
-            String groupId = JDomUtils.getChildElementTextTrim("groupId", project);
-            if (groupId == null && parent != null) {
-                groupId = JDomUtils.getChildElementTextTrim("groupId", parent);
-            }
-            String artifactId = JDomUtils.getChildElementTextTrim("artifactId", project);
-            if (artifactId == null && parent != null) {
-                artifactId = JDomUtils.getChildElementTextTrim("artifactId", parent);
-            }
-            String version = JDomUtils.getChildElementTextTrim("version", project);
-            if (version == null && parent != null) {
-                version = JDomUtils.getChildElementTextTrim("version", parent);
-            }
-            return new DefaultArtifact(groupId, artifactId, "pom", version)
-                    .setFile(getRootPom().toFile());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return fromPom(getRootPom());
     }
 
     /**

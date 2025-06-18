@@ -9,6 +9,9 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import org.maveniverse.domtrip.maven.MavenPomElements;
+import org.maveniverse.domtrip.maven.PomEditor;
+
 /**
  * Some simple suppliers of POM.
  */
@@ -17,14 +20,15 @@ public final class PomSuppliers {
         requireNonNull(groupId, "groupId");
         requireNonNull(artifactId, "artifactId");
         requireNonNull(version, "version");
-        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
-                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
-                + "  <modelVersion>4.0.0</modelVersion>\n" //
-                + "\n" //
-                + "  <groupId>" + groupId + "</groupId>\n" //
-                + "  <artifactId>" + artifactId + "</artifactId>\n" //
-                + "  <version>" + version + "</version>\n" //
-                + "</project>\n";
+        PomEditor pomEditor = new PomEditor();
+        pomEditor.createMavenDocument("project");
+        pomEditor.insertMavenElement(
+                pomEditor.root(),
+                MavenPomElements.Elements.MODEL_VERSION,
+                MavenPomElements.ModelVersions.MODEL_VERSION_4_0_0);
+        pomEditor.insertMavenElement(pomEditor.root(), MavenPomElements.Elements.GROUP_ID, groupId);
+        pomEditor.insertMavenElement(pomEditor.root(), MavenPomElements.Elements.ARTIFACT_ID, artifactId);
+        pomEditor.insertMavenElement(pomEditor.root(), MavenPomElements.Elements.VERSION, version);
+        return pomEditor.toXml();
     }
 }

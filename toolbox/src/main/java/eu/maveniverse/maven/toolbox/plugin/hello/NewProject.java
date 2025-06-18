@@ -10,9 +10,8 @@ package eu.maveniverse.maven.toolbox.plugin.hello;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.internal.PomSuppliers;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomDocumentIO;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomEditor;
 import java.nio.file.Files;
+import java.util.Collections;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
@@ -58,6 +57,7 @@ public class NewProject extends HelloMojoSupport {
         Artifact parentArtifact = toParentArtifact(parent);
         try (ToolboxCommando.EditSession editSession =
                 getToolboxCommando().createEditSession(projectArtifact.getFile().toPath())) {
+            // "reset" POM (or just one from scratch)
             editSession.edit(p -> {
                 Files.writeString(
                         p,
@@ -65,21 +65,20 @@ public class NewProject extends HelloMojoSupport {
                                 projectArtifact.getGroupId(),
                                 projectArtifact.getArtifactId(),
                                 projectArtifact.getVersion()));
-                try (JDomDocumentIO documentIO = new JDomDocumentIO(p)) {
-                    String effectivePackaging = "jar";
-                    if (packaging != null) {
-                        effectivePackaging = packaging;
-                    } else if (projectArtifact.getGroupId().endsWith("." + projectArtifact.getArtifactId())) {
-                        effectivePackaging = "pom";
-                    }
-                    if (!"jar".equals(effectivePackaging)) {
-                        JDomPomEditor.setPackaging(documentIO.getDocument().getRootElement(), effectivePackaging);
-                    }
-                    if (parentArtifact != null) {
-                        JDomPomEditor.setParent(documentIO.getDocument().getRootElement(), parentArtifact);
-                    }
-                }
             });
+            // apply changes
+            getToolboxCommando().editPom(editSession, Collections.singletonList(s -> {
+                String effectivePackaging = "jar";
+                if (packaging != null) {
+                    effectivePackaging = packaging;
+                } else if (projectArtifact.getGroupId().endsWith("." + projectArtifact.getArtifactId())) {
+                    effectivePackaging = "pom";
+                }
+                s.setPackaging(effectivePackaging);
+                if (parentArtifact != null) {
+                    s.setParent(parentArtifact);
+                }
+            }));
         }
 
         return Result.success(Boolean.TRUE);

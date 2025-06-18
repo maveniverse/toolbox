@@ -9,14 +9,14 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.domtrip.Document;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.shared.FileUtils;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomTransformer;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomTransformationContext;
+import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
+import org.maveniverse.domtrip.maven.PomEditor;
 
 /**
  * Construction to accept collection of artifacts, and applies it to some POM based on provided transformations.
@@ -35,7 +36,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
      * If no POM file exists, will provide a plain/trivial "blank" POM and work with that.
      */
     public static PomTransformerSink transform(
-            Output output, Path pom, ToolboxCommando.PomOpSubject subject, ToolboxCommando.Op op) throws IOException {
+            Output output, Path pom, ToolboxCommando.PomOpSubject subject, ToolboxCommando.Op op) {
         return transform(
                 output,
                 pom,
@@ -56,96 +57,64 @@ public final class PomTransformerSink implements Artifacts.Sink {
             Predicate<Artifact> artifactMatcher,
             Function<Artifact, Artifact> artifactMapper,
             ToolboxCommando.PomOpSubject subject,
-            ToolboxCommando.Op op)
-            throws IOException {
+            ToolboxCommando.Op op) {
         return new PomTransformerSink(output, pom, pomSupplier, artifactMatcher, artifactMapper, subject, op);
     }
 
     private final Output output;
     private final Path pom;
+    private final Supplier<String> pomSupplier;
     private final Predicate<Artifact> artifactMatcher;
     private final Function<Artifact, Artifact> artifactMapper;
-    private final Function<Artifact, Consumer<JDomTransformationContext.JDomPomTransformationContext>> transformation;
-
-    private final ArrayList<Consumer<JDomTransformationContext.JDomPomTransformationContext>> applicableTransformations;
+    private final Function<Artifact, Consumer<SmartPomEditor>> transformation;
+    private final ArrayList<Consumer<SmartPomEditor>> applicableTransformations;
 
     /**
      * Creates a directory sink.
      *
      * @param output The output.
      * @param pom The POM path, if not existing, will be created (as "blank").
-     * @param blankPomSupplier Required, if pom path points to a non-existent POM file.
+     * @param pomSupplier Required, if pom path points to a non-existent POM file.
      * @param artifactMatcher The artifact matcher.
      * @param artifactMapper The artifact mapper.
      * @param subject The transformation subject.
      * @param op The transformation op.
-     * @throws IOException In case of IO problem.
      */
     private PomTransformerSink(
             Output output,
             Path pom,
-            Supplier<String> blankPomSupplier,
+            Supplier<String> pomSupplier,
             Predicate<Artifact> artifactMatcher,
             Function<Artifact, Artifact> artifactMapper,
             ToolboxCommando.PomOpSubject subject,
-            ToolboxCommando.Op op)
-            throws IOException {
+            ToolboxCommando.Op op) {
         this.output = requireNonNull(output, "output");
         this.pom = requireNonNull(pom, "pom").toAbsolutePath();
-        if (!Files.isRegularFile(pom)) {
-            Files.createDirectories(pom.getParent());
-            Files.writeString(pom, blankPomSupplier.get(), StandardCharsets.UTF_8);
-        }
+        this.pomSupplier = requireNonNull(pomSupplier, "pomSupplier");
         this.artifactMatcher = requireNonNull(artifactMatcher, "artifactMatcher");
         this.artifactMapper = requireNonNull(artifactMapper, "artifactMapper");
         requireNonNull(subject, "subject");
         requireNonNull(op, "op");
 
-        Function<Artifact, Consumer<JDomTransformationContext.JDomPomTransformationContext>> tr = null;
-        switch (op) {
-            case UPSERT:
-            case UPDATE:
+        this.transformation = switch (op) {
+            case UPSERT, UPDATE ->
                 switch (subject) {
-                    case MANAGED_PLUGINS:
-                        tr = JDomPomTransformer.updateManagedPlugin(op == ToolboxCommando.Op.UPSERT);
-                        break;
-                    case PLUGINS:
-                        tr = JDomPomTransformer.updatePlugin(op == ToolboxCommando.Op.UPSERT);
-                        break;
-                    case MANAGED_DEPENDENCIES:
-                        tr = JDomPomTransformer.updateManagedDependency(op == ToolboxCommando.Op.UPSERT);
-                        break;
-                    case DEPENDENCIES:
-                        tr = JDomPomTransformer.updateDependency(op == ToolboxCommando.Op.UPSERT);
-                        break;
-                    case EXTENSIONS:
-                        tr = JDomPomTransformer.updateExtension(op == ToolboxCommando.Op.UPSERT);
-                        break;
-                }
-                break;
-            case DELETE:
+                    case MANAGED_PLUGINS -> a -> (e -> e.updateManagedPlugin(op == ToolboxCommando.Op.UPSERT, a));
+                    case PLUGINS -> a -> (e -> e.updatePlugin(op == ToolboxCommando.Op.UPSERT, a));
+                    case MANAGED_DEPENDENCIES ->
+                        a -> (e -> e.updateManagedDependency(op == ToolboxCommando.Op.UPSERT, a));
+                    case DEPENDENCIES -> a -> (e -> e.updateDependency(op == ToolboxCommando.Op.UPSERT, a));
+                    case EXTENSIONS -> a -> (e -> e.updateExtension(op == ToolboxCommando.Op.UPSERT, a));
+                };
+            case DELETE ->
                 switch (subject) {
-                    case MANAGED_PLUGINS:
-                        tr = JDomPomTransformer.deleteManagedPlugin();
-                        break;
-                    case PLUGINS:
-                        tr = JDomPomTransformer.deletePlugin();
-                        break;
-                    case MANAGED_DEPENDENCIES:
-                        tr = JDomPomTransformer.deleteManagedDependency();
-                        break;
-                    case DEPENDENCIES:
-                        tr = JDomPomTransformer.deleteDependency();
-                        break;
-                    case EXTENSIONS:
-                        tr = JDomPomTransformer.deleteExtension();
-                        break;
-                }
-        }
-        if (tr == null) {
-            throw new IllegalArgumentException("Unknown subject: " + subject + " and/or op: " + op);
-        }
-        this.transformation = tr;
+                    case MANAGED_PLUGINS -> a -> (e -> e.deleteManagedPlugin(a));
+                    case PLUGINS -> a -> (e -> e.deletePlugin(a));
+                    case MANAGED_DEPENDENCIES -> a -> (e -> e.deleteManagedDependency(a));
+                    case DEPENDENCIES -> a -> (e -> e.deleteDependency(a));
+                    case EXTENSIONS -> a -> (e -> e.deleteExtension(a));
+                };
+        };
         this.applicableTransformations = new ArrayList<>();
     }
 
@@ -157,8 +126,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
     public void accept(Artifact artifact) throws IOException {
         requireNonNull(artifact, "artifact");
         if (artifactMatcher.test(artifact)) {
-            Consumer<JDomTransformationContext.JDomPomTransformationContext> transformation =
-                    this.transformation.apply(artifactMapper.apply(artifact));
+            Consumer<SmartPomEditor> transformation = this.transformation.apply(artifactMapper.apply(artifact));
             if (transformation != null) {
                 output.chatter("Accepted {}", artifact);
                 applicableTransformations.add(transformation);
@@ -177,6 +145,20 @@ public final class PomTransformerSink implements Artifacts.Sink {
 
     @Override
     public void close() throws IOException {
-        new JDomPomTransformer(pom).apply(applicableTransformations);
+        Document document;
+        if (!Files.isRegularFile(pom)) {
+            Files.createDirectories(pom.getParent());
+            document = Document.of(pomSupplier.get());
+        } else {
+            document = Document.of(pom);
+        }
+        SmartPomEditor editor = new SmartPomEditor(new PomEditor(document));
+        try (FileUtils.CollocatedTempFile tempFile = FileUtils.newTempFile(pom, false)) {
+            for (Consumer<SmartPomEditor> transformation : applicableTransformations) {
+                transformation.accept(editor);
+            }
+            Files.writeString(tempFile.getPath(), document.toXml());
+            tempFile.move();
+        }
     }
 }

@@ -10,8 +10,7 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomPomEditor;
-import eu.maveniverse.maven.toolbox.shared.internal.jdom.JDomTransformationContext;
+import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -40,13 +39,12 @@ public class SetVersionMojo extends MPMojoSupport {
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
 
-        ArrayList<Consumer<JDomTransformationContext.JDomPomTransformationContext>> transformers = new ArrayList<>();
-        transformers.add(c -> JDomPomEditor.setVersion(c.getDocument().getRootElement(), version));
+        ArrayList<Consumer<SmartPomEditor>> transformers = new ArrayList<>();
+        transformers.add(s -> s.setVersion(version));
         if (properties != null) {
             for (String property : properties.split(",")) {
                 if (!property.trim().isEmpty()) {
-                    transformers.add(
-                            c -> JDomPomEditor.setProperty(c.getDocument().getRootElement(), property, version, false));
+                    transformers.add(s -> s.updateProperty(false, property, version));
                 }
             }
         }

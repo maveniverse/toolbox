@@ -110,8 +110,14 @@
 
     <!-- POM editing -->
     <dependency>
-      <groupId>org.jdom</groupId>
-      <artifactId>jdom2</artifactId>
+      <groupId>eu.maveniverse.maven.domtrip</groupId>
+      <artifactId>domtrip-maven</artifactId>
+    </dependency>
+
+    <!-- Shared -->
+    <dependency>
+      <groupId>eu.maveniverse.maven.shared</groupId>
+      <artifactId>core</artifactId>
     </dependency>
 
     <!-- Commons Compress (unpack) -->

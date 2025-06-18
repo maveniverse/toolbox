@@ -44,12 +44,12 @@ public class SmartPomEditor extends ComponentSupport {
         requireNonNull(key);
         requireNonNull(value);
         Element properties =
-                editor.root().descendant(MavenPomElements.Elements.PROPERTIES).orElse(null);
+                editor.root().child(MavenPomElements.Elements.PROPERTIES).orElse(null);
         if (properties == null && upsert) {
             properties = editor.insertMavenElement(editor.root(), MavenPomElements.Elements.PROPERTIES);
         }
         if (properties != null) {
-            Element property = properties.descendant(key).orElse(null);
+            Element property = properties.child(key).orElse(null);
             if (property == null && upsert) {
                 property = editor.insertMavenElement(properties, key);
             }
@@ -67,9 +67,9 @@ public class SmartPomEditor extends ComponentSupport {
     public boolean deleteProperty(String key) {
         requireNonNull(key);
         Element properties =
-                editor.root().descendant(MavenPomElements.Elements.PROPERTIES).orElse(null);
+                editor.root().child(MavenPomElements.Elements.PROPERTIES).orElse(null);
         if (properties != null) {
-            Element property = properties.descendant(key).orElse(null);
+            Element property = properties.child(key).orElse(null);
             if (property != null) {
                 editor.removeElement(property);
                 return true;
@@ -133,7 +133,7 @@ public class SmartPomEditor extends ComponentSupport {
         if (modules == null) {
             modules = editor.insertMavenElement(editor.root(), MavenPomElements.Elements.MODULES);
         }
-        List<String> existing = modules.descendants(MavenPomElements.Elements.MODULE)
+        List<String> existing = modules.children(MavenPomElements.Elements.MODULE)
                 .map(Element::textContent)
                 .toList();
         if (!existing.contains(value)) {
@@ -154,7 +154,7 @@ public class SmartPomEditor extends ComponentSupport {
             return false;
         }
         AtomicBoolean removed = new AtomicBoolean(false);
-        modules.descendants(MavenPomElements.Elements.MODULE)
+        modules.children(MavenPomElements.Elements.MODULE)
                 .filter(e -> Objects.equals(value, e.textContent()))
                 .peek(e -> removed.set(true))
                 .forEach(editor::removeElement);
@@ -171,7 +171,7 @@ public class SmartPomEditor extends ComponentSupport {
             Element plugins = editor.findChildElement(build, MavenPomElements.Elements.PLUGINS);
             if (plugins != null) {
                 Optional<Element> plugin =
-                        plugins.descendant(MavenPomElements.Elements.PLUGIN).filter(predicateGA(artifact)).stream()
+                        plugins.child(MavenPomElements.Elements.PLUGIN).filter(predicateGA(artifact)).stream()
                                 .findFirst();
                 if (plugin.isPresent()) {
                     Element pe = plugin.orElseThrow();
@@ -206,7 +206,7 @@ public class SmartPomEditor extends ComponentSupport {
             }
             if (dependencies != null) {
                 Element dependency = dependencies
-                        .descendants(MavenPomElements.Elements.DEPENDENCY)
+                        .children(MavenPomElements.Elements.DEPENDENCY)
                         .filter(predicateGATC(artifact))
                         .findFirst()
                         .orElse(null);
@@ -223,7 +223,7 @@ public class SmartPomEditor extends ComponentSupport {
                     return true;
                 }
                 if (dependency != null) {
-                    Optional<Element> version = dependency.descendant(MavenPomElements.Elements.VERSION);
+                    Optional<Element> version = dependency.child(MavenPomElements.Elements.VERSION);
                     if (version.isPresent()) {
                         String versionValue = version.orElseThrow().textContent();
                         if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
@@ -253,7 +253,7 @@ public class SmartPomEditor extends ComponentSupport {
                     editor.findChildElement(dependencyManagement, MavenPomElements.Elements.DEPENDENCIES);
             if (dependencies != null) {
                 Element dependency = dependencies
-                        .descendants(MavenPomElements.Elements.DEPENDENCY)
+                        .children(MavenPomElements.Elements.DEPENDENCY)
                         .filter(predicateGATC(artifact))
                         .findFirst()
                         .orElse(null);
@@ -278,7 +278,7 @@ public class SmartPomEditor extends ComponentSupport {
         }
         if (dependencies != null) {
             Element dependency = dependencies
-                    .descendants(MavenPomElements.Elements.DEPENDENCY)
+                    .children(MavenPomElements.Elements.DEPENDENCY)
                     .filter(predicateGATC(artifact))
                     .findFirst()
                     .orElse(null);
@@ -295,7 +295,7 @@ public class SmartPomEditor extends ComponentSupport {
                 return true;
             }
             if (dependency != null) {
-                Optional<Element> version = dependency.descendant(MavenPomElements.Elements.VERSION);
+                Optional<Element> version = dependency.child(MavenPomElements.Elements.VERSION);
                 if (version.isPresent()) {
                     String versionValue = version.orElseThrow().textContent();
                     if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
@@ -322,7 +322,7 @@ public class SmartPomEditor extends ComponentSupport {
         Element dependencies = editor.findChildElement(editor.root(), MavenPomElements.Elements.DEPENDENCIES);
         if (dependencies != null) {
             Element dependency = dependencies
-                    .descendants(MavenPomElements.Elements.DEPENDENCY)
+                    .children(MavenPomElements.Elements.DEPENDENCY)
                     .filter(predicateGATC(artifact))
                     .findFirst()
                     .orElse(null);
@@ -354,7 +354,7 @@ public class SmartPomEditor extends ComponentSupport {
                     plugins = editor.insertMavenElement(pluginManagement, MavenPomElements.Elements.PLUGINS);
                 }
                 if (plugins != null) {
-                    Element plugin = plugins.descendants(MavenPomElements.Elements.PLUGIN)
+                    Element plugin = plugins.children(MavenPomElements.Elements.PLUGIN)
                             .filter(predicatePluginGA(artifact))
                             .findFirst()
                             .orElse(null);
@@ -367,7 +367,7 @@ public class SmartPomEditor extends ComponentSupport {
                         return true;
                     }
                     if (plugin != null) {
-                        Optional<Element> version = plugin.descendant(MavenPomElements.Elements.VERSION);
+                        Optional<Element> version = plugin.child(MavenPomElements.Elements.VERSION);
                         if (version.isPresent()) {
                             String versionValue = version.orElseThrow().textContent();
                             if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
@@ -397,7 +397,7 @@ public class SmartPomEditor extends ComponentSupport {
             if (pluginManagement != null) {
                 Element plugins = editor.findChildElement(pluginManagement, MavenPomElements.Elements.PLUGINS);
                 if (plugins != null) {
-                    Element plugin = plugins.descendants(MavenPomElements.Elements.PLUGIN)
+                    Element plugin = plugins.children(MavenPomElements.Elements.PLUGIN)
                             .filter(predicatePluginGA(artifact))
                             .findFirst()
                             .orElse(null);
@@ -427,7 +427,7 @@ public class SmartPomEditor extends ComponentSupport {
                 plugins = editor.insertMavenElement(build, MavenPomElements.Elements.PLUGINS);
             }
             if (plugins != null) {
-                Element plugin = plugins.descendants(MavenPomElements.Elements.PLUGIN)
+                Element plugin = plugins.children(MavenPomElements.Elements.PLUGIN)
                         .filter(predicatePluginGA(artifact))
                         .findFirst()
                         .orElse(null);
@@ -436,7 +436,7 @@ public class SmartPomEditor extends ComponentSupport {
                     return true;
                 }
                 if (plugin != null) {
-                    Optional<Element> version = plugin.descendant(MavenPomElements.Elements.VERSION);
+                    Optional<Element> version = plugin.child(MavenPomElements.Elements.VERSION);
                     if (version.isPresent()) {
                         String versionValue = version.orElseThrow().textContent();
                         if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
@@ -464,7 +464,7 @@ public class SmartPomEditor extends ComponentSupport {
         if (build != null) {
             Element plugins = editor.findChildElement(build, MavenPomElements.Elements.PLUGINS);
             if (plugins != null) {
-                Element plugin = plugins.descendants(MavenPomElements.Elements.PLUGIN)
+                Element plugin = plugins.children(MavenPomElements.Elements.PLUGIN)
                         .filter(predicatePluginGA(artifact))
                         .findFirst()
                         .orElse(null);
@@ -494,7 +494,7 @@ public class SmartPomEditor extends ComponentSupport {
             if (extensions != null) {
                 // TODO: https://github.com/maveniverse/domtrip/issues/32
                 Element extension = extensions
-                        .descendants("extension")
+                        .children("extension")
                         .filter(predicateGA(artifact))
                         .findFirst()
                         .orElse(null);
@@ -508,7 +508,7 @@ public class SmartPomEditor extends ComponentSupport {
                     return true;
                 }
                 if (extension != null) {
-                    Optional<Element> version = extension.descendant(MavenPomElements.Elements.VERSION);
+                    Optional<Element> version = extension.child(MavenPomElements.Elements.VERSION);
                     if (version.isPresent()) {
                         String versionValue = version.orElseThrow().textContent();
                         if (versionValue.startsWith("${") && versionValue.endsWith("}")) {
@@ -537,7 +537,7 @@ public class SmartPomEditor extends ComponentSupport {
             if (extensions != null) {
                 // TODO: https://github.com/maveniverse/domtrip/issues/32
                 Element extension = extensions
-                        .descendants("extension")
+                        .children("extension")
                         .filter(predicateGA(artifact))
                         .findFirst()
                         .orElse(null);

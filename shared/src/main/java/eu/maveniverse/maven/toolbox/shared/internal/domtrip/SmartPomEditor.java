@@ -492,15 +492,13 @@ public class SmartPomEditor extends ComponentSupport {
                 extensions = editor.insertMavenElement(build, MavenPomElements.Elements.EXTENSIONS);
             }
             if (extensions != null) {
-                // TODO: https://github.com/maveniverse/domtrip/issues/32
                 Element extension = extensions
-                        .children("extension")
+                        .children(MavenPomElements.Elements.EXTENSION)
                         .filter(predicateGA(artifact))
                         .findFirst()
                         .orElse(null);
                 if (extension == null && upsert) {
-                    // TODO: https://github.com/maveniverse/domtrip/issues/32
-                    extension = editor.insertMavenElement(extensions, "extension");
+                    extension = editor.insertMavenElement(extensions, MavenPomElements.Elements.EXTENSION);
                     editor.insertMavenElement(extension, MavenPomElements.Elements.GROUP_ID, artifact.getGroupId());
                     editor.insertMavenElement(
                             extension, MavenPomElements.Elements.ARTIFACT_ID, artifact.getArtifactId());
@@ -535,9 +533,8 @@ public class SmartPomEditor extends ComponentSupport {
         if (build != null) {
             Element extensions = editor.findChildElement(build, MavenPomElements.Elements.EXTENSIONS);
             if (extensions != null) {
-                // TODO: https://github.com/maveniverse/domtrip/issues/32
                 Element extension = extensions
-                        .children("extension")
+                        .children(MavenPomElements.Elements.EXTENSION)
                         .filter(predicateGA(artifact))
                         .findFirst()
                         .orElse(null);

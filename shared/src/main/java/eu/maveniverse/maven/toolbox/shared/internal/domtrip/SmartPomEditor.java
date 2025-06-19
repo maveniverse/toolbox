@@ -545,4 +545,34 @@ public class SmartPomEditor extends ComponentSupport {
         }
         return false;
     }
+
+    /**
+     * Updates/insert parent. It goes for {@code project/parent} and rewrites it according to passed in coordinates.
+     */
+    public boolean updateParent(boolean upsert, Artifact artifact) {
+        requireNonNull(artifact);
+        Element parent = editor.findChildElement(editor.root(), MavenPomElements.Elements.PARENT);
+        if (parent == null && upsert) {
+            parent = editor.insertMavenElement(editor.root(), MavenPomElements.Elements.PARENT);
+        }
+        if (parent != null) {
+            editor.insertMavenElement(parent, MavenPomElements.Elements.GROUP_ID, artifact.getGroupId());
+            editor.insertMavenElement(parent, MavenPomElements.Elements.ARTIFACT_ID, artifact.getArtifactId());
+            editor.insertMavenElement(parent, MavenPomElements.Elements.VERSION, artifact.getVersion());
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Removes parent.  It goes for {@code project/parent} and removes entry if present.
+     */
+    public boolean deleteParent() {
+        Element parent = editor.findChildElement(editor.root(), MavenPomElements.Elements.PARENT);
+        if (parent != null) {
+            editor.removeElement(parent);
+            return true;
+        }
+        return false;
+    }
 }

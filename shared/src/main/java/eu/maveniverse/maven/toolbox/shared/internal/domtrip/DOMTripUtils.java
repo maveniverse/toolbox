@@ -115,13 +115,27 @@ public final class DOMTripUtils {
      * Creates a JAR {@link Artifact} out of {@link Element}. This method is usable ONLY when all three elements
      * are mandatory to be present, like in {@code extensions.xml} or alike.
      */
-    public static Artifact gavToJarArtifact(Element element) {
+    public static Artifact gavToArtifact(Element element, String extension) {
         requireNonNull(element);
         return new DefaultArtifact(
                 requiredTextContentOfChild(element, MavenExtensionsElements.Elements.GROUP_ID),
                 requiredTextContentOfChild(element, MavenExtensionsElements.Elements.ARTIFACT_ID),
-                "jar",
+                extension,
                 requiredTextContentOfChild(element, MavenExtensionsElements.Elements.VERSION));
+    }
+
+    /**
+     * Creates a JAR {@link Artifact} out of {@link Element}.
+     */
+    public static Artifact gavToJarArtifact(Element element) {
+        return gavToArtifact(element, "jar");
+    }
+
+    /**
+     * Creates a POM {@link Artifact} out of {@link Element}.
+     */
+    public static Artifact gavToPomArtifact(Element element) {
+        return gavToArtifact(element, "pom");
     }
 
     /**

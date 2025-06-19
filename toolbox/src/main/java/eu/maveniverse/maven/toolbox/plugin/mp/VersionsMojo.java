@@ -16,12 +16,16 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.version.Version;
 
 /**
@@ -85,6 +89,21 @@ public class VersionsMojo extends MPPluginMojoSupport {
                 artifactVersionMatcher,
                 artifactVersionSelector);
 
+        AtomicReference<Artifact> parentArtifact = new AtomicReference<>(null);
+        if (mavenSession.getRequest().isProjectPresent()
+                && mavenProject.getModel().getParent() != null) {
+            parentArtifact.set(new DefaultArtifact(
+                    mavenProject.getModel().getParent().getGroupId(),
+                    mavenProject.getModel().getParent().getArtifactId(),
+                    "pom",
+                    mavenProject.getModel().getParent().getVersion()));
+        }
+
+        Result<Map<Artifact, List<Version>>> parents = null;
+        if (parentArtifact.get() != null) {
+            parents = toolboxCommando.versions(
+                    "parent", () -> Stream.of(parentArtifact.get()), artifactVersionMatcher, artifactVersionSelector);
+        }
         Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
                 "managed plugins",
                 () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
@@ -123,6 +142,11 @@ public class VersionsMojo extends MPPluginMojoSupport {
                 }
             }
 
+            AtomicReference<List<Artifact>> parentsUpdates = new AtomicReference<>(null);
+            if (parents != null) {
+                parentsUpdates.set(
+                        toolboxCommando.calculateUpdates(parents.getData().orElseThrow(), artifactVersionSelector));
+            }
             List<Artifact> extensionUpdates =
                     toolboxCommando.calculateUpdates(extensions.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> managedPluginsUpdates =
@@ -133,13 +157,19 @@ public class VersionsMojo extends MPPluginMojoSupport {
                     managedDependencies.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> dependenciesUpdates =
                     toolboxCommando.calculateUpdates(dependencies.getData().orElseThrow(), artifactVersionSelector);
-            if (!extensionUpdates.isEmpty()
+            if ((parentsUpdates.get() != null && !parentsUpdates.get().isEmpty()) && !extensionUpdates.isEmpty()
                     || !managedPluginsUpdates.isEmpty()
                     || !pluginsUpdates.isEmpty()
                     || !managedDependenciesUpdates.isEmpty()
                     || !dependenciesUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
+                    if (parentsUpdates.get() != null && !parentsUpdates.get().isEmpty()) {
+                        toolboxCommando.editPom(
+                                editSession,
+                                Collections.singletonList(s -> s.updateParent(
+                                        false, parentsUpdates.get().get(0))));
+                    }
                     if (!extensionUpdates.isEmpty()) {
                         toolboxCommando.editPom(
                                 editSession,

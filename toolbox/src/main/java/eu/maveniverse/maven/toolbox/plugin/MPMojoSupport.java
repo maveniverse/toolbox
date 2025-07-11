@@ -91,6 +91,7 @@ public abstract class MPMojoSupport extends MojoSupport {
                 .filter(dependencyMatcher)
                 .map(d -> ResolutionRoot.ofLoaded(getToolboxCommando().toArtifact(d))
                         .withManagedDependencies(project.getManagedDependencies())
+                        .applyManagedDependencies(true)
                         .build())
                 .collect(Collectors.toList());
     }

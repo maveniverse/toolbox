@@ -12,8 +12,10 @@ import static java.util.Objects.requireNonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 
 /**
  * Resolution root, that directs what we want to resolve (or collect).
@@ -25,6 +27,7 @@ import org.eclipse.aether.graph.Dependency;
 public final class ResolutionRoot {
     private final Artifact artifact;
     private final boolean load;
+    private final boolean applyManagedDependencies;
     private final boolean prepared;
     private final List<Dependency> dependencies;
     private final List<Dependency> managedDependencies;
@@ -32,11 +35,13 @@ public final class ResolutionRoot {
     private ResolutionRoot(
             Artifact artifact,
             boolean load,
+            boolean applyManagedDependencies,
             boolean prepared,
             List<Dependency> dependencies,
             List<Dependency> managedDependencies) {
         this.artifact = artifact;
         this.load = load;
+        this.applyManagedDependencies = applyManagedDependencies;
         this.prepared = prepared;
         this.dependencies =
                 dependencies.isEmpty() ? Collections.emptyList() : Collections.unmodifiableList(dependencies);
@@ -60,6 +65,13 @@ public final class ResolutionRoot {
     }
 
     /**
+     * Should managed dependencies be applied onto dependencies while preparing?
+     */
+    public boolean isApplyManagedDependencies() {
+        return applyManagedDependencies;
+    }
+
+    /**
      * Is this instance prepared (for processing)?
      */
     public boolean isPrepared() {
@@ -72,7 +84,38 @@ public final class ResolutionRoot {
      * Note: users should not invoke this method, or at least, should be aware of the consequences.
      */
     public ResolutionRoot prepared() {
-        return new ResolutionRoot(artifact, load, true, dependencies, managedDependencies);
+        List<Dependency> newDependencies = dependencies;
+        if (applyManagedDependencies) {
+            newDependencies = new ArrayList<>(dependencies.size());
+            for (Dependency dependency : dependencies) {
+                if (dependency.isOptional()) {
+                    continue;
+                }
+                String key = ArtifactIdUtils.toVersionlessId(dependency.getArtifact());
+                Optional<Dependency> managed = managedDependencies.stream()
+                        .filter(d -> key.equals(ArtifactIdUtils.toVersionlessId(d.getArtifact())))
+                        .findFirst();
+                if (managed.isPresent()) {
+                    Dependency managedDependency = managed.orElseThrow();
+                    if (!managedDependency.getArtifact().getVersion().trim().isEmpty()) {
+                        dependency = dependency.setArtifact(dependency
+                                .getArtifact()
+                                .setVersion(managedDependency.getArtifact().getVersion()));
+                    }
+                    if (!managedDependency.getScope().trim().isEmpty()) {
+                        dependency = dependency.setScope(managedDependency.getScope());
+                    }
+                    if (managedDependency.getOptional() != null) {
+                        dependency = dependency.setOptional(managedDependency.getOptional());
+                    }
+                    if (!managedDependency.getExclusions().isEmpty()) {
+                        dependency = dependency.setExclusions(managedDependency.getExclusions());
+                    }
+                }
+                newDependencies.add(dependency);
+            }
+        }
+        return new ResolutionRoot(artifact, load, false, true, newDependencies, managedDependencies);
     }
 
     /**
@@ -99,7 +142,7 @@ public final class ResolutionRoot {
      * Returns new instance of {@link Builder} initialized with this instance, never {@code null}.
      */
     public Builder builder() {
-        return new Builder(artifact, load, dependencies, managedDependencies);
+        return new Builder(artifact, load, applyManagedDependencies, dependencies, managedDependencies);
     }
 
     /**
@@ -120,17 +163,23 @@ public final class ResolutionRoot {
     public static final class Builder {
         private final Artifact artifact;
         private boolean load;
+        private boolean applyManagedDependencies;
         private List<Dependency> dependencies;
         private List<Dependency> managedDependencies;
 
         private Builder(Artifact artifact) {
-            this(artifact, false, Collections.emptyList(), Collections.emptyList());
+            this(artifact, false, false, Collections.emptyList(), Collections.emptyList());
         }
 
         private Builder(
-                Artifact artifact, boolean load, List<Dependency> dependencies, List<Dependency> managedDependencies) {
+                Artifact artifact,
+                boolean load,
+                boolean applyManagedDependencies,
+                List<Dependency> dependencies,
+                List<Dependency> managedDependencies) {
             this.artifact = requireNonNull(artifact, "artifact");
             this.load = load;
+            this.applyManagedDependencies = applyManagedDependencies;
             this.dependencies = requireNonNull(dependencies, "dependencies");
             this.managedDependencies = requireNonNull(managedDependencies, "managedDependencies");
         }
@@ -145,6 +194,11 @@ public final class ResolutionRoot {
             return this;
         }
 
+        public Builder applyManagedDependencies(boolean applyManagedDependencies) {
+            this.applyManagedDependencies = applyManagedDependencies;
+            return this;
+        }
+
         public Builder withDependencies(List<Dependency> dependencies) {
             this.dependencies = new ArrayList<>(dependencies);
             return this;
@@ -156,7 +210,8 @@ public final class ResolutionRoot {
         }
 
         public ResolutionRoot build() {
-            return new ResolutionRoot(artifact, load, false, dependencies, managedDependencies);
+            return new ResolutionRoot(
+                    artifact, load, applyManagedDependencies, false, dependencies, managedDependencies);
         }
     }
 }

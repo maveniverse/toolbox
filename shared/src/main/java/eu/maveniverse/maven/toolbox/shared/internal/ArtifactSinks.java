@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
@@ -32,8 +34,12 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.internal.impl.checksum.Sha1ChecksumAlgorithmFactory;
+import org.eclipse.aether.internal.impl.checksum.Sha512ChecksumAlgorithmFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.LocalRepositoryManager;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmHelper;
 
 /**
  * Various utility sink implementations.
@@ -434,6 +440,38 @@ public final class ArtifactSinks {
     }
 
     /**
+     * Creates a checksum sink, that simply accumulate checksums of seen (and resolved) artifacts.
+     */
+    public static ChecksumArtifactSink checksumArtifactSink(ChecksumAlgorithmFactory... factories) {
+        return new ChecksumArtifactSink(
+                factories.length == 0
+                        ? List.of(new Sha1ChecksumAlgorithmFactory(), new Sha512ChecksumAlgorithmFactory())
+                        : Arrays.asList(factories));
+    }
+
+    public static class ChecksumArtifactSink implements Artifacts.Sink {
+        private final ConcurrentMap<Artifact, Map<String, String>> checksums = new ConcurrentHashMap<>();
+        private final List<ChecksumAlgorithmFactory> algorithmFactories;
+
+        private ChecksumArtifactSink(List<ChecksumAlgorithmFactory> algorithmFactories) {
+            requireNonNull(algorithmFactories, "algorithmFactories");
+            this.algorithmFactories = algorithmFactories;
+        }
+
+        @Override
+        public void accept(Artifact artifact) throws IOException {
+            Path path = artifact.getFile() != null ? artifact.getFile().toPath() : null;
+            if (path != null && Files.exists(path)) {
+                checksums.put(artifact, ChecksumAlgorithmHelper.calculate(path.toFile(), algorithmFactories));
+            }
+        }
+
+        public Map<String, String> checksums(Artifact artifact) {
+            return checksums.getOrDefault(artifact, Collections.emptyMap());
+        }
+    }
+
+    /**
      * Creates a "tee" artifact sink out of supplied sinks.
      */
     @SafeVarargs
@@ -488,22 +526,26 @@ public final class ArtifactSinks {
     /**
      * Creates a "stat" artifact sink out of supplied sinks.
      */
-    public static StatArtifactSink statArtifactSink(int level, boolean moduleDescriptor, Output output) {
-        return new StatArtifactSink(level, moduleDescriptor, output);
+    public static StatArtifactSink statArtifactSink(int level, boolean details, Output output) {
+        return new StatArtifactSink(level, details, output);
     }
 
     public static class StatArtifactSink implements Artifacts.Sink {
         private final int level;
+        private final boolean details;
         private final Output output;
         private final CopyOnWriteArrayList<Artifact> seen = new CopyOnWriteArrayList<>();
         private final CountingArtifactSink countingArtifactSink = new CountingArtifactSink();
         private final SizingArtifactSink sizingArtifactSink = new SizingArtifactSink();
         private final ModuleDescriptorExtractingSink moduleDescriptorExtractingSink;
+        private final ChecksumArtifactSink checksumArtifactSink;
 
-        private StatArtifactSink(int level, boolean moduleDescriptor, Output output) {
+        private StatArtifactSink(int level, boolean details, Output output) {
             this.level = level;
+            this.details = details;
             this.output = requireNonNull(output, "output");
-            this.moduleDescriptorExtractingSink = moduleDescriptor ? new ModuleDescriptorExtractingSink(output) : null;
+            this.moduleDescriptorExtractingSink = details ? new ModuleDescriptorExtractingSink(output) : null;
+            this.checksumArtifactSink = details ? checksumArtifactSink() : null;
         }
 
         @Override
@@ -511,8 +553,9 @@ public final class ArtifactSinks {
             seen.add(artifact);
             countingArtifactSink.accept(artifact);
             sizingArtifactSink.accept(artifact);
-            if (moduleDescriptorExtractingSink != null) {
+            if (details) {
                 moduleDescriptorExtractingSink.accept(artifact);
+                checksumArtifactSink.accept(artifact);
             }
         }
 
@@ -528,17 +571,24 @@ public final class ArtifactSinks {
             }
             countingArtifactSink.close();
             sizingArtifactSink.close();
-            if (moduleDescriptorExtractingSink != null) {
+            if (details) {
                 moduleDescriptorExtractingSink.close();
                 output.tell("{}------------------------------", indent);
-                for (Map.Entry<Artifact, ModuleDescriptorExtractingSink.ModuleDescriptor> entry :
-                        moduleDescriptorExtractingSink.getModuleDescriptors().entrySet()) {
+                for (Artifact artifact : seen) {
+                    ModuleDescriptorExtractingSink.ModuleDescriptor descriptor =
+                            moduleDescriptorExtractingSink.getModuleDescriptor(artifact);
                     String moduleInfo = "";
-                    if (entry.getValue() != null) {
-                        ModuleDescriptorExtractingSink.ModuleDescriptor moduleDescriptor = entry.getValue();
-                        moduleInfo = moduleDescriptorExtractingSink.formatString(moduleDescriptor);
+                    if (descriptor != null) {
+                        moduleInfo = moduleDescriptorExtractingSink.formatString(descriptor);
                     }
-                    output.tell("{}{} {}", indent, entry.getKey(), moduleInfo);
+                    Map<String, String> checksums = checksumArtifactSink.checksums(artifact);
+                    output.tell("{}{}", indent, artifact);
+                    output.tell("{} -- {}", indent, moduleInfo);
+                    if (checksums != null && !checksums.isEmpty()) {
+                        for (Map.Entry<String, String> checksum : checksums.entrySet()) {
+                            output.tell("{} -- {}: {}", indent, checksum.getKey(), checksum.getValue());
+                        }
+                    }
                 }
                 output.tell("{}------------------------------", indent);
             }

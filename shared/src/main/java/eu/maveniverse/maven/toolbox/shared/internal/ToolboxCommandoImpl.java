@@ -748,7 +748,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Sink<Artifact> sink)
             throws Exception {
         try (Sink<Artifact> artifactSink = sink) {
-            output.suggest("Resolving {}", resolutionRoot.getArtifact());
+            output.marker(Output.Verbosity.NORMAL)
+                    .emphasize("Resolving ")
+                    .outstanding(ArtifactIdUtils.toId(resolutionRoot.getArtifact()))
+                    .say();
             resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
             DependencyResult dependencyResult = toolboxResolver.resolve(
                     resolutionScope,

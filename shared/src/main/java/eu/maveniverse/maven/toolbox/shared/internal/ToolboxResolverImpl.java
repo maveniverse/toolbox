@@ -202,6 +202,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
             Artifact resolvedVersionArtifact = mayResolveArtifactVersion(resolutionRoot.getArtifact(), last());
             ArtifactDescriptorResult artifactDescriptorResult = readArtifactDescriptor(resolvedVersionArtifact);
             resolutionRoot = ResolutionRoot.ofLoaded(resolvedVersionArtifact)
+                    .applyManagedDependencies(resolutionRoot.isApplyManagedDependencies())
                     .withDependencies(
                             mergeDeps(resolutionRoot.getDependencies(), artifactDescriptorResult.getDependencies()))
                     .withManagedDependencies(mergeDeps(

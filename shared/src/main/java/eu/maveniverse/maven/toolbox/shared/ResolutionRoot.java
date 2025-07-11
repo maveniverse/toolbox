@@ -28,6 +28,7 @@ public final class ResolutionRoot {
     private final Artifact artifact;
     private final boolean load;
     private final boolean applyManagedDependencies;
+    private final boolean cutDependencies;
     private final boolean prepared;
     private final List<Dependency> dependencies;
     private final List<Dependency> managedDependencies;
@@ -36,12 +37,14 @@ public final class ResolutionRoot {
             Artifact artifact,
             boolean load,
             boolean applyManagedDependencies,
+            boolean cutDependencies,
             boolean prepared,
             List<Dependency> dependencies,
             List<Dependency> managedDependencies) {
         this.artifact = artifact;
         this.load = load;
         this.applyManagedDependencies = applyManagedDependencies;
+        this.cutDependencies = cutDependencies;
         this.prepared = prepared;
         this.dependencies =
                 dependencies.isEmpty() ? Collections.emptyList() : Collections.unmodifiableList(dependencies);
@@ -72,6 +75,13 @@ public final class ResolutionRoot {
     }
 
     /**
+     * If {@link #isApplyManagedDependencies()} is {@code true}, should the dependencies be simply omitted.
+     */
+    public boolean isCutDependencies() {
+        return cutDependencies;
+    }
+
+    /**
      * Is this instance prepared (for processing)?
      */
     public boolean isPrepared() {
@@ -88,7 +98,7 @@ public final class ResolutionRoot {
         if (applyManagedDependencies) {
             newDependencies = new ArrayList<>(dependencies.size());
             for (Dependency dependency : dependencies) {
-                if (dependency.isOptional()) {
+                if (cutDependencies || dependency.isOptional()) {
                     continue;
                 }
                 String key = ArtifactIdUtils.toVersionlessId(dependency.getArtifact());
@@ -115,7 +125,7 @@ public final class ResolutionRoot {
                 newDependencies.add(dependency);
             }
         }
-        return new ResolutionRoot(artifact, load, false, true, newDependencies, managedDependencies);
+        return new ResolutionRoot(artifact, load, false, false, true, newDependencies, managedDependencies);
     }
 
     /**
@@ -142,7 +152,8 @@ public final class ResolutionRoot {
      * Returns new instance of {@link Builder} initialized with this instance, never {@code null}.
      */
     public Builder builder() {
-        return new Builder(artifact, load, applyManagedDependencies, dependencies, managedDependencies);
+        return new Builder(
+                artifact, load, applyManagedDependencies, cutDependencies, dependencies, managedDependencies);
     }
 
     /**
@@ -164,22 +175,25 @@ public final class ResolutionRoot {
         private final Artifact artifact;
         private boolean load;
         private boolean applyManagedDependencies;
+        private boolean cutDependencies;
         private List<Dependency> dependencies;
         private List<Dependency> managedDependencies;
 
         private Builder(Artifact artifact) {
-            this(artifact, false, false, Collections.emptyList(), Collections.emptyList());
+            this(artifact, false, false, false, Collections.emptyList(), Collections.emptyList());
         }
 
         private Builder(
                 Artifact artifact,
                 boolean load,
                 boolean applyManagedDependencies,
+                boolean cutDependencies,
                 List<Dependency> dependencies,
                 List<Dependency> managedDependencies) {
             this.artifact = requireNonNull(artifact, "artifact");
             this.load = load;
             this.applyManagedDependencies = applyManagedDependencies;
+            this.cutDependencies = cutDependencies;
             this.dependencies = requireNonNull(dependencies, "dependencies");
             this.managedDependencies = requireNonNull(managedDependencies, "managedDependencies");
         }
@@ -199,6 +213,11 @@ public final class ResolutionRoot {
             return this;
         }
 
+        public Builder cutDependencies(boolean cutDependencies) {
+            this.cutDependencies = cutDependencies;
+            return this;
+        }
+
         public Builder withDependencies(List<Dependency> dependencies) {
             this.dependencies = new ArrayList<>(dependencies);
             return this;
@@ -211,7 +230,13 @@ public final class ResolutionRoot {
 
         public ResolutionRoot build() {
             return new ResolutionRoot(
-                    artifact, load, applyManagedDependencies, false, dependencies, managedDependencies);
+                    artifact,
+                    load,
+                    applyManagedDependencies,
+                    cutDependencies,
+                    false,
+                    dependencies,
+                    managedDependencies);
         }
     }
 }

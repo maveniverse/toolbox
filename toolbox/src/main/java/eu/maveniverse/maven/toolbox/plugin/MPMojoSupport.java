@@ -22,6 +22,7 @@ import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.artifact.ArtifactTypeRegistry;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.util.artifact.JavaScopes;
 
 /**
  * Support class for "project aware" Mojos.
@@ -92,6 +93,8 @@ public abstract class MPMojoSupport extends MojoSupport {
                 .map(d -> ResolutionRoot.ofLoaded(getToolboxCommando().toArtifact(d))
                         .withManagedDependencies(project.getManagedDependencies())
                         .applyManagedDependencies(true)
+                        .cutDependencies((d.getOptional() != null && d.getOptional())
+                                || JavaScopes.PROVIDED.equals(d.getScope()))
                         .build())
                 .collect(Collectors.toList());
     }

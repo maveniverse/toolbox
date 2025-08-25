@@ -240,6 +240,8 @@
                   <exclude>org.codehaus.plexus:plexus-xml</exclude>
                   <exclude>commons-codec:commons-codec</exclude>
                   <exclude>org.apache.commons:commons-lang3</exclude>
+                  <exclude>com.google.code.gson:gson</exclude>
+                  <exclude>com.google.errorprone:error_prone_annotations</exclude>
                 </excludes>
               </artifactSet>
               <transformers>

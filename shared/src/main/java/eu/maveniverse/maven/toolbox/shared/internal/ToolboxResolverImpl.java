@@ -339,7 +339,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         Optional<Artifact> parentArtifact = currentProject.getParent();
         while (parentArtifact.isPresent()) {
             Artifact pa = parentArtifact.orElseThrow();
-            Optional<? extends ProjectLocator.Project> parentProject = reactorLocator.locateProject(pa);
+            Optional<ReactorLocator.ReactorProject> parentProject = reactorLocator.locateProject(pa);
             if (parentProject.isPresent()) {
                 currentProject = parentProject.orElseThrow();
                 node = new DefaultDependencyNode(new Dependency(source(currentProject), ""));
@@ -412,8 +412,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
             HashSet<String> seen) {
         ArrayDeque<DependencyNode> recursiveNodes = new ArrayDeque<>();
         for (Dependency dependency : current.dependencies()) {
-            Optional<? extends ProjectLocator.Project> depProject =
-                    reactorLocator.locateProject(dependency.getArtifact());
+            Optional<ReactorLocator.ReactorProject> depProject = reactorLocator.locateProject(dependency.getArtifact());
             String key = ArtifactIdUtils.toId(dependency.getArtifact());
             if (seen.add(key)) {
                 if (depProject.isPresent()) {

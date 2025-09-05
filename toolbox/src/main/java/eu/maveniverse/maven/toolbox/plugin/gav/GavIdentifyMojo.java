@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
+import static eu.maveniverse.maven.toolbox.shared.input.StringSlurper.csv;
+
 import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;

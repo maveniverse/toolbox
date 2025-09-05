@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
+import static eu.maveniverse.maven.toolbox.shared.input.StringSlurper.slurp;
+
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
@@ -23,7 +25,8 @@ import picocli.CommandLine;
 public class GavClasspathMojo extends GavMojoSupport {
     /**
      * The artifact coordinates in the format {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}
-     * to display tree for.
+     * to display tree for. May contain multiple comma separated coordinates, or point to a file that contains
+     * coordinates, separated by newline.
      */
     @CommandLine.Parameters(index = "0", description = "The GAV to print classpath for")
     @Parameter(property = "gav", required = true)
@@ -52,6 +55,7 @@ public class GavClasspathMojo extends GavMojoSupport {
     @Override
     protected Result<String> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        return toolboxCommando.classpath(ResolutionScope.parse(scope), toolboxCommando.loadGav(gav, slurp(boms)));
+        return toolboxCommando.classpath(
+                ResolutionScope.parse(scope), toolboxCommando.loadGavs(slurp(gav), slurp(boms)));
     }
 }

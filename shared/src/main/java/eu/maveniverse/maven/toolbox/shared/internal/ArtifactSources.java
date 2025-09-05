@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.shared.input.StringSlurper;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -60,6 +61,11 @@ public final class ArtifactSources {
                 case "gav": {
                     String gav = stringParam(node.getValue());
                     params.add(gavArtifactSource(gav));
+                    break;
+                }
+                case "gavs": {
+                    String gav = stringParam(node.getValue());
+                    params.add(gavsArtifactSource(gav));
                     break;
                 }
                 case "directory": {
@@ -211,6 +217,24 @@ public final class ArtifactSources {
         @Override
         public Stream<Artifact> get() throws IOException {
             return Stream.of(new DefaultArtifact(gav));
+        }
+    }
+
+    public static Artifacts.Source gavsArtifactSource(String gavs) {
+        requireNonNull(gavs, "gavs");
+        return new GavsArtifactSource(gavs);
+    }
+
+    public static class GavsArtifactSource implements Artifacts.Source {
+        private final String gavs;
+
+        private GavsArtifactSource(String gavs) {
+            this.gavs = gavs;
+        }
+
+        @Override
+        public Stream<Artifact> get() throws IOException {
+            return StringSlurper.slurp(gavs).stream().map(DefaultArtifact::new);
         }
     }
 

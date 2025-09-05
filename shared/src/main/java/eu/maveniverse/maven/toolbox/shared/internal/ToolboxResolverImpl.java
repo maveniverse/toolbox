@@ -448,6 +448,24 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     }
 
     @Override
+    public DependencyResult resolve(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot)
+            throws DependencyResolutionException {
+        if (resolutionRoot.isLoad()) {
+            return resolve(
+                    resolutionScope,
+                    new Dependency(resolutionRoot.getArtifact(), ""),
+                    resolutionRoot.getDependencies(),
+                    resolutionRoot.getManagedDependencies());
+        } else {
+            return resolve(
+                    resolutionScope,
+                    resolutionRoot.getArtifact(),
+                    resolutionRoot.getDependencies(),
+                    resolutionRoot.getManagedDependencies());
+        }
+    }
+
+    @Override
     public DependencyResult resolve(
             ResolutionScope resolutionScope,
             Artifact root,
@@ -640,17 +658,21 @@ public class ToolboxResolverImpl implements ToolboxResolver {
 
         output.chatter("Resolving {} @ {}", dependencyRequest, resolutionScope.name());
         DependencyResult result = repositorySystem.resolveDependencies(session, dependencyRequest);
-        try {
-            ArtifactResult rootResult =
-                    resolveArtifacts(Collections.singletonList(root)).get(0);
+        if (rootDependency != null) {
+            try {
+                ArtifactResult rootResult = resolveArtifacts(Collections.singletonList(rootDependency.getArtifact()))
+                        .get(0);
 
-            DefaultDependencyNode newRoot = new DefaultDependencyNode(new Dependency(rootResult.getArtifact(), ""));
-            newRoot.setChildren(result.getRoot().getChildren());
-            result.setRoot(newRoot);
-            result.getArtifactResults().add(0, rootResult);
+                DefaultDependencyNode newRoot = new DefaultDependencyNode(new Dependency(rootResult.getArtifact(), ""));
+                newRoot.setChildren(result.getRoot().getChildren());
+                result.setRoot(newRoot);
+                result.getArtifactResults().add(0, rootResult);
+                return result;
+            } catch (ArtifactResolutionException e) {
+                throw new DependencyResolutionException(result, e);
+            }
+        } else {
             return result;
-        } catch (ArtifactResolutionException e) {
-            throw new DependencyResolutionException(result, e);
         }
     }
 

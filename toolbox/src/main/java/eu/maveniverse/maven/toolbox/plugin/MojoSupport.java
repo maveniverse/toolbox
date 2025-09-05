@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.plugin;
 
+import static eu.maveniverse.maven.toolbox.shared.input.StringSlurper.csv;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
@@ -103,12 +104,24 @@ public abstract class MojoSupport extends AbstractMojo
             description = "Show error stack traces")
     private boolean errors;
 
+    /**
+     * Makes command fail on "logical" failure.
+     */
     @CommandLine.Option(
             names = {"--fail-on-logical-failure"},
             defaultValue = "true",
             description = "Fail on operation logical failure")
     @Parameter(property = "failOnLogicalFailure", defaultValue = "true")
     private boolean failOnLogicalFailure;
+
+    /**
+     * Appends extra repositories to context.
+     */
+    @CommandLine.Option(
+            names = {"--extra-repositories"},
+            description = "Appends extra repositories to context.")
+    @Parameter(property = "extraRepositories")
+    private String extraRepositories;
 
     // cwd
 
@@ -136,6 +149,15 @@ public abstract class MojoSupport extends AbstractMojo
 
     protected <T> T get(Class<T> key) {
         return (T) requireNonNull(CONTEXT.get().get(key), "key is not present");
+    }
+
+    protected <T> void set(Class<T> key, T value) {
+        requireNonNull(key, "key");
+        if (value == null) {
+            CONTEXT.get().remove(key);
+        } else {
+            CONTEXT.get().put(key, value);
+        }
     }
 
     @Override
@@ -226,7 +248,7 @@ public abstract class MojoSupport extends AbstractMojo
     }
 
     protected ToolboxCommando getToolboxCommando() {
-        return getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getOutput(), getContext()));
+        return requireNonNull(get(ToolboxCommando.class), "toolbox not initialized");
     }
 
     /**
@@ -245,6 +267,19 @@ public abstract class MojoSupport extends AbstractMojo
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
         getOrCreate(Output.class, () -> OutputFactory.createCliOutput(batch, errors, verbosity));
+        ToolboxCommando commando = ToolboxCommando.create(getOutput(), getContext());
+        ToolboxCommando customized = null;
+        if (extraRepositories != null) {
+            customized = commando.withContextOverrides(getContext().contextOverrides().toBuilder()
+                    .addRepositoriesOp(ContextOverrides.AddRepositoriesOp.APPEND)
+                    .repositories(csv(extraRepositories).stream()
+                            .map(commando::parseRemoteRepository)
+                            .toList())
+                    .build());
+            set(ToolboxCommando.class, customized);
+        } else {
+            set(ToolboxCommando.class, commando);
+        }
 
         try {
             Result<?> result = doExecute();
@@ -264,6 +299,10 @@ public abstract class MojoSupport extends AbstractMojo
             }
             return 1;
         } finally {
+            if (customized != null) {
+                getToolboxCommando().close();
+                set(ToolboxCommando.class, commando);
+            }
             if (seeded) {
                 try {
                     getOutput().close();
@@ -311,7 +350,7 @@ public abstract class MojoSupport extends AbstractMojo
      */
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {
-        CONTEXT.compareAndSet(null, new HashMap<>());
+        boolean seeded = CONTEXT.compareAndSet(null, new HashMap<>());
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createMojoContextOverrides()));
         if (forceStdout) {
@@ -320,6 +359,20 @@ public abstract class MojoSupport extends AbstractMojo
             getOrCreate(
                     Output.class, () -> OutputFactory.createMojoOutput(!mojoInteractiveMode, mojoErrors, verbosity));
         }
+        ToolboxCommando commando = ToolboxCommando.create(getOutput(), getContext());
+        ToolboxCommando customized = null;
+        if (extraRepositories != null) {
+            customized = commando.withContextOverrides(getContext().contextOverrides().toBuilder()
+                    .addRepositoriesOp(ContextOverrides.AddRepositoriesOp.APPEND)
+                    .repositories(csv(extraRepositories).stream()
+                            .map(commando::parseRemoteRepository)
+                            .toList())
+                    .build());
+            set(ToolboxCommando.class, customized);
+        } else {
+            set(ToolboxCommando.class, commando);
+        }
+
         try {
             Result<?> result = doExecute();
             if (!result.isSuccess() && failOnLogicalFailure) {
@@ -330,15 +383,22 @@ public abstract class MojoSupport extends AbstractMojo
         } catch (Exception e) {
             throw new MojoFailureException("Operation failed: ", e);
         } finally {
-            try {
-                getOutput().close();
-            } catch (Exception e) {
-                getLog().error(e);
+            if (customized != null) {
+                getToolboxCommando().close();
+                set(ToolboxCommando.class, commando);
             }
-            try {
-                getContext().close();
-            } catch (Exception e) {
-                getLog().error(e);
+            if (seeded) {
+                try {
+                    getOutput().close();
+                } catch (Exception e) {
+                    getLog().error(e);
+                }
+                try {
+                    getContext().close();
+                } catch (Exception e) {
+                    getLog().error(e);
+                }
+                CONTEXT.set(null);
             }
         }
     }

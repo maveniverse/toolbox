@@ -12,6 +12,7 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.util.Collections;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -31,7 +32,7 @@ public class PluginClasspathMojo extends MPPluginMojoSupport {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, true);
         if (root != null) {
-            return toolboxCommando.classpath(ResolutionScope.parse(scope), root);
+            return toolboxCommando.classpath(ResolutionScope.parse(scope), Collections.singletonList(root));
         } else {
             return Result.failure("No such plugin");
         }

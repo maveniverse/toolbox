@@ -20,7 +20,7 @@ import org.eclipse.aether.collection.CollectResult;
 public class ProjectDependencyTreeMojo extends MPMojoSupport {
 
     /**
-     * Set it {@code true} for verbose tree.
+     * Set it {@code true} to include external direct dependencies as well.
      */
     @Parameter(property = "showExternal", defaultValue = "false", required = true)
     private boolean showExternal;
@@ -28,7 +28,7 @@ public class ProjectDependencyTreeMojo extends MPMojoSupport {
     /**
      * Set the project selector, like {@code -rf} Maven command uses it, can be {@code :A} or {@code G:A}. If the
      * selector is set, it must match exactly one project within reactor, otherwise it will fail. By default,
-     * selector is {@code null}, and Maven session "current project" is used.
+     * selector is {@code null}, and no selected project will be set.
      */
     @Parameter(property = "selector")
     private String selector;

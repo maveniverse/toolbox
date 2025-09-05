@@ -64,6 +64,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -969,6 +970,40 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                                 DependencyGraphDecorators.ProjectDependenciesTreeDecorator.class,
                                 DependencyGraphDecorators.defaultSupplier())));
         return Result.success(collectResult);
+    }
+
+    @Override
+    public Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> projectDependencyGraph(
+            ReactorLocator reactorLocator, boolean showExternal) {
+        HashMap<ReactorLocator.ReactorProject, Collection<Dependency>> result = new HashMap<>();
+        if (reactorLocator.getSelectedProject().isPresent()) {
+            doProjectDependencyGraph(
+                    result,
+                    showExternal,
+                    reactorLocator,
+                    reactorLocator.getSelectedProject().orElseThrow());
+        } else {
+            for (ReactorLocator.ReactorProject project : reactorLocator.getAllProjects()) {
+                doProjectDependencyGraph(result, showExternal, reactorLocator, project);
+            }
+        }
+        return Result.success(result);
+    }
+
+    protected void doProjectDependencyGraph(
+            HashMap<ReactorLocator.ReactorProject, Collection<Dependency>> result,
+            boolean showExternal,
+            ReactorLocator reactorLocator,
+            ReactorLocator.ReactorProject project) {
+        for (Dependency dependency : project.dependencies()) {
+            Optional<ReactorLocator.ReactorProject> rp = reactorLocator.locateProject(dependency.getArtifact());
+            if (showExternal || rp.isPresent()) {
+                result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
+                if (rp.isPresent()) {
+                    doProjectDependencyGraph(result, showExternal, reactorLocator, rp.orElseThrow());
+                }
+            }
+        }
     }
 
     protected void tellModel(String title, Model model) throws IOException {

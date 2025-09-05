@@ -337,6 +337,12 @@ public interface ToolboxCommando extends Closeable {
     Result<CollectResult> projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) throws Exception;
 
     /**
+     * Returns the project module dependency graph of given root.
+     */
+    Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> projectDependencyGraph(
+            ReactorLocator reactorLocator, boolean showExternal) throws Exception;
+
+    /**
      * Returns the effective model. Works only for "loaded" roots naturally, as it needs POM.
      */
     Result<Model> effectiveModel(ResolutionRoot resolutionRoot) throws Exception;

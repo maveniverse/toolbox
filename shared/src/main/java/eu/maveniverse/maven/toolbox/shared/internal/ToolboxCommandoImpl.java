@@ -101,6 +101,7 @@ import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.util.ChecksumUtils;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
+import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.graph.visitor.CloningDependencyVisitor;
 import org.eclipse.aether.util.graph.visitor.FilteringDependencyVisitor;
@@ -204,6 +205,16 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 parseRemoteRepository(
                         "apache-maven-staging::nx2::https://repository.apache.org/content/groups/maven-staging-group/"));
         return rr;
+    }
+
+    @Override
+    public ToolboxCommando withContextOverrides(ContextOverrides overrides) {
+        return new ToolboxCommandoImpl(output, context.customize(overrides));
+    }
+
+    @Override
+    public void close() {
+        context.close();
     }
 
     @Override
@@ -436,24 +447,35 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<String> classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot) throws Exception {
-        output.suggest("Resolving {}", resolutionRoot.getArtifact());
-        resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
-        DependencyResult dependencyResult = toolboxResolver.resolve(
-                resolutionScope,
-                resolutionRoot.getArtifact(),
-                resolutionRoot.getDependencies(),
-                resolutionRoot.getManagedDependencies());
-
+    public Result<String> classpath(ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots)
+            throws Exception {
+        DependencyResult dependencyResult;
+        if (resolutionRoots.size() == 1) {
+            ResolutionRoot resolutionRoot = resolutionRoots.iterator().next();
+            output.suggest("Resolving {}", resolutionRoot.getArtifact());
+            dependencyResult = toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot));
+        } else if (resolutionRoots.size() > 1) {
+            List<Dependency> dependencies = new ArrayList<>(resolutionRoots.size());
+            for (ResolutionRoot resolutionRoot : resolutionRoots) {
+                if (!resolutionRoot.isLoad()) {
+                    throw new IllegalArgumentException("Cannot resolve non-load dependency: " + resolutionRoot);
+                }
+                output.suggest("Resolving as dependency {}", resolutionRoot.getArtifact());
+                dependencies.add(new Dependency(resolutionRoot.getArtifact(), JavaScopes.COMPILE));
+            }
+            dependencyResult = toolboxResolver.resolve(
+                    resolutionScope,
+                    ResolutionRoot.ofNotLoaded(new DefaultArtifact("fake:fake:1.0"))
+                            .withDependencies(dependencies)
+                            .build());
+        } else {
+            return Result.success("");
+        }
         PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
         dependencyResult.getRoot().accept(nlg);
-        String classpath = nlg.getClassPath();
-        output.doTell(classpath);
-        if (nlg.getFiles().isEmpty()) {
-            return Result.failure("No files");
-        } else {
-            return Result.success(classpath);
-        }
+        String classpathString = nlg.getClassPath();
+        output.doTell(classpathString);
+        return Result.success(classpathString);
     }
 
     @Override
@@ -494,25 +516,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         for (ResolutionRoot resolutionRoot : resolutionRoots) {
             output.suggest("Resolving {}", resolutionRoot.getArtifact());
             resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
-            DependencyResult dependencyResult = toolboxResolver.resolve(
-                    resolutionScope,
-                    resolutionRoot.getArtifact(),
-                    resolutionRoot.getDependencies(),
-                    resolutionRoot.getManagedDependencies());
-            artifactResults.addAll((resolutionRoot.isLoad()
-                            ? dependencyResult.getArtifactResults()
-                            : dependencyResult
-                                    .getArtifactResults()
-                                    .subList(
-                                            1,
-                                            dependencyResult
-                                                            .getArtifactResults()
-                                                            .size()
-                                                    - 1))
-                    .stream()
-                            .filter(ArtifactResult::isResolved)
-                            .map(ArtifactResult::getArtifact)
-                            .collect(Collectors.toList()));
+            DependencyResult dependencyResult =
+                    toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot));
+            artifactResults.addAll(dependencyResult.getArtifactResults().stream()
+                    .filter(ArtifactResult::isResolved)
+                    .map(ArtifactResult::getArtifact)
+                    .toList());
         }
         return copy(artifactResults::stream, sink);
     }
@@ -752,40 +761,27 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     .emphasize("Resolving ")
                     .outstanding(ArtifactIdUtils.toId(resolutionRoot.getArtifact()))
                     .say();
-            resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
-            DependencyResult dependencyResult = toolboxResolver.resolve(
-                    resolutionScope,
-                    resolutionRoot.getArtifact(),
-                    resolutionRoot.getDependencies(),
-                    resolutionRoot.getManagedDependencies());
-            List<ArtifactResult> adjustedResults = resolutionRoot.isLoad()
-                    ? dependencyResult.getArtifactResults()
-                    : (dependencyResult.getArtifactResults().size() == 1
-                            ? Collections.emptyList()
-                            : dependencyResult
-                                    .getArtifactResults()
-                                    .subList(
-                                            1,
-                                            dependencyResult
-                                                            .getArtifactResults()
-                                                            .size()
-                                                    - 1));
-            artifactSink.accept(
-                    adjustedResults.stream().map(ArtifactResult::getArtifact).collect(Collectors.toList()));
+            DependencyResult dependencyResult =
+                    toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot));
+            artifactSink.accept(dependencyResult.getArtifactResults().stream()
+                    .map(ArtifactResult::getArtifact)
+                    .collect(Collectors.toList()));
 
             if (sources || javadoc || signature) {
                 HashSet<Artifact> subartifacts = new HashSet<>();
-                adjustedResults.stream().map(ArtifactResult::getArtifact).forEach(a -> {
-                    if (sources && a.getClassifier().isEmpty()) {
-                        subartifacts.add(new SubArtifact(a, "sources", "jar"));
-                    }
-                    if (javadoc && a.getClassifier().isEmpty()) {
-                        subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
-                    }
-                    if (signature && !a.getExtension().endsWith(".asc")) {
-                        subartifacts.add(new SubArtifact(a, "*", "*.asc"));
-                    }
-                });
+                dependencyResult.getArtifactResults().stream()
+                        .map(ArtifactResult::getArtifact)
+                        .forEach(a -> {
+                            if (sources && a.getClassifier().isEmpty()) {
+                                subartifacts.add(new SubArtifact(a, "sources", "jar"));
+                            }
+                            if (javadoc && a.getClassifier().isEmpty()) {
+                                subartifacts.add(new SubArtifact(a, "javadoc", "jar"));
+                            }
+                            if (signature && !a.getExtension().endsWith(".asc")) {
+                                subartifacts.add(new SubArtifact(a, "*", "*.asc"));
+                            }
+                        });
                 if (!subartifacts.isEmpty()) {
                     output.suggest("Resolving (best effort) {}", subartifacts);
                     try {

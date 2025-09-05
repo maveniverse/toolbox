@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
+import static eu.maveniverse.maven.toolbox.shared.input.StringSlurper.slurp;
+
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;

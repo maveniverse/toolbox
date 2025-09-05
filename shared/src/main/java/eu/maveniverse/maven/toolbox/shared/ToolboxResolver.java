@@ -92,6 +92,9 @@ public interface ToolboxResolver {
 
     CollectResult projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal);
 
+    DependencyResult resolve(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot)
+            throws DependencyResolutionException;
+
     DependencyResult resolve(
             ResolutionScope resolutionScope,
             Artifact root,

@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.context.Context;
+import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
@@ -50,7 +51,7 @@ import org.eclipse.aether.version.Version;
  * mark "bad input", or configuration related errors. The checked exception instances on the other hand come from
  * corresponding subsystem like resolver is. Finally, {@link IOException} is thrown on fatal IO problems.
  */
-public interface ToolboxCommando {
+public interface ToolboxCommando extends Closeable {
     /**
      * Gets or creates context. This method should be used to get instance that may be shared
      * across context (session).
@@ -60,6 +61,11 @@ public interface ToolboxCommando {
         requireNonNull(context, "context");
         return new ToolboxCommandoImpl(output, context);
     }
+
+    ToolboxCommando withContextOverrides(ContextOverrides overrides);
+
+    @Override
+    void close();
 
     default String getVersion() {
         return ToolboxCommandoVersion.getVersion();
@@ -165,9 +171,10 @@ public interface ToolboxCommando {
     // Commands
 
     /**
-     * Calculates the classpath (returned string is OS FS specific) of given scope and root.
+     * Calculates the classpath (returned string is OS FS specific) of given scope and roots.
      */
-    Result<String> classpath(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot) throws Exception;
+    Result<String> classpath(ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots)
+            throws Exception;
 
     /**
      * Returns the list of artifacts copied from source to sink.
@@ -340,7 +347,7 @@ public interface ToolboxCommando {
     Result<Model> effectiveModel(ReactorLocator reactorLocator) throws Exception;
 
     /**
-     * Returns the effective model flattened BOM. Works only for "loaded" BOMs naturally, so it has to be installed or deployed..
+     * Returns the effective model flattened BOM. Works only for "loaded" BOMs naturally, so it has to be installed or deployed.
      */
     Result<Model> flattenBOM(Artifact artifact, ResolutionRoot resolutionRoot) throws Exception;
 

@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static guru.nidi.graphviz.model.Factory.mutGraph;
+import static guru.nidi.graphviz.model.Factory.mutNode;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.maven.search.api.request.BooleanQuery.and;
@@ -43,6 +45,10 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartExtensionsEditor;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
+import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.MutableNode;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -976,30 +982,58 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> projectDependencyGraph(
             ReactorLocator reactorLocator,
             boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
             DependencyMatcher excludeDependencyMatcher,
-            Path output) {
+            Path output)
+            throws IOException {
         // TODO:
         // common G prefix
         // versions (if all reactor same; omit)
         // dep filters
         // scope filters
-        Map<ReactorLocator.ReactorProject, Collection<Dependency>> result =
-                doProjectDependencyGraph(reactorLocator, showExternal);
+        Map<ReactorLocator.ReactorProject, Collection<Dependency>> result = doProjectDependencyGraph(
+                reactorLocator, showExternal, excludeSubprojectsMatcher, excludeDependencyMatcher);
+        MutableGraph g = mutGraph(
+                        reactorLocator.getTopLevelProject().effectiveModel().getDescription())
+                .setDirected(true)
+                .use((gr, ctx) -> {
+                    for (Map.Entry<ReactorLocator.ReactorProject, Collection<Dependency>> entry : result.entrySet()) {
+                        MutableNode p = mutNode(entry.getKey().artifact().toString());
+                        for (Dependency dependency : entry.getValue()) {
+                            p.addLink(dependency.getArtifact().toString());
+                        }
+                    }
+                });
+
+        Graphviz.fromGraph(g).render(Format.SVG).toFile(output.toFile());
         return Result.success(result);
     }
 
     protected Map<ReactorLocator.ReactorProject, Collection<Dependency>> doProjectDependencyGraph(
-            ReactorLocator reactorLocator, boolean showExternal) {
+            ReactorLocator reactorLocator,
+            boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher) {
         HashMap<ReactorLocator.ReactorProject, Collection<Dependency>> result = new HashMap<>();
         if (reactorLocator.getSelectedProject().isPresent()) {
             doProjectDependencyGraph(
                     result,
                     showExternal,
+                    excludeSubprojectsMatcher,
+                    excludeDependencyMatcher,
                     reactorLocator,
                     reactorLocator.getSelectedProject().orElseThrow());
         } else {
             for (ReactorLocator.ReactorProject project : reactorLocator.getAllProjects()) {
-                doProjectDependencyGraph(result, showExternal, reactorLocator, project);
+                if (!excludeSubprojectsMatcher.test(project.artifact())) {
+                    doProjectDependencyGraph(
+                            result,
+                            showExternal,
+                            excludeSubprojectsMatcher,
+                            excludeDependencyMatcher,
+                            reactorLocator,
+                            project);
+                }
             }
         }
         return result;
@@ -1008,15 +1042,24 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     protected void doProjectDependencyGraph(
             HashMap<ReactorLocator.ReactorProject, Collection<Dependency>> result,
             boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher,
             ReactorLocator reactorLocator,
             ReactorLocator.ReactorProject project) {
         for (Dependency dependency : project.dependencies()) {
             Optional<ReactorLocator.ReactorProject> rp = reactorLocator.locateProject(dependency.getArtifact());
-            if (showExternal || rp.isPresent()) {
+            boolean isReactorMember = rp.isPresent();
+            if (isReactorMember && !excludeSubprojectsMatcher.test(project.artifact())) {
                 result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
-                if (rp.isPresent()) {
-                    doProjectDependencyGraph(result, showExternal, reactorLocator, rp.orElseThrow());
-                }
+                doProjectDependencyGraph(
+                        result,
+                        showExternal,
+                        excludeSubprojectsMatcher,
+                        excludeDependencyMatcher,
+                        reactorLocator,
+                        rp.orElseThrow());
+            } else if (showExternal && !excludeDependencyMatcher.test(dependency)) {
+                result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
             }
         }
     }

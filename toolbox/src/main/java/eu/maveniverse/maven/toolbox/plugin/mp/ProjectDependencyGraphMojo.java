@@ -33,8 +33,14 @@ public class ProjectDependencyGraphMojo extends MPMojoSupport {
     /**
      * The exclusion dependency matcher (inverted!) to apply to graph. Default is {@code none()}.
      */
-    @Parameter(property = "dependencyMatcher", defaultValue = "none()", required = true)
+    @Parameter(property = "excludeDependencyMatcherSpec", defaultValue = "none()", required = true)
     private String excludeDependencyMatcherSpec;
+
+    /**
+     * The exclusion artifact matcher (inverted!) to apply to reactor modules. Default is {@code none()}.
+     */
+    @Parameter(property = "excludeSubprojectsMatcherSpec", defaultValue = "none()", required = true)
+    private String excludeSubprojectsMatcherSpec;
 
     /**
      * Set the project selector, like {@code -rf} Maven command uses it, can be {@code :A} or {@code G:A}. If the
@@ -49,7 +55,7 @@ public class ProjectDependencyGraphMojo extends MPMojoSupport {
      */
     @Parameter(
             property = "output",
-            defaultValue = "${project.build.directory}/project-dependency-graph.png",
+            defaultValue = "${project.build.directory}/project-dependency-graph.svg",
             required = true)
     private File output;
 
@@ -60,6 +66,7 @@ public class ProjectDependencyGraphMojo extends MPMojoSupport {
         return commando.projectDependencyGraph(
                 locator,
                 showExternal,
+                commando.parseArtifactMatcherSpec(excludeSubprojectsMatcherSpec),
                 commando.parseDependencyMatcherSpec(excludeDependencyMatcherSpec),
                 output.toPath());
     }

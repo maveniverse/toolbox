@@ -342,6 +342,7 @@ public interface ToolboxCommando extends Closeable {
     Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> projectDependencyGraph(
             ReactorLocator reactorLocator,
             boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
             DependencyMatcher excludeDependencyMatcher,
             Path output)
             throws Exception;

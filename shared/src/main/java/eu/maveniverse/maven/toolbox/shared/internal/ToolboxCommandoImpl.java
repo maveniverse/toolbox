@@ -1001,7 +1001,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .add(GraphAttr.COMPOUND)
                 .graphAttrs()
                 .add(Label.of(
-                        reactorLocator.getTopLevelProject().effectiveModel().getDescription()))
+                        reactorLocator.getTopLevelProject().effectiveModel().getName()))
                 .use((gr, ctx) -> {
                     for (Map.Entry<ReactorLocator.ReactorProject, Collection<Dependency>> entry : result.entrySet()) {
                         MutableNode p = mutNode(entry.getKey().artifact().toString());
@@ -1055,17 +1055,21 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         for (Dependency dependency : project.dependencies()) {
             Optional<ReactorLocator.ReactorProject> rp = reactorLocator.locateProject(dependency.getArtifact());
             boolean isReactorMember = rp.isPresent();
-            if (isReactorMember && !excludeSubprojectsMatcher.test(project.artifact())) {
-                result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
-                doProjectDependencyGraph(
-                        result,
-                        showExternal,
-                        excludeSubprojectsMatcher,
-                        excludeDependencyMatcher,
-                        reactorLocator,
-                        rp.orElseThrow());
-            } else if (showExternal && !excludeDependencyMatcher.test(dependency)) {
-                result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
+            if (isReactorMember) {
+                if (!excludeSubprojectsMatcher.test(dependency.getArtifact())) {
+                    result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
+                    doProjectDependencyGraph(
+                            result,
+                            showExternal,
+                            excludeSubprojectsMatcher,
+                            excludeDependencyMatcher,
+                            reactorLocator,
+                            rp.orElseThrow());
+                }
+            } else {
+                if (showExternal && !excludeDependencyMatcher.test(dependency)) {
+                    result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
+                }
             }
         }
     }

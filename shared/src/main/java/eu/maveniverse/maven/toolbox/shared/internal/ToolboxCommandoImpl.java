@@ -974,6 +974,21 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> projectDependencyGraph(
+            ReactorLocator reactorLocator,
+            boolean showExternal,
+            DependencyMatcher excludeDependencyMatcher,
+            Path output) {
+        // TODO:
+        // common G prefix
+        // versions (if all reactor same; omit)
+        // dep filters
+        // scope filters
+        Map<ReactorLocator.ReactorProject, Collection<Dependency>> result =
+                doProjectDependencyGraph(reactorLocator, showExternal);
+        return Result.success(result);
+    }
+
+    protected Map<ReactorLocator.ReactorProject, Collection<Dependency>> doProjectDependencyGraph(
             ReactorLocator reactorLocator, boolean showExternal) {
         HashMap<ReactorLocator.ReactorProject, Collection<Dependency>> result = new HashMap<>();
         if (reactorLocator.getSelectedProject().isPresent()) {
@@ -987,7 +1002,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 doProjectDependencyGraph(result, showExternal, reactorLocator, project);
             }
         }
-        return Result.success(result);
+        return result;
     }
 
     protected void doProjectDependencyGraph(

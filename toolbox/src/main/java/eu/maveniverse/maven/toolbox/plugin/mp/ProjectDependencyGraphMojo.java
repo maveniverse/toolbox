@@ -10,6 +10,8 @@ package eu.maveniverse.maven.toolbox.plugin.mp;
 import eu.maveniverse.maven.toolbox.plugin.MPMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
 import eu.maveniverse.maven.toolbox.shared.Result;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.io.File;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -29,6 +31,12 @@ public class ProjectDependencyGraphMojo extends MPMojoSupport {
     private boolean showExternal;
 
     /**
+     * The exclusion dependency matcher (inverted!) to apply to graph. Default is {@code none()}.
+     */
+    @Parameter(property = "dependencyMatcher", defaultValue = "none()", required = true)
+    private String excludeDependencyMatcherSpec;
+
+    /**
      * Set the project selector, like {@code -rf} Maven command uses it, can be {@code :A} or {@code G:A}. If the
      * selector is set, it must match exactly one project within reactor, otherwise it will fail. By default,
      * selector is {@code null}, and no selected project will be set.
@@ -36,32 +44,23 @@ public class ProjectDependencyGraphMojo extends MPMojoSupport {
     @Parameter(property = "selector")
     private String selector;
 
+    /**
+     * The location to write resulting image to.
+     */
+    @Parameter(
+            property = "output",
+            defaultValue = "${project.build.directory}/project-dependency-graph.png",
+            required = true)
+    private File output;
+
     @Override
     protected Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> doExecute() throws Exception {
         ReactorLocator locator = getReactorLocator(selector);
-        Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> result =
-                getToolboxCommando().projectDependencyGraph(locator, showExternal);
-        if (result.isSuccess()) {
-            Map<ReactorLocator.ReactorProject, Collection<Dependency>> map =
-                    result.getData().orElseThrow();
-            // TODO:
-            // common G prefix
-            // versions (if all reactor same; omit)
-            // dep filters
-            // scope filters
-            System.out.println("digraph Reactor {");
-            for (Map.Entry<ReactorLocator.ReactorProject, Collection<Dependency>> entry : map.entrySet()) {
-                String left = entry.getKey().artifact().getArtifactId();
-                for (Dependency dependency : entry.getValue()) {
-                    String right = dependency.getArtifact().toString();
-                    if (locator.locateProject(dependency.getArtifact()).isPresent()) {
-                        right = dependency.getArtifact().getArtifactId();
-                    }
-                    System.out.printf("\"%s\" -> \"%s\"%n", left, right);
-                }
-            }
-            System.out.println("}");
-        }
-        return result;
+        ToolboxCommando commando = getToolboxCommando();
+        return commando.projectDependencyGraph(
+                locator,
+                showExternal,
+                commando.parseDependencyMatcherSpec(excludeDependencyMatcherSpec),
+                output.toPath());
     }
 }

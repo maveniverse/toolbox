@@ -1103,7 +1103,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public Result<Model> effectiveModel(ReactorLocator reactorLocator) throws Exception {
         requireNonNull(reactorLocator);
-        Result<Model> result = Result.success(reactorLocator.getCurrentProject().effectiveModel());
+        Result<Model> result =
+                Result.success(reactorLocator.getSelectedOrCurrentProject().effectiveModel());
         tellModel("Effective model:", result.getData().orElseThrow());
         return result;
     }

@@ -328,7 +328,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     @Override
     public CollectResult parentChildTree(ReactorLocator reactorLocator) {
         CollectRequest collectRequest = new CollectRequest();
-        ProjectLocator.Project startingProject = reactorLocator.getCurrentProject();
+        ProjectLocator.Project startingProject = reactorLocator.getSelectedOrCurrentProject();
         collectRequest.setRoot(new Dependency(source(startingProject), ""));
         CollectResult result = new CollectResult(collectRequest);
 
@@ -375,7 +375,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     @Override
     public CollectResult subprojectTree(ReactorLocator reactorLocator) {
         CollectRequest collectRequest = new CollectRequest();
-        ProjectLocator.Project startingProject = reactorLocator.getCurrentProject();
+        ProjectLocator.Project startingProject = reactorLocator.getSelectedOrCurrentProject();
         collectRequest.setRoot(new Dependency(source(startingProject), ""));
         CollectResult result = new CollectResult(collectRequest);
         result.setRoot(new DefaultDependencyNode(collectRequest.getRoot()));
@@ -396,7 +396,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     @Override
     public CollectResult projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) {
         CollectRequest collectRequest = new CollectRequest();
-        ProjectLocator.Project rootProject = reactorLocator.getCurrentProject();
+        ProjectLocator.Project rootProject = reactorLocator.getSelectedOrCurrentProject();
         collectRequest.setRoot(new Dependency(source(rootProject), ""));
         CollectResult result = new CollectResult(collectRequest);
         result.setRoot(new DefaultDependencyNode(collectRequest.getRoot()));

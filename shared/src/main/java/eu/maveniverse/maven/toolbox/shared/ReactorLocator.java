@@ -37,6 +37,13 @@ public interface ReactorLocator extends ProjectLocator, Artifacts.Source {
     ReactorProject getCurrentProject();
 
     /**
+     * Returns selected (if any) or current project.
+     */
+    default ReactorProject getSelectedOrCurrentProject() {
+        return getSelectedProject().orElse(getCurrentProject());
+    }
+
+    /**
      * Returns list of all projects, never {@code null}.
      */
     List<ReactorProject> getAllProjects();

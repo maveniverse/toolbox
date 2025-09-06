@@ -1056,7 +1056,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Optional<ReactorLocator.ReactorProject> rp = reactorLocator.locateProject(dependency.getArtifact());
             boolean isReactorMember = rp.isPresent();
             if (isReactorMember) {
-                if (!excludeSubprojectsMatcher.test(dependency.getArtifact())) {
+                if (!excludeSubprojectsMatcher.test(dependency.getArtifact())
+                        && !excludeDependencyMatcher.test(dependency)) {
                     result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
                     doProjectDependencyGraph(
                             result,

@@ -114,6 +114,12 @@
       <artifactId>domtrip-maven</artifactId>
     </dependency>
 
+    <!-- Graph -->
+    <dependency>
+      <groupId>guru.nidi</groupId>
+      <artifactId>graphviz-java</artifactId>
+    </dependency>
+
     <!-- Shared -->
     <dependency>
       <groupId>eu.maveniverse.maven.shared</groupId>

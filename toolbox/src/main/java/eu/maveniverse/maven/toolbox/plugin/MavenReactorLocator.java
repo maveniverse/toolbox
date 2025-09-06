@@ -35,6 +35,7 @@ import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 public class MavenReactorLocator implements ReactorLocator {
     private final ReactorProject topLevel;
     private final ReactorProject current;
+    private final ReactorProject selected;
     private final List<ReactorProject> allProjects;
 
     public MavenReactorLocator(MavenSession session, String selector) {
@@ -45,23 +46,24 @@ public class MavenReactorLocator implements ReactorLocator {
         this.topLevel = locateProject(
                         RepositoryUtils.toArtifact(session.getTopLevelProject().getArtifact()))
                 .orElseThrow();
+        this.current = locateProject(
+                        RepositoryUtils.toArtifact(session.getCurrentProject().getArtifact()))
+                .orElseThrow();
         if (selector != null) {
             List<MavenProject> candidates = session.getAllProjects().stream()
                     .filter(createSelector(selector))
-                    .collect(Collectors.toList());
+                    .toList();
             if (candidates.size() != 1) {
                 List<String> matches = candidates.stream()
                         .map(p -> ArtifactIdUtils.toId(RepositoryUtils.toArtifact(p.getArtifact())))
-                        .collect(Collectors.toList());
+                        .toList();
                 throw new IllegalArgumentException("Could not find 1 matching project: " + matches);
             }
-            this.current = locateProject(
+            this.selected = locateProject(
                             RepositoryUtils.toArtifact(candidates.get(0).getArtifact()))
                     .orElseThrow();
         } else {
-            this.current = locateProject(RepositoryUtils.toArtifact(
-                            session.getCurrentProject().getArtifact()))
-                    .orElseThrow();
+            this.selected = null;
         }
     }
 
@@ -111,6 +113,11 @@ public class MavenReactorLocator implements ReactorLocator {
     }
 
     @Override
+    public Optional<ReactorProject> getSelectedProject() {
+        return Optional.ofNullable(selected);
+    }
+
+    @Override
     public ReactorProject getCurrentProject() {
         return current;
     }
@@ -140,8 +147,7 @@ public class MavenReactorLocator implements ReactorLocator {
 
     @Override
     public List<ReactorProject> locateCollected(Project project) {
-        if (project instanceof MProject) {
-            MProject mProject = (MProject) project;
+        if (project instanceof MProject mProject) {
             List<Project> allOfGrandchildren = mProject.collected().stream()
                     .map(this::locateProject)
                     .filter(Optional::isPresent)
@@ -157,7 +163,7 @@ public class MavenReactorLocator implements ReactorLocator {
                     .map(this::locateProject)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
-                    .collect(Collectors.toList())
+                    .toList()
                     .stream()
                     .filter(p -> !allOfGrandchildren.contains(p))
                     .collect(Collectors.toList());

@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static guru.nidi.graphviz.model.Factory.mutGraph;
+import static guru.nidi.graphviz.model.Factory.mutNode;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.maven.search.api.request.BooleanQuery.and;
@@ -43,6 +45,12 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartExtensionsEditor;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
+import guru.nidi.graphviz.attribute.GraphAttr;
+import guru.nidi.graphviz.attribute.Label;
+import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.MutableNode;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,6 +72,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -971,6 +980,101 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         return Result.success(collectResult);
     }
 
+    @Override
+    public Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> projectDependencyGraph(
+            ReactorLocator reactorLocator,
+            boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher,
+            Path output)
+            throws IOException {
+        // TODO:
+        // common G prefix
+        // versions (if all reactor same; omit)
+        // dep filters
+        // scope filters
+        Map<ReactorLocator.ReactorProject, Collection<Dependency>> result = doProjectDependencyGraph(
+                reactorLocator, showExternal, excludeSubprojectsMatcher, excludeDependencyMatcher);
+        MutableGraph g = mutGraph("reactor")
+                .setDirected(true)
+                .graphAttrs()
+                .add(GraphAttr.COMPOUND)
+                .graphAttrs()
+                .add(Label.of(
+                        reactorLocator.getTopLevelProject().effectiveModel().getName()))
+                .use((gr, ctx) -> {
+                    for (Map.Entry<ReactorLocator.ReactorProject, Collection<Dependency>> entry : result.entrySet()) {
+                        MutableNode p = mutNode(entry.getKey().artifact().toString());
+                        for (Dependency dependency : entry.getValue()) {
+                            p.addLink(dependency.getArtifact().toString());
+                        }
+                    }
+                });
+
+        Graphviz.fromGraph(g).render(Format.SVG).toFile(output.toFile());
+        return Result.success(result);
+    }
+
+    protected Map<ReactorLocator.ReactorProject, Collection<Dependency>> doProjectDependencyGraph(
+            ReactorLocator reactorLocator,
+            boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher) {
+        HashMap<ReactorLocator.ReactorProject, Collection<Dependency>> result = new HashMap<>();
+        if (reactorLocator.getSelectedProject().isPresent()) {
+            doProjectDependencyGraph(
+                    result,
+                    showExternal,
+                    excludeSubprojectsMatcher,
+                    excludeDependencyMatcher,
+                    reactorLocator,
+                    reactorLocator.getSelectedProject().orElseThrow());
+        } else {
+            for (ReactorLocator.ReactorProject project : reactorLocator.getAllProjects()) {
+                if (!excludeSubprojectsMatcher.test(project.artifact())) {
+                    doProjectDependencyGraph(
+                            result,
+                            showExternal,
+                            excludeSubprojectsMatcher,
+                            excludeDependencyMatcher,
+                            reactorLocator,
+                            project);
+                }
+            }
+        }
+        return result;
+    }
+
+    protected void doProjectDependencyGraph(
+            HashMap<ReactorLocator.ReactorProject, Collection<Dependency>> result,
+            boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher,
+            ReactorLocator reactorLocator,
+            ReactorLocator.ReactorProject project) {
+        for (Dependency dependency : project.dependencies()) {
+            Optional<ReactorLocator.ReactorProject> rp = reactorLocator.locateProject(dependency.getArtifact());
+            boolean isReactorMember = rp.isPresent();
+            if (isReactorMember) {
+                if (!excludeSubprojectsMatcher.test(dependency.getArtifact())
+                        && !excludeDependencyMatcher.test(dependency)) {
+                    result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
+                    doProjectDependencyGraph(
+                            result,
+                            showExternal,
+                            excludeSubprojectsMatcher,
+                            excludeDependencyMatcher,
+                            reactorLocator,
+                            rp.orElseThrow());
+                }
+            } else {
+                if (showExternal && !excludeDependencyMatcher.test(dependency)) {
+                    result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
+                }
+            }
+        }
+    }
+
     protected void tellModel(String title, Model model) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         MavenXpp3Writer mavenXpp3Writer = new MavenXpp3Writer();
@@ -999,7 +1103,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public Result<Model> effectiveModel(ReactorLocator reactorLocator) throws Exception {
         requireNonNull(reactorLocator);
-        Result<Model> result = Result.success(reactorLocator.getCurrentProject().effectiveModel());
+        Result<Model> result =
+                Result.success(reactorLocator.getSelectedOrCurrentProject().effectiveModel());
         tellModel("Effective model:", result.getData().orElseThrow());
         return result;
     }

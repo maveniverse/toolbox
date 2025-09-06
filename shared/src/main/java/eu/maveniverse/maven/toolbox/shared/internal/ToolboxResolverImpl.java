@@ -328,7 +328,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     @Override
     public CollectResult parentChildTree(ReactorLocator reactorLocator) {
         CollectRequest collectRequest = new CollectRequest();
-        ProjectLocator.Project startingProject = reactorLocator.getCurrentProject();
+        ProjectLocator.Project startingProject = reactorLocator.getSelectedOrCurrentProject();
         collectRequest.setRoot(new Dependency(source(startingProject), ""));
         CollectResult result = new CollectResult(collectRequest);
 
@@ -339,7 +339,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         Optional<Artifact> parentArtifact = currentProject.getParent();
         while (parentArtifact.isPresent()) {
             Artifact pa = parentArtifact.orElseThrow();
-            Optional<? extends ProjectLocator.Project> parentProject = reactorLocator.locateProject(pa);
+            Optional<ReactorLocator.ReactorProject> parentProject = reactorLocator.locateProject(pa);
             if (parentProject.isPresent()) {
                 currentProject = parentProject.orElseThrow();
                 node = new DefaultDependencyNode(new Dependency(source(currentProject), ""));
@@ -375,7 +375,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     @Override
     public CollectResult subprojectTree(ReactorLocator reactorLocator) {
         CollectRequest collectRequest = new CollectRequest();
-        ProjectLocator.Project startingProject = reactorLocator.getCurrentProject();
+        ProjectLocator.Project startingProject = reactorLocator.getSelectedOrCurrentProject();
         collectRequest.setRoot(new Dependency(source(startingProject), ""));
         CollectResult result = new CollectResult(collectRequest);
         result.setRoot(new DefaultDependencyNode(collectRequest.getRoot()));
@@ -396,7 +396,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     @Override
     public CollectResult projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) {
         CollectRequest collectRequest = new CollectRequest();
-        ProjectLocator.Project rootProject = reactorLocator.getCurrentProject();
+        ProjectLocator.Project rootProject = reactorLocator.getSelectedOrCurrentProject();
         collectRequest.setRoot(new Dependency(source(rootProject), ""));
         CollectResult result = new CollectResult(collectRequest);
         result.setRoot(new DefaultDependencyNode(collectRequest.getRoot()));
@@ -412,8 +412,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
             HashSet<String> seen) {
         ArrayDeque<DependencyNode> recursiveNodes = new ArrayDeque<>();
         for (Dependency dependency : current.dependencies()) {
-            Optional<? extends ProjectLocator.Project> depProject =
-                    reactorLocator.locateProject(dependency.getArtifact());
+            Optional<ReactorLocator.ReactorProject> depProject = reactorLocator.locateProject(dependency.getArtifact());
             String key = ArtifactIdUtils.toId(dependency.getArtifact());
             if (seen.add(key)) {
                 if (depProject.isPresent()) {

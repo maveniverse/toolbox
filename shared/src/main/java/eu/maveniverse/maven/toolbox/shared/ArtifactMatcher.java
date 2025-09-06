@@ -83,7 +83,11 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
     }
 
     static ArtifactMatcher any() {
-        return artifact("*");
+        return a -> true;
+    }
+
+    static ArtifactMatcher none() {
+        return a -> false;
     }
 
     static ArtifactMatcher snapshot() {
@@ -136,6 +140,10 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
                 }
                 case "any": {
                     params.add(any());
+                    break;
+                }
+                case "none": {
+                    params.add(none());
                     break;
                 }
                 case "snapshot": {

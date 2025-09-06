@@ -45,6 +45,8 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartExtensionsEditor;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
+import guru.nidi.graphviz.attribute.GraphAttr;
+import guru.nidi.graphviz.attribute.Label;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.MutableGraph;
@@ -993,9 +995,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         // scope filters
         Map<ReactorLocator.ReactorProject, Collection<Dependency>> result = doProjectDependencyGraph(
                 reactorLocator, showExternal, excludeSubprojectsMatcher, excludeDependencyMatcher);
-        MutableGraph g = mutGraph(
-                        reactorLocator.getTopLevelProject().effectiveModel().getDescription())
+        MutableGraph g = mutGraph("reactor")
                 .setDirected(true)
+                .graphAttrs()
+                .add(GraphAttr.COMPOUND)
+                .graphAttrs()
+                .add(Label.of(
+                        reactorLocator.getTopLevelProject().effectiveModel().getDescription()))
                 .use((gr, ctx) -> {
                     for (Map.Entry<ReactorLocator.ReactorProject, Collection<Dependency>> entry : result.entrySet()) {
                         MutableNode p = mutNode(entry.getKey().artifact().toString());

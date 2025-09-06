@@ -75,11 +75,11 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
 
     static ArtifactMatcher artifact(String coordinate) {
         Artifact prototype = parsePrototype(coordinate);
-        return a -> matches(prototype.getGroupId(), a.getGroupId())
-                && matches(prototype.getArtifactId(), a.getArtifactId())
-                && matches(prototype.getVersion(), a.getVersion())
-                && matches(prototype.getExtension(), a.getExtension())
-                && matches(prototype.getClassifier(), a.getClassifier());
+        return a -> matchesPattern(prototype.getGroupId(), a.getGroupId())
+                && matchesPattern(prototype.getArtifactId(), a.getArtifactId())
+                && matchesPattern(prototype.getVersion(), a.getVersion())
+                && matchesPattern(prototype.getExtension(), a.getExtension())
+                && matchesPattern(prototype.getClassifier(), a.getClassifier());
     }
 
     static ArtifactMatcher any() {
@@ -191,13 +191,11 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         }
     }
 
-    static boolean isAny(String str) {
-        return "*".equals(str);
-    }
-
-    static boolean matches(String pattern, String str) {
-        if (isAny(pattern)) {
+    static boolean matchesPattern(String pattern, String str) {
+        if ("*".equals(pattern)) {
             return true;
+        } else if (pattern.startsWith("*") && pattern.endsWith("*")) {
+            return str.contains(pattern.substring(1, pattern.length() - 1));
         } else if (pattern.endsWith("*")) {
             return str.startsWith(pattern.substring(0, pattern.length() - 1));
         } else if (pattern.startsWith("*")) {

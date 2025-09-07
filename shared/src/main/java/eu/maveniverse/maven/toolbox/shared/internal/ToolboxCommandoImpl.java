@@ -72,7 +72,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -127,15 +126,16 @@ import org.maveniverse.domtrip.maven.ExtensionsEditor;
 import org.maveniverse.domtrip.maven.PomEditor;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
-    private final Output output;
-    private final Context context;
-    private final RepositorySystemSession session;
-    private final VersionScheme versionScheme;
-    private final ToolboxSearchApiImpl toolboxSearchApi;
-    private final ArtifactRecorderImpl artifactRecorder;
-    private final ToolboxResolverImpl toolboxResolver;
+    protected final Output output;
+    protected final Context context;
+    protected final RepositorySystemSession session;
+    protected final VersionScheme versionScheme;
+    protected final ToolboxSearchApiImpl toolboxSearchApi;
+    protected final ArtifactRecorderImpl artifactRecorder;
+    protected final ToolboxResolverImpl toolboxResolver;
+    protected final ToolboxGraphImpl toolboxGraph;
 
-    private final Map<String, RemoteRepository> knownSearchRemoteRepositories;
+    protected final Map<String, RemoteRepository> knownSearchRemoteRepositories;
 
     public ToolboxCommandoImpl(Output output, Context context) {
         this.output = requireNonNull(output, "output");
@@ -154,6 +154,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 new MavenModelReader(context),
                 context.remoteRepositories(),
                 versionScheme);
+        this.toolboxGraph = new ToolboxGraphImpl(output);
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());
     }
 
@@ -757,7 +758,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 : Result.success(stat.getSeenArtifacts());
     }
 
-    private void doResolveTransitive(
+    protected void doResolveTransitive(
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
             boolean sources,
@@ -993,7 +994,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         // versions (if all reactor same; omit)
         // dep filters
         // scope filters
-        Map<ReactorLocator.ReactorProject, Collection<Dependency>> result = doProjectDependencyGraph(
+        Map<ReactorLocator.ReactorProject, Collection<Dependency>> result = toolboxGraph.projectDependencyGraph(
                 reactorLocator, showExternal, excludeSubprojectsMatcher, excludeDependencyMatcher);
         MutableGraph g = mutGraph("reactor")
                 .setDirected(true)
@@ -1013,66 +1014,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
         Graphviz.fromGraph(g).render(Format.SVG).toFile(output.toFile());
         return Result.success(result);
-    }
-
-    protected Map<ReactorLocator.ReactorProject, Collection<Dependency>> doProjectDependencyGraph(
-            ReactorLocator reactorLocator,
-            boolean showExternal,
-            ArtifactMatcher excludeSubprojectsMatcher,
-            DependencyMatcher excludeDependencyMatcher) {
-        HashMap<ReactorLocator.ReactorProject, Collection<Dependency>> result = new HashMap<>();
-        if (reactorLocator.getSelectedProject().isPresent()) {
-            doProjectDependencyGraph(
-                    result,
-                    showExternal,
-                    excludeSubprojectsMatcher,
-                    excludeDependencyMatcher,
-                    reactorLocator,
-                    reactorLocator.getSelectedProject().orElseThrow());
-        } else {
-            for (ReactorLocator.ReactorProject project : reactorLocator.getAllProjects()) {
-                if (!excludeSubprojectsMatcher.test(project.artifact())) {
-                    doProjectDependencyGraph(
-                            result,
-                            showExternal,
-                            excludeSubprojectsMatcher,
-                            excludeDependencyMatcher,
-                            reactorLocator,
-                            project);
-                }
-            }
-        }
-        return result;
-    }
-
-    protected void doProjectDependencyGraph(
-            HashMap<ReactorLocator.ReactorProject, Collection<Dependency>> result,
-            boolean showExternal,
-            ArtifactMatcher excludeSubprojectsMatcher,
-            DependencyMatcher excludeDependencyMatcher,
-            ReactorLocator reactorLocator,
-            ReactorLocator.ReactorProject project) {
-        for (Dependency dependency : project.dependencies()) {
-            Optional<ReactorLocator.ReactorProject> rp = reactorLocator.locateProject(dependency.getArtifact());
-            boolean isReactorMember = rp.isPresent();
-            if (isReactorMember) {
-                if (!excludeSubprojectsMatcher.test(dependency.getArtifact())
-                        && !excludeDependencyMatcher.test(dependency)) {
-                    result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
-                    doProjectDependencyGraph(
-                            result,
-                            showExternal,
-                            excludeSubprojectsMatcher,
-                            excludeDependencyMatcher,
-                            reactorLocator,
-                            rp.orElseThrow());
-                }
-            } else {
-                if (showExternal && !excludeDependencyMatcher.test(dependency)) {
-                    result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
-                }
-            }
-        }
     }
 
     protected void tellModel(String title, Model model) throws IOException {

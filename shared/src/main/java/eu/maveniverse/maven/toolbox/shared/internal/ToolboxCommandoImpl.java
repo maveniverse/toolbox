@@ -1554,4 +1554,18 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         (prev, next) -> next,
                         HashMap::new));
     }
+
+    public static Artifact source(Artifact artifact, boolean external) {
+        return addProperty(artifact, "source", external ? "external" : "internal");
+    }
+
+    public static Artifact addProperty(Artifact artifact, String key, String value) {
+        return addProperties(artifact, Map.of(key, value));
+    }
+
+    public static Artifact addProperties(Artifact artifact, Map<String, String> properties) {
+        HashMap<String, String> props = new HashMap<>(artifact.getProperties());
+        props.putAll(properties);
+        return artifact.setProperties(props);
+    }
 }

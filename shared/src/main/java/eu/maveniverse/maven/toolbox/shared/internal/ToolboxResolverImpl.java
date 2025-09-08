@@ -441,9 +441,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     }
 
     protected Artifact source(Artifact artifact, boolean external) {
-        HashMap<String, String> properties = new HashMap<>(artifact.getProperties());
-        properties.put("source", external ? "external" : "internal");
-        return artifact.setProperties(properties);
+        return ToolboxCommandoImpl.source(artifact, external);
     }
 
     @Override

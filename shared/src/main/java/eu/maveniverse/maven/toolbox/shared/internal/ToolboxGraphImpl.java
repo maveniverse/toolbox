@@ -7,10 +7,12 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl.source;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
+import eu.maveniverse.maven.toolbox.shared.ProjectLocator;
 import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
 import eu.maveniverse.maven.toolbox.shared.ToolboxGraph;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
@@ -19,6 +21,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 
 public class ToolboxGraphImpl implements ToolboxGraph {
@@ -59,6 +65,40 @@ public class ToolboxGraphImpl implements ToolboxGraph {
         return result;
     }
 
+    @Override
+    public Map<Artifact, String> labels(Map<ReactorLocator.ReactorProject, Collection<Dependency>> graph) {
+        Set<String> reactorVersions =
+                graph.keySet().stream().map(p -> p.artifact().getVersion()).collect(Collectors.toSet());
+        Set<String> reactorGroupIds =
+                graph.keySet().stream().map(p -> p.artifact().getGroupId()).collect(Collectors.toSet());
+
+        HashMap<Artifact, String> result = new HashMap<>();
+        Stream.concat(
+                        graph.keySet().stream().map(ProjectLocator.Project::artifact),
+                        graph.values().stream().flatMap(Collection::stream).map(Dependency::getArtifact))
+                .forEach(a -> {
+                    String source = a.getProperty("source", "internal");
+                    if ("internal".equals(source)) {
+                        if (reactorVersions.size() == 1 && reactorGroupIds.size() == 1) {
+                            // simplest: omit both
+                            result.putIfAbsent(a, a.getArtifactId());
+                        } else if (reactorVersions.size() == 1) {
+                            // omit V
+                            result.putIfAbsent(a, a.getGroupId() + ":" + a.getArtifactId());
+                        } else if (reactorGroupIds.size() == 1) {
+                            // omit G
+                            result.putIfAbsent(a, a.getArtifactId() + ":" + a.getVersion());
+                        } else {
+                            // lump all for now
+                            result.putIfAbsent(a, a.getGroupId() + ":" + a.getArtifactId() + ":" + a.getVersion());
+                        }
+                    } else {
+                        result.putIfAbsent(a, a.getGroupId() + ":" + a.getArtifactId() + ":" + a.getVersion());
+                    }
+                });
+        return result;
+    }
+
     protected void doProjectDependencyGraph(
             HashMap<ReactorLocator.ReactorProject, Collection<Dependency>> result,
             boolean showExternal,
@@ -72,7 +112,8 @@ public class ToolboxGraphImpl implements ToolboxGraph {
             if (isReactorMember) {
                 if (!excludeSubprojectsMatcher.test(dependency.getArtifact())
                         && !excludeDependencyMatcher.test(dependency)) {
-                    result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
+                    result.computeIfAbsent(project, p -> new HashSet<>())
+                            .add(dependency.setArtifact(dependency.getArtifact()));
                     doProjectDependencyGraph(
                             result,
                             showExternal,
@@ -83,7 +124,8 @@ public class ToolboxGraphImpl implements ToolboxGraph {
                 }
             } else {
                 if (showExternal && !excludeDependencyMatcher.test(dependency)) {
-                    result.computeIfAbsent(project, p -> new HashSet<>()).add(dependency);
+                    result.computeIfAbsent(project, p -> new HashSet<>())
+                            .add(dependency.setArtifact(source(dependency.getArtifact(), true)));
                 }
             }
         }

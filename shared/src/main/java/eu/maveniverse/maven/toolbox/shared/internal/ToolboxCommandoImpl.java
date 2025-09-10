@@ -45,8 +45,9 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartExtensionsEditor;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
-import guru.nidi.graphviz.attribute.GraphAttr;
+import guru.nidi.graphviz.attribute.Color;
 import guru.nidi.graphviz.attribute.Label;
+import guru.nidi.graphviz.attribute.Shape;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.MutableGraph;
@@ -989,25 +990,37 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             DependencyMatcher excludeDependencyMatcher,
             Path output)
             throws IOException {
-        // TODO:
-        // common G prefix
-        // versions (if all reactor same; omit)
-        // dep filters
-        // scope filters
         Map<ReactorLocator.ReactorProject, Collection<Dependency>> result = toolboxGraph.projectDependencyGraph(
                 reactorLocator, showExternal, excludeSubprojectsMatcher, excludeDependencyMatcher);
+        Map<Artifact, String> labels = toolboxGraph.labels(result);
         MutableGraph g = mutGraph("reactor")
                 .setDirected(true)
-                .graphAttrs()
-                .add(GraphAttr.COMPOUND)
                 .graphAttrs()
                 .add(Label.of(
                         reactorLocator.getTopLevelProject().effectiveModel().getName()))
                 .use((gr, ctx) -> {
                     for (Map.Entry<ReactorLocator.ReactorProject, Collection<Dependency>> entry : result.entrySet()) {
-                        MutableNode p = mutNode(entry.getKey().artifact().toString());
+                        MutableNode from = mutNode(labels.get(entry.getKey().artifact()))
+                                .add(Color.RED)
+                                .add(Shape.BOX);
                         for (Dependency dependency : entry.getValue()) {
-                            p.addLink(dependency.getArtifact().toString());
+                            String source = dependency.getArtifact().getProperty("source", "internal");
+                            Color color;
+                            Shape shape;
+                            if ("internal".equals(source)) {
+                                color = Color.RED;
+                                shape = Shape.BOX;
+                            } else if ("external".equals(source)) {
+                                color = Color.BLUE;
+                                shape = Shape.ELLIPSE;
+                            } else {
+                                color = Color.GREEN;
+                                shape = Shape.ELLIPSE;
+                            }
+                            MutableNode to = mutNode(labels.get(dependency.getArtifact()))
+                                    .add(color)
+                                    .add(shape);
+                            from.addLink(to);
                         }
                     }
                 });

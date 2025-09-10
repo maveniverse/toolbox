@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import java.util.Collection;
 import java.util.Map;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 
 public interface ToolboxGraph {
@@ -17,4 +18,6 @@ public interface ToolboxGraph {
             boolean showExternal,
             ArtifactMatcher excludeSubprojectsMatcher,
             DependencyMatcher excludeDependencyMatcher);
+
+    Map<Artifact, String> labels(Map<ReactorLocator.ReactorProject, Collection<Dependency>> graph);
 }

@@ -14,8 +14,10 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ProjectLocator;
 import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
+import eu.maveniverse.maven.toolbox.shared.StringUtils;
 import eu.maveniverse.maven.toolbox.shared.ToolboxGraph;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -72,6 +74,16 @@ public class ToolboxGraphImpl implements ToolboxGraph {
         Set<String> reactorGroupIds =
                 graph.keySet().stream().map(p -> p.artifact().getGroupId()).collect(Collectors.toSet());
 
+        HashMap<String, String> reactorGroupIdMapping = new HashMap<>();
+        if (reactorGroupIds.size() == 1) {
+            reactorGroupIdMapping.put(reactorGroupIds.iterator().next(), "");
+        } else {
+            String commonPrefix = commonPrefix(reactorGroupIds);
+            String shortPrefix = shortPrefix(commonPrefix);
+            reactorGroupIds.forEach(
+                    g -> reactorGroupIdMapping.put(g, shortPrefix + g.substring(commonPrefix.length())));
+        }
+
         HashMap<Artifact, String> result = new HashMap<>();
         Stream.concat(
                         graph.keySet().stream().map(ProjectLocator.Project::artifact),
@@ -79,24 +91,34 @@ public class ToolboxGraphImpl implements ToolboxGraph {
                 .forEach(a -> {
                     String source = a.getProperty("source", "internal");
                     if ("internal".equals(source)) {
-                        if (reactorVersions.size() == 1 && reactorGroupIds.size() == 1) {
-                            // simplest: omit both
-                            result.putIfAbsent(a, a.getArtifactId());
-                        } else if (reactorVersions.size() == 1) {
+                        if (reactorVersions.size() == 1) {
                             // omit V
-                            result.putIfAbsent(a, a.getGroupId() + ":" + a.getArtifactId());
-                        } else if (reactorGroupIds.size() == 1) {
-                            // omit G
-                            result.putIfAbsent(a, a.getArtifactId() + ":" + a.getVersion());
+                            result.putIfAbsent(a, reactorGroupIdMapping.get(a.getGroupId()) + a.getArtifactId());
                         } else {
-                            // lump all for now
-                            result.putIfAbsent(a, a.getGroupId() + ":" + a.getArtifactId() + ":" + a.getVersion());
+                            // all
+                            result.putIfAbsent(
+                                    a,
+                                    reactorGroupIdMapping.get(a.getGroupId()) + a.getArtifactId() + ":"
+                                            + a.getVersion());
                         }
                     } else {
                         result.putIfAbsent(a, a.getGroupId() + ":" + a.getArtifactId() + ":" + a.getVersion());
                     }
                 });
         return result;
+    }
+
+    protected String commonPrefix(Collection<String> groupIds) {
+        return StringUtils.getCommonPrefix(groupIds.toArray(new String[0]));
+    }
+
+    protected String shortPrefix(String commonPrefix) {
+        if (!commonPrefix.contains(".")) {
+            return commonPrefix;
+        }
+        return Arrays.stream(commonPrefix.split("\\."))
+                        .map(s -> s.substring(0, 1))
+                        .collect(Collectors.joining("."));
     }
 
     protected void doProjectDependencyGraph(

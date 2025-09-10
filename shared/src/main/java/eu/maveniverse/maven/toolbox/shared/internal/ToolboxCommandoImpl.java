@@ -1001,26 +1001,22 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .use((gr, ctx) -> {
                     for (Map.Entry<ReactorLocator.ReactorProject, Collection<Dependency>> entry : result.entrySet()) {
                         MutableNode from = mutNode(labels.get(entry.getKey().artifact()))
-                                .add(Color.RED)
+                                .add(Color.BLUE)
                                 .add(Shape.BOX);
                         for (Dependency dependency : entry.getValue()) {
                             String source = dependency.getArtifact().getProperty("source", "internal");
                             Color color;
                             Shape shape;
                             if ("internal".equals(source)) {
-                                color = Color.RED;
-                                shape = Shape.BOX;
-                            } else if ("external".equals(source)) {
                                 color = Color.BLUE;
-                                shape = Shape.ELLIPSE;
+                                shape = Shape.BOX;
                             } else {
                                 color = Color.GREEN;
                                 shape = Shape.ELLIPSE;
                             }
-                            MutableNode to = mutNode(labels.get(dependency.getArtifact()))
+                            from.addLink(mutNode(labels.get(dependency.getArtifact()))
                                     .add(color)
-                                    .add(shape);
-                            from.addLink(to);
+                                    .add(shape));
                         }
                     }
                 });

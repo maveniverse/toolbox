@@ -408,7 +408,8 @@ public class ToolboxResolverImpl implements ToolboxResolver {
                     reactorLocator.getSelectedProject().orElseThrow(),
                     showExternal,
                     excludeSubprojectsMatcher,
-                    excludeDependencyMatcher));
+                    excludeDependencyMatcher,
+                    new HashSet<>()));
         } else {
             for (ReactorLocator.ReactorProject project : reactorLocator.getAllProjects()) {
                 if (!excludeSubprojectsMatcher.test(project.artifact())) {
@@ -417,7 +418,8 @@ public class ToolboxResolverImpl implements ToolboxResolver {
                             project,
                             showExternal,
                             excludeSubprojectsMatcher,
-                            excludeDependencyMatcher));
+                            excludeDependencyMatcher,
+                            new HashSet<>()));
                 }
             }
         }
@@ -429,7 +431,8 @@ public class ToolboxResolverImpl implements ToolboxResolver {
             ReactorLocator.ReactorProject project,
             boolean showExternal,
             ArtifactMatcher excludeSubprojectsMatcher,
-            DependencyMatcher excludeDependencyMatcher) {
+            DependencyMatcher excludeDependencyMatcher,
+            HashSet<Artifact> seen) {
         DependencyNode result = new DefaultDependencyNode(new Dependency(source(project), ""));
         for (Dependency dependency : project.dependencies()) {
             Optional<ReactorLocator.ReactorProject> rp = reactorLocator.locateProject(dependency.getArtifact());
@@ -437,14 +440,17 @@ public class ToolboxResolverImpl implements ToolboxResolver {
             if (isReactorMember) {
                 if (!excludeSubprojectsMatcher.test(dependency.getArtifact())
                         && !excludeDependencyMatcher.test(dependency)) {
-                    DependencyNode child = doProjectDependencyTree(
-                            reactorLocator,
-                            rp.orElseThrow(),
-                            showExternal,
-                            excludeSubprojectsMatcher,
-                            excludeDependencyMatcher);
-                    child.setScope(dependency.getScope());
-                    result.getChildren().add(child);
+                    if (seen.add(dependency.getArtifact())) {
+                        DependencyNode child = doProjectDependencyTree(
+                                reactorLocator,
+                                rp.orElseThrow(),
+                                showExternal,
+                                excludeSubprojectsMatcher,
+                                excludeDependencyMatcher,
+                                seen);
+                        child.setScope(dependency.getScope());
+                        result.getChildren().add(child);
+                    }
                 }
             } else {
                 if (showExternal && !excludeDependencyMatcher.test(dependency)) {

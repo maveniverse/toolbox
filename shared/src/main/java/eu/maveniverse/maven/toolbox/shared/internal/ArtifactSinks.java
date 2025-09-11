@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.ArtifactProperties;
 import org.eclipse.aether.internal.impl.checksum.Sha1ChecksumAlgorithmFactory;
 import org.eclipse.aether.internal.impl.checksum.Sha512ChecksumAlgorithmFactory;
 import org.eclipse.aether.repository.LocalRepository;
@@ -588,6 +589,9 @@ public final class ArtifactSinks {
                         for (Map.Entry<String, String> checksum : checksums.entrySet()) {
                             output.tell("{} -- {}: {}", indent, checksum.getKey(), checksum.getValue());
                         }
+                    }
+                    if (artifact.getProperty("origin", null) != null) {
+                        output.tell("{} -- Origin: {}", indent, artifact.getProperty("origin", null));
                     }
                 }
                 output.tell("{}------------------------------", indent);

@@ -80,8 +80,7 @@ public class ToolboxGraphImpl implements ToolboxGraph {
         } else {
             String commonPrefix = commonPrefix(reactorGroupIds);
             String shortPrefix = shortPrefix(commonPrefix);
-            reactorGroupIds.forEach(
-                    g -> reactorGroupIdMapping.put(g, shortPrefix + g.substring(commonPrefix.length())));
+            reactorGroupIds.forEach(g -> reactorGroupIdMapping.put(g, formatLabel(commonPrefix, shortPrefix, g)));
         }
 
         HashMap<Artifact, String> result = new HashMap<>();
@@ -93,12 +92,12 @@ public class ToolboxGraphImpl implements ToolboxGraph {
                     if ("internal".equals(source)) {
                         if (reactorVersions.size() == 1) {
                             // omit V
-                            result.putIfAbsent(a, reactorGroupIdMapping.get(a.getGroupId()) + a.getArtifactId());
+                            result.putIfAbsent(a, reactorGroupIdMapping.get(a.getGroupId()) + ":" + a.getArtifactId());
                         } else {
                             // all
                             result.putIfAbsent(
                                     a,
-                                    reactorGroupIdMapping.get(a.getGroupId()) + a.getArtifactId() + ":"
+                                    reactorGroupIdMapping.get(a.getGroupId()) + ":" + a.getArtifactId() + ":"
                                             + a.getVersion());
                         }
                     } else {
@@ -117,8 +116,12 @@ public class ToolboxGraphImpl implements ToolboxGraph {
             return commonPrefix;
         }
         return Arrays.stream(commonPrefix.split("\\."))
-                        .map(s -> s.substring(0, 1))
-                        .collect(Collectors.joining("."));
+                .map(s -> s.substring(0, 1))
+                .collect(Collectors.joining("."));
+    }
+
+    protected String formatLabel(String commonPrefix, String shortPrefix, String value) {
+        return shortPrefix + value.substring(commonPrefix.length());
     }
 
     protected void doProjectDependencyGraph(

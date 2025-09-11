@@ -997,7 +997,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .setDirected(true)
                 .graphAttrs()
                 .add(Label.of(
-                        reactorLocator.getTopLevelProject().effectiveModel().getName()))
+                        ArtifactIdUtils.toId(reactorLocator.getTopLevelProject().artifact())))
                 .use((gr, ctx) -> {
                     for (Map.Entry<ReactorLocator.ReactorProject, Collection<Dependency>> entry : result.entrySet()) {
                         MutableNode from = mutNode(labels.get(entry.getKey().artifact()))

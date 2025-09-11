@@ -36,12 +36,20 @@ public class ToolboxGraphImplTest {
     }
 
     @Test
-    void commonAndShortPrefix() {
+    void formatLabel() {
         ToolboxGraphImpl graph = new ToolboxGraphImpl(NopOutput.INSTANCE);
 
-        assertEquals(
-                "org.apache.maven", graph.commonPrefix(Arrays.asList("org.apache.maven", "org.apache.maven.plugins")));
-        assertEquals(
-                "", graph.commonPrefix(Arrays.asList("org.apache.maven", "org.apache.maven.plugins", "commons-cli")));
+        String commonPrefix = graph.commonPrefix(
+                Arrays.asList("org.apache.maven", "org.apache.maven.plugins", "org.apache.maven.shared"));
+        assertEquals("org.apache.maven", commonPrefix);
+        String shortPrefix = graph.shortPrefix(commonPrefix);
+        assertEquals("o.a.m", shortPrefix);
+
+        String p1 = graph.formatLabel(commonPrefix, shortPrefix, "org.apache.maven");
+        assertEquals("o.a.m", p1);
+        String p2 = graph.formatLabel(commonPrefix, shortPrefix, "org.apache.maven.plugins");
+        assertEquals("o.a.m.plugins", p2);
+        String p3 = graph.formatLabel(commonPrefix, shortPrefix, "org.apache.maven.shared");
+        assertEquals("o.a.m.shared", p3);
     }
 }

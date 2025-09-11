@@ -9,10 +9,46 @@ package eu.maveniverse.maven.toolbox.shared;
 
 /**
  * A utility class to manage strings.
+ * <p>
+ * Copied from venerable <a href="https://github.com/apache/commons-lang">ASF commons-lang</a>.
+ *
+ * @since 0.12.1
  */
 public final class StringUtils {
     private StringUtils() {}
 
+    /**
+     * Compares all Strings in an array and returns the initial sequence of characters that is common to all of them.
+     *
+     * <p>
+     * For example, {@code getCommonPrefix("i am a machine", "i am a robot") -&gt; "i am a "}
+     * </p>
+     *
+     * <pre>
+     * StringUtils.getCommonPrefix(null)                             = ""
+     * StringUtils.getCommonPrefix(new String[] {})                  = ""
+     * StringUtils.getCommonPrefix(new String[] {"abc"})             = "abc"
+     * StringUtils.getCommonPrefix(new String[] {null, null})        = ""
+     * StringUtils.getCommonPrefix(new String[] {"", ""})            = ""
+     * StringUtils.getCommonPrefix(new String[] {"", null})          = ""
+     * StringUtils.getCommonPrefix(new String[] {"abc", null, null}) = ""
+     * StringUtils.getCommonPrefix(new String[] {null, null, "abc"}) = ""
+     * StringUtils.getCommonPrefix(new String[] {"", "abc"})         = ""
+     * StringUtils.getCommonPrefix(new String[] {"abc", ""})         = ""
+     * StringUtils.getCommonPrefix(new String[] {"abc", "abc"})      = "abc"
+     * StringUtils.getCommonPrefix(new String[] {"abc", "a"})        = "a"
+     * StringUtils.getCommonPrefix(new String[] {"ab", "abxyz"})     = "ab"
+     * StringUtils.getCommonPrefix(new String[] {"abcde", "abxyz"})  = "ab"
+     * StringUtils.getCommonPrefix(new String[] {"abcde", "xyz"})    = ""
+     * StringUtils.getCommonPrefix(new String[] {"xyz", "abcde"})    = ""
+     * StringUtils.getCommonPrefix(new String[] {"i am a machine", "i am a robot"}) = "i am a "
+     * </pre>
+     *
+     * @param strs array of String objects, entries may be null.
+     * @return the initial sequence of characters that are common to all Strings in the array; empty String if the array is null, the elements are all null or
+     *         if there is no common prefix.
+     * @since 2.4 (commons-lang)
+     */
     public static String getCommonPrefix(final String... strs) {
         if (strs.length == 0) {
             return "";
@@ -33,6 +69,38 @@ public final class StringUtils {
         return strs[0].substring(0, smallestIndexOfDiff);
     }
 
+    /**
+     * Compares all CharSequences in an array and returns the index at which the CharSequences begin to differ.
+     *
+     * <p>
+     * For example, {@code indexOfDifference(new String[] {"i am a machine", "i am a robot"}) -> 7}
+     * </p>
+     *
+     * <pre>
+     * StringUtils.indexOfDifference(null)                             = -1
+     * StringUtils.indexOfDifference(new String[] {})                  = -1
+     * StringUtils.indexOfDifference(new String[] {"abc"})             = -1
+     * StringUtils.indexOfDifference(new String[] {null, null})        = -1
+     * StringUtils.indexOfDifference(new String[] {"", ""})            = -1
+     * StringUtils.indexOfDifference(new String[] {"", null})          = 0
+     * StringUtils.indexOfDifference(new String[] {"abc", null, null}) = 0
+     * StringUtils.indexOfDifference(new String[] {null, null, "abc"}) = 0
+     * StringUtils.indexOfDifference(new String[] {"", "abc"})         = 0
+     * StringUtils.indexOfDifference(new String[] {"abc", ""})         = 0
+     * StringUtils.indexOfDifference(new String[] {"abc", "abc"})      = -1
+     * StringUtils.indexOfDifference(new String[] {"abc", "a"})        = 1
+     * StringUtils.indexOfDifference(new String[] {"ab", "abxyz"})     = 2
+     * StringUtils.indexOfDifference(new String[] {"abcde", "abxyz"})  = 2
+     * StringUtils.indexOfDifference(new String[] {"abcde", "xyz"})    = 0
+     * StringUtils.indexOfDifference(new String[] {"xyz", "abcde"})    = 0
+     * StringUtils.indexOfDifference(new String[] {"i am a machine", "i am a robot"}) = 7
+     * </pre>
+     *
+     * @param css array of CharSequences, entries may be null.
+     * @return the index where the strings begin to differ; -1 if they are all equal.
+     * @since 2.4
+     * @since 3.0 Changed signature from indexOfDifference(String...) to indexOfDifference(CharSequence...)
+     */
     public static int indexOfDifference(final CharSequence... css) {
         if (css.length <= 1) {
             return -1;

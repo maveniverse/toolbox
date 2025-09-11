@@ -27,6 +27,7 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.graph.Exclusion;
+import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.util.graph.manager.DependencyManagerUtils;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
@@ -250,6 +251,16 @@ public class DependencyGraphDumper implements DependencyVisitor {
         };
     }
     /**
+     * Decorator of "origin": prints out ids from {@link DependencyNode#getRepositories()}.
+     */
+    public static Function<DependencyNode, String> origin() {
+        return dependencyNode -> "(origin: "
+                + dependencyNode.getRepositories().stream()
+                        .map(ArtifactRepository::getId)
+                        .collect(Collectors.joining(","))
+                + ")";
+    }
+    /**
      * Decorator of "artifact properties": prints out asked properties, if present.
      */
     public static Function<DependencyNode, String> artifactProperties(Collection<String> properties) {
@@ -282,7 +293,8 @@ public class DependencyGraphDumper implements DependencyVisitor {
                     premanagedExclusions(),
                     premanagedProperties(),
                     rangeMember(),
-                    winnerNode()));
+                    winnerNode(),
+                    origin()));
 
     /**
      * Extends {@link #DEFAULT_DECORATORS} decorators with passed in ones.

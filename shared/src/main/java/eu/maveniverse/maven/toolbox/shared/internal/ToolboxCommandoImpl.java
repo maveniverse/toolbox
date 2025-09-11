@@ -102,6 +102,7 @@ import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.metadata.Metadata;
+import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
@@ -501,7 +502,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                                     if (a.getFile() == null) {
                                         ArtifactResult ar = toolboxResolver.resolveArtifact(a);
                                         if (ar.isResolved()) {
-                                            return ar.getArtifact();
+                                            return origin(ar.getArtifact(), ar.getRepository());
                                         } else {
                                             return null;
                                         }
@@ -531,7 +532,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot));
             artifactResults.addAll(dependencyResult.getArtifactResults().stream()
                     .filter(ArtifactResult::isResolved)
-                    .map(ArtifactResult::getArtifact)
+                    .map(r -> origin(r.getArtifact(), r.getRepository()))
                     .toList());
         }
         return copy(artifactResults::stream, sink);
@@ -691,7 +692,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         try (Sink<Artifact> artifactSink =
                 ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, output))) {
             List<Artifact> artifactResults = toolboxResolver.resolveArtifacts(artifacts).stream()
-                    .map(ArtifactResult::getArtifact)
+                    .map(r -> origin(r.getArtifact(), r.getRepository()))
                     .collect(Collectors.toList());
             result.addAll(artifactResults);
             artifactSink.accept(artifactResults);
@@ -712,7 +713,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     output.suggest("Resolving (best effort) {}", subartifacts);
                     try {
                         List<Artifact> subartifactResults = toolboxResolver.resolveArtifacts(subartifacts).stream()
-                                .map(ArtifactResult::getArtifact)
+                                .map(r -> origin(r.getArtifact(), r.getRepository()))
                                 .collect(Collectors.toList());
                         result.addAll(subartifactResults);
                         artifactSink.accept(subartifactResults);
@@ -720,7 +721,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         // ignore, this is "best effort"
                         List<Artifact> bestEffort = e.getResults().stream()
                                 .filter(ArtifactResult::isResolved)
-                                .map(ArtifactResult::getArtifact)
+                                .map(r -> origin(r.getArtifact(), r.getRepository()))
                                 .collect(Collectors.toList());
                         result.addAll(bestEffort);
                         artifactSink.accept(bestEffort);
@@ -775,13 +776,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             DependencyResult dependencyResult =
                     toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot));
             artifactSink.accept(dependencyResult.getArtifactResults().stream()
-                    .map(ArtifactResult::getArtifact)
+                    .map(r -> origin(r.getArtifact(), r.getRepository()))
                     .collect(Collectors.toList()));
 
             if (sources || javadoc || signature) {
                 HashSet<Artifact> subartifacts = new HashSet<>();
                 dependencyResult.getArtifactResults().stream()
-                        .map(ArtifactResult::getArtifact)
+                        .map(r -> origin(r.getArtifact(), r.getRepository()))
                         .forEach(a -> {
                             if (sources && a.getClassifier().isEmpty()) {
                                 subartifacts.add(new SubArtifact(a, "sources", "jar"));
@@ -798,13 +799,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     try {
                         List<ArtifactResult> subartifactResults = toolboxResolver.resolveArtifacts(subartifacts);
                         artifactSink.accept(subartifactResults.stream()
-                                .map(ArtifactResult::getArtifact)
+                                .map(r -> origin(r.getArtifact(), r.getRepository()))
                                 .collect(Collectors.toList()));
                     } catch (ArtifactResolutionException e) {
                         // ignore, this is "best effort"
                         artifactSink.accept(e.getResults().stream()
                                 .filter(ArtifactResult::isResolved)
-                                .map(ArtifactResult::getArtifact)
+                                .map(r -> origin(r.getArtifact(), r.getRepository()))
                                 .collect(Collectors.toList()));
                     }
                 }
@@ -839,7 +840,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         DependencyNode clone = cloningDependencyVisitor.getRootNode();
         clone.accept(new DependencyGraphDumper(
                 output::tell,
-                DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
+                DependencyGraphDumper.defaultsWith(),
                 output.tool(
                         DependencyGraphDecorators.TreeDecorator.class, DependencyGraphDecorators.defaultSupplier())));
         collectResult.setRoot(clone);
@@ -875,7 +876,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         DependencyNode clone = cloningDependencyVisitor.getRootNode();
         clone.accept(new TreeDependencyVisitor(new DependencyGraphDumper(
                 output::tell,
-                DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
+                DependencyGraphDumper.defaultsWith(),
                 output.tool(
                         DependencyGraphDecorators.TreeDecorator.class, DependencyGraphDecorators.defaultSupplier()))));
         collectResult.setRoot(clone);
@@ -933,7 +934,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .getRoot()
                 .accept(new DependencyGraphDumper(
                         output::tell,
-                        DependencyGraphDumper.defaultsWith(DependencyGraphDumper.premanagedProperties()),
+                        DependencyGraphDumper.defaultsWith(),
                         output.tool(
                                 DependencyGraphDecorators.DmTreeDecorator.class,
                                 DependencyGraphDecorators.defaultSupplier())));
@@ -1566,6 +1567,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     public static Artifact source(Artifact artifact, boolean external) {
         return addProperty(artifact, "source", external ? "external" : "internal");
+    }
+
+    public static Artifact origin(Artifact artifact, ArtifactRepository artifactRepository) {
+        if (artifactRepository == null) {
+            return artifact;
+        }
+        return addProperty(artifact, "origin", artifactRepository.getId());
     }
 
     public static Artifact addProperty(Artifact artifact, String key, String value) {

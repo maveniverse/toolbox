@@ -589,6 +589,9 @@ public final class ArtifactSinks {
                             output.tell("{} -- {}: {}", indent, checksum.getKey(), checksum.getValue());
                         }
                     }
+                    if (artifact.getProperty("origin", null) != null) {
+                        output.tell("{} -- Origin: {}", indent, artifact.getProperty("origin", null));
+                    }
                 }
                 output.tell("{}------------------------------", indent);
             }

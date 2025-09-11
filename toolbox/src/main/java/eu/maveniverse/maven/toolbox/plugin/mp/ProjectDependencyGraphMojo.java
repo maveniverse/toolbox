@@ -19,7 +19,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.graph.Dependency;
 
 /**
- * Displays project interdependencies of Maven Projects.
+ * Renders project interdependencies of Maven Projects as image.
  */
 @Mojo(name = "project-dependency-graph", aggregator = true, threadSafe = true)
 public class ProjectDependencyGraphMojo extends MPMojoSupport {
@@ -61,10 +61,9 @@ public class ProjectDependencyGraphMojo extends MPMojoSupport {
 
     @Override
     protected Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> doExecute() throws Exception {
-        ReactorLocator locator = getReactorLocator(selector);
         ToolboxCommando commando = getToolboxCommando();
         return commando.projectDependencyGraph(
-                locator,
+                getReactorLocator(selector),
                 showExternal,
                 commando.parseArtifactMatcherSpec(excludeSubprojectsMatcherSpec),
                 commando.parseDependencyMatcherSpec(excludeDependencyMatcherSpec),

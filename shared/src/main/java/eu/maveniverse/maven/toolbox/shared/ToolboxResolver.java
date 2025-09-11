@@ -16,6 +16,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorResult;
@@ -90,7 +91,11 @@ public interface ToolboxResolver {
 
     CollectResult subprojectTree(ReactorLocator reactorLocator);
 
-    CollectResult projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal);
+    List<DependencyNode> projectDependencyTree(
+            ReactorLocator reactorLocator,
+            boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher);
 
     DependencyResult resolve(ResolutionScope resolutionScope, ResolutionRoot resolutionRoot)
             throws DependencyResolutionException;

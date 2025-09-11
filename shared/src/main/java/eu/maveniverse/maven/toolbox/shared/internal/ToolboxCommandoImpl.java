@@ -970,16 +970,20 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<CollectResult> projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) {
-        CollectResult collectResult = toolboxResolver.projectDependencyTree(reactorLocator, showExternal);
-        collectResult
-                .getRoot()
-                .accept(new DependencyGraphDumper(
-                        output::tell,
-                        DependencyGraphDumper.defaultsWith(),
-                        output.tool(
-                                DependencyGraphDecorators.ProjectDependenciesTreeDecorator.class,
-                                DependencyGraphDecorators.defaultSupplier())));
+    public Result<Collection<DependencyNode>> projectDependencyTree(
+            ReactorLocator reactorLocator,
+            boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher)
+            throws IOException {
+        List<DependencyNode> collectResult = toolboxResolver.projectDependencyTree(
+                reactorLocator, showExternal, excludeSubprojectsMatcher, excludeDependencyMatcher);
+        collectResult.forEach(r -> r.accept(new DependencyGraphDumper(
+                output::tell,
+                DependencyGraphDumper.defaultsWith(),
+                output.tool(
+                        DependencyGraphDecorators.ProjectDependenciesTreeDecorator.class,
+                        DependencyGraphDecorators.defaultSupplier()))));
         return Result.success(collectResult);
     }
 

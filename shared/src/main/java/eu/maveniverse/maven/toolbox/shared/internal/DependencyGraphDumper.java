@@ -41,8 +41,23 @@ import org.eclipse.aether.version.VersionConstraint;
  */
 public class DependencyGraphDumper implements DependencyVisitor {
     public static class LineFormatter {
+        /**
+         * Formats <em>one line</em> out of at least 2 segments: indentation (and any decoration in it), main label,
+         * and zero or more optional labels.
+         */
         public String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            return formatIndentation(nodes) + formatNode(nodes, decorators);
+            return String.join(" ", formatLineSegments(nodes, decorators));
+        }
+
+        /**
+         * Formats at least 2 segments: indentation (and any decoration in it), main label, and zero or more optional labels.
+         */
+        protected List<String> formatLineSegments(
+                Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            ArrayList<String> line = new ArrayList<>();
+            line.add(formatIndentation(nodes));
+            line.addAll(formatNode(nodes, decorators));
+            return line;
         }
 
         protected String formatIndentation(Deque<DependencyNode> nodes) {
@@ -72,18 +87,24 @@ public class DependencyGraphDumper implements DependencyVisitor {
             return buffer.toString();
         }
 
-        protected String formatNode(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+        /**
+         * Formats node out of two segments: main label and zero or more optional labels.
+         */
+        protected List<String> formatNode(
+                Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
             DependencyNode node = requireNonNull(nodes.peek(), "bug: should not happen");
             StringBuilder buffer = new StringBuilder(128);
-            Artifact a = node.getArtifact();
-            buffer.append(a);
             for (Function<DependencyNode, String> decorator : decorators) {
                 String decoration = decorator.apply(node);
                 if (decoration != null) {
-                    buffer.append(" ").append(decoration);
+                    if (buffer.isEmpty()) {
+                        buffer.append(decoration);
+                    } else {
+                        buffer.append(" ").append(decoration);
+                    }
                 }
             }
-            return buffer.toString();
+            return Arrays.asList(ArtifactIdUtils.toId(node.getArtifact()), buffer.toString());
         }
     }
 

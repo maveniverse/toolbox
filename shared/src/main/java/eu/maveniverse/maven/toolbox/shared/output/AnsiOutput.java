@@ -162,35 +162,22 @@ public class AnsiOutput extends OutputSupport {
         @Override
         public String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
             String indentationStr = formatIndentation(nodes, "╰─", "├─", "  ", "│ ");
-            String nodeStr = formatNode(nodes, decorators);
+            List<String> nodeSegments = formatNode(nodes, decorators);
+            String nodeLabel = nodeSegments.get(0);
+            String nodeDecorators =
+                    marker.detail(nodeSegments.get(1)) + String.join(" ", nodeSegments.subList(2, nodeSegments.size()));
             Marker.Intent intent = intentMapper.apply(nodes);
-            String result = "";
-            switch (intent) {
-                case EMPHASIZE:
-                    result = indentationStr + marker.emphasize(nodeStr).toString();
-                    break;
-                case OUTSTANDING:
-                    result = indentationStr + marker.outstanding(nodeStr).toString();
-                    break;
-                case NORMAL:
-                    result = indentationStr + marker.normal(nodeStr).toString();
-                    break;
-                case DETAIL:
-                    result = indentationStr + marker.detail(nodeStr).toString();
-                    break;
-                case UNIMPORTANT:
-                    result = indentationStr + marker.unimportant(nodeStr).toString();
-                    break;
-                case SCARY:
-                    result = indentationStr + marker.scary(nodeStr).toString();
-                    break;
-                case BLOODY:
-                    result = indentationStr + marker.bloody(nodeStr).toString();
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected value: " + intent);
-            }
-            return result;
+            return switch (intent) {
+                case EMPHASIZE -> String.format("%s%s %s", indentationStr, marker.emphasize(nodeLabel), nodeDecorators);
+                case OUTSTANDING ->
+                    String.format("%s%s %s", indentationStr, marker.outstanding(nodeLabel), nodeDecorators);
+                case NORMAL -> String.format("%s%s %s", indentationStr, marker.normal(nodeLabel), nodeDecorators);
+                case DETAIL -> String.format("%s%s %s", indentationStr, marker.detail(nodeLabel), nodeDecorators);
+                case UNIMPORTANT ->
+                    String.format("%s%s %s", indentationStr, marker.unimportant(nodeLabel), nodeDecorators);
+                case SCARY -> String.format("%s%s %s", indentationStr, marker.scary(nodeLabel), nodeDecorators);
+                case BLOODY -> String.format("%s%s %s", indentationStr, marker.bloody(nodeLabel), nodeDecorators);
+            };
         }
     }
 

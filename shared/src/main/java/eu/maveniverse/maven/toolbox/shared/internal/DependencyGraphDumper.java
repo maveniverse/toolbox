@@ -263,11 +263,16 @@ public class DependencyGraphDumper implements DependencyVisitor {
      * Decorator of "origin": prints out ids from {@link DependencyNode#getRepositories()}.
      */
     public static Function<DependencyNode, String> origin() {
-        return dependencyNode -> "(origin: "
-                + dependencyNode.getRepositories().stream()
-                        .map(ArtifactRepository::getId)
-                        .collect(Collectors.joining(","))
-                + ")";
+        return dependencyNode -> {
+            if (dependencyNode.getRepositories().isEmpty()) {
+                return "";
+            }
+            return "(origin: "
+                    + dependencyNode.getRepositories().stream()
+                            .map(ArtifactRepository::getId)
+                            .collect(Collectors.joining(","))
+                    + ")";
+        };
     }
     /**
      * Decorator of "artifact properties": prints out asked properties, if present.

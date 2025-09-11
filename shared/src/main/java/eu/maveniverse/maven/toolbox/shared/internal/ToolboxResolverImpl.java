@@ -8,12 +8,15 @@
 package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector.last;
+import static eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl.source;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
 import eu.maveniverse.maven.mima.extensions.mmr.ModelRequest;
 import eu.maveniverse.maven.mima.extensions.mmr.ModelResponse;
+import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
+import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ProjectLocator;
 import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
@@ -22,7 +25,6 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -394,46 +396,71 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     }
 
     @Override
-    public CollectResult projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) {
-        CollectRequest collectRequest = new CollectRequest();
-        ProjectLocator.Project rootProject = reactorLocator.getSelectedOrCurrentProject();
-        collectRequest.setRoot(new Dependency(source(rootProject), ""));
-        CollectResult result = new CollectResult(collectRequest);
-        result.setRoot(new DefaultDependencyNode(collectRequest.getRoot()));
-        doProjectDependencyTree(result.getRoot(), reactorLocator, rootProject, showExternal, new HashSet<>());
-        return result;
-    }
-
-    protected void doProjectDependencyTree(
-            DependencyNode node,
+    public List<DependencyNode> projectDependencyTree(
             ReactorLocator reactorLocator,
-            ProjectLocator.Project current,
             boolean showExternal,
-            HashSet<String> seen) {
-        ArrayDeque<DependencyNode> recursiveNodes = new ArrayDeque<>();
-        for (Dependency dependency : current.dependencies()) {
-            Optional<ReactorLocator.ReactorProject> depProject = reactorLocator.locateProject(dependency.getArtifact());
-            String key = ArtifactIdUtils.toId(dependency.getArtifact());
-            if (seen.add(key)) {
-                if (depProject.isPresent()) {
-                    ProjectLocator.Project subProject = depProject.orElseThrow();
-                    DependencyNode subNode = new DefaultDependencyNode(dependency.setArtifact(source(subProject)));
-                    subNode.setData(ProjectLocator.Project.class, subProject);
-                    node.getChildren().add(subNode);
-                    recursiveNodes.add(subNode);
-                } else if (showExternal) {
-                    DependencyNode subNode =
-                            new DefaultDependencyNode(dependency.setArtifact(source(dependency.getArtifact(), true)));
-                    node.getChildren().add(subNode);
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher) {
+        ArrayList<DependencyNode> results = new ArrayList<>();
+        if (reactorLocator.getSelectedProject().isPresent()) {
+            results.add(doProjectDependencyTree(
+                    reactorLocator,
+                    reactorLocator.getSelectedProject().orElseThrow(),
+                    showExternal,
+                    excludeSubprojectsMatcher,
+                    excludeDependencyMatcher,
+                    new HashSet<>()));
+        } else {
+            for (ReactorLocator.ReactorProject project : reactorLocator.getAllProjects()) {
+                if (!excludeSubprojectsMatcher.test(project.artifact())) {
+                    results.add(doProjectDependencyTree(
+                            reactorLocator,
+                            project,
+                            showExternal,
+                            excludeSubprojectsMatcher,
+                            excludeDependencyMatcher,
+                            new HashSet<>()));
                 }
             }
         }
-        while (!recursiveNodes.isEmpty()) {
-            DependencyNode recursiveNode = recursiveNodes.pop();
-            ProjectLocator.Project recursiveProject =
-                    (ProjectLocator.Project) recursiveNode.getData().get(ProjectLocator.Project.class);
-            doProjectDependencyTree(recursiveNode, reactorLocator, recursiveProject, showExternal, seen);
+        return results;
+    }
+
+    protected DependencyNode doProjectDependencyTree(
+            ReactorLocator reactorLocator,
+            ReactorLocator.ReactorProject project,
+            boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher,
+            HashSet<Artifact> seen) {
+        DependencyNode result = new DefaultDependencyNode(new Dependency(source(project), ""));
+        for (Dependency dependency : project.dependencies()) {
+            Optional<ReactorLocator.ReactorProject> rp = reactorLocator.locateProject(dependency.getArtifact());
+            boolean isReactorMember = rp.isPresent();
+            if (isReactorMember) {
+                if (!excludeSubprojectsMatcher.test(dependency.getArtifact())
+                        && !excludeDependencyMatcher.test(dependency)) {
+                    if (seen.add(dependency.getArtifact())) {
+                        DependencyNode child = doProjectDependencyTree(
+                                reactorLocator,
+                                rp.orElseThrow(),
+                                showExternal,
+                                excludeSubprojectsMatcher,
+                                excludeDependencyMatcher,
+                                seen);
+                        child.setScope(dependency.getScope());
+                        result.getChildren().add(child);
+                    }
+                }
+            } else {
+                if (showExternal && !excludeDependencyMatcher.test(dependency)) {
+                    result.getChildren()
+                            .add(new DefaultDependencyNode(
+                                    dependency.setArtifact(source(dependency.getArtifact(), true))));
+                }
+            }
         }
+        return result;
     }
 
     protected Artifact source(ProjectLocator.Project project) {

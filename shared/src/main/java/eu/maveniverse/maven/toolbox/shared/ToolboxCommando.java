@@ -32,6 +32,7 @@ import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.metadata.Metadata;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
@@ -332,9 +333,14 @@ public interface ToolboxCommando extends Closeable {
     Result<CollectResult> subprojectTree(ReactorLocator reactorLocator) throws Exception;
 
     /**
-     * Returns the project module dependency tree of given root.
+     * Returns the project module dependency tree (forest) of given root.
      */
-    Result<CollectResult> projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) throws Exception;
+    Result<Collection<DependencyNode>> projectDependencyTree(
+            ReactorLocator reactorLocator,
+            boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher)
+            throws Exception;
 
     /**
      * Returns the project module dependency graph of given root. As a side effect it also writes out rendered image.

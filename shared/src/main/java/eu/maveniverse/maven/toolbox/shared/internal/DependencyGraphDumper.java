@@ -42,22 +42,10 @@ import org.eclipse.aether.version.VersionConstraint;
 public class DependencyGraphDumper implements DependencyVisitor {
     public static class LineFormatter {
         /**
-         * Formats <em>one line</em> out of at least 2 segments: indentation (and any decoration in it), main label,
-         * and zero or more optional labels.
+         * Formats <em>one line</em> out of at least 2 segments: indentation, main label, and zero or more optional labels.
          */
         public String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            return String.join(" ", formatLineSegments(nodes, decorators));
-        }
-
-        /**
-         * Formats at least 2 segments: indentation (and any decoration in it), main label, and zero or more optional labels.
-         */
-        protected List<String> formatLineSegments(
-                Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            ArrayList<String> line = new ArrayList<>();
-            line.add(formatIndentation(nodes));
-            line.addAll(formatNode(nodes, decorators));
-            return line;
+            return formatIndentation(nodes) + String.join(" ", formatNode(nodes, decorators));
         }
 
         protected String formatIndentation(Deque<DependencyNode> nodes) {

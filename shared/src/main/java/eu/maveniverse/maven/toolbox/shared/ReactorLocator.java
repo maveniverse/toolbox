@@ -9,7 +9,9 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import eu.maveniverse.maven.toolbox.shared.internal.Artifacts;
 import java.util.List;
+import java.util.Optional;
 import org.apache.maven.model.Model;
+import org.eclipse.aether.artifact.Artifact;
 
 /**
  * Construction to represent "reactor" abstraction.
@@ -25,9 +27,21 @@ public interface ReactorLocator extends ProjectLocator, Artifacts.Source {
     ReactorProject getTopLevelProject();
 
     /**
+     * Returns the "selected" project, or empty optional.
+     */
+    Optional<ReactorProject> getSelectedProject();
+
+    /**
      * Returns "current" project, never {@code null}.
      */
     ReactorProject getCurrentProject();
+
+    /**
+     * Returns selected (if any) or current project.
+     */
+    default ReactorProject getSelectedOrCurrentProject() {
+        return getSelectedProject().orElse(getCurrentProject());
+    }
 
     /**
      * Returns list of all projects, never {@code null}.
@@ -45,4 +59,7 @@ public interface ReactorLocator extends ProjectLocator, Artifacts.Source {
      * project as modules.
      */
     List<ReactorProject> locateCollected(Project project);
+
+    @Override
+    Optional<ReactorProject> locateProject(Artifact artifact);
 }

@@ -41,7 +41,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.util.ConfigUtils;
 
 public class ToolboxSearchApiImpl implements ToolboxSearchApi {
-    private final Output output;
+    protected final Output output;
 
     public ToolboxSearchApiImpl(Output output) {
         this.output = requireNonNull(output, "output");
@@ -63,6 +63,7 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
      * @param repositoryVendor The "override" type, or may be {@code null}, in which case logic above will be applied.
      *                         Basically determines extractor to be used with it.
      */
+    @Override
     public SearchBackend getRemoteRepositoryBackend(
             RepositorySystemSession session, RemoteRepository remoteRepository, String repositoryVendor) {
         output.chatter(
@@ -124,6 +125,7 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
     /**
      * Creates SMO search backend: it works only for Maven Central, obviously.
      */
+    @Override
     public SearchBackend getSmoBackend(RepositorySystemSession session, RemoteRepository remoteRepository) {
         if (!ContextOverrides.CENTRAL.getId().equals(remoteRepository.getId())) {
             throw new IllegalArgumentException("The SMO service is offered for Central only");
@@ -153,6 +155,7 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         }
     }
 
+    @Override
     public List<String> renderGavoid(List<Record> page, Predicate<String> versionPredicate) {
         ArrayList<String> result = new ArrayList<>();
         for (Record record : page) {
@@ -185,6 +188,7 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         return result;
     }
 
+    @Override
     public Collection<Artifact> renderArtifacts(
             RepositorySystemSession session, List<Record> page, Predicate<String> versionPredicate) {
         ArrayList<Artifact> result = new ArrayList<>();
@@ -234,6 +238,7 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         return result;
     }
 
+    @Override
     public boolean exists(SearchBackend backend, Artifact artifact) throws IOException {
         Query query = toRrQuery(artifact);
         SearchRequest searchRequest = new SearchRequest(query);
@@ -246,6 +251,7 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         return searchResponse.getTotalHits() == 1;
     }
 
+    @Override
     public boolean verify(SearchBackend backend, Artifact artifact, String sha1) throws IOException {
         Query query = toRrQuery(artifact);
         query = and(query, fieldQuery(MAVEN.SHA1, sha1));
@@ -259,6 +265,7 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         return searchResponse.getTotalHits() == 1;
     }
 
+    @Override
     public Map<String, Artifact> identify(
             RepositorySystemSession session, SearchBackend searchBackend, Collection<String> sha1s) throws IOException {
         HashMap<String, Artifact> result = new HashMap<>(sha1s.size());
@@ -297,6 +304,7 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         return result;
     }
 
+    @Override
     public Query toRrQuery(Artifact artifact) {
         Query result = fieldQuery(MAVEN.GROUP_ID, artifact.getGroupId());
         result = and(result, fieldQuery(MAVEN.ARTIFACT_ID, artifact.getArtifactId()));
@@ -307,6 +315,7 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         return and(result, fieldQuery(MAVEN.FILE_EXTENSION, artifact.getExtension()));
     }
 
+    @Override
     public Query toSmoQuery(Artifact artifact) {
         Query result = null;
         if (!"*".equals(artifact.getGroupId())) {

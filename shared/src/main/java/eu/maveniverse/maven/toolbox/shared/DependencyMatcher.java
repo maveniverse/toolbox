@@ -70,6 +70,10 @@ public interface DependencyMatcher extends Predicate<Dependency> {
         return dependency -> true;
     }
 
+    static DependencyMatcher none() {
+        return dependency -> false;
+    }
+
     static DependencyMatcher artifact(ArtifactMatcher artifactMatcher) {
         return new DependencyMatcher() {
             @Override
@@ -124,6 +128,10 @@ public interface DependencyMatcher extends Predicate<Dependency> {
             switch (node.getValue()) {
                 case "any": {
                     params.add(any());
+                    break;
+                }
+                case "none": {
+                    params.add(none());
                     break;
                 }
                 case "scopeIncluded": {

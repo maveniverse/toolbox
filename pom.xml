@@ -114,6 +114,11 @@
         <artifactId>jcl-over-slf4j</artifactId>
         <version>${version.slf4j}</version>
       </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jul-to-slf4j</artifactId>
+        <version>${version.slf4j}</version>
+      </dependency>
 
       <!-- MIMA -->
       <dependency>
@@ -226,7 +231,7 @@
         <version>${version.mavenIndexer}</version>
       </dependency>
 
-      <!-- Commons Compress (unpack) -->
+      <!-- Commons -->
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
@@ -236,6 +241,11 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
         <version>3.18.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-exec</artifactId>
+        <version>1.5.0</version>
       </dependency>
 
       <!-- CLI -->
@@ -275,6 +285,13 @@
         <groupId>eu.maveniverse.maven.domtrip</groupId>
         <artifactId>domtrip-maven</artifactId>
         <version>0.2.0</version>
+      </dependency>
+
+      <!-- Graph -->
+      <dependency>
+        <groupId>guru.nidi</groupId>
+        <artifactId>graphviz-java</artifactId>
+        <version>0.18.1</version>
       </dependency>
 
       <!-- Shared -->

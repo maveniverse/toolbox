@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static guru.nidi.graphviz.model.Factory.mutGraph;
+import static guru.nidi.graphviz.model.Factory.mutNode;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.maven.search.api.request.BooleanQuery.and;
@@ -43,6 +45,13 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartExtensionsEditor;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
+import guru.nidi.graphviz.attribute.Color;
+import guru.nidi.graphviz.attribute.Label;
+import guru.nidi.graphviz.attribute.Shape;
+import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.MutableNode;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -118,15 +127,16 @@ import org.maveniverse.domtrip.maven.ExtensionsEditor;
 import org.maveniverse.domtrip.maven.PomEditor;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
-    private final Output output;
-    private final Context context;
-    private final RepositorySystemSession session;
-    private final VersionScheme versionScheme;
-    private final ToolboxSearchApiImpl toolboxSearchApi;
-    private final ArtifactRecorderImpl artifactRecorder;
-    private final ToolboxResolverImpl toolboxResolver;
+    protected final Output output;
+    protected final Context context;
+    protected final RepositorySystemSession session;
+    protected final VersionScheme versionScheme;
+    protected final ToolboxSearchApiImpl toolboxSearchApi;
+    protected final ArtifactRecorderImpl artifactRecorder;
+    protected final ToolboxResolverImpl toolboxResolver;
+    protected final ToolboxGraphImpl toolboxGraph;
 
-    private final Map<String, RemoteRepository> knownSearchRemoteRepositories;
+    protected final Map<String, RemoteRepository> knownSearchRemoteRepositories;
 
     public ToolboxCommandoImpl(Output output, Context context) {
         this.output = requireNonNull(output, "output");
@@ -145,6 +155,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 new MavenModelReader(context),
                 context.remoteRepositories(),
                 versionScheme);
+        this.toolboxGraph = new ToolboxGraphImpl(output);
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());
     }
 
@@ -748,7 +759,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 : Result.success(stat.getSeenArtifacts());
     }
 
-    private void doResolveTransitive(
+    protected void doResolveTransitive(
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
             boolean sources,
@@ -971,6 +982,49 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         return Result.success(collectResult);
     }
 
+    @Override
+    public Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> projectDependencyGraph(
+            ReactorLocator reactorLocator,
+            boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher,
+            Path output)
+            throws IOException {
+        Map<ReactorLocator.ReactorProject, Collection<Dependency>> result = toolboxGraph.projectDependencyGraph(
+                reactorLocator, showExternal, excludeSubprojectsMatcher, excludeDependencyMatcher);
+        Map<Artifact, String> labels = toolboxGraph.labels(result);
+        MutableGraph g = mutGraph("reactor")
+                .setDirected(true)
+                .graphAttrs()
+                .add(Label.of(
+                        ArtifactIdUtils.toId(reactorLocator.getTopLevelProject().artifact())))
+                .use((gr, ctx) -> {
+                    for (Map.Entry<ReactorLocator.ReactorProject, Collection<Dependency>> entry : result.entrySet()) {
+                        MutableNode from = mutNode(labels.get(entry.getKey().artifact()))
+                                .add(Color.BLUE)
+                                .add(Shape.BOX);
+                        for (Dependency dependency : entry.getValue()) {
+                            String source = dependency.getArtifact().getProperty("source", "internal");
+                            Color color;
+                            Shape shape;
+                            if ("internal".equals(source)) {
+                                color = Color.BLUE;
+                                shape = Shape.BOX;
+                            } else {
+                                color = Color.GREEN;
+                                shape = Shape.ELLIPSE;
+                            }
+                            from.addLink(mutNode(labels.get(dependency.getArtifact()))
+                                    .add(color)
+                                    .add(shape));
+                        }
+                    }
+                });
+
+        Graphviz.fromGraph(g).render(Format.SVG).toFile(output.toFile());
+        return Result.success(result);
+    }
+
     protected void tellModel(String title, Model model) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         MavenXpp3Writer mavenXpp3Writer = new MavenXpp3Writer();
@@ -999,7 +1053,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     @Override
     public Result<Model> effectiveModel(ReactorLocator reactorLocator) throws Exception {
         requireNonNull(reactorLocator);
-        Result<Model> result = Result.success(reactorLocator.getCurrentProject().effectiveModel());
+        Result<Model> result =
+                Result.success(reactorLocator.getSelectedOrCurrentProject().effectiveModel());
         tellModel("Effective model:", result.getData().orElseThrow());
         return result;
     }
@@ -1507,5 +1562,19 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         e -> String.valueOf(e.getValue()),
                         (prev, next) -> next,
                         HashMap::new));
+    }
+
+    public static Artifact source(Artifact artifact, boolean external) {
+        return addProperty(artifact, "source", external ? "external" : "internal");
+    }
+
+    public static Artifact addProperty(Artifact artifact, String key, String value) {
+        return addProperties(artifact, Map.of(key, value));
+    }
+
+    public static Artifact addProperties(Artifact artifact, Map<String, String> properties) {
+        HashMap<String, String> props = new HashMap<>(artifact.getProperties());
+        props.putAll(properties);
+        return artifact.setProperties(props);
     }
 }

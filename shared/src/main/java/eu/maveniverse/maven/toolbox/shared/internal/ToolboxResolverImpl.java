@@ -79,14 +79,14 @@ import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
 
 public class ToolboxResolverImpl implements ToolboxResolver {
-    private static final String CTX_TOOLBOX = "toolbox";
-    private final Output output;
-    private final RepositorySystem repositorySystem;
-    private final RepositorySystemSession session;
-    private final MavenModelReader mavenModelReader;
-    private final ProjectLocator projectLocator;
-    private final List<RemoteRepository> remoteRepositories;
-    private final VersionScheme versionScheme;
+    protected static final String CTX_TOOLBOX = "toolbox";
+    protected final Output output;
+    protected final RepositorySystem repositorySystem;
+    protected final RepositorySystemSession session;
+    protected final MavenModelReader mavenModelReader;
+    protected final ProjectLocator projectLocator;
+    protected final List<RemoteRepository> remoteRepositories;
+    protected final VersionScheme versionScheme;
 
     public ToolboxResolverImpl(
             Output output,
@@ -222,7 +222,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return resolutionRoot.prepared();
     }
 
-    private List<Dependency> mergeDeps(List<Dependency> dominant, List<Dependency> recessive) {
+    protected List<Dependency> mergeDeps(List<Dependency> dominant, List<Dependency> recessive) {
         List<Dependency> result;
         if (dominant == null || dominant.isEmpty()) {
             result = recessive;
@@ -245,7 +245,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return result;
     }
 
-    private static String getId(Artifact a) {
+    protected static String getId(Artifact a) {
         return a.getGroupId() + ':' + a.getArtifactId() + ':' + a.getClassifier() + ':' + a.getExtension();
     }
 
@@ -328,7 +328,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     @Override
     public CollectResult parentChildTree(ReactorLocator reactorLocator) {
         CollectRequest collectRequest = new CollectRequest();
-        ProjectLocator.Project startingProject = reactorLocator.getCurrentProject();
+        ProjectLocator.Project startingProject = reactorLocator.getSelectedOrCurrentProject();
         collectRequest.setRoot(new Dependency(source(startingProject), ""));
         CollectResult result = new CollectResult(collectRequest);
 
@@ -339,7 +339,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         Optional<Artifact> parentArtifact = currentProject.getParent();
         while (parentArtifact.isPresent()) {
             Artifact pa = parentArtifact.orElseThrow();
-            Optional<? extends ProjectLocator.Project> parentProject = reactorLocator.locateProject(pa);
+            Optional<ReactorLocator.ReactorProject> parentProject = reactorLocator.locateProject(pa);
             if (parentProject.isPresent()) {
                 currentProject = parentProject.orElseThrow();
                 node = new DefaultDependencyNode(new Dependency(source(currentProject), ""));
@@ -358,53 +358,53 @@ public class ToolboxResolverImpl implements ToolboxResolver {
 
             parentArtifact = currentProject != null ? currentProject.getParent() : Optional.empty();
         }
-        parentChildTree(leaf, reactorLocator, startingProject);
+        doParentChildTree(leaf, reactorLocator, startingProject);
         return result;
     }
 
-    private void parentChildTree(
+    protected void doParentChildTree(
             DependencyNode parentNode, ReactorLocator reactorLocator, ProjectLocator.Project parent) {
         List<? extends ProjectLocator.Project> children = reactorLocator.locateChildren(parent);
         for (ProjectLocator.Project child : children) {
             DependencyNode childNode = new DefaultDependencyNode(new Dependency(source(child), ""));
             parentNode.getChildren().add(childNode);
-            parentChildTree(childNode, reactorLocator, child);
+            doParentChildTree(childNode, reactorLocator, child);
         }
     }
 
     @Override
     public CollectResult subprojectTree(ReactorLocator reactorLocator) {
         CollectRequest collectRequest = new CollectRequest();
-        ProjectLocator.Project startingProject = reactorLocator.getCurrentProject();
+        ProjectLocator.Project startingProject = reactorLocator.getSelectedOrCurrentProject();
         collectRequest.setRoot(new Dependency(source(startingProject), ""));
         CollectResult result = new CollectResult(collectRequest);
         result.setRoot(new DefaultDependencyNode(collectRequest.getRoot()));
-        subprojectTree(result.getRoot(), reactorLocator, startingProject);
+        doSubprojectTree(result.getRoot(), reactorLocator, startingProject);
         return result;
     }
 
-    private void subprojectTree(
+    protected void doSubprojectTree(
             DependencyNode parentNode, ReactorLocator reactorLocator, ProjectLocator.Project parent) {
         List<? extends ProjectLocator.Project> children = reactorLocator.locateCollected(parent);
         for (ProjectLocator.Project child : children) {
             DependencyNode childNode = new DefaultDependencyNode(new Dependency(source(child), ""));
             parentNode.getChildren().add(childNode);
-            subprojectTree(childNode, reactorLocator, child);
+            doSubprojectTree(childNode, reactorLocator, child);
         }
     }
 
     @Override
     public CollectResult projectDependencyTree(ReactorLocator reactorLocator, boolean showExternal) {
         CollectRequest collectRequest = new CollectRequest();
-        ProjectLocator.Project rootProject = reactorLocator.getCurrentProject();
+        ProjectLocator.Project rootProject = reactorLocator.getSelectedOrCurrentProject();
         collectRequest.setRoot(new Dependency(source(rootProject), ""));
         CollectResult result = new CollectResult(collectRequest);
         result.setRoot(new DefaultDependencyNode(collectRequest.getRoot()));
-        projectDependencyTree(result.getRoot(), reactorLocator, rootProject, showExternal, new HashSet<>());
+        doProjectDependencyTree(result.getRoot(), reactorLocator, rootProject, showExternal, new HashSet<>());
         return result;
     }
 
-    private void projectDependencyTree(
+    protected void doProjectDependencyTree(
             DependencyNode node,
             ReactorLocator reactorLocator,
             ProjectLocator.Project current,
@@ -412,8 +412,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
             HashSet<String> seen) {
         ArrayDeque<DependencyNode> recursiveNodes = new ArrayDeque<>();
         for (Dependency dependency : current.dependencies()) {
-            Optional<? extends ProjectLocator.Project> depProject =
-                    reactorLocator.locateProject(dependency.getArtifact());
+            Optional<ReactorLocator.ReactorProject> depProject = reactorLocator.locateProject(dependency.getArtifact());
             String key = ArtifactIdUtils.toId(dependency.getArtifact());
             if (seen.add(key)) {
                 if (depProject.isPresent()) {
@@ -433,18 +432,16 @@ public class ToolboxResolverImpl implements ToolboxResolver {
             DependencyNode recursiveNode = recursiveNodes.pop();
             ProjectLocator.Project recursiveProject =
                     (ProjectLocator.Project) recursiveNode.getData().get(ProjectLocator.Project.class);
-            projectDependencyTree(recursiveNode, reactorLocator, recursiveProject, showExternal, seen);
+            doProjectDependencyTree(recursiveNode, reactorLocator, recursiveProject, showExternal, seen);
         }
     }
 
-    private Artifact source(ProjectLocator.Project project) {
+    protected Artifact source(ProjectLocator.Project project) {
         return source(project.artifact(), project.origin() == this.projectLocator);
     }
 
-    private Artifact source(Artifact artifact, boolean external) {
-        HashMap<String, String> properties = new HashMap<>(artifact.getProperties());
-        properties.put("source", external ? "external" : "internal");
-        return artifact.setProperties(properties);
+    protected Artifact source(Artifact artifact, boolean external) {
+        return ToolboxCommandoImpl.source(artifact, external);
     }
 
     @Override
@@ -485,7 +482,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return doResolve(resolutionScope, root, null, dependencies, managedDependencies, remoteRepositories);
     }
 
-    private CollectResult doCollect(
+    protected CollectResult doCollect(
             ResolutionScope resolutionScope,
             Dependency rootDependency,
             Artifact root,
@@ -545,7 +542,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return result;
     }
 
-    private CollectResult doCollectDm(
+    protected CollectResult doCollectDm(
             Dependency rootDependency,
             Artifact root,
             List<Dependency> managedDependencies,
@@ -589,7 +586,8 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         return result;
     }
 
-    private void doCollectDmRecursive(DefaultDependencyNode currentRoot, Map<String, LinkedHashSet<String>> encounters)
+    protected void doCollectDmRecursive(
+            DefaultDependencyNode currentRoot, Map<String, LinkedHashSet<String>> encounters)
             throws ArtifactDescriptorException, ArtifactResolutionException, VersionResolutionException {
         ModelResponse modelResponse = mavenModelReader.readModel(ModelRequest.builder()
                 .setArtifact(currentRoot.getArtifact())
@@ -626,7 +624,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         }
     }
 
-    private DependencyResult doResolve(
+    protected DependencyResult doResolve(
             ResolutionScope resolutionScope,
             Dependency rootDependency,
             Artifact root,

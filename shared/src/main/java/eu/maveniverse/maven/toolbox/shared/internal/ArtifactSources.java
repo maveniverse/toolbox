@@ -7,10 +7,13 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl.origin;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
+import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.input.StringSlurper;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -18,11 +21,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyResolutionException;
 
 /**
  * Various utility source implementations.
@@ -52,7 +59,9 @@ public final class ArtifactSources {
             return super.visitEnter(node)
                     && !"matching".equals(node.getValue())
                     && !"mapping".equals(node.getValue())
-                    && !"concat".equals(node.getValue());
+                    && !"concat".equals(node.getValue())
+                    && !"resolve".equals(node.getValue())
+                    && !"resolveTransitive".equals(node.getValue());
         }
 
         @Override
@@ -82,7 +91,32 @@ public final class ArtifactSources {
                     params.add(concatArtifactSource(sources));
                     break;
                 }
-                // resolve, resolveTransitive
+                case "resolve": {
+                    if (node.getChildren().size() != 1) {
+                        throw new IllegalArgumentException("op resolve accepts only 1 argument");
+                    }
+                    ArtifactSources.ArtifactSourceBuilder builder = new ArtifactSourceBuilder(properties, tc);
+                    node.getChildren().get(0).accept(builder);
+                    params.add(resolveArtifactSource(builder.build(), tc));
+                    break;
+                }
+                case "resolveTransitive": {
+                    if (node.getChildren().size() == 1) {
+                        ArtifactSources.ArtifactSourceBuilder builder = new ArtifactSourceBuilder(properties, tc);
+                        node.getChildren().get(0).accept(builder);
+                        params.add(resolveTransitiveArtifactSource(builder.build(), tc, ResolutionScope.RUNTIME));
+                    } else if (node.getChildren().size() == 2) {
+                        ArtifactSources.ArtifactSourceBuilder builder = new ArtifactSourceBuilder(properties, tc);
+                        node.getChildren().get(0).accept(builder);
+                        params.add(resolveTransitiveArtifactSource(
+                                builder.build(),
+                                tc,
+                                ResolutionScope.parse(node.getChildren().get(1).getValue())));
+                    } else {
+                        throw new IllegalArgumentException("op resolveTransitive accepts only 1 or 2 argument");
+                    }
+                    break;
+                }
                 case "directory": {
                     Path p0 = tc.basedir().resolve(stringParam(node.getValue()));
                     params.add(DirectorySource.directory(p0));
@@ -293,6 +327,78 @@ public final class ArtifactSources {
                 exceptions.forEach(e::addSuppressed);
                 throw e;
             }
+        }
+    }
+
+    public static Artifacts.Source resolveArtifactSource(
+            Artifacts.Source delegate, ToolboxCommandoImpl toolboxCommando) {
+        requireNonNull(delegate, "delegate");
+        requireNonNull(toolboxCommando, "toolboxCommando");
+        return new ResolveArtifactSource(delegate, toolboxCommando);
+    }
+
+    public static class ResolveArtifactSource extends DelegatingArtifactSource {
+        private final ToolboxCommandoImpl toolboxCommando;
+
+        private ResolveArtifactSource(Artifacts.Source delegate, ToolboxCommandoImpl toolboxCommando) {
+            super(delegate);
+            this.toolboxCommando = toolboxCommando;
+        }
+
+        @Override
+        public Stream<Artifact> get() throws IOException {
+            return super.get()
+                    .map(a -> {
+                        try {
+                            ArtifactResult ar = toolboxCommando.toolboxResolver.resolveArtifact(a);
+                            if (ar.isResolved()) {
+                                a = origin(ar.getArtifact(), ar.getRepository());
+                            } else {
+                                a = null;
+                            }
+                        } catch (ArtifactResolutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                        return a;
+                    })
+                    .filter(Objects::nonNull);
+        }
+    }
+
+    public static Artifacts.Source resolveTransitiveArtifactSource(
+            Artifacts.Source delegate, ToolboxCommandoImpl toolboxCommando, ResolutionScope scope) {
+        requireNonNull(delegate, "delegate");
+        requireNonNull(toolboxCommando, "toolboxCommando");
+        requireNonNull(scope, "scope");
+        return new ResolveTransitiveArtifactSource(delegate, toolboxCommando, scope);
+    }
+
+    public static class ResolveTransitiveArtifactSource extends DelegatingArtifactSource {
+        private final ToolboxCommandoImpl toolboxCommando;
+        private final ResolutionScope scope;
+
+        private ResolveTransitiveArtifactSource(
+                Artifacts.Source delegate, ToolboxCommandoImpl toolboxCommando, ResolutionScope scope) {
+            super(delegate);
+            this.toolboxCommando = toolboxCommando;
+            this.scope = scope;
+        }
+
+        @Override
+        public Stream<Artifact> get() throws IOException {
+            return super.get().flatMap(a -> {
+                try {
+                    return toolboxCommando
+                            .toolboxResolver
+                            .resolve(scope, ResolutionRoot.ofLoaded(a).build())
+                            .getArtifactResults()
+                            .stream()
+                            .filter(ArtifactResult::isResolved)
+                            .map(r -> origin(r.getArtifact(), r.getRepository()));
+                } catch (DependencyResolutionException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
     }
 }

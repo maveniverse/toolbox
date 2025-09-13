@@ -353,6 +353,8 @@ public final class ArtifactSources {
                             if (ar.isResolved()) {
                                 a = origin(ar.getArtifact(), ar.getRepository());
                             } else {
+                                toolboxCommando.output.warn(
+                                        "Unable to resolve artifact {}", ar.getArtifact(), ar.getExceptions());
                                 a = null;
                             }
                         } catch (ArtifactResolutionException e) {
@@ -395,6 +397,12 @@ public final class ArtifactSources {
                                             ResolutionRoot.ofLoaded(a).build()))
                             .getArtifactResults()
                             .stream()
+                            .peek(ar -> {
+                                if (!ar.isResolved()) {
+                                    toolboxCommando.output.warn(
+                                            "Unable to resolve artifact {}", ar.getArtifact(), ar.getExceptions());
+                                }
+                            })
                             .filter(ArtifactResult::isResolved)
                             .map(r -> origin(r.getArtifact(), r.getRepository()));
                 } catch (Exception e) {

@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -48,7 +49,10 @@ public final class ArtifactSources {
 
         @Override
         public boolean visitEnter(SpecParser.Node node) {
-            return super.visitEnter(node) && !"matching".equals(node.getValue()) && !"mapping".equals(node.getValue());
+            return super.visitEnter(node)
+                    && !"matching".equals(node.getValue())
+                    && !"mapping".equals(node.getValue())
+                    && !"concat".equals(node.getValue());
         }
 
         @Override
@@ -68,6 +72,17 @@ public final class ArtifactSources {
                     params.add(gavsArtifactSource(gav));
                     break;
                 }
+                case "concat": {
+                    List<Artifacts.Source> sources = new ArrayList<>();
+                    for (SpecParser.Node sourceNode : node.getChildren()) {
+                        ArtifactSources.ArtifactSourceBuilder builder = new ArtifactSourceBuilder(properties, tc);
+                        sourceNode.accept(builder);
+                        sources.add(builder.build());
+                    }
+                    params.add(concatArtifactSource(sources));
+                    break;
+                }
+                // resolve, resolveTransitive
                 case "directory": {
                     Path p0 = tc.basedir().resolve(stringParam(node.getValue()));
                     params.add(DirectorySource.directory(p0));

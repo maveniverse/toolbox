@@ -29,7 +29,6 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.resolution.DependencyResolutionException;
 
 /**
  * Various utility source implementations.
@@ -390,12 +389,15 @@ public final class ArtifactSources {
                 try {
                     return toolboxCommando
                             .toolboxResolver
-                            .resolve(scope, ResolutionRoot.ofLoaded(a).build())
+                            .resolve(
+                                    scope,
+                                    toolboxCommando.toolboxResolver.loadRoot(
+                                            ResolutionRoot.ofLoaded(a).build()))
                             .getArtifactResults()
                             .stream()
                             .filter(ArtifactResult::isResolved)
                             .map(r -> origin(r.getArtifact(), r.getRepository()));
-                } catch (DependencyResolutionException e) {
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             });

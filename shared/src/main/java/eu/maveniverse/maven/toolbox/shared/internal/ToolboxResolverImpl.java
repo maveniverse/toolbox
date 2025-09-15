@@ -527,7 +527,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
         session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
         if (verbose) {
-            session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.FULL);
+            session.setConfigProperty(ConflictResolver.CONFIG_PROP_VERBOSE, ConflictResolver.Verbosity.STANDARD);
         }
         boolean dirtyTree = dirtyMaxLevel > 0;
         if (dirtyTree) {

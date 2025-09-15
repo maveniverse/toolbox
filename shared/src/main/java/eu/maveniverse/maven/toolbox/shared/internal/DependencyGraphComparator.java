@@ -22,10 +22,7 @@ import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.graph.DependencyVisitor;
 
 /**
- * A dependency visitor that dumps the graph to any {@link Consumer}{@code <String>}. Meant for diagnostic and testing, as
- * it may output the graph to standard output, error or even some logging interface.
- * <p>
- * Copy of the corresponding class from Resolver, to retain same output across Maven 3.6+
+ * A dependency visitor that compares to trees. Reuses same infra as {@link DependencyGraphDumper}.
  */
 public class DependencyGraphComparator implements DependencyVisitor {
     private final Consumer<String> consumer;

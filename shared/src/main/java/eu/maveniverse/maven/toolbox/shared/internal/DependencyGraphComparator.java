@@ -72,55 +72,52 @@ public class DependencyGraphComparator implements DependencyVisitor {
     }
 
     public void compare(DependencyNode root1, DependencyNode root2) {
-        final Deque<DependencyNode> ns1 = new ArrayDeque<>();
-        final Deque<DependencyNode> ns2 = new ArrayDeque<>();
-        final Deque<DependencyNode> processed1 = new ArrayDeque<>();
-        final Deque<DependencyNode> processed2 = new ArrayDeque<>();
-        ns1.push(root1);
-        ns2.push(root2);
+        final Deque<ArrayDeque<DependencyNode>> ns1 = new ArrayDeque<>();
+        final Deque<ArrayDeque<DependencyNode>> ns2 = new ArrayDeque<>();
+        ns1.push(new ArrayDeque<>(List.of(root1)));
+        ns2.push(new ArrayDeque<>(List.of(root2)));
         while (!ns1.isEmpty() || !ns2.isEmpty()) {
             if (ns1.isEmpty()) {
                 cmp = 1;
-                this.nodes = processed2;
-                ns2.peek().accept(this);
+                ArrayDeque<DependencyNode> path = ns2.peek();
+                DependencyNode current = path.pop();
+                this.nodes = path;
+                current.accept(this);
                 return;
             } else if (ns2.isEmpty()) {
                 cmp = -1;
-                this.nodes = processed1;
-                ns1.peek().accept(this);
+                ArrayDeque<DependencyNode> path = ns1.peek();
+                DependencyNode current = path.pop();
+                this.nodes = path;
+                current.accept(this);
                 return;
             }
 
-            DependencyNode dn1 = ns1.pop();
-            DependencyNode dn2 = ns2.pop();
-
-            processed1.push(dn1);
-            processed2.push(dn2);
+            ArrayDeque<DependencyNode> path1 = ns1.pop();
+            ArrayDeque<DependencyNode> path2 = ns2.pop();
+            DependencyNode dn1 = path1.peek();
+            DependencyNode dn2 = path2.peek();
 
             if (Objects.equals(dn1.getArtifact(), dn2.getArtifact())) {
-                consumer.accept(lineFormatter.formatLine(0, processed1, decorators));
+                consumer.accept(lineFormatter.formatLine(0, path1, decorators));
             } else {
-                consumer.accept(lineFormatter.formatLine(-1, processed1, decorators));
-                consumer.accept(lineFormatter.formatLine(1, processed2, decorators));
+                consumer.accept(lineFormatter.formatLine(-1, path1, decorators));
+                consumer.accept(lineFormatter.formatLine(1, path2, decorators));
             }
 
-            if (dn1.getChildren().isEmpty()) {
-                while (dn1.getChildren().isEmpty() && !processed1.isEmpty()) {
-                    dn1 = processed1.pop();
-                }
-            } else {
-                List<DependencyNode> children = new ArrayList<>(dn1.getChildren());
-                Collections.reverse(children);
-                children.forEach(ns1::push);
+            List<DependencyNode> children1 = new ArrayList<>(dn1.getChildren());
+            Collections.reverse(children1);
+            for (DependencyNode child : children1) {
+                ArrayDeque<DependencyNode> path = new ArrayDeque<>(path1);
+                path.push(child);
+                ns1.push(path);
             }
-            if (dn2.getChildren().isEmpty()) {
-                while (dn2.getChildren().isEmpty() && !processed2.isEmpty()) {
-                    dn2 = processed2.pop();
-                }
-            } else {
-                List<DependencyNode> children = new ArrayList<>(dn2.getChildren());
-                Collections.reverse(children);
-                children.forEach(ns2::push);
+            List<DependencyNode> children2 = new ArrayList<>(dn2.getChildren());
+            Collections.reverse(children2);
+            for (DependencyNode child : children2) {
+                ArrayDeque<DependencyNode> path = new ArrayDeque<>(path2);
+                path.push(child);
+                ns2.push(path);
             }
         }
     }

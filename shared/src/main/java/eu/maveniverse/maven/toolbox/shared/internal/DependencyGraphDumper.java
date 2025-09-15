@@ -42,6 +42,15 @@ import org.eclipse.aether.version.VersionConstraint;
 public class DependencyGraphDumper implements DependencyVisitor {
     public static class LineFormatter {
         /**
+         * Formats line with markers from where it comes using {@code cmp}: if 0, both have it, if less than 0 then
+         * left have it, if greater than 0 then right have it.
+         */
+        public String formatLine(
+                int cmp, Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            return (cmp == 0 ? "=== " : (cmp < 0 ? "<<< " : ">>> ")) + formatLine(nodes, decorators);
+        }
+
+        /**
          * Formats <em>one line</em> out of at least 2 segments: indentation, main label, and zero or more optional labels.
          */
         public String formatLine(Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {

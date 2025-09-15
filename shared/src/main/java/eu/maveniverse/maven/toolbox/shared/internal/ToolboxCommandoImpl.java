@@ -820,6 +820,44 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean verboseTree,
             DependencyMatcher dependencyMatcher)
             throws Exception {
+        CollectResult collectResult = doTree(resolutionScope, resolutionRoot, verboseTree, dependencyMatcher);
+        collectResult
+                .getRoot()
+                .accept(new DependencyGraphDumper(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(),
+                        output.tool(
+                                DependencyGraphDecorators.TreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
+        return Result.success(collectResult);
+    }
+
+    @Override
+    public Result<Map<CollectResult, CollectResult>> treeDiff(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot1,
+            ResolutionRoot resolutionRoot2,
+            boolean verboseTree,
+            DependencyMatcher dependencyMatcher)
+            throws Exception {
+        CollectResult collectResult1 = doTree(resolutionScope, resolutionRoot1, verboseTree, dependencyMatcher);
+        CollectResult collectResult2 = doTree(resolutionScope, resolutionRoot2, verboseTree, dependencyMatcher);
+        new DependencyGraphComparator(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(),
+                        output.tool(
+                                DependencyGraphDecorators.TreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier()))
+                .compare(collectResult1.getRoot(), collectResult2.getRoot());
+        return Result.success(Map.of(collectResult1, collectResult2));
+    }
+
+    protected CollectResult doTree(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean verboseTree,
+            DependencyMatcher dependencyMatcher)
+            throws Exception {
         output.suggest("Loading root of: {}", resolutionRoot.getArtifact());
         ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
         output.suggest("Collecting graph of: {}", resolutionRoot.getArtifact());
@@ -838,13 +876,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }));
 
         DependencyNode clone = cloningDependencyVisitor.getRootNode();
-        clone.accept(new DependencyGraphDumper(
-                output::tell,
-                DependencyGraphDumper.defaultsWith(),
-                output.tool(
-                        DependencyGraphDecorators.TreeDecorator.class, DependencyGraphDecorators.defaultSupplier())));
         collectResult.setRoot(clone);
-        return Result.success(collectResult);
+        return collectResult;
     }
 
     @Override

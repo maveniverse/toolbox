@@ -150,13 +150,20 @@ public class AnsiOutput extends OutputSupport {
 
     // Tree
 
-    private static class AnsiTreeFormatter extends DependencyGraphDumper.LineFormatter {
+    private static class AnsiTreeFormatter extends DependencyGraphDecorators.TreeDecorator {
         private final Marker marker;
         private final Function<Deque<DependencyNode>, Marker.Intent> intentMapper;
 
         public AnsiTreeFormatter(Marker marker, Function<Deque<DependencyNode>, Marker.Intent> intentMapper) {
             this.marker = marker;
             this.intentMapper = intentMapper;
+        }
+
+        @Override
+        public String formatLine(
+                int cmp, Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            // TODO: colorize
+            return super.formatLine(cmp, nodes, decorators);
         }
 
         @Override

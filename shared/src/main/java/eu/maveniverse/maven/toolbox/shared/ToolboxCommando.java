@@ -292,6 +292,17 @@ public interface ToolboxCommando extends Closeable {
             throws Exception;
 
     /**
+     * Returns the tree of root of both roots, as side effect outputs the diff.
+     */
+    Result<Map<CollectResult, CollectResult>> treeDiff(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot1,
+            ResolutionRoot resolutionRoot2,
+            boolean verboseTree,
+            DependencyMatcher dependencyMatcher)
+            throws Exception;
+
+    /**
      * Returns the dirty-tree of root. Note: this command is OOM prone, so "level limiting" is applied.
      */
     Result<CollectResult> dirtyTree(

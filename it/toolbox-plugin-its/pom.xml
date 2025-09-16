@@ -51,6 +51,10 @@
               <scriptVariables>
                 <projectVersion>${project.version}</projectVersion>
               </scriptVariables>
+              <pomExcludes>
+                <!-- fails often, relies heavily on search-api CSC backend -->
+                <pomExclude>libyear-1/pom.xml</pomExclude>
+              </pomExcludes>
             </configuration>
             <executions>
               <execution>

@@ -26,17 +26,17 @@ import picocli.CommandLine;
 public class GavClasspathDiffMojo extends GavMojoSupport {
     /**
      * The first artifact coordinates in the format {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}
-     * to display tree for.
+     * to display classpath for.
      */
-    @CommandLine.Parameters(index = "0", description = "The GAV to print classpath for")
+    @CommandLine.Parameters(index = "0", description = "The first GAV to compare classpath")
     @Parameter(property = "gav1", required = true)
     private String gav1;
 
     /**
      * The second artifact coordinates in the format {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}
-     * to display tree for.
+     * to display classpath for.
      */
-    @CommandLine.Parameters(index = "0", description = "The GAV to print classpath for")
+    @CommandLine.Parameters(index = "1", description = "The second GAV to compare classpath")
     @Parameter(property = "gav2", required = true)
     private String gav2;
 

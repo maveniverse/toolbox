@@ -44,7 +44,6 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartExtensionsEditor;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
-import eu.maveniverse.maven.toolbox.shared.output.Marker;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import guru.nidi.graphviz.attribute.Color;
 import guru.nidi.graphviz.attribute.Label;
@@ -125,7 +124,6 @@ import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
-import org.jline.jansi.Ansi;
 import org.maveniverse.domtrip.maven.ExtensionsEditor;
 import org.maveniverse.domtrip.maven.PomEditor;
 
@@ -508,47 +506,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         PreorderNodeListGenerator nlg2 = new PreorderNodeListGenerator();
         dependencyResult2.getRoot().accept(nlg2);
 
-        List<Artifact> a1 = nlg1.getArtifacts(false);
-        List<Artifact> a2 = nlg2.getArtifacts(false);
-
-        // TODO: externalize this, make it reusable as it should not be in commando impl
-        ArrayList<Artifact> a1Sa2 = new ArrayList<>(a1);
-        a1Sa2.removeAll(a2);
-        ArrayList<Artifact> a2Sa1 = new ArrayList<>(a2);
-        a2Sa1.removeAll(a1);
-
-        Marker marker = output.marker(output.getVerbosity());
-        String diffSame = Ansi.ansi().fg(Ansi.Color.WHITE).a("   ").reset().toString();
-        String diffAdded = Ansi.ansi().fg(Ansi.Color.GREEN).a("+++").reset().toString();
-        String diffRemoved = Ansi.ansi().fg(Ansi.Color.RED).a("---").reset().toString();
-        if (a1Sa2.isEmpty() && a2Sa1.isEmpty()) {
-            output.tell(marker.outstanding("No differences found.").toString());
-        } else {
-            output.tell(
-                    marker.outstanding("Classpath of {} (in classpath order)").toString(),
-                    resolutionRoot1.getArtifact());
-            a1.forEach(a -> {
-                if (a2.contains(a)) {
-                    output.tell(diffSame + " "
-                            + marker.normal(ArtifactIdUtils.toId(a)).toString());
-                } else {
-                    output.tell(diffRemoved + " "
-                            + marker.bloody(ArtifactIdUtils.toId(a)).toString());
-                }
-            });
-            output.tell(
-                    marker.outstanding("Classpath of {} (in classpath order)").toString(),
-                    resolutionRoot2.getArtifact());
-            a2.forEach(a -> {
-                if (a1.contains(a)) {
-                    output.tell(diffSame + " "
-                            + marker.normal(ArtifactIdUtils.toId(a)).toString());
-                } else {
-                    output.tell(diffAdded + " "
-                            + marker.outstanding(ArtifactIdUtils.toId(a)).toString());
-                }
-            });
-        }
+        new ArtifactListComparator(output)
+                .compare(
+                        String.format("Classpath of %s (in order)", resolutionRoot1.getArtifact()),
+                        nlg1.getArtifacts(false),
+                        String.format("Classpath of %s (in order)", resolutionRoot2.getArtifact()),
+                        nlg2.getArtifacts(false));
         return Result.success(Map.of(nlg1.getClassPath(), nlg2.getClassPath()));
     }
 

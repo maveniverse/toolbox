@@ -22,7 +22,7 @@ import org.eclipse.aether.version.Version;
 import picocli.CommandLine;
 
 /**
- * Lists available versions Maven Artifacts.
+ * Lists available versions for Maven Artifacts.
  */
 @CommandLine.Command(name = "versions", description = "Lists available versions for artifacts.")
 @Mojo(name = "gav-versions", requiresProject = false, threadSafe = true)

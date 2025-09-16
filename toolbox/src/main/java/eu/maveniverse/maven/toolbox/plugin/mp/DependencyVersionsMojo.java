@@ -45,6 +45,12 @@ public class DependencyVersionsMojo extends MPMojoSupport {
     private String artifactVersionSelectorSpec;
 
     /**
+     * Perform check for effective POM (including all DM entries imported from BOMs as well).
+     */
+    @Parameter(property = "effective", defaultValue = "false")
+    private boolean effective;
+
+    /**
      * Apply results to POM.
      */
     @Parameter(property = "apply")
@@ -61,7 +67,7 @@ public class DependencyVersionsMojo extends MPMojoSupport {
 
         Result<Map<Artifact, List<Version>>> managedDependencies = toolboxCommando.versions(
                 "managed dependencies",
-                () -> projectManagedDependenciesAsResolutionRoots(dependencyMatcher).stream()
+                () -> projectManagedDependenciesAsResolutionRoots(effective, dependencyMatcher).stream()
                         .map(ResolutionRoot::getArtifact),
                 artifactVersionMatcher,
                 artifactVersionSelector);

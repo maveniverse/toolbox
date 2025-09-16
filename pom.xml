@@ -213,6 +213,11 @@
         <artifactId>plexus-utils</artifactId>
         <version>3.6.0</version>
       </dependency>
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-interpolation</artifactId>
+        <version>1.28</version>
+      </dependency>
 
       <!-- Maven Indexer -->
       <dependency>

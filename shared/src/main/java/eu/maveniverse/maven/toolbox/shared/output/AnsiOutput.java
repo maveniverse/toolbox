@@ -150,13 +150,27 @@ public class AnsiOutput extends OutputSupport {
 
     // Tree
 
-    private static class AnsiTreeFormatter extends DependencyGraphDumper.LineFormatter {
+    private static class AnsiTreeFormatter extends DependencyGraphDecorators.TreeDecorator {
         private final Marker marker;
         private final Function<Deque<DependencyNode>, Marker.Intent> intentMapper;
 
         public AnsiTreeFormatter(Marker marker, Function<Deque<DependencyNode>, Marker.Intent> intentMapper) {
             this.marker = marker;
             this.intentMapper = intentMapper;
+        }
+
+        @Override
+        public String formatLine(
+                int cmp, Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
+            String diff;
+            if (cmp == 0) {
+                diff = Ansi.ansi().fg(Ansi.Color.WHITE).a("   ").reset().toString();
+            } else if (cmp < 0) {
+                diff = Ansi.ansi().fg(Ansi.Color.RED).a("---").reset().toString();
+            } else {
+                diff = Ansi.ansi().fg(Ansi.Color.GREEN).a("+++").reset().toString();
+            }
+            return diff + " " + formatLine(nodes, decorators);
         }
 
         @Override

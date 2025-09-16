@@ -178,6 +178,13 @@ public interface ToolboxCommando extends Closeable {
             throws Exception;
 
     /**
+     * Calculates the classpath diff of given scope and two roots, as side effect outputs the diff of them.
+     */
+    Result<Map<String, String>> classpathDiff(
+            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot1, ResolutionRoot resolutionRoot2)
+            throws Exception;
+
+    /**
      * Returns the list of artifacts copied from source to sink.
      */
     Result<List<Artifact>> copy(Source<Artifact> source, Sink<Artifact> sink) throws Exception;
@@ -287,6 +294,17 @@ public interface ToolboxCommando extends Closeable {
     Result<CollectResult> tree(
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
+            boolean verboseTree,
+            DependencyMatcher dependencyMatcher)
+            throws Exception;
+
+    /**
+     * Returns the tree of root of both roots, as side effect outputs the diff.
+     */
+    Result<Map<CollectResult, CollectResult>> treeDiff(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot1,
+            ResolutionRoot resolutionRoot2,
             boolean verboseTree,
             DependencyMatcher dependencyMatcher)
             throws Exception;

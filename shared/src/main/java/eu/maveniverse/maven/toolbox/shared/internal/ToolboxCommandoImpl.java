@@ -491,6 +491,31 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public Result<Map<String, String>> classpathDiff(
+            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot1, ResolutionRoot resolutionRoot2)
+            throws Exception {
+        output.suggest("Resolving {}", resolutionRoot1.getArtifact());
+        DependencyResult dependencyResult1 =
+                toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot1));
+        output.suggest("Resolving {}", resolutionRoot2.getArtifact());
+        DependencyResult dependencyResult2 =
+                toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot2));
+
+        PreorderNodeListGenerator nlg1 = new PreorderNodeListGenerator();
+        dependencyResult1.getRoot().accept(nlg1);
+        PreorderNodeListGenerator nlg2 = new PreorderNodeListGenerator();
+        dependencyResult2.getRoot().accept(nlg2);
+
+        new ArtifactListComparator(output)
+                .compare(
+                        String.format("Classpath of %s (in order)", resolutionRoot1.getArtifact()),
+                        nlg1.getArtifacts(false),
+                        String.format("Classpath of %s (in order)", resolutionRoot2.getArtifact()),
+                        nlg2.getArtifacts(false));
+        return Result.success(Map.of(nlg1.getClassPath(), nlg2.getClassPath()));
+    }
+
+    @Override
     public Result<List<Artifact>> copy(Source<Artifact> source, Sink<Artifact> sink) throws Exception {
         try (source;
                 sink) {
@@ -820,6 +845,44 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean verboseTree,
             DependencyMatcher dependencyMatcher)
             throws Exception {
+        CollectResult collectResult = doTree(resolutionScope, resolutionRoot, verboseTree, dependencyMatcher);
+        collectResult
+                .getRoot()
+                .accept(new DependencyGraphDumper(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(),
+                        output.tool(
+                                DependencyGraphDecorators.TreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier())));
+        return Result.success(collectResult);
+    }
+
+    @Override
+    public Result<Map<CollectResult, CollectResult>> treeDiff(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot1,
+            ResolutionRoot resolutionRoot2,
+            boolean verboseTree,
+            DependencyMatcher dependencyMatcher)
+            throws Exception {
+        CollectResult collectResult1 = doTree(resolutionScope, resolutionRoot1, verboseTree, dependencyMatcher);
+        CollectResult collectResult2 = doTree(resolutionScope, resolutionRoot2, verboseTree, dependencyMatcher);
+        new DependencyGraphComparator(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(),
+                        output.tool(
+                                DependencyGraphDecorators.TreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier()))
+                .compare(collectResult1.getRoot(), collectResult2.getRoot());
+        return Result.success(Map.of(collectResult1, collectResult2));
+    }
+
+    protected CollectResult doTree(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot,
+            boolean verboseTree,
+            DependencyMatcher dependencyMatcher)
+            throws Exception {
         output.suggest("Loading root of: {}", resolutionRoot.getArtifact());
         ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
         output.suggest("Collecting graph of: {}", resolutionRoot.getArtifact());
@@ -838,13 +901,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }));
 
         DependencyNode clone = cloningDependencyVisitor.getRootNode();
-        clone.accept(new DependencyGraphDumper(
-                output::tell,
-                DependencyGraphDumper.defaultsWith(),
-                output.tool(
-                        DependencyGraphDecorators.TreeDecorator.class, DependencyGraphDecorators.defaultSupplier())));
         collectResult.setRoot(clone);
-        return Result.success(collectResult);
+        return collectResult;
     }
 
     @Override

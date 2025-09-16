@@ -10,8 +10,11 @@ package eu.maveniverse.maven.toolbox.plugin;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
@@ -19,6 +22,10 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.interpolation.InterpolationException;
+import org.codehaus.plexus.interpolation.Interpolator;
+import org.codehaus.plexus.interpolation.PropertiesBasedValueSource;
+import org.codehaus.plexus.interpolation.StringSearchInterpolator;
 import org.eclipse.aether.artifact.ArtifactTypeRegistry;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
@@ -60,23 +67,71 @@ public abstract class MPMojoSupport extends MojoSupport {
     }
 
     protected ResolutionRoot projectAsResolutionRoot() {
+        return projectAsResolutionRoot(true);
+    }
+
+    protected ResolutionRoot projectAsResolutionRoot(boolean effective) {
         ResolutionRoot.Builder builder = ResolutionRoot.ofNotLoaded(new DefaultArtifact(
-                        mavenProject.getGroupId(),
-                        mavenProject.getArtifactId(),
-                        artifactHandlerManager
-                                .getArtifactHandler(mavenProject.getPackaging())
-                                .getExtension(),
-                        mavenProject.getVersion()))
-                .withDependencies(toDependencies(mavenProject.getDependencies()));
-        if (mavenProject.getDependencyManagement() != null) {
-            builder.withManagedDependencies(
-                    toDependencies(mavenProject.getDependencyManagement().getDependencies()));
+                mavenProject.getGroupId(),
+                mavenProject.getArtifactId(),
+                artifactHandlerManager
+                        .getArtifactHandler(mavenProject.getPackaging())
+                        .getExtension(),
+                mavenProject.getVersion()));
+        if (effective) {
+            if (mavenProject.getDependencyManagement() != null) {
+                builder.withDependencies(toDependencies(mavenProject.getDependencies()))
+                        .withManagedDependencies(toDependencies(
+                                mavenProject.getDependencyManagement().getDependencies()));
+            }
+        } else {
+            if (mavenProject.getDependencyManagement() != null) {
+                List<Dependency> dependencies = Collections.emptyList();
+                List<Dependency> managedDependencies = Collections.emptyList();
+                if (mavenProject.getDependencies() != null) {
+                    Function<String, String> projectInterpolator = projectInterpolator();
+                    dependencies = new ArrayList<>();
+                    for (org.apache.maven.model.Dependency dependency :
+                            mavenProject.getOriginalModel().getDependencies()) {
+                        dependencies.add(new Dependency(
+                                new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
+                                dependency.getScope()));
+                    }
+                }
+                if (mavenProject.getOriginalModel().getDependencyManagement() != null) {
+                    Function<String, String> projectInterpolator = projectInterpolator();
+                    managedDependencies = new ArrayList<>();
+                    for (org.apache.maven.model.Dependency dependency : mavenProject
+                            .getOriginalModel()
+                            .getDependencyManagement()
+                            .getDependencies()) {
+                        managedDependencies.add(new Dependency(
+                                new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
+                                dependency.getScope()));
+                    }
+                }
+                builder.withDependencies(dependencies).withManagedDependencies(managedDependencies);
+            }
         }
         return builder.build();
     }
 
-    protected List<ResolutionRoot> projectManagedDependenciesAsResolutionRoots(DependencyMatcher dependencyMatcher) {
-        ResolutionRoot project = projectAsResolutionRoot();
+    private String mavenDependencyToGavString(org.apache.maven.model.Dependency dependency) {
+        return dependency.getClassifier() == null || dependency.getClassifier().isBlank()
+                ? dependency.getGroupId() + ":" + dependency.getArtifactId() + ":"
+                        + artifactHandlerManager
+                                .getArtifactHandler(dependency.getType())
+                                .getExtension() + ":" + dependency.getVersion()
+                : dependency.getGroupId() + ":" + dependency.getArtifactId() + ":"
+                        + dependency.getClassifier() + ":"
+                        + artifactHandlerManager
+                                .getArtifactHandler(dependency.getType())
+                                .getExtension() + ":" + dependency.getVersion();
+    }
+
+    protected List<ResolutionRoot> projectManagedDependenciesAsResolutionRoots(
+            boolean effective, DependencyMatcher dependencyMatcher) {
+        ResolutionRoot project = projectAsResolutionRoot(effective);
         return project.getManagedDependencies().stream()
                 .filter(d -> !isReactorDependency(d))
                 .filter(dependencyMatcher)
@@ -111,5 +166,17 @@ public abstract class MPMojoSupport extends MojoSupport {
 
     protected ReactorLocator getReactorLocator(String selector) {
         return new MavenReactorLocator(mavenSession, selector);
+    }
+
+    protected Function<String, String> projectInterpolator() {
+        Interpolator interpolator = new StringSearchInterpolator();
+        interpolator.addValueSource(new PropertiesBasedValueSource(mavenProject.getProperties()));
+        return s -> {
+            try {
+                return interpolator.interpolate(s);
+            } catch (InterpolationException e) {
+                throw new IllegalStateException(e);
+            }
+        };
     }
 }

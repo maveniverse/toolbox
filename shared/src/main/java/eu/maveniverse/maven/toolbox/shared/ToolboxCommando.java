@@ -178,7 +178,7 @@ public interface ToolboxCommando extends Closeable {
             throws Exception;
 
     /**
-     * Calculates the classpath diff of given scope and two roots.
+     * Calculates the classpath diff of given scope and two roots, as side effect outputs the diff of them.
      */
     Result<Map<String, String>> classpathDiff(
             ResolutionScope resolutionScope, ResolutionRoot resolutionRoot1, ResolutionRoot resolutionRoot2)

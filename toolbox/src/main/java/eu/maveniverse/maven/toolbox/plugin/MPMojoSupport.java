@@ -72,48 +72,61 @@ public abstract class MPMojoSupport extends MojoSupport {
 
     protected ResolutionRoot projectAsResolutionRoot(boolean effective) {
         ResolutionRoot.Builder builder = ResolutionRoot.ofNotLoaded(new DefaultArtifact(
-                        mavenProject.getGroupId(),
-                        mavenProject.getArtifactId(),
-                        artifactHandlerManager
-                                .getArtifactHandler(mavenProject.getPackaging())
-                                .getExtension(),
-                        mavenProject.getVersion()))
-                .withDependencies(toDependencies(mavenProject.getDependencies()));
+                mavenProject.getGroupId(),
+                mavenProject.getArtifactId(),
+                artifactHandlerManager
+                        .getArtifactHandler(mavenProject.getPackaging())
+                        .getExtension(),
+                mavenProject.getVersion()));
         if (effective) {
             if (mavenProject.getDependencyManagement() != null) {
-                builder.withManagedDependencies(
-                        toDependencies(mavenProject.getDependencyManagement().getDependencies()));
+                builder.withDependencies(toDependencies(mavenProject.getDependencies()))
+                        .withManagedDependencies(toDependencies(
+                                mavenProject.getDependencyManagement().getDependencies()));
             }
         } else {
             if (mavenProject.getDependencyManagement() != null) {
                 List<Dependency> dependencies = Collections.emptyList();
-                if (mavenProject.getOriginalModel().getDependencyManagement() != null) {
+                List<Dependency> managedDependencies = Collections.emptyList();
+                if (mavenProject.getDependencies() != null) {
                     Function<String, String> projectInterpolator = projectInterpolator();
                     dependencies = new ArrayList<>();
+                    for (org.apache.maven.model.Dependency dependency :
+                            mavenProject.getOriginalModel().getDependencies()) {
+                        dependencies.add(new Dependency(
+                                new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
+                                dependency.getScope()));
+                    }
+                }
+                if (mavenProject.getOriginalModel().getDependencyManagement() != null) {
+                    Function<String, String> projectInterpolator = projectInterpolator();
+                    managedDependencies = new ArrayList<>();
                     for (org.apache.maven.model.Dependency dependency : mavenProject
                             .getOriginalModel()
                             .getDependencyManagement()
                             .getDependencies()) {
-                        String gav = dependency.getClassifier() == null
-                                        || dependency.getClassifier().isBlank()
-                                ? dependency.getGroupId() + ":" + dependency.getArtifactId() + ":"
-                                        + artifactHandlerManager
-                                                .getArtifactHandler(dependency.getType())
-                                                .getExtension() + ":" + dependency.getVersion()
-                                : dependency.getGroupId() + ":" + dependency.getArtifactId() + ":"
-                                        + dependency.getClassifier() + ":"
-                                        + artifactHandlerManager
-                                                .getArtifactHandler(dependency.getType())
-                                                .getExtension() + ":" + dependency.getVersion();
-                        Dependency dep = new Dependency(
-                                new DefaultArtifact(projectInterpolator.apply(gav)), dependency.getScope());
-                        dependencies.add(dep);
+                        managedDependencies.add(new Dependency(
+                                new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
+                                dependency.getScope()));
                     }
                 }
-                builder.withManagedDependencies(dependencies);
+                builder.withDependencies(dependencies).withManagedDependencies(managedDependencies);
             }
         }
         return builder.build();
+    }
+
+    private String mavenDependencyToGavString(org.apache.maven.model.Dependency dependency) {
+        return dependency.getClassifier() == null || dependency.getClassifier().isBlank()
+                ? dependency.getGroupId() + ":" + dependency.getArtifactId() + ":"
+                        + artifactHandlerManager
+                                .getArtifactHandler(dependency.getType())
+                                .getExtension() + ":" + dependency.getVersion()
+                : dependency.getGroupId() + ":" + dependency.getArtifactId() + ":"
+                        + dependency.getClassifier() + ":"
+                        + artifactHandlerManager
+                                .getArtifactHandler(dependency.getType())
+                                .getExtension() + ":" + dependency.getVersion();
     }
 
     protected List<ResolutionRoot> projectManagedDependenciesAsResolutionRoots(

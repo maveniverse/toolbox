@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.execution.MavenSession;
@@ -87,33 +86,31 @@ public abstract class MPMojoSupport extends MojoSupport {
             }
         } else {
             if (mavenProject.getDependencyManagement() != null) {
-                // TODO: this relies on Maven 3.9.x bug: imported depMgt/dep entries have NO location
-                List<Dependency> dependencies =
-                        toDependencies(mavenProject.getDependencyManagement().getDependencies().stream()
-                                .filter(d -> d.getLocation(null) != null)
-                                .collect(Collectors.toList()));
-                List<Dependency> imports = Collections.emptyList();
+                List<Dependency> dependencies = Collections.emptyList();
                 if (mavenProject.getOriginalModel().getDependencyManagement() != null) {
                     Function<String, String> projectInterpolator = projectInterpolator();
-                    imports = new ArrayList<>();
+                    dependencies = new ArrayList<>();
                     for (org.apache.maven.model.Dependency dependency : mavenProject
                             .getOriginalModel()
                             .getDependencyManagement()
                             .getDependencies()) {
-                        if ("pom".equals(dependency.getType()) && "import".equals(dependency.getScope())) {
-                            String gav = dependency.getClassifier().isBlank()
-                                    ? dependency.getGroupId() + ":" + dependency.getArtifactId() + ":" + "pom" + ":"
-                                            + dependency.getVersion()
-                                    : dependency.getGroupId() + ":" + dependency.getArtifactId() + ":"
-                                            + dependency.getClassifier() + ":" + "pom" + ":" + dependency.getVersion();
-                            Dependency pomImport = new Dependency(
-                                    new DefaultArtifact(projectInterpolator.apply(gav)), dependency.getScope());
-                            imports.add(pomImport);
-                        }
+                        String gav = dependency.getClassifier() == null
+                                        || dependency.getClassifier().isBlank()
+                                ? dependency.getGroupId() + ":" + dependency.getArtifactId() + ":"
+                                        + artifactHandlerManager
+                                                .getArtifactHandler(dependency.getType())
+                                                .getExtension() + ":" + dependency.getVersion()
+                                : dependency.getGroupId() + ":" + dependency.getArtifactId() + ":"
+                                        + dependency.getClassifier() + ":"
+                                        + artifactHandlerManager
+                                                .getArtifactHandler(dependency.getType())
+                                                .getExtension() + ":" + dependency.getVersion();
+                        Dependency dep = new Dependency(
+                                new DefaultArtifact(projectInterpolator.apply(gav)), dependency.getScope());
+                        dependencies.add(dep);
                     }
                 }
-                builder.withManagedDependencies(
-                        Stream.concat(dependencies.stream(), imports.stream()).collect(Collectors.toList()));
+                builder.withManagedDependencies(dependencies);
             }
         }
         return builder.build();

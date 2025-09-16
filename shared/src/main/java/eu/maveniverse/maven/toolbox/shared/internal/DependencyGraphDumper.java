@@ -47,7 +47,7 @@ public class DependencyGraphDumper implements DependencyVisitor {
          */
         public String formatLine(
                 int cmp, Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            return (cmp == 0 ? "=== " : (cmp < 0 ? "<<< " : ">>> ")) + formatLine(nodes, decorators);
+            return (cmp == 0 ? "    " : (cmp < 0 ? "--- " : "+++ ")) + formatLine(nodes, decorators);
         }
 
         /**

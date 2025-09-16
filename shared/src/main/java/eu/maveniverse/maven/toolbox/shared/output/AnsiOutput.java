@@ -162,8 +162,15 @@ public class AnsiOutput extends OutputSupport {
         @Override
         public String formatLine(
                 int cmp, Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
-            // TODO: colorize
-            return super.formatLine(cmp, nodes, decorators);
+            String diff;
+            if (cmp == 0) {
+                diff = Ansi.ansi().fg(Ansi.Color.WHITE).a("   ").reset().toString();
+            } else if (cmp < 0) {
+                diff = Ansi.ansi().fg(Ansi.Color.RED).a("---").reset().toString();
+            } else {
+                diff = Ansi.ansi().fg(Ansi.Color.GREEN).a("+++").reset().toString();
+            }
+            return diff + " " + formatLine(nodes, decorators);
         }
 
         @Override

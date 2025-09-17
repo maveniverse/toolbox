@@ -80,7 +80,7 @@ public class ArtifactConflictComparator {
                     marker.scary("Conflicts exist for {} vs {}").toString(),
                     ArtifactIdUtils.toId(artifact1),
                     ArtifactIdUtils.toId(artifact2));
-            boolean keyShown = false;
+            boolean keyShown;
             for (Map.Entry<String, Map<String, Map<String, Set<Artifact>>>> l1 : conflicts.entrySet()) {
                 keyShown = false;
                 for (Map.Entry<String, Map<String, Set<Artifact>>> l2 :

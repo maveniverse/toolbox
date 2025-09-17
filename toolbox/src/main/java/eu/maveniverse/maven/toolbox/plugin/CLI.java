@@ -8,6 +8,7 @@
 package eu.maveniverse.maven.toolbox.plugin;
 
 import eu.maveniverse.maven.toolbox.plugin.gav.GavArtifactPathMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavClasspathConflictMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavClasspathDiffMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavClasspathMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavCopyGavMojo;
@@ -57,6 +58,7 @@ import picocli.CommandLine;
         name = "toolbox",
         subcommands = {
             GavArtifactPathMojo.class,
+            GavClasspathConflictMojo.class,
             GavClasspathDiffMojo.class,
             GavClasspathMojo.class,
             GavCopyGavMojo.class,

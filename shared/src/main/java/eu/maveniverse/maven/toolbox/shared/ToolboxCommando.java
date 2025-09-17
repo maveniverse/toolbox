@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
@@ -115,6 +116,16 @@ public interface ToolboxCommando extends Closeable {
     ArtifactVersionSelector parseArtifactVersionSelectorSpec(String spec);
 
     /**
+     * Parses artifact key factory string into {@link ArtifactKeyFactory}.
+     */
+    ArtifactKeyFactory parseArtifactKeyFactorySpec(String spec);
+
+    /**
+     * Parses artifact differentiator string into {@link ArtifactDifferentiator}.
+     */
+    ArtifactDifferentiator parseArtifactDifferentiatorSpec(String spec);
+
+    /**
      * Parses remote repository string into {@link RemoteRepository}. It may be {@code url} only, {@code id::url} or
      * {@code id::type::url} form. In first case, repository ID will be {@code "mima"}.
      */
@@ -182,6 +193,17 @@ public interface ToolboxCommando extends Closeable {
      */
     Result<Map<String, String>> classpathDiff(
             ResolutionScope resolutionScope, ResolutionRoot resolutionRoot1, ResolutionRoot resolutionRoot2)
+            throws Exception;
+
+    /**
+     * Calculates the classpath diff of given scope and two roots, as side effect outputs the diff of them.
+     */
+    Result<Map<String, String>> classpathConflict(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot1,
+            ResolutionRoot resolutionRoot2,
+            ArtifactKeyFactory artifactKeyFactory,
+            Map<String, Function<Artifact, String>> differentiators)
             throws Exception;
 
     /**

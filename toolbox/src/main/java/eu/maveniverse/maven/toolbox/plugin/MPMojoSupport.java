@@ -79,39 +79,33 @@ public abstract class MPMojoSupport extends MojoSupport {
                         .getExtension(),
                 mavenProject.getVersion()));
         if (effective) {
+            builder.withDependencies(toDependencies(mavenProject.getDependencies()));
             if (mavenProject.getDependencyManagement() != null) {
-                builder.withDependencies(toDependencies(mavenProject.getDependencies()))
-                        .withManagedDependencies(toDependencies(
-                                mavenProject.getDependencyManagement().getDependencies()));
+                builder.withManagedDependencies(
+                        toDependencies(mavenProject.getDependencyManagement().getDependencies()));
             }
         } else {
-            if (mavenProject.getDependencyManagement() != null) {
-                List<Dependency> dependencies = Collections.emptyList();
-                List<Dependency> managedDependencies = Collections.emptyList();
-                if (mavenProject.getDependencies() != null) {
-                    Function<String, String> projectInterpolator = projectInterpolator();
-                    dependencies = new ArrayList<>();
-                    for (org.apache.maven.model.Dependency dependency :
-                            mavenProject.getOriginalModel().getDependencies()) {
-                        dependencies.add(new Dependency(
-                                new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
-                                dependency.getScope()));
-                    }
-                }
-                if (mavenProject.getOriginalModel().getDependencyManagement() != null) {
-                    Function<String, String> projectInterpolator = projectInterpolator();
-                    managedDependencies = new ArrayList<>();
-                    for (org.apache.maven.model.Dependency dependency : mavenProject
-                            .getOriginalModel()
-                            .getDependencyManagement()
-                            .getDependencies()) {
-                        managedDependencies.add(new Dependency(
-                                new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
-                                dependency.getScope()));
-                    }
-                }
-                builder.withDependencies(dependencies).withManagedDependencies(managedDependencies);
+            List<Dependency> dependencies = new ArrayList<>();
+            List<Dependency> managedDependencies = Collections.emptyList();
+            Function<String, String> projectInterpolator = projectInterpolator();
+            for (org.apache.maven.model.Dependency dependency :
+                    mavenProject.getOriginalModel().getDependencies()) {
+                dependencies.add(new Dependency(
+                        new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
+                        dependency.getScope()));
             }
+            if (mavenProject.getOriginalModel().getDependencyManagement() != null) {
+                managedDependencies = new ArrayList<>();
+                for (org.apache.maven.model.Dependency dependency : mavenProject
+                        .getOriginalModel()
+                        .getDependencyManagement()
+                        .getDependencies()) {
+                    managedDependencies.add(new Dependency(
+                            new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
+                            dependency.getScope()));
+                }
+            }
+            builder.withDependencies(dependencies).withManagedDependencies(managedDependencies);
         }
         return builder.build();
     }

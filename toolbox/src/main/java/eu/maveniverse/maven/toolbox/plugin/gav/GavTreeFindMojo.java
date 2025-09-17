@@ -62,16 +62,6 @@ public class GavTreeFindMojo extends GavMojoSupport {
     private String boms;
 
     /**
-     * The dependency matcher if you want to filter as eager as Lenny wants.
-     */
-    @CommandLine.Option(
-            names = {"--dependencyMatcher"},
-            defaultValue = "any()",
-            description = "Dependency matcher spec")
-    @Parameter(property = "dependencyMatcher", defaultValue = "any()", required = true)
-    private String dependencyMatcher;
-
-    /**
      * Set it {@code true} for verbose tree.
      */
     @CommandLine.Option(

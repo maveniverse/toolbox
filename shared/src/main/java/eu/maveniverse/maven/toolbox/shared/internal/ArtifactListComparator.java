@@ -18,7 +18,7 @@ import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.jline.jansi.Ansi;
 
 /**
- * An artifact list comparator.
+ * An artifact list comparator (diff).
  */
 public class ArtifactListComparator {
     private final Output output;

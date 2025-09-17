@@ -25,6 +25,8 @@ import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.internal.RuntimeSupport;
 import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
 import eu.maveniverse.maven.mima.extensions.mmr.ModelResponse;
+import eu.maveniverse.maven.toolbox.shared.ArtifactDifferentiator;
+import eu.maveniverse.maven.toolbox.shared.ArtifactKeyFactory;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
@@ -80,6 +82,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.model.DependencyManagement;
@@ -422,6 +425,16 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public ArtifactKeyFactory parseArtifactKeyFactorySpec(String spec) {
+        return ArtifactKeyFactory.build(context.repositorySystemSession().getConfigProperties(), spec);
+    }
+
+    @Override
+    public ArtifactDifferentiator parseArtifactDifferentiatorSpec(String spec) {
+        return ArtifactDifferentiator.build(context.repositorySystemSession().getConfigProperties(), spec);
+    }
+
+    @Override
     public RemoteRepository parseRemoteRepository(String spec) {
         return toolboxResolver.parseRemoteRepository(spec);
     }
@@ -511,6 +524,35 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         String.format("Classpath of %s (in order)", resolutionRoot1.getArtifact()),
                         nlg1.getArtifacts(false),
                         String.format("Classpath of %s (in order)", resolutionRoot2.getArtifact()),
+                        nlg2.getArtifacts(false));
+        return Result.success(Map.of(nlg1.getClassPath(), nlg2.getClassPath()));
+    }
+
+    @Override
+    public Result<Map<String, String>> classpathConflict(
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot1,
+            ResolutionRoot resolutionRoot2,
+            ArtifactKeyFactory artifactKeyFactory,
+            Map<String, Function<Artifact, String>> differentiators)
+            throws Exception {
+        output.suggest("Resolving {}", resolutionRoot1.getArtifact());
+        DependencyResult dependencyResult1 =
+                toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot1));
+        output.suggest("Resolving {}", resolutionRoot2.getArtifact());
+        DependencyResult dependencyResult2 =
+                toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot2));
+
+        PreorderNodeListGenerator nlg1 = new PreorderNodeListGenerator();
+        dependencyResult1.getRoot().accept(nlg1);
+        PreorderNodeListGenerator nlg2 = new PreorderNodeListGenerator();
+        dependencyResult2.getRoot().accept(nlg2);
+
+        new ArtifactConflictComparator(output, artifactKeyFactory, differentiators)
+                .compare(
+                        resolutionRoot1.getArtifact(),
+                        nlg1.getArtifacts(false),
+                        resolutionRoot2.getArtifact(),
                         nlg2.getArtifacts(false));
         return Result.success(Map.of(nlg1.getClassPath(), nlg2.getClassPath()));
     }

@@ -37,6 +37,7 @@ import eu.maveniverse.maven.toolbox.plugin.gav.GavResolveMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavResolveTransitiveMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavSearchMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavTreeDiffMojo;
+import eu.maveniverse.maven.toolbox.plugin.gav.GavTreeFindMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavTreeMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavVerifyMojo;
 import eu.maveniverse.maven.toolbox.plugin.gav.GavVersionsMojo;
@@ -85,6 +86,7 @@ import picocli.CommandLine;
             GavResolveTransitiveMojo.class,
             GavSearchMojo.class,
             GavTreeDiffMojo.class,
+            GavTreeFindMojo.class,
             GavTreeMojo.class,
             GavVerifyMojo.class,
             GavVersionsMojo.class,

@@ -966,7 +966,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 result.add(path.stream().map(DependencyNode::getArtifact).collect(Collectors.toList()));
                 String indent = "";
                 for (DependencyNode node : path) {
-                    output.tell("{}-> {}", indent, node.getArtifact());
+                    output.tell(
+                            "{}-> {}",
+                            indent,
+                            node.getDependency() != null ? node.getDependency() : node.getArtifact());
                     indent += "  ";
                 }
             }

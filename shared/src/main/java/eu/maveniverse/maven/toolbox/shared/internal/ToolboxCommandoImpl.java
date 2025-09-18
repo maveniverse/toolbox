@@ -54,11 +54,10 @@ import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -86,9 +85,12 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.model.InputLocation;
+import org.apache.maven.model.InputSource;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
+import org.apache.maven.model.io.xpp3.MavenXpp3WriterEx;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
@@ -1133,63 +1135,90 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         return Result.success(result);
     }
 
-    protected void tellModel(String title, Model model) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        MavenXpp3Writer mavenXpp3Writer = new MavenXpp3Writer();
-        mavenXpp3Writer.write(baos, model);
-        output.doTell(
-                title != null && !title.trim().isEmpty() ? title + "\n{}" : "{}",
-                baos.toString(StandardCharsets.UTF_8));
+    @Override
+    public Result<String> modelToString(Model model, boolean verbose) throws Exception {
+        String result;
+        if (verbose) {
+            StringWriter sw = new StringWriter();
+            MavenXpp3WriterEx mavenXpp3WriterEx = new MavenXpp3WriterEx();
+            mavenXpp3WriterEx.setStringFormatter(new InputLocationStringFormatter());
+            mavenXpp3WriterEx.write(sw, model);
+            result = sw.toString().replaceAll(" \\{-->", " -->\n");
+        } else {
+            StringWriter sw = new StringWriter();
+            new MavenXpp3Writer().write(sw, model);
+            result = sw.toString();
+        }
+        return Result.success(result);
     }
 
-    protected Result<Model> doEffectiveModel(boolean tell, ResolutionRoot resolutionRoot) throws Exception {
-        if (!resolutionRoot.isLoad()) {
-            throw new IllegalArgumentException("only loaded roots can be shown as effective model");
+    private static class InputLocationStringFormatter extends InputLocation.StringFormatter {
+        @Override
+        public String toString(InputLocation location) {
+            InputSource source = location.getSource();
+            String s = source.getModelId(); // by default, display modelId
+            if (s.trim().isBlank() || s.contains("[unknown-version]")) {
+                // unless it is blank or does not provide version information
+                s = source.toString();
+            }
+            return " " + s + ((location.getLineNumber() >= 0) ? ", line " + location.getLineNumber() : "") + " {";
         }
-        ModelResponse response = toolboxResolver.readModel(resolutionRoot.getArtifact());
-        if (tell) {
-            tellModel("Effective model:", response.getEffectiveModel());
-        }
-        return Result.success(response.getEffectiveModel());
     }
 
     @Override
     public Result<Model> effectiveModel(ResolutionRoot resolutionRoot) throws Exception {
-        return doEffectiveModel(true, resolutionRoot);
+        if (!resolutionRoot.isLoad()) {
+            throw new IllegalArgumentException("only loaded roots can be shown as effective model");
+        }
+        return Result.success(
+                toolboxResolver.readModel(resolutionRoot.getArtifact()).getEffectiveModel());
     }
 
     @Override
     public Result<Model> effectiveModel(ReactorLocator reactorLocator) throws Exception {
         requireNonNull(reactorLocator);
-        Result<Model> result =
-                Result.success(reactorLocator.getSelectedOrCurrentProject().effectiveModel());
-        tellModel("Effective model:", result.getData().orElseThrow());
-        return result;
+        return Result.success(reactorLocator.getSelectedOrCurrentProject().effectiveModel());
     }
 
     @Override
     public Result<Model> flattenBOM(Artifact artifact, ResolutionRoot resolutionRoot) throws Exception {
         requireNonNull(artifact);
         requireNonNull(resolutionRoot);
-        Result<Model> result = doEffectiveModel(false, resolutionRoot);
-        if (result.isSuccess()) {
-            Model resultModel = new MavenXpp3Reader()
-                    .read(new StringReader(PomSuppliers.empty400(
-                            artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion())));
-            resultModel.setPackaging("pom");
-            resultModel.setDependencyManagement(new DependencyManagement());
+        ModelResponse response = toolboxResolver.readModel(resolutionRoot.getArtifact());
+        Model resultModel = new MavenXpp3Reader()
+                .read(new StringReader(
+                        PomSuppliers.empty400(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion())));
+        resultModel.setPackaging("pom");
+        resultModel.setDependencyManagement(new DependencyManagement());
 
-            Model bomModel = result.getData().orElseThrow();
-            if (bomModel.getDependencyManagement() != null) {
-                for (org.apache.maven.model.Dependency dependency :
-                        bomModel.getDependencyManagement().getDependencies()) {
-                    resultModel.getDependencyManagement().addDependency(dependency);
-                }
+        Model bomModel = response.getEffectiveModel();
+        if (bomModel.getDependencyManagement() != null) {
+            for (org.apache.maven.model.Dependency dependency :
+                    bomModel.getDependencyManagement().getDependencies()) {
+                resultModel.getDependencyManagement().addDependency(dependency);
             }
-            tellModel("Flattened BOM:", resultModel);
-            return Result.success(resultModel);
         }
-        return result;
+        return Result.success(resultModel);
+    }
+
+    @Override
+    public Result<Model> flattenBOM(Artifact artifact, ReactorLocator reactorLocator) throws Exception {
+        requireNonNull(artifact);
+        requireNonNull(reactorLocator);
+        Model resultModel = new MavenXpp3Reader()
+                .read(new StringReader(
+                        PomSuppliers.empty400(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion())));
+        resultModel.setPackaging("pom");
+        resultModel.setDependencyManagement(new DependencyManagement());
+
+        Model bomModel = reactorLocator.getSelectedOrCurrentProject().effectiveModel();
+        if (bomModel.getDependencyManagement() != null) {
+            for (org.apache.maven.model.Dependency dependency :
+                    bomModel.getDependencyManagement().getDependencies()) {
+                resultModel.getDependencyManagement().addDependency(dependency);
+            }
+        }
+        return Result.success(resultModel);
     }
 
     @Override

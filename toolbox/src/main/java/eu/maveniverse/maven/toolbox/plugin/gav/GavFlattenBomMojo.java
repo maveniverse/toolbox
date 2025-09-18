@@ -17,7 +17,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import picocli.CommandLine;
 
 /**
- * Flattens a BOM.
+ * Flattens a BOM and outputs it to output.
  */
 @CommandLine.Command(name = "flatten-bom", description = "Flattens a BOM")
 @Mojo(name = "gav-flatten-bom", requiresProject = false, threadSafe = true)
@@ -39,9 +39,26 @@ public class GavFlattenBomMojo extends GavMojoSupport {
     @Parameter(property = "bom", required = true)
     private String bom;
 
+    /**
+     * Whether to output verbose model or not.
+     */
+    @CommandLine.Option(
+            names = {"--verbose"},
+            description = "Whether to output verbose model or not.")
+    @Parameter(property = "verbose", defaultValue = "false", required = true)
+    private boolean verbose;
+
     @Override
     protected Result<Model> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        return toolboxCommando.flattenBOM(new DefaultArtifact(gav), toolboxCommando.loadGav(bom));
+        Result<Model> result = toolboxCommando.flattenBOM(new DefaultArtifact(gav), toolboxCommando.loadGav(bom));
+        if (result.isSuccess()) {
+            Model model = result.getData().orElseThrow();
+            Result<String> modelString = toolboxCommando.modelToString(model, verbose);
+            if (modelString.isSuccess()) {
+                getOutput().tell(modelString.getData().orElseThrow());
+            }
+        }
+        return result;
     }
 }

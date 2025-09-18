@@ -26,6 +26,7 @@ import org.codehaus.plexus.interpolation.InterpolationException;
 import org.codehaus.plexus.interpolation.Interpolator;
 import org.codehaus.plexus.interpolation.PropertiesBasedValueSource;
 import org.codehaus.plexus.interpolation.StringSearchInterpolator;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.ArtifactTypeRegistry;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
@@ -127,7 +128,7 @@ public abstract class MPMojoSupport extends MojoSupport {
             boolean effective, DependencyMatcher dependencyMatcher) {
         ResolutionRoot project = projectAsResolutionRoot(effective);
         return project.getManagedDependencies().stream()
-                .filter(d -> !isReactorDependency(d))
+                .filter(d -> !isReactorProject(d.getArtifact()))
                 .filter(dependencyMatcher)
                 .map(d -> ResolutionRoot.ofLoaded(getToolboxCommando().toArtifact(d))
                         .build())
@@ -137,7 +138,7 @@ public abstract class MPMojoSupport extends MojoSupport {
     protected List<ResolutionRoot> projectDependenciesAsResolutionRoots(DependencyMatcher dependencyMatcher) {
         ResolutionRoot project = projectAsResolutionRoot();
         return project.getDependencies().stream()
-                .filter(d -> !isReactorDependency(d))
+                .filter(d -> !isReactorProject(d.getArtifact()))
                 .filter(dependencyMatcher)
                 .map(d -> ResolutionRoot.ofLoaded(getToolboxCommando().toArtifact(d))
                         .withManagedDependencies(project.getManagedDependencies())
@@ -148,14 +149,11 @@ public abstract class MPMojoSupport extends MojoSupport {
                 .collect(Collectors.toList());
     }
 
-    protected boolean isReactorDependency(Dependency dependency) {
+    protected boolean isReactorProject(Artifact artifact) {
         return mavenSession.getAllProjects().stream()
-                .anyMatch(p -> Objects.equals(
-                                p.getGroupId(), dependency.getArtifact().getGroupId())
-                        && Objects.equals(
-                                p.getArtifactId(), dependency.getArtifact().getArtifactId())
-                        && Objects.equals(
-                                p.getVersion(), dependency.getArtifact().getVersion()));
+                .anyMatch(p -> Objects.equals(p.getGroupId(), artifact.getGroupId())
+                        && Objects.equals(p.getArtifactId(), artifact.getArtifactId())
+                        && Objects.equals(p.getVersion(), artifact.getVersion()));
     }
 
     protected ReactorLocator getReactorLocator(String selector) {

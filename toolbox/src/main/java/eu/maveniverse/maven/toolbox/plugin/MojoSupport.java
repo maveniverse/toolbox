@@ -21,7 +21,6 @@ import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,35 +142,35 @@ public abstract class MojoSupport extends AbstractMojo
         return Optional.of(cwd);
     }
 
-    private final AtomicReference<Map<Object, Object>> CONTEXT = new AtomicReference<>(null);
+    private final AtomicReference<Map<Object, Object>> contextMapRef = new AtomicReference<>(null);
 
     @Override
     public void setContextMap(Map<Object, Object> context) {
         requireNonNull(context, "context map");
-        if (!CONTEXT.compareAndSet(null, context)) {
+        if (!contextMapRef.compareAndSet(null, context)) {
             throw new IllegalStateException("context map already set");
         }
     }
 
     @Override
     public Optional<Map<Object, Object>> getContextMap() {
-        return Optional.ofNullable(CONTEXT.get());
+        return Optional.ofNullable(contextMapRef.get());
     }
 
     protected <T> T getOrCreate(Class<T> key, Supplier<T> supplier) {
-        return (T) CONTEXT.get().computeIfAbsent(key, k -> supplier.get());
+        return (T) contextMapRef.get().computeIfAbsent(key, k -> supplier.get());
     }
 
     protected <T> T get(Class<T> key) {
-        return (T) requireNonNull(CONTEXT.get().get(key), "key is not present");
+        return (T) requireNonNull(contextMapRef.get().get(key), "key is not present");
     }
 
     protected <T> void set(Class<T> key, T value) {
         requireNonNull(key, "key");
         if (value == null) {
-            CONTEXT.get().remove(key);
+            contextMapRef.get().remove(key);
         } else {
-            CONTEXT.get().put(key, value);
+            contextMapRef.get().put(key, value);
         }
     }
 
@@ -278,7 +277,7 @@ public abstract class MojoSupport extends AbstractMojo
         } else if (debug) {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "DEBUG");
         }
-        boolean seeded = CONTEXT.compareAndSet(null, Collections.synchronizedMap(new HashMap<>()));
+        boolean seeded = contextMapRef.compareAndSet(null, new HashMap<>());
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
         getOrCreate(Output.class, () -> OutputFactory.createCliOutput(batch, errors, verbosity));
@@ -330,7 +329,7 @@ public abstract class MojoSupport extends AbstractMojo
                 } catch (Exception e) {
                     e.printStackTrace(System.err);
                 }
-                CONTEXT.set(null);
+                contextMapRef.set(null);
             }
         }
     }
@@ -366,7 +365,7 @@ public abstract class MojoSupport extends AbstractMojo
      */
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {
-        boolean seeded = CONTEXT.compareAndSet(null, Collections.synchronizedMap(new HashMap<>()));
+        boolean seeded = contextMapRef.compareAndSet(null, new HashMap<>());
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createMojoContextOverrides()));
         if (forceStdout) {
@@ -415,7 +414,7 @@ public abstract class MojoSupport extends AbstractMojo
                 } catch (Exception e) {
                     getLog().error(e);
                 }
-                CONTEXT.set(null);
+                contextMapRef.set(null);
             }
         }
     }

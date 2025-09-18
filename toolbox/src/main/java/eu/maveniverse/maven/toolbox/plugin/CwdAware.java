@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.plugin;
 import static java.util.Objects.requireNonNull;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 public interface CwdAware {
     /**
@@ -18,15 +19,15 @@ public interface CwdAware {
     void setCwd(Path cwd);
 
     /**
-     * Returns CWD; a non-null path that points to existing directory.
+     * Returns CWD, if set; a non-null path that points to existing directory.
      */
-    Path getCwd();
+    Optional<Path> getCwd();
 
     /**
-     * Resolves against CWD.
+     * Resolves against CWD, if set.
      */
     default Path resolve(Path path) {
         requireNonNull(path, "path");
-        return getCwd().resolve(path).normalize().toAbsolutePath();
+        return getCwd().orElseThrow().resolve(path).normalize().toAbsolutePath();
     }
 }

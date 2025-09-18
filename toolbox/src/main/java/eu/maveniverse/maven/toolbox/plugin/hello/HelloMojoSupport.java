@@ -26,7 +26,7 @@ import picocli.CommandLine;
  */
 public abstract class HelloMojoSupport extends GavMojoSupport {
     protected Path getRootPom() {
-        return getCwd().resolve("pom.xml");
+        return resolve(Path.of("pom.xml"));
     }
 
     /**

@@ -9,6 +9,8 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.toolbox.plugin.CLI;
+import eu.maveniverse.maven.toolbox.plugin.ContextMapAware;
+import eu.maveniverse.maven.toolbox.plugin.CwdAware;
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
@@ -56,7 +58,21 @@ public class GavReplMojo extends GavMojoSupport {
         builtins.alias("zle", "widget");
         builtins.alias("bindkey", "keymap");
         // set up picocli commands
-        CommandLine cmd = new CommandLine(new CLI());
+        PicocliCommands.PicocliCommandsFactory factory = new PicocliCommands.PicocliCommandsFactory() {
+            @Override
+            public <K> K create(Class<K> clazz) throws Exception {
+                K result = super.create(clazz);
+                if (result instanceof CwdAware cwdAware) {
+                    cwdAware.setCwd(getCwd().orElseThrow()); // must be set on "this"
+                }
+                if (result instanceof ContextMapAware contextMapAware) {
+                    contextMapAware.setContextMap(getContextMap().orElseThrow()); // must be set on "this"
+                }
+                return result;
+            }
+        };
+
+        CommandLine cmd = new CommandLine(new CLI(), factory);
         PicocliCommands picocliCommands = new PicocliCommands(cmd);
         picocliCommands.name("Maveniverse Toolbox");
         Parser parser = new DefaultParser();

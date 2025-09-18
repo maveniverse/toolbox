@@ -21,9 +21,11 @@ import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -39,7 +41,7 @@ import picocli.CommandLine;
  * Support class for all Mojos and Commands.
  */
 public abstract class MojoSupport extends AbstractMojo
-        implements Callable<Integer>, CwdAware, CommandLine.IVersionProvider {
+        implements Callable<Integer>, CwdAware, ContextMapAware, CommandLine.IVersionProvider {
 
     // CLI
 
@@ -137,11 +139,24 @@ public abstract class MojoSupport extends AbstractMojo
     }
 
     @Override
-    public Path getCwd() {
-        return cwd;
+    public Optional<Path> getCwd() {
+        return Optional.of(cwd);
     }
 
-    private static final AtomicReference<Map<Object, Object>> CONTEXT = new AtomicReference<>(null);
+    private final AtomicReference<Map<Object, Object>> CONTEXT = new AtomicReference<>(null);
+
+    @Override
+    public void setContextMap(Map<Object, Object> context) {
+        requireNonNull(context, "context map");
+        if (!CONTEXT.compareAndSet(null, context)) {
+            throw new IllegalStateException("context map already set");
+        }
+    }
+
+    @Override
+    public Optional<Map<Object, Object>> getContextMap() {
+        return Optional.ofNullable(CONTEXT.get());
+    }
 
     protected <T> T getOrCreate(Class<T> key, Supplier<T> supplier) {
         return (T) CONTEXT.get().computeIfAbsent(key, k -> supplier.get());
@@ -263,11 +278,12 @@ public abstract class MojoSupport extends AbstractMojo
         } else if (debug) {
             System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "DEBUG");
         }
-        boolean seeded = CONTEXT.compareAndSet(null, new HashMap<>());
+        boolean seeded = CONTEXT.compareAndSet(null, Collections.synchronizedMap(new HashMap<>()));
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createCLIContextOverrides()));
         getOrCreate(Output.class, () -> OutputFactory.createCliOutput(batch, errors, verbosity));
-        ToolboxCommando commando = ToolboxCommando.create(getOutput(), getContext());
+        ToolboxCommando commando =
+                getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getOutput(), getContext()));
         ToolboxCommando customized = null;
         if (extraRepositories != null) {
             customized = commando.withContextOverrides(getContext().contextOverrides().toBuilder()
@@ -350,7 +366,7 @@ public abstract class MojoSupport extends AbstractMojo
      */
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {
-        boolean seeded = CONTEXT.compareAndSet(null, new HashMap<>());
+        boolean seeded = CONTEXT.compareAndSet(null, Collections.synchronizedMap(new HashMap<>()));
         getOrCreate(Runtime.class, Runtimes.INSTANCE::getRuntime);
         getOrCreate(Context.class, () -> get(Runtime.class).create(createMojoContextOverrides()));
         if (forceStdout) {
@@ -359,7 +375,8 @@ public abstract class MojoSupport extends AbstractMojo
             getOrCreate(
                     Output.class, () -> OutputFactory.createMojoOutput(!mojoInteractiveMode, mojoErrors, verbosity));
         }
-        ToolboxCommando commando = ToolboxCommando.create(getOutput(), getContext());
+        ToolboxCommando commando =
+                getOrCreate(ToolboxCommando.class, () -> ToolboxCommando.create(getOutput(), getContext()));
         ToolboxCommando customized = null;
         if (extraRepositories != null) {
             customized = commando.withContextOverrides(getContext().contextOverrides().toBuilder()

@@ -11,7 +11,6 @@ import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -88,7 +87,6 @@ public abstract class MPMojoSupport extends MojoSupport {
             }
         } else {
             List<Dependency> dependencies = new ArrayList<>();
-            List<Dependency> managedDependencies = Collections.emptyList();
             Function<String, String> projectInterpolator = projectInterpolator();
             for (org.apache.maven.model.Dependency dependency :
                     mavenProject.getOriginalModel().getDependencies()) {
@@ -96,8 +94,10 @@ public abstract class MPMojoSupport extends MojoSupport {
                         new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
                         dependency.getScope()));
             }
+            // TODO: swap out entries with the ones from effective POM
+            builder.withDependencies(dependencies);
             if (mavenProject.getOriginalModel().getDependencyManagement() != null) {
-                managedDependencies = new ArrayList<>();
+                List<Dependency> managedDependencies = new ArrayList<>();
                 for (org.apache.maven.model.Dependency dependency : mavenProject
                         .getOriginalModel()
                         .getDependencyManagement()
@@ -106,8 +106,9 @@ public abstract class MPMojoSupport extends MojoSupport {
                             new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
                             dependency.getScope()));
                 }
+                // TODO: swap out entries with the ones from effective POM; except for import/pom!
+                builder.withManagedDependencies(managedDependencies);
             }
-            builder.withDependencies(dependencies).withManagedDependencies(managedDependencies);
         }
         return builder.build();
     }

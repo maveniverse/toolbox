@@ -39,7 +39,7 @@ public class CheckExclusionsMojo extends MPPluginMojoSupport {
         for (Dependency dependency : project.getDependencies()) {
             for (Exclusion exclusion : dependency.getExclusions()) {
                 ResolutionRoot dependencyRoot;
-                if (isReactorDependency(dependency)) {
+                if (isReactorProject(dependency.getArtifact())) {
                     dependencyRoot =
                             ResolutionRoot.ofNotLoaded(dependency.getArtifact()).build();
                 } else {

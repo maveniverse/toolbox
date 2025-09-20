@@ -12,15 +12,31 @@ import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import org.apache.maven.model.Model;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 
 /**
  * Shows effective model for project.
  */
 @Mojo(name = "effective-model-all", threadSafe = true)
 public class EffectiveModelMojo extends MPMojoSupport {
+
+    /**
+     * Whether to output verbose model or not.
+     */
+    @Parameter(property = "verbose", defaultValue = "false", required = true)
+    private boolean verbose;
+
     @Override
     protected Result<Model> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        return toolboxCommando.effectiveModel(getReactorLocator(null));
+        Result<Model> result = toolboxCommando.effectiveModel(getReactorLocator(null));
+        if (result.isSuccess()) {
+            Model model = result.getData().orElseThrow();
+            Result<String> modelString = toolboxCommando.modelToString(model, verbose);
+            if (modelString.isSuccess()) {
+                getOutput().tell(modelString.getData().orElseThrow());
+            }
+        }
+        return result;
     }
 }

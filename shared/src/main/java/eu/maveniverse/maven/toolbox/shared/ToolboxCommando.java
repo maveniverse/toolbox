@@ -393,6 +393,8 @@ public interface ToolboxCommando extends Closeable {
             Path output)
             throws Exception;
 
+    Result<String> modelToString(Model model, boolean verbose) throws Exception;
+
     /**
      * Returns the effective model. Works only for "loaded" roots naturally, as it needs POM.
      */
@@ -404,9 +406,14 @@ public interface ToolboxCommando extends Closeable {
     Result<Model> effectiveModel(ReactorLocator reactorLocator) throws Exception;
 
     /**
-     * Returns the effective model flattened BOM. Works only for "loaded" BOMs naturally, so it has to be installed or deployed.
+     * Returns the effective model flattened BOM.  Works only for "loaded" roots naturally, as it needs POM.
      */
     Result<Model> flattenBOM(Artifact artifact, ResolutionRoot resolutionRoot) throws Exception;
+
+    /**
+     * Returns the flattened BOM. Requires reactor locator.
+     */
+    Result<Model> flattenBOM(Artifact artifact, ReactorLocator reactorLocator) throws Exception;
 
     // Search API related commands: they target one single RemoteRepository
 

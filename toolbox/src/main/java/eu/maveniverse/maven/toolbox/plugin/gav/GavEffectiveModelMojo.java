@@ -28,9 +28,26 @@ public class GavEffectiveModelMojo extends GavMojoSupport {
     @Parameter(property = "gav", required = true)
     private String gav;
 
+    /**
+     * Whether to output verbose model or not.
+     */
+    @CommandLine.Option(
+            names = {"--verbose"},
+            description = "Whether to output verbose model or not.")
+    @Parameter(property = "verbose", defaultValue = "false", required = true)
+    private boolean verbose;
+
     @Override
     protected Result<Model> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        return toolboxCommando.effectiveModel(toolboxCommando.loadGav(gav));
+        Result<Model> result = toolboxCommando.effectiveModel(toolboxCommando.loadGav(gav));
+        if (result.isSuccess()) {
+            Model model = result.getData().orElseThrow();
+            Result<String> modelString = toolboxCommando.modelToString(model, verbose);
+            if (modelString.isSuccess()) {
+                getOutput().tell(modelString.getData().orElseThrow());
+            }
+        }
+        return result;
     }
 }

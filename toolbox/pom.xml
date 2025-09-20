@@ -241,6 +241,7 @@
                 <excludes>
                   <exclude>eu.maveniverse.maven.mima.runtime:embedded-maven</exclude>
                   <exclude>org.apache.maven.resolver:maven-resolver-util</exclude>
+                  <exclude>org.codehaus.plexus:plexus-interpolation</exclude>
                   <exclude>org.codehaus.plexus:plexus-utils</exclude>
                   <exclude>org.codehaus.plexus:plexus-xml</exclude>
                   <exclude>commons-codec:commons-codec</exclude>

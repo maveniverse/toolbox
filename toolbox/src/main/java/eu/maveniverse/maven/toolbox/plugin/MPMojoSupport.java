@@ -12,6 +12,7 @@ import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -24,6 +25,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.interpolation.InterpolationException;
 import org.codehaus.plexus.interpolation.Interpolator;
+import org.codehaus.plexus.interpolation.MapBasedValueSource;
 import org.codehaus.plexus.interpolation.PropertiesBasedValueSource;
 import org.codehaus.plexus.interpolation.StringSearchInterpolator;
 import org.eclipse.aether.artifact.ArtifactTypeRegistry;
@@ -165,6 +167,11 @@ public abstract class MPMojoSupport extends MojoSupport {
     protected Function<String, String> projectInterpolator() {
         Interpolator interpolator = new StringSearchInterpolator();
         interpolator.addValueSource(new PropertiesBasedValueSource(mavenProject.getProperties()));
+        HashMap<String, String> projectAttributes = new HashMap<>();
+        projectAttributes.put("project.groupId", mavenProject.getGroupId());
+        projectAttributes.put("project.artifactId", mavenProject.getArtifactId());
+        projectAttributes.put("project.version", mavenProject.getVersion());
+        interpolator.addValueSource(new MapBasedValueSource(projectAttributes));
         return s -> {
             try {
                 return interpolator.interpolate(s);

@@ -11,7 +11,7 @@ import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -24,6 +24,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.interpolation.InterpolationException;
 import org.codehaus.plexus.interpolation.Interpolator;
+import org.codehaus.plexus.interpolation.MapBasedValueSource;
 import org.codehaus.plexus.interpolation.PropertiesBasedValueSource;
 import org.codehaus.plexus.interpolation.StringSearchInterpolator;
 import org.eclipse.aether.artifact.ArtifactTypeRegistry;
@@ -86,7 +87,6 @@ public abstract class MPMojoSupport extends MojoSupport {
             }
         } else {
             List<Dependency> dependencies = new ArrayList<>();
-            List<Dependency> managedDependencies = Collections.emptyList();
             Function<String, String> projectInterpolator = projectInterpolator();
             for (org.apache.maven.model.Dependency dependency :
                     mavenProject.getOriginalModel().getDependencies()) {
@@ -94,8 +94,10 @@ public abstract class MPMojoSupport extends MojoSupport {
                         new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
                         dependency.getScope()));
             }
+            // TODO: swap out entries with the ones from effective POM
+            builder.withDependencies(dependencies);
             if (mavenProject.getOriginalModel().getDependencyManagement() != null) {
-                managedDependencies = new ArrayList<>();
+                List<Dependency> managedDependencies = new ArrayList<>();
                 for (org.apache.maven.model.Dependency dependency : mavenProject
                         .getOriginalModel()
                         .getDependencyManagement()
@@ -104,8 +106,9 @@ public abstract class MPMojoSupport extends MojoSupport {
                             new DefaultArtifact(projectInterpolator.apply(mavenDependencyToGavString(dependency))),
                             dependency.getScope()));
                 }
+                // TODO: swap out entries with the ones from effective POM; except for import/pom!
+                builder.withManagedDependencies(managedDependencies);
             }
-            builder.withDependencies(dependencies).withManagedDependencies(managedDependencies);
         }
         return builder.build();
     }
@@ -165,6 +168,11 @@ public abstract class MPMojoSupport extends MojoSupport {
     protected Function<String, String> projectInterpolator() {
         Interpolator interpolator = new StringSearchInterpolator();
         interpolator.addValueSource(new PropertiesBasedValueSource(mavenProject.getProperties()));
+        HashMap<String, String> projectAttributes = new HashMap<>();
+        projectAttributes.put("project.groupId", mavenProject.getGroupId());
+        projectAttributes.put("project.artifactId", mavenProject.getArtifactId());
+        projectAttributes.put("project.version", mavenProject.getVersion());
+        interpolator.addValueSource(new MapBasedValueSource(projectAttributes));
         return s -> {
             try {
                 return interpolator.interpolate(s);

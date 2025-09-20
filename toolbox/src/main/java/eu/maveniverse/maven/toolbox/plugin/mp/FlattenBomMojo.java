@@ -45,6 +45,12 @@ public class FlattenBomMojo extends MPMojoSupport {
     @Parameter(property = "outputFile", defaultValue = "${project.build.directory}/flatten-bom.xml", required = true)
     private File outputFile;
 
+    /**
+     * Whether to attach to project the flattened BOM or not.
+     */
+    @Parameter(property = "attach", defaultValue = "false", required = true)
+    private boolean attach;
+
     @Override
     protected Result<Model> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
@@ -63,25 +69,32 @@ public class FlattenBomMojo extends MPMojoSupport {
             try (OutputStream out = Files.newOutputStream(outputFile.toPath())) {
                 new MavenXpp3Writer().write(out, model);
             }
-            if (!output.getClassifier().trim().isEmpty()) {
-                getLog().debug("Attaching BOM w/ classifier: " + output.getClassifier());
-                org.apache.maven.artifact.DefaultArtifact artifact = new org.apache.maven.artifact.DefaultArtifact(
-                        output.getGroupId(),
-                        output.getArtifactId(),
-                        output.getVersion(),
-                        null,
-                        "pom",
-                        output.getClassifier(),
-                        artifactHandlerManager.getArtifactHandler("pom"));
-                artifact.setFile(outputFile);
-                mavenProject.addAttachedArtifact(artifact);
-            } else if (Objects.equals("pom", mavenProject.getPackaging())
-                    && mavenProject.getModules().isEmpty()) {
-                getLog().debug("Replacing module POM w/ generated BOM");
-                mavenProject.setFile(outputFile);
+            if (attach) {
+                if (!output.getClassifier().trim().isEmpty()) {
+                    getLog().debug("Attaching BOM w/ classifier: " + output.getClassifier());
+                    org.apache.maven.artifact.DefaultArtifact artifact = new org.apache.maven.artifact.DefaultArtifact(
+                            output.getGroupId(),
+                            output.getArtifactId(),
+                            output.getVersion(),
+                            null,
+                            "pom",
+                            output.getClassifier(),
+                            artifactHandlerManager.getArtifactHandler("pom"));
+                    artifact.setFile(outputFile);
+                    mavenProject.addAttachedArtifact(artifact);
+                } else if (Objects.equals("pom", mavenProject.getPackaging())
+                        && mavenProject.getModules().isEmpty()) {
+                    getLog().debug("Replacing module POM w/ generated BOM");
+                    mavenProject.setFile(outputFile);
+                } else {
+                    throw new MojoExecutionException(
+                            "Cannot replace project POM: invalid project (packaging=pom w/o modules)");
+                }
             } else {
-                throw new MojoExecutionException(
-                        "Cannot replace project POM: invalid project (packaging=pom w/o modules)");
+                Result<String> modelString = toolboxCommando.modelToString(model, false);
+                if (modelString.isSuccess()) {
+                    getOutput().tell(modelString.getData().orElseThrow());
+                }
             }
         }
         return result;

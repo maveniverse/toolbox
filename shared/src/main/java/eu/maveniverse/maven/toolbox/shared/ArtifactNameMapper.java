@@ -304,8 +304,12 @@ public interface ArtifactNameMapper extends Function<Artifact, String> {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         ArtifactNameMapperBuilder builder = new ArtifactNameMapperBuilder(properties);
-        SpecParser.parse(spec).accept(builder);
-        return builder.build();
+        try {
+            SpecParser.parse(spec).accept(builder);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid artifact name mapper spec: " + spec, e);
+        }
     }
 
     class ArtifactNameMapperBuilder extends SpecParser.Builder {

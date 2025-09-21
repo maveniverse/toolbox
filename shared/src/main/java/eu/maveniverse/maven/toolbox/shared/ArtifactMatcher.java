@@ -117,8 +117,12 @@ public interface ArtifactMatcher extends Predicate<Artifact> {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         ArtifactMatcherBuilder builder = new ArtifactMatcherBuilder(properties);
-        SpecParser.parse(spec).accept(builder);
-        return builder.build();
+        try {
+            SpecParser.parse(spec).accept(builder);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid artifact matcher spec: " + spec, e);
+        }
     }
 
     class ArtifactMatcherBuilder extends SpecParser.Builder {

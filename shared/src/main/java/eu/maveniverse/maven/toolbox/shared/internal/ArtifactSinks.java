@@ -52,8 +52,12 @@ public final class ArtifactSinks {
         requireNonNull(tc, "tc");
         requireNonNull(spec, "spec");
         ArtifactSinkBuilder builder = new ArtifactSinkBuilder(properties, tc, dryRun);
-        SpecParser.parse(spec).accept(builder);
-        return builder.build();
+        try {
+            SpecParser.parse(spec).accept(builder);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid artifact sink spec: " + spec, e);
+        }
     }
 
     static class ArtifactSinkBuilder extends SpecParser.Builder {
@@ -95,7 +99,15 @@ public final class ArtifactSinks {
                     break;
                 }
                 case "stat": {
-                    params.add(statArtifactSink(0, booleanParam(node.getValue()), tc.output()));
+                    boolean details;
+                    if (node.getChildren().isEmpty()) {
+                        details = true; // user typed "stat()", most probably is interested in details
+                    } else if (node.getChildren().size() == 1) {
+                        details = booleanParam(node.getValue()); // use param, user typed "stat(bool)"
+                    } else {
+                        throw new IllegalArgumentException("op stat accepts only 0..1 argument");
+                    }
+                    params.add(statArtifactSink(0, details, tc.output()));
                     break;
                 }
                 case "tee": {

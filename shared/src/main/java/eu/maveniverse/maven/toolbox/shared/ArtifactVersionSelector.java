@@ -157,8 +157,12 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
         requireNonNull(spec, "spec");
         ArtifactVersionSelector.ArtifactVersionSelectorBuilder builder =
                 new ArtifactVersionSelector.ArtifactVersionSelectorBuilder(versionScheme, properties);
-        SpecParser.parse(spec).accept(builder);
-        return builder.build();
+        try {
+            SpecParser.parse(spec).accept(builder);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid artifact version selector spec: " + spec, e);
+        }
     }
 
     class ArtifactVersionSelectorBuilder extends SpecParser.Builder {

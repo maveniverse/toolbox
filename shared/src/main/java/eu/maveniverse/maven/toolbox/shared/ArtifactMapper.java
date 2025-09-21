@@ -140,8 +140,12 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         ArtifactMapperBuilder builder = new ArtifactMapperBuilder(properties);
-        SpecParser.parse(spec).accept(builder);
-        return builder.build();
+        try {
+            SpecParser.parse(spec).accept(builder);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid artifact mapper spec:" + spec, e);
+        }
     }
 
     class ArtifactMapperBuilder extends SpecParser.Builder {

@@ -105,7 +105,10 @@ import picocli.CommandLine;
 public class CLI extends MojoSupport {
     @Override
     protected Result<String> doExecute() throws Exception {
-        return new GavReplMojo().doExecute();
+        GavReplMojo repl = new GavReplMojo();
+        repl.setCwd(getCwd().orElseThrow());
+        repl.setContextMap(getContextMap().orElseThrow());
+        return repl.doExecute();
     }
 
     public static void main(String... args) {

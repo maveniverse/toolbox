@@ -8,7 +8,7 @@
 
 StringBuilder out = new StringBuilder()
 StringBuilder err = new StringBuilder()
-String[] args = ["${java}", '-jar', "${cli}", "-e"]
+String[] args = ["${java}", "-Dorg.jline.terminal.provider=dumb", '-jar', "${cli}", "-e"] // dumb to prevent Jline3 warning
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()
@@ -17,4 +17,4 @@ process.getOutputStream().flush()
 process.getOutputStream().close()
 process.waitFor()
 
-assert !err.toString().contains("NullPointerException")
+assert err.toString().isBlank()

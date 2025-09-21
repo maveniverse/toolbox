@@ -181,8 +181,12 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         ArtifactVersionMatcherBuilder builder = new ArtifactVersionMatcherBuilder(versionScheme, properties);
-        SpecParser.parse(spec).accept(builder);
-        return builder.build();
+        try {
+            SpecParser.parse(spec).accept(builder);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid version matcher spec: " + spec, e);
+        }
     }
 
     class ArtifactVersionMatcherBuilder extends SpecParser.Builder {

@@ -109,8 +109,12 @@ public interface DependencyMatcher extends Predicate<Dependency> {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         DependencyMatcherBuilder builder = new DependencyMatcherBuilder(properties);
-        SpecParser.parse(spec).accept(builder);
-        return builder.build();
+        try {
+            SpecParser.parse(spec).accept(builder);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid dependency matcher spec: " + spec, e);
+        }
     }
 
     class DependencyMatcherBuilder extends SpecParser.Builder {

@@ -78,8 +78,12 @@ public interface ArtifactDifferentiator extends Function<Artifact, String> {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
         ArtifactKeyFactoryBuilder builder = new ArtifactKeyFactoryBuilder(properties);
-        SpecParser.parse(spec).accept(builder);
-        return builder.build();
+        try {
+            SpecParser.parse(spec).accept(builder);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid artifact differentiator spec: " + spec, e);
+        }
     }
 
     class ArtifactKeyFactoryBuilder extends SpecParser.Builder {

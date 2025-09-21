@@ -41,8 +41,12 @@ public final class ArtifactSources {
         requireNonNull(tc, "tc");
         requireNonNull(spec, "spec");
         ArtifactSourceBuilder builder = new ArtifactSourceBuilder(properties, tc);
-        SpecParser.parse(spec).accept(builder);
-        return builder.build();
+        try {
+            SpecParser.parse(spec).accept(builder);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Invalid artifact source spec:" + spec, e);
+        }
     }
 
     static class ArtifactSourceBuilder extends SpecParser.Builder {

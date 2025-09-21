@@ -22,7 +22,10 @@ import picocli.CommandLine;
 
 /**
  * Resolves a given GAV and copies resulting artifact to target.
+ *
+ * @deprecated Use {@code copy resolve(gav(GAV)) sink} instead.
  */
+@Deprecated
 @CommandLine.Command(name = "copy-gav", description = "Resolves Maven Artifact and copies it to target")
 @Mojo(name = "gav-copy-gav", requiresProject = false, threadSafe = true)
 public final class GavCopyGavMojo extends GavMojoSupport {

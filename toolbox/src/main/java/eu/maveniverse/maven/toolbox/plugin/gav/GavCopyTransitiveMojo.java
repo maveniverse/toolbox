@@ -21,7 +21,10 @@ import picocli.CommandLine;
 
 /**
  * Resolves Maven Artifact transitively and copies all of them to target.
+ *
+ * @deprecated Use {@code copy resolveTransitive(gav(GAV), scope)) sink} instead.
  */
+@Deprecated
 @CommandLine.Command(
         name = "copy-transitive",
         description = "Resolves Maven Artifact transitively and copies all of them to target")

@@ -36,8 +36,12 @@ public final class DependencySinks {
         requireNonNull(tc, "tc");
         requireNonNull(spec, "spec");
         DependencySinkBuilder builder = new DependencySinkBuilder(properties, tc, dryRun);
-        SpecParser.parse(spec).accept(builder);
-        return builder.build();
+        try {
+            SpecParser.parse(spec).accept(builder);
+            return builder.build();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid dependency sink spec: " + spec, e);
+        }
     }
 
     static class DependencySinkBuilder extends SpecParser.Builder {

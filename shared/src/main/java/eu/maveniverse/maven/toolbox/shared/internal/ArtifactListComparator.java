@@ -14,6 +14,8 @@ import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.jline.jansi.Ansi;
@@ -40,11 +42,16 @@ public class ArtifactListComparator {
         if (a1Sa2.isEmpty() && a2Sa1.isEmpty()) {
             output.tell(marker.outstanding("No differences found.").toString());
         } else if (unified) {
-            LinkedHashMap<String, Artifact> lm = new LinkedHashMap<>();
-            a1.forEach(a -> lm.put(ArtifactIdUtils.toVersionlessId(a), a));
-
-            LinkedHashMap<String, Artifact> rm = new LinkedHashMap<>();
-            a2.forEach(a -> rm.put(ArtifactIdUtils.toVersionlessId(a), a));
+            // GACE -> List<Artifact> idx=0 is left, idx=1 is right
+            LinkedHashMap<String, List<Artifact>> umap = new LinkedHashMap<>();
+            a1.forEach(a -> umap.computeIfAbsent(ArtifactIdUtils.toVersionlessId(a), k -> new ArrayList<>())
+                    .add(a));
+            a2.forEach(a -> umap.computeIfAbsent(ArtifactIdUtils.toVersionlessId(a), k -> {
+                        List<Artifact> list = new ArrayList<>();
+                        list.add(null);
+                        return list;
+                    })
+                    .add(a));
 
             String diffSame = Ansi.ansi().fg(Ansi.Color.WHITE).a("   ").reset().toString();
             String diffModified =
@@ -52,7 +59,26 @@ public class ArtifactListComparator {
             String diffAdded = Ansi.ansi().fg(Ansi.Color.GREEN).a("+++").reset().toString();
             String diffRemoved = Ansi.ansi().fg(Ansi.Color.RED).a("---").reset().toString();
 
-            throw new RuntimeException("to be done");
+            for (Map.Entry<String, List<Artifact>> entry : umap.entrySet()) {
+                Artifact left = entry.getValue().get(0);
+                Artifact right = entry.getValue().size() == 2 ? entry.getValue().get(1) : null;
+                if (Objects.equals(left, right)) {
+                    output.tell(diffSame + " "
+                            + marker.normal(ArtifactIdUtils.toId(left)).toString());
+                } else if (left == null) {
+                    output.tell(diffAdded + " "
+                            + marker.outstanding(ArtifactIdUtils.toId(right)).toString());
+                } else if (right == null) {
+                    output.tell(diffRemoved + " "
+                            + marker.bloody(ArtifactIdUtils.toId(left)).toString());
+                } else {
+                    output.tell(diffModified + " "
+                            + marker.normal(ArtifactIdUtils.toVersionlessId(left))
+                                    .toString() + " "
+                            + marker.bloody(left.getVersion()).toString() + " > "
+                            + marker.bloody(right.getVersion()).toString());
+                }
+            }
         } else {
             String diffSame = Ansi.ansi().fg(Ansi.Color.WHITE).a("   ").reset().toString();
             String diffAdded = Ansi.ansi().fg(Ansi.Color.GREEN).a("+++").reset().toString();

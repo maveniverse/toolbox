@@ -60,12 +60,23 @@ public class GavClasspathDiffMojo extends GavMojoSupport {
     @Parameter(property = "boms")
     private String boms;
 
+    /**
+     * Set it {@code true} for unified diff.
+     */
+    @CommandLine.Option(
+            names = {"--unified"},
+            defaultValue = "false",
+            description = "Make it true for unified diff")
+    @Parameter(property = "unified", defaultValue = "false", required = true)
+    private boolean unified;
+
     @Override
     protected Result<Map<String, String>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.classpathDiff(
                 ResolutionScope.parse(scope),
                 toolboxCommando.loadGav(gav1, slurp(boms)),
-                toolboxCommando.loadGav(gav2, slurp(boms)));
+                toolboxCommando.loadGav(gav2, slurp(boms)),
+                unified);
     }
 }

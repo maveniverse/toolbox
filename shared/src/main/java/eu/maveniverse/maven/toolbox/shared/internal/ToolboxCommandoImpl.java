@@ -507,7 +507,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<Map<String, String>> classpathDiff(
-            ResolutionScope resolutionScope, ResolutionRoot resolutionRoot1, ResolutionRoot resolutionRoot2)
+            ResolutionScope resolutionScope,
+            ResolutionRoot resolutionRoot1,
+            ResolutionRoot resolutionRoot2,
+            boolean unified)
             throws Exception {
         output.suggest("Resolving {}", resolutionRoot1.getArtifact());
         DependencyResult dependencyResult1 =
@@ -521,11 +524,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         PreorderNodeListGenerator nlg2 = new PreorderNodeListGenerator();
         dependencyResult2.getRoot().accept(nlg2);
 
-        new ArtifactListComparator(output)
+        new ArtifactListComparator(output, unified)
                 .compare(
-                        String.format("Classpath of %s (in order)", resolutionRoot1.getArtifact()),
+                        resolutionRoot1.getArtifact(),
                         nlg1.getArtifacts(false),
-                        String.format("Classpath of %s (in order)", resolutionRoot2.getArtifact()),
+                        resolutionRoot2.getArtifact(),
                         nlg2.getArtifacts(false));
         return Result.success(Map.of(nlg1.getClassPath(), nlg2.getClassPath()));
     }

@@ -75,7 +75,7 @@ public class ArtifactListComparator {
                     output.tell(diffModified + " "
                             + marker.normal(ArtifactIdUtils.toVersionlessId(left))
                                     .toString() + " "
-                            + marker.bloody(left.getVersion()).toString() + " > "
+                            + marker.bloody(left.getVersion()).toString() + " -> "
                             + marker.bloody(right.getVersion()).toString());
                 }
             }

@@ -28,7 +28,7 @@ public final class StringSlurper {
         if (csv == null || csv.trim().isEmpty()) {
             return Collections.emptyList();
         }
-        return Arrays.asList(csv.split(","));
+        return Arrays.asList(csv.split("[,;|]"));
     }
 
     /**

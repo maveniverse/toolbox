@@ -76,17 +76,21 @@ public class DependencyGraphComparator implements DependencyVisitor {
         while (!ns1.isEmpty() || !ns2.isEmpty()) {
             if (ns1.isEmpty()) {
                 cmp = 1;
-                ArrayDeque<DependencyNode> path = ns2.peek();
-                DependencyNode current = path.pop();
-                this.nodes = path;
-                current.accept(this);
+                while (!ns2.isEmpty()) {
+                    ArrayDeque<DependencyNode> path = ns2.pop();
+                    DependencyNode current = path.pop();
+                    this.nodes = path;
+                    current.accept(this);
+                }
                 return;
             } else if (ns2.isEmpty()) {
                 cmp = -1;
-                ArrayDeque<DependencyNode> path = ns1.peek();
-                DependencyNode current = path.pop();
-                this.nodes = path;
-                current.accept(this);
+                while (!ns1.isEmpty()) {
+                    ArrayDeque<DependencyNode> path = ns1.pop();
+                    DependencyNode current = path.pop();
+                    this.nodes = path;
+                    current.accept(this);
+                }
                 return;
             }
 

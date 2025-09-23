@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
+import eu.maveniverse.maven.toolbox.shared.FileUtils;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -202,7 +203,7 @@ public final class UnpackSink implements Artifacts.Sink {
                     Files.createDirectories(f);
                 } else {
                     Files.createDirectories(f.getParent());
-                    mayCopy(f, tar, entry.getLastModifiedTime());
+                    mayCopy(f, tar, entry.getLastModifiedTime(), entry.getMode());
                 }
             }
         }
@@ -223,7 +224,7 @@ public final class UnpackSink implements Artifacts.Sink {
                     Files.createDirectories(f);
                 } else {
                     Files.createDirectories(f.getParent());
-                    mayCopy(f, zip.getInputStream(entry), entry.getLastModifiedTime());
+                    mayCopy(f, zip.getInputStream(entry), entry.getLastModifiedTime(), entry.getUnixMode());
                 }
             }
         }
@@ -243,7 +244,7 @@ public final class UnpackSink implements Artifacts.Sink {
                     Files.createDirectories(f);
                 } else {
                     Files.createDirectories(f.getParent());
-                    mayCopy(f, jar, entry.getLastModifiedTime());
+                    mayCopy(f, jar, entry.getLastModifiedTime(), entry.getUnixMode());
                 }
             }
         }
@@ -257,7 +258,7 @@ public final class UnpackSink implements Artifacts.Sink {
         return f;
     }
 
-    private void mayCopy(Path target, InputStream inputStream, FileTime fileTime) throws IOException {
+    private void mayCopy(Path target, InputStream inputStream, FileTime fileTime, int mode) throws IOException {
         if (Files.exists(target) && !allowEntryOverwrite) {
             throw new IOException("Entry overwrite prevented; overlap in archives");
         }
@@ -267,6 +268,7 @@ public final class UnpackSink implements Artifacts.Sink {
                 Files.setLastModifiedTime(target, fileTime);
             }
         }
+        FileUtils.setPosixPermissionsFromUnixMode(target, mode);
     }
 
     @Override

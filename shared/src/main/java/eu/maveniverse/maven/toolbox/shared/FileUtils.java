@@ -17,6 +17,9 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -208,6 +211,36 @@ public final class FileUtils {
                 Files.copy(target, parent.resolve(target.getFileName() + ".bak"), StandardCopyOption.REPLACE_EXISTING);
             }
             tempFile.move();
+        }
+    }
+
+    /**
+     * Sets {@link PosixFilePermission}s on given target based on "unix mode". This is mostly for interoperability with
+     * libraries using "int mode" like Commons Compress is.
+     * <p>
+     * Code borrowed from Ant <a href="https://github.com/apache/ant/blob/rel/1.10.15/src/main/org/apache/tools/ant/util/PermissionUtils.java">PermissionUtils.java</a>, from where else?
+     */
+    public static boolean setPosixPermissionsFromUnixMode(Path target, int mode) throws IOException {
+        if (IS_WINDOWS) {
+            return false;
+        }
+        Set<PosixFilePermission> permissions = EnumSet.noneOf(PosixFilePermission.class);
+        addPermissions(permissions, "OTHERS", mode);
+        addPermissions(permissions, "GROUP", mode >> 3);
+        addPermissions(permissions, "OWNER", mode >> 6);
+        Files.setPosixFilePermissions(target, permissions);
+        return true;
+    }
+
+    private static void addPermissions(Set<PosixFilePermission> permissions, String prefix, int mode) {
+        if ((mode & 1) == 1) {
+            permissions.add(PosixFilePermission.valueOf(prefix + "_EXECUTE"));
+        }
+        if ((mode & 2) == 2) {
+            permissions.add(PosixFilePermission.valueOf(prefix + "_WRITE"));
+        }
+        if ((mode & 4) == 4) {
+            permissions.add(PosixFilePermission.valueOf(prefix + "_READ"));
         }
     }
 }

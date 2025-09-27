@@ -13,14 +13,24 @@ The Toolbox project started with manifold aims:
 
 ## Usage
 
-Usage: use the help command/mojo to get help about Toolbox:
+Usage: Use the `help` command/mojo to get help about Toolbox:
+
 ```
 $ mvn eu.maveniverse.maven.plugins:toolbox:help -Ddetail
 ```
-or
+
+Use the `goal` property to display details for a specific command:
+
+```
+$mvn eu.maveniverse.maven.plugins:toolbox:help -Ddetail=true -Dgoal=gav-classpath
+```
+
+or, instead of `mvn` use [JBang](https://www.jbang.dev):
+
 ```
 $ jbang toolbox@maveniverse --help
 ```
+
 or you can download the CLI JAR from Maven Central and run it directly.
 Finally, just go over sources to get the idea what is happening.
 

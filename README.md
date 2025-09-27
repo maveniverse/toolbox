@@ -22,7 +22,7 @@ $ mvn eu.maveniverse.maven.plugins:toolbox:help -Ddetail
 Use the `goal` property to display details for a specific command:
 
 ```
-$mvn eu.maveniverse.maven.plugins:toolbox:help -Ddetail=true -Dgoal=gav-classpath
+$ mvn eu.maveniverse.maven.plugins:toolbox:help -Ddetail=true -Dgoal=gav-classpath
 ```
 
 or, instead of `mvn` use [JBang](https://www.jbang.dev):

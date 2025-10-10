@@ -54,6 +54,7 @@ import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -121,7 +122,6 @@ import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.graph.visitor.CloningDependencyVisitor;
 import org.eclipse.aether.util.graph.visitor.FilteringDependencyVisitor;
 import org.eclipse.aether.util.graph.visitor.PathRecordingDependencyVisitor;
-import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.util.listener.ChainedRepositoryListener;
 import org.eclipse.aether.util.version.GenericVersionScheme;
@@ -498,11 +498,23 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         } else {
             return Result.success("");
         }
-        PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
-        dependencyResult.getRoot().accept(nlg);
-        String classpathString = nlg.getClassPath();
+        String classpathString = classpath(dependencyResult);
         output.doTell(classpathString);
         return Result.success(classpathString);
+    }
+
+    private static String classpath(DependencyResult dependencyResult) {
+        StringBuilder buffer = new StringBuilder(1024);
+        for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
+            Artifact artifact = artifactResult.getArtifact();
+            if (artifact.getFile() != null) {
+                if (!buffer.isEmpty()) {
+                    buffer.append(File.pathSeparatorChar);
+                }
+                buffer.append(artifact.getFile().getAbsolutePath());
+            }
+        }
+        return buffer.toString();
     }
 
     @Override
@@ -519,18 +531,19 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         DependencyResult dependencyResult2 =
                 toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot2));
 
-        PreorderNodeListGenerator nlg1 = new PreorderNodeListGenerator();
-        dependencyResult1.getRoot().accept(nlg1);
-        PreorderNodeListGenerator nlg2 = new PreorderNodeListGenerator();
-        dependencyResult2.getRoot().accept(nlg2);
-
         new ArtifactListComparator(output, unified)
                 .compare(
                         resolutionRoot1.getArtifact(),
-                        nlg1.getArtifacts(false),
+                        dependencyResult1.getArtifactResults().stream()
+                                .map(ArtifactResult::getArtifact)
+                                .filter(a -> a.getFile() != null)
+                                .toList(),
                         resolutionRoot2.getArtifact(),
-                        nlg2.getArtifacts(false));
-        return Result.success(Map.of(nlg1.getClassPath(), nlg2.getClassPath()));
+                        dependencyResult2.getArtifactResults().stream()
+                                .map(ArtifactResult::getArtifact)
+                                .filter(a -> a.getFile() != null)
+                                .toList());
+        return Result.success(Map.of(classpath(dependencyResult1), classpath(dependencyResult2)));
     }
 
     @Override
@@ -548,18 +561,19 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         DependencyResult dependencyResult2 =
                 toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot2));
 
-        PreorderNodeListGenerator nlg1 = new PreorderNodeListGenerator();
-        dependencyResult1.getRoot().accept(nlg1);
-        PreorderNodeListGenerator nlg2 = new PreorderNodeListGenerator();
-        dependencyResult2.getRoot().accept(nlg2);
-
         new ArtifactConflictComparator(output, artifactKeyFactory, differentiators)
                 .compare(
                         resolutionRoot1.getArtifact(),
-                        nlg1.getArtifacts(false),
+                        dependencyResult1.getArtifactResults().stream()
+                                .map(ArtifactResult::getArtifact)
+                                .filter(a -> a.getFile() != null)
+                                .toList(),
                         resolutionRoot2.getArtifact(),
-                        nlg2.getArtifacts(false));
-        return Result.success(Map.of(nlg1.getClassPath(), nlg2.getClassPath()));
+                        dependencyResult2.getArtifactResults().stream()
+                                .map(ArtifactResult::getArtifact)
+                                .filter(a -> a.getFile() != null)
+                                .toList());
+        return Result.success(Map.of(classpath(dependencyResult1), classpath(dependencyResult2)));
     }
 
     @Override

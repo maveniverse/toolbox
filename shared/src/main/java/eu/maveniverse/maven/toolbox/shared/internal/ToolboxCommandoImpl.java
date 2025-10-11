@@ -490,6 +490,16 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         return buffer.toString();
     }
 
+    /**
+     * Helper method to return resolved artifacts out of {@link DependencyResult}.
+     */
+    protected List<Artifact> resolvedArtifacts(DependencyResult dependencyResult) {
+        return dependencyResult.getArtifactResults().stream()
+                .filter(ArtifactResult::isResolved)
+                .map(ArtifactResult::getArtifact)
+                .toList();
+    }
+
     @Override
     public Result<String> classpath(ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots)
             throws Exception {
@@ -521,6 +531,38 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public Result<List<Artifact>> classpathList(
+            ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots) throws Exception {
+        DependencyResult dependencyResult;
+        if (resolutionRoots.size() == 1) {
+            ResolutionRoot resolutionRoot = resolutionRoots.iterator().next();
+            output.suggest("Resolving {}", resolutionRoot.getArtifact());
+            dependencyResult = toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot));
+        } else if (resolutionRoots.size() > 1) {
+            List<Dependency> dependencies = new ArrayList<>(resolutionRoots.size());
+            for (ResolutionRoot resolutionRoot : resolutionRoots) {
+                if (!resolutionRoot.isLoad()) {
+                    throw new IllegalArgumentException("Cannot resolve non-load dependency: " + resolutionRoot);
+                }
+                output.suggest("Resolving as dependency {}", resolutionRoot.getArtifact());
+                dependencies.add(new Dependency(resolutionRoot.getArtifact(), JavaScopes.COMPILE));
+            }
+            dependencyResult = toolboxResolver.resolve(
+                    resolutionScope,
+                    ResolutionRoot.ofNotLoaded(new DefaultArtifact("fake:fake:1.0"))
+                            .withDependencies(dependencies)
+                            .build());
+        } else {
+            return Result.success(List.of());
+        }
+        List<Artifact> result = resolvedArtifacts(dependencyResult);
+        try (ArtifactSinks.StatArtifactSink sink = ArtifactSinks.statArtifactSink(2, false, output)) {
+            sink.accept(result);
+        }
+        return Result.success(result);
+    }
+
+    @Override
     public Result<Map<String, String>> classpathDiff(
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot1,
@@ -537,15 +579,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         new ArtifactListComparator(output, unified)
                 .compare(
                         resolutionRoot1.getArtifact(),
-                        dependencyResult1.getArtifactResults().stream()
-                                .map(ArtifactResult::getArtifact)
-                                .filter(a -> a.getFile() != null)
-                                .toList(),
+                        resolvedArtifacts(dependencyResult1),
                         resolutionRoot2.getArtifact(),
-                        dependencyResult2.getArtifactResults().stream()
-                                .map(ArtifactResult::getArtifact)
-                                .filter(a -> a.getFile() != null)
-                                .toList());
+                        resolvedArtifacts(dependencyResult2));
         return Result.success(Map.of(classpath(dependencyResult1), classpath(dependencyResult2)));
     }
 
@@ -567,15 +603,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         new ArtifactConflictComparator(output, artifactKeyFactory, differentiators)
                 .compare(
                         resolutionRoot1.getArtifact(),
-                        dependencyResult1.getArtifactResults().stream()
-                                .map(ArtifactResult::getArtifact)
-                                .filter(a -> a.getFile() != null)
-                                .toList(),
+                        resolvedArtifacts(dependencyResult1),
                         resolutionRoot2.getArtifact(),
-                        dependencyResult2.getArtifactResults().stream()
-                                .map(ArtifactResult::getArtifact)
-                                .filter(a -> a.getFile() != null)
-                                .toList());
+                        resolvedArtifacts(dependencyResult2));
         return Result.success(Map.of(classpath(dependencyResult1), classpath(dependencyResult2)));
     }
 

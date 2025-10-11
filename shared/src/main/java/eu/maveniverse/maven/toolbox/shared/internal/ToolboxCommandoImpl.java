@@ -473,6 +473,23 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }
     }
 
+    /**
+     * Helper method to build classpath string out of {@link DependencyResult}.
+     */
+    protected String classpath(DependencyResult dependencyResult) {
+        StringBuilder buffer = new StringBuilder(1024);
+        for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
+            Artifact artifact = artifactResult.getArtifact();
+            if (artifact.getFile() != null) {
+                if (!buffer.isEmpty()) {
+                    buffer.append(File.pathSeparatorChar);
+                }
+                buffer.append(artifact.getFile().getAbsolutePath());
+            }
+        }
+        return buffer.toString();
+    }
+
     @Override
     public Result<String> classpath(ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots)
             throws Exception {
@@ -501,20 +518,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         String classpathString = classpath(dependencyResult);
         output.doTell(classpathString);
         return Result.success(classpathString);
-    }
-
-    private static String classpath(DependencyResult dependencyResult) {
-        StringBuilder buffer = new StringBuilder(1024);
-        for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
-            Artifact artifact = artifactResult.getArtifact();
-            if (artifact.getFile() != null) {
-                if (!buffer.isEmpty()) {
-                    buffer.append(File.pathSeparatorChar);
-                }
-                buffer.append(artifact.getFile().getAbsolutePath());
-            }
-        }
-        return buffer.toString();
     }
 
     @Override

@@ -532,7 +532,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<List<Artifact>> classpathList(
-            ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots) throws Exception {
+            ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots, boolean details)
+            throws Exception {
         DependencyResult dependencyResult;
         if (resolutionRoots.size() == 1) {
             ResolutionRoot resolutionRoot = resolutionRoots.iterator().next();
@@ -556,7 +557,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             return Result.success(List.of());
         }
         List<Artifact> result = resolvedArtifacts(dependencyResult);
-        try (ArtifactSinks.StatArtifactSink sink = ArtifactSinks.statArtifactSink(2, false, output)) {
+        try (ArtifactSinks.StatArtifactSink sink = ArtifactSinks.statArtifactSink(0, true, details, output)) {
             sink.accept(result);
         }
         return Result.success(result);
@@ -809,7 +810,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         List<Artifact> artifacts = artifactSource.get().collect(Collectors.toList());
         output.suggest("Resolving {}", artifacts);
         try (Sink<Artifact> artifactSink =
-                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, output))) {
+                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, true, output))) {
             List<Artifact> artifactResults = toolboxResolver.resolveArtifacts(artifacts).stream()
                     .map(r -> origin(r.getArtifact(), r.getRepository()))
                     .collect(Collectors.toList());
@@ -860,7 +861,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean signature,
             Sink<Artifact> sink)
             throws Exception {
-        ArtifactSinks.StatArtifactSink stat = ArtifactSinks.statArtifactSink(0, false, output);
+        ArtifactSinks.StatArtifactSink stat = ArtifactSinks.statArtifactSink(0, false, false, output);
         try (Sink<Artifact> artifactSink = ArtifactSinks.teeArtifactSink(sink, stat)) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 doResolveTransitive(
@@ -871,7 +872,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         signature,
                         ArtifactSinks.teeArtifactSink(
                                 ArtifactSinks.nonClosingArtifactSink(artifactSink),
-                                ArtifactSinks.statArtifactSink(1, true, output)));
+                                ArtifactSinks.statArtifactSink(1, true, true, output)));
             }
         }
         return stat.getSeenArtifacts().isEmpty()

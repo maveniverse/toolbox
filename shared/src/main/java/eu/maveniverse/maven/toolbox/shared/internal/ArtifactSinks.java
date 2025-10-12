@@ -99,15 +99,24 @@ public final class ArtifactSinks {
                     break;
                 }
                 case "stat": {
+                    boolean list;
                     boolean details;
                     if (node.getChildren().isEmpty()) {
-                        details = true; // user typed "stat()", most probably is interested in details
+                        // user typed "stat()", most probably is interested in details
+                        list = true;
+                        details = true;
                     } else if (node.getChildren().size() == 1) {
-                        details = booleanParam(node.getValue()); // use param, user typed "stat(bool)"
+                        // use param, user typed "stat(bool)"
+                        list = true;
+                        details = booleanParam(node.getChildren().get(0).getValue());
+                    } else if (node.getChildren().size() == 2) {
+                        // use param, user typed "stat(bool)"
+                        list = booleanParam(node.getChildren().get(0).getValue());
+                        details = booleanParam(node.getChildren().get(1).getValue());
                     } else {
-                        throw new IllegalArgumentException("op stat accepts only 0..1 argument");
+                        throw new IllegalArgumentException("op stat accepts only 0..2 argument");
                     }
-                    params.add(statArtifactSink(0, details, tc.output()));
+                    params.add(statArtifactSink(0, list, details, tc.output()));
                     break;
                 }
                 case "tee": {
@@ -538,12 +547,13 @@ public final class ArtifactSinks {
     /**
      * Creates a "stat" artifact sink out of supplied sinks.
      */
-    public static StatArtifactSink statArtifactSink(int level, boolean details, Output output) {
-        return new StatArtifactSink(level, details, output);
+    public static StatArtifactSink statArtifactSink(int level, boolean list, boolean details, Output output) {
+        return new StatArtifactSink(level, list, details, output);
     }
 
     public static class StatArtifactSink implements Artifacts.Sink {
         private final int level;
+        private final boolean list;
         private final boolean details;
         private final Output output;
         private final CopyOnWriteArrayList<Artifact> seen = new CopyOnWriteArrayList<>();
@@ -552,12 +562,21 @@ public final class ArtifactSinks {
         private final ModuleDescriptorExtractingSink moduleDescriptorExtractingSink;
         private final ChecksumArtifactSink checksumArtifactSink;
 
-        private StatArtifactSink(int level, boolean details, Output output) {
+        private StatArtifactSink(int level, boolean list, boolean details, Output output) {
             this.level = level;
+            this.list = list;
             this.details = details;
             this.output = requireNonNull(output, "output");
             this.moduleDescriptorExtractingSink = details ? new ModuleDescriptorExtractingSink(output) : null;
             this.checksumArtifactSink = details ? checksumArtifactSink() : null;
+        }
+
+        public boolean isList() {
+            return list;
+        }
+
+        public boolean isDetails() {
+            return details;
         }
 
         @Override
@@ -585,24 +604,28 @@ public final class ArtifactSinks {
             sizingArtifactSink.close();
             if (details) {
                 moduleDescriptorExtractingSink.close();
+            }
+            if (list) {
                 output.tell("{}------------------------------", indent);
                 for (Artifact artifact : seen) {
-                    ModuleDescriptorExtractingSink.ModuleDescriptor descriptor =
-                            moduleDescriptorExtractingSink.getModuleDescriptor(artifact);
-                    String moduleInfo = "";
-                    if (descriptor != null) {
-                        moduleInfo = moduleDescriptorExtractingSink.formatString(descriptor);
-                    }
-                    Map<String, String> checksums = checksumArtifactSink.checksums(artifact);
                     output.tell("{}{}", indent, artifact);
-                    output.tell("{} -- {}", indent, moduleInfo);
-                    if (checksums != null && !checksums.isEmpty()) {
-                        for (Map.Entry<String, String> checksum : checksums.entrySet()) {
-                            output.tell("{} -- {}: {}", indent, checksum.getKey(), checksum.getValue());
+                    if (details) {
+                        ModuleDescriptorExtractingSink.ModuleDescriptor descriptor =
+                                moduleDescriptorExtractingSink.getModuleDescriptor(artifact);
+                        String moduleInfo = "";
+                        if (descriptor != null) {
+                            moduleInfo = moduleDescriptorExtractingSink.formatString(descriptor);
                         }
-                    }
-                    if (artifact.getProperty("origin", null) != null) {
-                        output.tell("{} -- Origin: {}", indent, artifact.getProperty("origin", null));
+                        Map<String, String> checksums = checksumArtifactSink.checksums(artifact);
+                        output.tell("{} -- {}", indent, moduleInfo);
+                        if (checksums != null && !checksums.isEmpty()) {
+                            for (Map.Entry<String, String> checksum : checksums.entrySet()) {
+                                output.tell("{} -- {}: {}", indent, checksum.getKey(), checksum.getValue());
+                            }
+                        }
+                        if (artifact.getProperty("origin", null) != null) {
+                            output.tell("{} -- Origin: {}", indent, artifact.getProperty("origin", null));
+                        }
                     }
                 }
                 output.tell("{}------------------------------", indent);

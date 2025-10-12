@@ -27,9 +27,16 @@ public class ClasspathListMojo extends MPMojoSupport {
     @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
 
+    /**
+     * Set it {@code true} for details listed.
+     */
+    @Parameter(property = "details", defaultValue = "false", required = true)
+    private boolean details;
+
     @Override
     protected Result<List<Artifact>> doExecute() throws Exception {
         return getToolboxCommando()
-                .classpathList(ResolutionScope.parse(scope), Collections.singletonList(projectAsResolutionRoot()));
+                .classpathList(
+                        ResolutionScope.parse(scope), Collections.singletonList(projectAsResolutionRoot()), details);
     }
 }

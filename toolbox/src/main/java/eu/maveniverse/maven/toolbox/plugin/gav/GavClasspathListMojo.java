@@ -56,10 +56,20 @@ public class GavClasspathListMojo extends GavMojoSupport {
     @Parameter(property = "boms")
     private String boms;
 
+    /**
+     * Set it {@code true} for details listed.
+     */
+    @CommandLine.Option(
+            names = {"--details"},
+            defaultValue = "false",
+            description = "Make it true for details listed")
+    @Parameter(property = "details", defaultValue = "false", required = true)
+    private boolean details;
+
     @Override
     protected Result<List<Artifact>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.classpathList(
-                ResolutionScope.parse(scope), toolboxCommando.loadGavs(slurp(gav), slurp(boms)));
+                ResolutionScope.parse(scope), toolboxCommando.loadGavs(slurp(gav), slurp(boms)), details);
     }
 }

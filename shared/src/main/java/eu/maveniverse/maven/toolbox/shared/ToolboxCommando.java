@@ -191,7 +191,8 @@ public interface ToolboxCommando extends Closeable {
     /**
      * Calculates the classpath as artifact list of given scope and roots.
      */
-    Result<List<Artifact>> classpathList(ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots)
+    Result<List<Artifact>> classpathList(
+            ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots, boolean details)
             throws Exception;
 
     /**

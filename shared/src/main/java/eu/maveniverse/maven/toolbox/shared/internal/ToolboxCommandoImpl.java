@@ -496,7 +496,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     protected List<Artifact> resolvedArtifacts(DependencyResult dependencyResult) {
         return dependencyResult.getArtifactResults().stream()
                 .filter(ArtifactResult::isResolved)
-                .map(ArtifactResult::getArtifact)
+                .map(r -> origin(r.getArtifact(), r.getRepository()))
                 .toList();
     }
 

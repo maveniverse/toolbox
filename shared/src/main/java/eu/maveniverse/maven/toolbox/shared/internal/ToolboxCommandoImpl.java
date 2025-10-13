@@ -54,6 +54,7 @@ import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -121,7 +122,6 @@ import org.eclipse.aether.util.artifact.SubArtifact;
 import org.eclipse.aether.util.graph.visitor.CloningDependencyVisitor;
 import org.eclipse.aether.util.graph.visitor.FilteringDependencyVisitor;
 import org.eclipse.aether.util.graph.visitor.PathRecordingDependencyVisitor;
-import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.util.listener.ChainedRepositoryListener;
 import org.eclipse.aether.util.version.GenericVersionScheme;
@@ -473,6 +473,33 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }
     }
 
+    /**
+     * Helper method to build classpath string out of {@link DependencyResult}.
+     */
+    protected String classpath(DependencyResult dependencyResult) {
+        StringBuilder buffer = new StringBuilder(1024);
+        for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
+            Artifact artifact = artifactResult.getArtifact();
+            if (artifact.getFile() != null) {
+                if (!buffer.isEmpty()) {
+                    buffer.append(File.pathSeparatorChar);
+                }
+                buffer.append(artifact.getFile().getAbsolutePath());
+            }
+        }
+        return buffer.toString();
+    }
+
+    /**
+     * Helper method to return resolved artifacts out of {@link DependencyResult}.
+     */
+    protected List<Artifact> resolvedArtifacts(DependencyResult dependencyResult) {
+        return dependencyResult.getArtifactResults().stream()
+                .filter(ArtifactResult::isResolved)
+                .map(r -> origin(r.getArtifact(), r.getRepository()))
+                .toList();
+    }
+
     @Override
     public Result<String> classpath(ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots)
             throws Exception {
@@ -498,11 +525,42 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         } else {
             return Result.success("");
         }
-        PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
-        dependencyResult.getRoot().accept(nlg);
-        String classpathString = nlg.getClassPath();
+        String classpathString = classpath(dependencyResult);
         output.doTell(classpathString);
         return Result.success(classpathString);
+    }
+
+    @Override
+    public Result<List<Artifact>> classpathList(
+            ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots, boolean details)
+            throws Exception {
+        DependencyResult dependencyResult;
+        if (resolutionRoots.size() == 1) {
+            ResolutionRoot resolutionRoot = resolutionRoots.iterator().next();
+            output.suggest("Resolving {}", resolutionRoot.getArtifact());
+            dependencyResult = toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot));
+        } else if (resolutionRoots.size() > 1) {
+            List<Dependency> dependencies = new ArrayList<>(resolutionRoots.size());
+            for (ResolutionRoot resolutionRoot : resolutionRoots) {
+                if (!resolutionRoot.isLoad()) {
+                    throw new IllegalArgumentException("Cannot resolve non-load dependency: " + resolutionRoot);
+                }
+                output.suggest("Resolving as dependency {}", resolutionRoot.getArtifact());
+                dependencies.add(new Dependency(resolutionRoot.getArtifact(), JavaScopes.COMPILE));
+            }
+            dependencyResult = toolboxResolver.resolve(
+                    resolutionScope,
+                    ResolutionRoot.ofNotLoaded(new DefaultArtifact("fake:fake:1.0"))
+                            .withDependencies(dependencies)
+                            .build());
+        } else {
+            return Result.success(List.of());
+        }
+        List<Artifact> result = resolvedArtifacts(dependencyResult);
+        try (ArtifactSinks.StatArtifactSink sink = ArtifactSinks.statArtifactSink(0, true, details, output)) {
+            sink.accept(result);
+        }
+        return Result.success(result);
     }
 
     @Override
@@ -519,18 +577,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         DependencyResult dependencyResult2 =
                 toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot2));
 
-        PreorderNodeListGenerator nlg1 = new PreorderNodeListGenerator();
-        dependencyResult1.getRoot().accept(nlg1);
-        PreorderNodeListGenerator nlg2 = new PreorderNodeListGenerator();
-        dependencyResult2.getRoot().accept(nlg2);
-
         new ArtifactListComparator(output, unified)
                 .compare(
                         resolutionRoot1.getArtifact(),
-                        nlg1.getArtifacts(false),
+                        resolvedArtifacts(dependencyResult1),
                         resolutionRoot2.getArtifact(),
-                        nlg2.getArtifacts(false));
-        return Result.success(Map.of(nlg1.getClassPath(), nlg2.getClassPath()));
+                        resolvedArtifacts(dependencyResult2));
+        return Result.success(Map.of(classpath(dependencyResult1), classpath(dependencyResult2)));
     }
 
     @Override
@@ -548,18 +601,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         DependencyResult dependencyResult2 =
                 toolboxResolver.resolve(resolutionScope, toolboxResolver.loadRoot(resolutionRoot2));
 
-        PreorderNodeListGenerator nlg1 = new PreorderNodeListGenerator();
-        dependencyResult1.getRoot().accept(nlg1);
-        PreorderNodeListGenerator nlg2 = new PreorderNodeListGenerator();
-        dependencyResult2.getRoot().accept(nlg2);
-
         new ArtifactConflictComparator(output, artifactKeyFactory, differentiators)
                 .compare(
                         resolutionRoot1.getArtifact(),
-                        nlg1.getArtifacts(false),
+                        resolvedArtifacts(dependencyResult1),
                         resolutionRoot2.getArtifact(),
-                        nlg2.getArtifacts(false));
-        return Result.success(Map.of(nlg1.getClassPath(), nlg2.getClassPath()));
+                        resolvedArtifacts(dependencyResult2));
+        return Result.success(Map.of(classpath(dependencyResult1), classpath(dependencyResult2)));
     }
 
     @Override
@@ -762,7 +810,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         List<Artifact> artifacts = artifactSource.get().collect(Collectors.toList());
         output.suggest("Resolving {}", artifacts);
         try (Sink<Artifact> artifactSink =
-                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, output))) {
+                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, true, output))) {
             List<Artifact> artifactResults = toolboxResolver.resolveArtifacts(artifacts).stream()
                     .map(r -> origin(r.getArtifact(), r.getRepository()))
                     .collect(Collectors.toList());
@@ -813,7 +861,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean signature,
             Sink<Artifact> sink)
             throws Exception {
-        ArtifactSinks.StatArtifactSink stat = ArtifactSinks.statArtifactSink(0, false, output);
+        ArtifactSinks.StatArtifactSink stat = ArtifactSinks.statArtifactSink(0, false, false, output);
         try (Sink<Artifact> artifactSink = ArtifactSinks.teeArtifactSink(sink, stat)) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 doResolveTransitive(
@@ -824,7 +872,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         signature,
                         ArtifactSinks.teeArtifactSink(
                                 ArtifactSinks.nonClosingArtifactSink(artifactSink),
-                                ArtifactSinks.statArtifactSink(1, true, output)));
+                                ArtifactSinks.statArtifactSink(1, true, true, output)));
             }
         }
         return stat.getSeenArtifacts().isEmpty()

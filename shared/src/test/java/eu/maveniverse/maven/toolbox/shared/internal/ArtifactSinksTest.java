@@ -8,7 +8,9 @@
 package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
@@ -94,6 +96,25 @@ public class ArtifactSinksTest {
             assertEquals(
                     ((DirectorySink) artifactSink).getDirectory(),
                     context.basedir().resolve("some/path"));
+
+            ArtifactSinks.StatArtifactSink stat;
+            artifactSink = ArtifactSinks.build(properties, tc, false, "stat()");
+            assertInstanceOf(ArtifactSinks.StatArtifactSink.class, artifactSink);
+            stat = (ArtifactSinks.StatArtifactSink) artifactSink;
+            assertTrue(stat.isList());
+            assertTrue(stat.isDetails());
+
+            artifactSink = ArtifactSinks.build(properties, tc, false, "stat(false)");
+            assertInstanceOf(ArtifactSinks.StatArtifactSink.class, artifactSink);
+            stat = (ArtifactSinks.StatArtifactSink) artifactSink;
+            assertTrue(stat.isList());
+            assertFalse(stat.isDetails());
+
+            artifactSink = ArtifactSinks.build(properties, tc, false, "stat(false,false)");
+            assertInstanceOf(ArtifactSinks.StatArtifactSink.class, artifactSink);
+            stat = (ArtifactSinks.StatArtifactSink) artifactSink;
+            assertFalse(stat.isList());
+            assertFalse(stat.isDetails());
         }
     }
 }

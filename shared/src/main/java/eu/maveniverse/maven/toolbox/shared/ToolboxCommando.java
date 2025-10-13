@@ -189,6 +189,13 @@ public interface ToolboxCommando extends Closeable {
             throws Exception;
 
     /**
+     * Calculates the classpath as artifact list of given scope and roots.
+     */
+    Result<List<Artifact>> classpathList(
+            ResolutionScope resolutionScope, Collection<ResolutionRoot> resolutionRoots, boolean details)
+            throws Exception;
+
+    /**
      * Calculates the classpath diff of given scope and two roots, as side effect outputs the diff of them.
      */
     Result<Map<String, String>> classpathDiff(

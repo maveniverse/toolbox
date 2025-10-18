@@ -64,7 +64,7 @@ Runtime requirement:
 
 Build requirements:
 * Java 21
-* Maven 3.9.9+
+* Maven 3.9.11+
 
 ## Project structure
 

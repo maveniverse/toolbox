@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.apache.maven.search.api.MAVEN;
@@ -66,6 +67,10 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
     @Override
     public SearchBackend getRemoteRepositoryBackend(
             RepositorySystemSession session, RemoteRepository remoteRepository, String repositoryVendor) {
+        if (!remoteRepository.getUrl().toLowerCase(Locale.ENGLISH).startsWith("https://")
+                && !remoteRepository.getUrl().toLowerCase(Locale.ENGLISH).startsWith("http://")) {
+            throw new IllegalArgumentException("Search RR operates on HTTP repositories only");
+        }
         output.chatter(
                 "Creating backend for {} (vendor={})",
                 remoteRepository,
@@ -112,10 +117,15 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
                 remoteRepository.getId(),
                 remoteRepository.getId(),
                 repositoryVendor);
+        String backendId = remoteRepository.getId();
+        String backendUrl = remoteRepository.getUrl();
+        if (!backendUrl.endsWith("/")) {
+            backendUrl += "/";
+        }
         return RemoteRepositorySearchBackendFactory.create(
-                remoteRepository.getId() + "-rr",
-                remoteRepository.getId(),
-                remoteRepository.getUrl(),
+                backendId + "-rr",
+                backendId,
+                backendUrl,
                 new Java11HttpClientTransport(
                         Java11HttpClientFactory.DEFAULT_TIMEOUT,
                         Java11HttpClientFactory.buildHttpClient(session, remoteRepository)),

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,6 +41,10 @@ import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactory;
 import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmHelper;
+import org.kordamp.jarviz.core.model.BytecodeVersion;
+import org.kordamp.jarviz.core.model.BytecodeVersions;
+import org.kordamp.jarviz.core.processors.BytecodeShowJarProcessor;
+import org.kordamp.jarviz.core.resolvers.PathBasedJarFileResolver;
 
 /**
  * Various utility sink implementations.
@@ -561,6 +566,7 @@ public final class ArtifactSinks {
         private final SizingArtifactSink sizingArtifactSink = new SizingArtifactSink();
         private final ModuleDescriptorExtractingSink moduleDescriptorExtractingSink;
         private final ChecksumArtifactSink checksumArtifactSink;
+        private final Map<Artifact, BytecodeVersions> bytecodeVersions;
 
         private StatArtifactSink(int level, boolean list, boolean details, Output output) {
             this.level = level;
@@ -569,6 +575,7 @@ public final class ArtifactSinks {
             this.output = requireNonNull(output, "output");
             this.moduleDescriptorExtractingSink = details ? new ModuleDescriptorExtractingSink(output) : null;
             this.checksumArtifactSink = details ? checksumArtifactSink() : null;
+            this.bytecodeVersions = details ? new HashMap<>() : null;
         }
 
         public boolean isList() {
@@ -587,6 +594,16 @@ public final class ArtifactSinks {
             if (details) {
                 moduleDescriptorExtractingSink.accept(artifact);
                 checksumArtifactSink.accept(artifact);
+                if (artifact.getFile() != null) {
+                    bytecodeVersions.put(
+                            artifact,
+                            new BytecodeShowJarProcessor(new PathBasedJarFileResolver(
+                                            artifact.getFile().toPath()))
+                                    .getResult()
+                                    .iterator()
+                                    .next()
+                                    .getResult());
+                }
             }
         }
 
@@ -616,8 +633,30 @@ public final class ArtifactSinks {
                         if (descriptor != null) {
                             moduleInfo = moduleDescriptorExtractingSink.formatString(descriptor);
                         }
-                        Map<String, String> checksums = checksumArtifactSink.checksums(artifact);
                         output.tell("{} -- {}", indent, moduleInfo);
+                        BytecodeVersions bcvs = bytecodeVersions.get(artifact);
+                        if (bcvs != null) {
+                            boolean mrjar =
+                                    !bcvs.getJavaVersionOfVersionedClasses().isEmpty();
+                            String result = mrjar ? "MR-JAR Unversioned bytecode: " : "JAR bytecode: ";
+                            for (Map.Entry<BytecodeVersion, List<String>> ue :
+                                    bcvs.getUnversionedClasses().entrySet()) {
+                                result += ue.getKey().toString() + " = "
+                                        + ue.getValue().size() + " class ";
+                            }
+                            if (mrjar) {
+                                result += " Versioned bytecode: ";
+                                for (Integer jv : bcvs.getJavaVersionOfVersionedClasses()) {
+                                    for (Map.Entry<BytecodeVersion, List<String>> ue :
+                                            bcvs.getVersionedClasses(jv).entrySet()) {
+                                        result += ue.getKey().toString() + " = "
+                                                + ue.getValue().size() + " class ";
+                                    }
+                                }
+                            }
+                            output.tell("{} -- {}", indent, result);
+                        }
+                        Map<String, String> checksums = checksumArtifactSink.checksums(artifact);
                         if (checksums != null && !checksums.isEmpty()) {
                             for (Map.Entry<String, String> checksum : checksums.entrySet()) {
                                 output.tell("{} -- {}: {}", indent, checksum.getKey(), checksum.getValue());

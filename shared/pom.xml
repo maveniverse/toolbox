@@ -120,6 +120,12 @@
       <artifactId>graphviz-java</artifactId>
     </dependency>
 
+    <!-- Jarviz -->
+    <dependency>
+      <groupId>org.kordamp.jarviz</groupId>
+      <artifactId>jarviz-core</artifactId>
+    </dependency>
+
     <!-- Shared -->
     <dependency>
       <groupId>eu.maveniverse.maven.shared</groupId>

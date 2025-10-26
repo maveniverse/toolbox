@@ -299,6 +299,19 @@
         <version>0.18.1</version>
       </dependency>
 
+      <!-- Jarviz -->
+      <dependency>
+        <groupId>org.kordamp.jarviz</groupId>
+        <artifactId>jarviz-core</artifactId>
+        <version>0.3.0</version>
+        <exclusions>
+          <exclusion>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
       <!-- Shared -->
       <dependency>
         <groupId>eu.maveniverse.maven.shared</groupId>

@@ -59,6 +59,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -75,6 +77,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -115,6 +118,9 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
+import org.eclipse.aether.spi.connector.layout.RepositoryLayout;
+import org.eclipse.aether.spi.connector.layout.RepositoryLayoutProvider;
+import org.eclipse.aether.transfer.NoRepositoryLayoutException;
 import org.eclipse.aether.util.ChecksumUtils;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.util.artifact.JavaScopes;
@@ -473,6 +479,73 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         }
     }
 
+    @Override
+    public Optional<URI> artifactUri(RemoteRepository remoteRepository, Artifact artifact) {
+        requireNonNull(remoteRepository, "remoteRepository is null");
+        requireNonNull(artifact, "artifact is null");
+        AtomicReference<URI> result = new AtomicReference<>(null);
+        remoteRepositoryUri(remoteRepository)
+                .ifPresent(baseUri -> remoteRepositoryLayout(remoteRepository).ifPresent(layout -> {
+                    result.set(baseUri.resolve(layout.getLocation(artifact, false)));
+                }));
+        return Optional.ofNullable(result.get());
+    }
+
+    @Override
+    public Optional<RemoteRepository> remoteRepository(String repositoryId) {
+        requireNonNull(repositoryId, "repositoryId is null");
+        return context.remoteRepositories().stream()
+                .filter(r -> repositoryId.equals(r.getId()))
+                .findFirst();
+    }
+
+    @Override
+    public Optional<RepositoryLayout> remoteRepositoryLayout(RemoteRepository remoteRepository) {
+        requireNonNull(remoteRepository, "repositoryId is null");
+        try {
+            return Optional.of(context.lookup()
+                    .lookup(RepositoryLayoutProvider.class)
+                    .orElseThrow()
+                    .newRepositoryLayout(session, remoteRepository));
+        } catch (NoRepositoryLayoutException e) {
+            output.warn("Could not get repository layout", e);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<URI> remoteRepositoryUri(RemoteRepository remoteRepository) {
+        requireNonNull(remoteRepository, "remoteRepository is null");
+        if (!"http".equalsIgnoreCase(remoteRepository.getProtocol())
+                && !"https".equalsIgnoreCase(remoteRepository.getProtocol())) {
+            output.warn("Invalid remote repository protocol: {}", remoteRepository.getProtocol());
+            return Optional.empty();
+        }
+        try {
+            URI uri = new URI(remoteRepository.getUrl()).parseServerAuthority();
+            if (uri.isOpaque()) {
+                throw new URISyntaxException(remoteRepository.getUrl(), "URL must not be opaque");
+            }
+            if (uri.getRawFragment() != null || uri.getRawQuery() != null) {
+                throw new URISyntaxException(remoteRepository.getUrl(), "URL must not have fragment or query");
+            }
+            String path = uri.getPath();
+            if (path == null) {
+                path = "/";
+            }
+            if (!path.startsWith("/")) {
+                path = "/" + path;
+            }
+            if (!path.endsWith("/")) {
+                path = path + "/";
+            }
+            return Optional.of(URI.create(uri.getScheme() + "://" + uri.getRawAuthority() + path));
+        } catch (URISyntaxException e) {
+            output.warn("Could not get remote repository URL", e);
+            return Optional.empty();
+        }
+    }
+
     /**
      * Helper method to build classpath string out of {@link DependencyResult}.
      */
@@ -557,7 +630,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             return Result.success(List.of());
         }
         List<Artifact> result = resolvedArtifacts(dependencyResult);
-        try (ArtifactSinks.StatArtifactSink sink = ArtifactSinks.statArtifactSink(0, true, details, output)) {
+        try (ArtifactSinks.StatArtifactSink sink = ArtifactSinks.statArtifactSink(0, true, details, output, this)) {
             sink.accept(result);
         }
         return Result.success(result);
@@ -810,7 +883,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         List<Artifact> artifacts = artifactSource.get().collect(Collectors.toList());
         output.suggest("Resolving {}", artifacts);
         try (Sink<Artifact> artifactSink =
-                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, true, output))) {
+                ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, true, output, this))) {
             List<Artifact> artifactResults = toolboxResolver.resolveArtifacts(artifacts).stream()
                     .map(r -> origin(r.getArtifact(), r.getRepository()))
                     .collect(Collectors.toList());
@@ -861,7 +934,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             boolean signature,
             Sink<Artifact> sink)
             throws Exception {
-        ArtifactSinks.StatArtifactSink stat = ArtifactSinks.statArtifactSink(0, false, false, output);
+        ArtifactSinks.StatArtifactSink stat = ArtifactSinks.statArtifactSink(0, false, false, output, this);
         try (Sink<Artifact> artifactSink = ArtifactSinks.teeArtifactSink(sink, stat)) {
             for (ResolutionRoot resolutionRoot : resolutionRoots) {
                 doResolveTransitive(
@@ -872,7 +945,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                         signature,
                         ArtifactSinks.teeArtifactSink(
                                 ArtifactSinks.nonClosingArtifactSink(artifactSink),
-                                ArtifactSinks.statArtifactSink(1, true, true, output)));
+                                ArtifactSinks.statArtifactSink(1, true, true, output, this)));
             }
         }
         return stat.getSeenArtifacts().isEmpty()

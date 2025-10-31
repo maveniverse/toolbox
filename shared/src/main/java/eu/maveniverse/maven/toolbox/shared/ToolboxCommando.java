@@ -16,6 +16,7 @@ import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -38,6 +40,7 @@ import org.eclipse.aether.metadata.Metadata;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
+import org.eclipse.aether.spi.connector.layout.RepositoryLayout;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 
@@ -179,6 +182,28 @@ public interface ToolboxCommando extends Closeable {
      * dependency uses them.
      */
     Artifact toArtifact(Dependency dependency);
+
+    /**
+     * Returns the URI of the artifact in given remote repository, if possible.
+     */
+    Optional<URI> artifactUri(RemoteRepository remoteRepository, Artifact artifact);
+
+    /**
+     * Returns the remote repository by ID, if exists.
+     * Note: the remote repository asked for must exist in MIMA context.
+     */
+    Optional<RemoteRepository> remoteRepository(String repository);
+
+    /**
+     * Returns the remote repository layout, if exists and supported.
+     */
+    Optional<RepositoryLayout> remoteRepositoryLayout(RemoteRepository repository);
+
+    /**
+     * Returns the base URI of remote repository by ID, if exists.
+     * Note: for now works only with HTTP(S) repositories.
+     */
+    Optional<URI> remoteRepositoryUri(RemoteRepository remoteRepository);
 
     // Commands
 

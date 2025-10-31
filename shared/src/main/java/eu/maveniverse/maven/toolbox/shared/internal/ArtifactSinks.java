@@ -14,9 +14,11 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.Sink;
+import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -103,6 +105,16 @@ public final class ArtifactSinks {
                     params.add(loggingArtifactSink(tc.output()));
                     break;
                 }
+                case "artifactUri": {
+                    boolean dumpOnClose = true;
+                    if (node.getChildren().size() == 1) {
+                        dumpOnClose = booleanParam(node.getChildren().get(0).getValue());
+                    } else if (node.getChildren().size() > 1) {
+                        throw new IllegalArgumentException("op stat accepts only 0..1 argument");
+                    }
+                    params.add(artifactUriSink(tc.output, tc, dumpOnClose));
+                    break;
+                }
                 case "stat": {
                     boolean list;
                     boolean details;
@@ -121,7 +133,7 @@ public final class ArtifactSinks {
                     } else {
                         throw new IllegalArgumentException("op stat accepts only 0..2 argument");
                     }
-                    params.add(statArtifactSink(0, list, details, tc.output()));
+                    params.add(statArtifactSink(0, list, details, tc.output(), tc));
                     break;
                 }
                 case "tee": {
@@ -552,8 +564,9 @@ public final class ArtifactSinks {
     /**
      * Creates a "stat" artifact sink out of supplied sinks.
      */
-    public static StatArtifactSink statArtifactSink(int level, boolean list, boolean details, Output output) {
-        return new StatArtifactSink(level, list, details, output);
+    public static StatArtifactSink statArtifactSink(
+            int level, boolean list, boolean details, Output output, ToolboxCommando tc) {
+        return new StatArtifactSink(level, list, details, output, tc);
     }
 
     public static class StatArtifactSink implements Artifacts.Sink {
@@ -566,15 +579,17 @@ public final class ArtifactSinks {
         private final SizingArtifactSink sizingArtifactSink = new SizingArtifactSink();
         private final ModuleDescriptorExtractingSink moduleDescriptorExtractingSink;
         private final ChecksumArtifactSink checksumArtifactSink;
+        private final ArtifactUriSink artifactUriSink;
         private final Map<Artifact, BytecodeVersions> bytecodeVersions;
 
-        private StatArtifactSink(int level, boolean list, boolean details, Output output) {
+        private StatArtifactSink(int level, boolean list, boolean details, Output output, ToolboxCommando tc) {
             this.level = level;
             this.list = list;
             this.details = details;
             this.output = requireNonNull(output, "output");
             this.moduleDescriptorExtractingSink = details ? new ModuleDescriptorExtractingSink(output) : null;
             this.checksumArtifactSink = details ? checksumArtifactSink() : null;
+            this.artifactUriSink = details ? artifactUriSink(output, tc, false) : null;
             this.bytecodeVersions = details ? new HashMap<>() : null;
         }
 
@@ -594,6 +609,7 @@ public final class ArtifactSinks {
             if (details) {
                 moduleDescriptorExtractingSink.accept(artifact);
                 checksumArtifactSink.accept(artifact);
+                artifactUriSink.accept(artifact);
                 if (artifact.getFile() != null) {
                     bytecodeVersions.put(
                             artifact,
@@ -665,6 +681,10 @@ public final class ArtifactSinks {
                         if (artifact.getProperty("origin", null) != null) {
                             output.tell("{} -- Origin: {}", indent, artifact.getProperty("origin", null));
                         }
+                        URI artifactUri = artifactUriSink.getUri(artifact);
+                        if (artifactUri != null) {
+                            output.tell("{} -- Origin URI: {}", indent, artifactUri.toASCIIString());
+                        }
                     }
                 }
                 output.tell("{}------------------------------", indent);
@@ -695,6 +715,50 @@ public final class ArtifactSinks {
         @Override
         public void accept(Artifact artifact) throws IOException {
             output.doTell(artifact.toString());
+        }
+    }
+
+    /**
+     * Creates a "artifact URI" artifact sink that collects URIs of accepted artifacts.
+     */
+    public static ArtifactUriSink artifactUriSink(Output output, ToolboxCommando toolboxCommando, boolean dumpOnClose) {
+        return new ArtifactUriSink(output, toolboxCommando, dumpOnClose);
+    }
+
+    public static class ArtifactUriSink implements Artifacts.Sink {
+        private final Output output;
+        private final ToolboxCommando toolboxCommando;
+        private final ConcurrentMap<Artifact, URI> uris = new ConcurrentHashMap<>();
+        private final boolean dumpOnClose;
+
+        public ArtifactUriSink(Output output, ToolboxCommando toolboxCommando, boolean dumpOnClose) {
+            this.output = requireNonNull(output, "output");
+            this.toolboxCommando = requireNonNull(toolboxCommando, "toolboxCommando");
+            this.dumpOnClose = dumpOnClose;
+        }
+
+        @Override
+        public void accept(Artifact artifact) throws IOException {
+            String origin = artifact.getProperty("origin", null);
+            if (origin != null) {
+                toolboxCommando
+                        .remoteRepository(origin)
+                        .flatMap(r -> toolboxCommando.artifactUri(r, artifact))
+                        .ifPresent(uri -> uris.put(artifact, uri));
+            }
+        }
+
+        public URI getUri(Artifact artifact) {
+            return uris.get(artifact);
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (dumpOnClose) {
+                for (Map.Entry<Artifact, URI> entry : uris.entrySet()) {
+                    output.tell("{} -> {}", entry.getKey(), entry.getValue());
+                }
+            }
         }
     }
 }

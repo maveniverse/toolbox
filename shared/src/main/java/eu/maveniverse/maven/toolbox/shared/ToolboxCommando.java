@@ -185,6 +185,8 @@ public interface ToolboxCommando extends Closeable {
 
     /**
      * Returns the URI of the artifact in given remote repository, if possible.
+     *
+     * @see #remoteRepositoryUri(RemoteRepository)
      */
     Optional<URI> artifactUri(RemoteRepository remoteRepository, Artifact artifact);
 
@@ -195,13 +197,13 @@ public interface ToolboxCommando extends Closeable {
     Optional<RemoteRepository> remoteRepository(String repository);
 
     /**
-     * Returns the remote repository layout, if exists and supported.
+     * Returns the remote repository layout, if supported.
      */
     Optional<RepositoryLayout> remoteRepositoryLayout(RemoteRepository repository);
 
     /**
      * Returns the base URI of remote repository by ID, if exists.
-     * Note: for now works only with HTTP(S) repositories.
+     * Note: for now works only with HTTP(S) protocol repositories.
      */
     Optional<URI> remoteRepositoryUri(RemoteRepository remoteRepository);
 

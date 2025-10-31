@@ -110,7 +110,7 @@ public final class ArtifactSinks {
                     if (node.getChildren().size() == 1) {
                         dumpOnClose = booleanParam(node.getChildren().get(0).getValue());
                     } else if (node.getChildren().size() > 1) {
-                        throw new IllegalArgumentException("op stat accepts only 0..1 argument");
+                        throw new IllegalArgumentException("op artifactUri accepts only 0..1 argument");
                     }
                     params.add(artifactUriSink(tc.output, tc, dumpOnClose));
                     break;

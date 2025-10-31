@@ -77,7 +77,7 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
         if (moduleDescriptor == null || !moduleDescriptor.available()) {
             moduleInfo = "n/a";
         } else {
-            moduleInfo = "JPMS: " + moduleDescriptor.name();
+            moduleInfo = "Module name: " + moduleDescriptor.name();
             if (moduleDescriptor.automatic()) {
                 if ("MANIFEST".equals(moduleDescriptor.moduleNameSource())) {
                     moduleInfo += " [automatic; JAR manifest]";

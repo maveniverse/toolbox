@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Maveniverse Org.
+ * Copyright (c) 2023-2025 Maveniverse Org.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v2.0
  * which accompanies this distribution, and is available at
@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import org.eclipse.aether.artifact.Artifact;
@@ -51,7 +52,7 @@ public class ArtifactNameMapperTest {
 
         artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "repositoryDefault()");
         mapped = artifactNameMapper.apply(artifact);
-        assertEquals("g/a/1.0-SNAPSHOT/a-1.0-20240322.113300-2-classifier.jar", mapped);
+        assertEquals(Path.of("g/a/1.0-SNAPSHOT/a-1.0-20240322.113300-2-classifier.jar"), Path.of(mapped));
 
         HashMap<String, Object> properties = new HashMap<>();
         properties.put("fs", "--this-is-a-separator--");

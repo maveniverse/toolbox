@@ -1043,7 +1043,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .getRoot()
                 .accept(new DependencyGraphDumper(
                         output::tell,
-                        verboseTreeNode ? DependencyGraphDumper.defaultsWith(DependencyGraphDumper.allArtifactProperties()) : DependencyGraphDumper.defaultsWith(),
+                        verboseTreeNode
+                                ? DependencyGraphDumper.defaultsWith(DependencyGraphDumper.allArtifactProperties())
+                                : DependencyGraphDumper.defaultsWith(),
                         output.tool(
                                 DependencyGraphDecorators.TreeDecorator.class,
                                 DependencyGraphDecorators.defaultSupplier())));

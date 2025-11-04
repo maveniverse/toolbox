@@ -307,7 +307,8 @@ public class DependencyGraphDumper implements DependencyVisitor {
     public static Function<DependencyNode, String> allArtifactProperties() {
         return dependencyNode -> {
             if (dependencyNode.getDependency() != null) {
-                Map<String, String> properties = dependencyNode.getDependency().getArtifact().getProperties();
+                Map<String, String> properties =
+                        dependencyNode.getDependency().getArtifact().getProperties();
                 String props = properties.entrySet().stream()
                         .map(e -> e.getKey() + "=" + e.getValue())
                         .collect(Collectors.joining(","));

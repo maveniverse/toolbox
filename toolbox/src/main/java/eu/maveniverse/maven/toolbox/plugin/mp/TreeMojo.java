@@ -38,6 +38,12 @@ public class TreeMojo extends MPMojoSupport {
     @Parameter(property = "verboseTree", defaultValue = "false", required = true)
     private boolean verboseTree;
 
+    /**
+     * Set it {@code true} for verbose tree nodes.
+     */
+    @Parameter(property = "verboseTreeNode", defaultValue = "false", required = true)
+    private boolean verboseTreeNode;
+
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
@@ -45,6 +51,7 @@ public class TreeMojo extends MPMojoSupport {
                 ResolutionScope.parse(scope),
                 projectAsResolutionRoot(),
                 verboseTree,
+                verboseTreeNode,
                 toolboxCommando.parseDependencyMatcherSpec(dependencyMatcher));
     }
 }

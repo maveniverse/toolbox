@@ -363,6 +363,7 @@ public interface ToolboxCommando extends Closeable {
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
             boolean verboseTree,
+            boolean verboseTreeNode,
             DependencyMatcher dependencyMatcher)
             throws Exception;
 

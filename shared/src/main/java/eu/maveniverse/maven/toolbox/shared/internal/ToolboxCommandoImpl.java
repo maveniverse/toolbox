@@ -1035,6 +1035,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
             boolean verboseTree,
+            boolean verboseTreeNode,
             DependencyMatcher dependencyMatcher)
             throws Exception {
         CollectResult collectResult = doTree(resolutionScope, resolutionRoot, verboseTree, dependencyMatcher);
@@ -1042,7 +1043,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .getRoot()
                 .accept(new DependencyGraphDumper(
                         output::tell,
-                        DependencyGraphDumper.defaultsWith(),
+                        verboseTreeNode
+                                ? DependencyGraphDumper.defaultsWith(DependencyGraphDumper.allArtifactProperties())
+                                : DependencyGraphDumper.defaultsWith(),
                         output.tool(
                                 DependencyGraphDecorators.TreeDecorator.class,
                                 DependencyGraphDecorators.defaultSupplier())));

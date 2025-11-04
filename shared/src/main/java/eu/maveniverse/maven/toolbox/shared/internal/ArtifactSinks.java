@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl.humanReadableByteCountBin;
 import static java.util.Objects.requireNonNull;
 
+import com.github.packageurl.PackageURL;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
@@ -580,6 +581,7 @@ public final class ArtifactSinks {
         private final ModuleDescriptorExtractingSink moduleDescriptorExtractingSink;
         private final ChecksumArtifactSink checksumArtifactSink;
         private final ArtifactUriSink artifactUriSink;
+        private final ArtifactPurlSink artifactPurlSink;
         private final Map<Artifact, BytecodeVersions> bytecodeVersions;
 
         private StatArtifactSink(int level, boolean list, boolean details, Output output, ToolboxCommando tc) {
@@ -590,6 +592,7 @@ public final class ArtifactSinks {
             this.moduleDescriptorExtractingSink = details ? new ModuleDescriptorExtractingSink(output) : null;
             this.checksumArtifactSink = details ? checksumArtifactSink() : null;
             this.artifactUriSink = details ? artifactUriSink(output, tc, false) : null;
+            this.artifactPurlSink = details ? modulePurlSink(output, tc, false) : null;
             this.bytecodeVersions = details ? new HashMap<>() : null;
         }
 
@@ -610,6 +613,7 @@ public final class ArtifactSinks {
                 moduleDescriptorExtractingSink.accept(artifact);
                 checksumArtifactSink.accept(artifact);
                 artifactUriSink.accept(artifact);
+                artifactPurlSink.accept(artifact);
                 if (artifact.getFile() != null) {
                     bytecodeVersions.put(
                             artifact,
@@ -685,6 +689,10 @@ public final class ArtifactSinks {
                         if (artifactUri != null) {
                             output.tell("{} -- Origin URI: {}", indent, artifactUri.toASCIIString());
                         }
+                        PackageURL artifactPurl = artifactPurlSink.getPurl(artifact);
+                        if (artifactPurl != null) {
+                            output.tell("{} -- PURL: {}", indent, artifactPurl.canonicalize());
+                        }
                     }
                 }
                 output.tell("{}------------------------------", indent);
@@ -756,6 +764,50 @@ public final class ArtifactSinks {
         public void close() throws IOException {
             if (dumpOnClose) {
                 for (Map.Entry<Artifact, URI> entry : uris.entrySet()) {
+                    output.tell("{} -> {}", entry.getKey(), entry.getValue());
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates an "Artifact -> PURL" artifact sink.
+     */
+    public static ArtifactPurlSink modulePurlSink(Output output, ToolboxCommando toolboxCommando, boolean dumpOnClose) {
+        return new ArtifactPurlSink(output, toolboxCommando, dumpOnClose);
+    }
+
+    public static class ArtifactPurlSink implements Artifacts.Sink {
+        private final Output output;
+        private final ToolboxCommando toolboxCommando;
+        private final ConcurrentMap<Artifact, PackageURL> purls = new ConcurrentHashMap<>();
+        private final boolean dumpOnClose;
+
+        public ArtifactPurlSink(Output output, ToolboxCommando toolboxCommando, boolean dumpOnClose) {
+            this.output = requireNonNull(output, "output");
+            this.toolboxCommando = requireNonNull(toolboxCommando, "toolboxCommando");
+            this.dumpOnClose = dumpOnClose;
+        }
+
+        @Override
+        public void accept(Artifact artifact) throws IOException {
+            String origin = artifact.getProperty("origin", null);
+            if (origin != null) {
+                toolboxCommando
+                        .remoteRepository(origin)
+                        .flatMap(r -> toolboxCommando.artifactPurl(r, artifact))
+                        .ifPresent(uri -> purls.put(artifact, uri));
+            }
+        }
+
+        public PackageURL getPurl(Artifact artifact) {
+            return purls.get(artifact);
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (dumpOnClose) {
+                for (Map.Entry<Artifact, PackageURL> entry : purls.entrySet()) {
                     output.tell("{} -> {}", entry.getKey(), entry.getValue());
                 }
             }

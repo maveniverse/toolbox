@@ -312,6 +312,13 @@
         </exclusions>
       </dependency>
 
+      <!-- Package URL -->
+      <dependency>
+        <groupId>com.github.package-url</groupId>
+        <artifactId>packageurl-java</artifactId>
+        <version>1.5.0</version>
+      </dependency>
+
       <!-- Shared -->
       <dependency>
         <groupId>eu.maveniverse.maven.shared</groupId>

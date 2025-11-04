@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.shared;
 
 import static java.util.Objects.requireNonNull;
 
+import com.github.packageurl.PackageURL;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
@@ -182,6 +183,14 @@ public interface ToolboxCommando extends Closeable {
      * dependency uses them.
      */
     Artifact toArtifact(Dependency dependency);
+
+    /**
+     * Returns the package URL of the artifact in given remote repository, if possible.
+     *
+     * @see #remoteRepositoryUri(RemoteRepository)
+     * @see <a href="https://github.com/package-url">Package URL</a>
+     */
+    Optional<PackageURL> artifactPurl(RemoteRepository remoteRepository, Artifact artifact);
 
     /**
      * Returns the URI of the artifact in given remote repository, if possible.

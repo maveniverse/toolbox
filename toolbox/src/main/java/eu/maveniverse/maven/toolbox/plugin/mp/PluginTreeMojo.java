@@ -38,6 +38,12 @@ public class PluginTreeMojo extends MPPluginMojoSupport {
     @Parameter(property = "verboseTree", defaultValue = "false", required = true)
     private boolean verboseTree;
 
+    /**
+     * Set it {@code true} for verbose tree nodes.
+     */
+    @Parameter(property = "verboseTreeNode", defaultValue = "false", required = true)
+    private boolean verboseTreeNode;
+
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
@@ -47,6 +53,7 @@ public class PluginTreeMojo extends MPPluginMojoSupport {
                     ResolutionScope.parse(scope),
                     root,
                     verboseTree,
+                    verboseTreeNode,
                     toolboxCommando.parseDependencyMatcherSpec(dependencyMatcher));
         } else {
             for (ResolutionRoot resolutionRoot : allProjectPluginsAsResolutionRoots(toolboxCommando)) {
@@ -54,6 +61,7 @@ public class PluginTreeMojo extends MPPluginMojoSupport {
                         ResolutionScope.parse(scope),
                         resolutionRoot,
                         verboseTree,
+                        verboseTreeNode,
                         toolboxCommando.parseDependencyMatcherSpec(dependencyMatcher));
             }
         }

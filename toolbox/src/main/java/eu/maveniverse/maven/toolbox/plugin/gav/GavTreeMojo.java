@@ -71,6 +71,16 @@ public class GavTreeMojo extends GavMojoSupport {
     @Parameter(property = "verboseTree", defaultValue = "false", required = true)
     private boolean verboseTree;
 
+    /**
+     * Set it {@code true} for verbose tree node.
+     */
+    @CommandLine.Option(
+            names = {"--verboseTreeNode"},
+            defaultValue = "false",
+            description = "Make it true for verbose tree node")
+    @Parameter(property = "verboseTreeNode", defaultValue = "false", required = true)
+    private boolean verboseTreeNode;
+
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
@@ -78,6 +88,7 @@ public class GavTreeMojo extends GavMojoSupport {
                 ResolutionScope.parse(scope),
                 toolboxCommando.loadGav(gav, slurp(boms)),
                 verboseTree,
+                verboseTreeNode,
                 toolboxCommando.parseDependencyMatcherSpec(dependencyMatcher));
     }
 }

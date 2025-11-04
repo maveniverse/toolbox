@@ -301,6 +301,23 @@ public class DependencyGraphDumper implements DependencyVisitor {
             return null;
         };
     }
+    /**
+     * Decorator of "all artifact properties": prints out all properties.
+     */
+    public static Function<DependencyNode, String> allArtifactProperties() {
+        return dependencyNode -> {
+            if (dependencyNode.getDependency() != null) {
+                Map<String, String> properties = dependencyNode.getDependency().getArtifact().getProperties();
+                String props = properties.entrySet().stream()
+                        .map(e -> e.getKey() + "=" + e.getValue())
+                        .collect(Collectors.joining(","));
+                if (!props.isEmpty()) {
+                    return "(" + props + ")";
+                }
+            }
+            return null;
+        };
+    }
 
     /**
      * The standard "default" decorators.

@@ -15,6 +15,9 @@ import static org.apache.maven.search.api.request.BooleanQuery.and;
 import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 import static org.apache.maven.search.api.request.Query.query;
 
+import com.github.packageurl.MalformedPackageURLException;
+import com.github.packageurl.PackageURL;
+import com.github.packageurl.PackageURLBuilder;
 import eu.maveniverse.domtrip.Document;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
@@ -476,6 +479,27 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         } catch (InvalidVersionSpecificationException | VersionRangeResolutionException e) {
             output.warn("Could not resolve artifact version: {}", dependency.getArtifact(), e);
             return dependency.getArtifact();
+        }
+    }
+
+    @Override
+    public Optional<PackageURL> artifactPurl(RemoteRepository remoteRepository, Artifact artifact) {
+        requireNonNull(remoteRepository, "remoteRepository is null");
+        requireNonNull(artifact, "artifact is null");
+        PackageURLBuilder builder = PackageURLBuilder.aPackageURL();
+        builder.withType("maven");
+        builder.withNamespace(artifact.getGroupId());
+        builder.withName(artifact.getArtifactId());
+        builder.withVersion(artifact.getVersion()); // artifact.getBaseVersion() ?
+        boolean central = "central".equals(remoteRepository.getId());
+        if (!central) {
+            builder.withQualifier("repository_url", remoteRepository.getUrl());
+        }
+        try {
+            return Optional.of(builder.build());
+        } catch (MalformedPackageURLException e) {
+            output.warn("Malformed PURL", e);
+            return Optional.empty();
         }
     }
 

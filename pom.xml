@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>44</version>
+    <version>45</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
@@ -68,7 +68,7 @@
     <maven.compiler.release>17</maven.compiler.release>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.35</version.mima>
+    <version.mima>2.4.36</version.mima>
     <version.maven>3.9.11</version.maven>
     <version.resolver>1.9.24</version.resolver>
     <version.mavenIndexer>7.1.6</version.mavenIndexer>
@@ -216,7 +216,7 @@
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-interpolation</artifactId>
-        <version>1.28</version>
+        <version>1.29</version>
       </dependency>
 
       <!-- Maven Indexer -->
@@ -323,7 +323,7 @@
       <dependency>
         <groupId>eu.maveniverse.maven.shared</groupId>
         <artifactId>core</artifactId>
-        <version>0.1.8</version>
+        <version>0.1.9</version>
       </dependency>
 
       <dependency>

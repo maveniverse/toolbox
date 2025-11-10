@@ -13,14 +13,14 @@ import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.domtrip.maven.MavenPomElements;
+import eu.maveniverse.domtrip.maven.PomEditor;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.aether.artifact.Artifact;
-import org.maveniverse.domtrip.maven.MavenPomElements;
-import org.maveniverse.domtrip.maven.PomEditor;
 
 /**
  * Enhanced POM editor.

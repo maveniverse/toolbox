@@ -11,12 +11,12 @@ import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.domtrip.maven.ExtensionsEditor;
+import eu.maveniverse.domtrip.maven.MavenExtensionsElements;
 import eu.maveniverse.maven.shared.core.component.ComponentSupport;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.aether.artifact.Artifact;
-import org.maveniverse.domtrip.maven.ExtensionsEditor;
-import org.maveniverse.domtrip.maven.MavenExtensionsElements;
 
 /**
  * Enhanced extensions editor.

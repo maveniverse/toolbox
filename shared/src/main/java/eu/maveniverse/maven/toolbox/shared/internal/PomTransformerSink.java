@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.maven.PomEditor;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.FileUtils;
@@ -25,7 +26,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
-import org.maveniverse.domtrip.maven.PomEditor;
 
 /**
  * Construction to accept collection of artifacts, and applies it to some POM based on provided transformations.

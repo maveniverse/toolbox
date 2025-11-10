@@ -9,8 +9,8 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
-import org.maveniverse.domtrip.maven.MavenPomElements;
-import org.maveniverse.domtrip.maven.PomEditor;
+import eu.maveniverse.domtrip.maven.MavenPomElements;
+import eu.maveniverse.domtrip.maven.PomEditor;
 
 /**
  * Some simple suppliers of POM.

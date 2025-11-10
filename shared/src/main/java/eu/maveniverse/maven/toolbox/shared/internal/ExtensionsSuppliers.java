@@ -7,7 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
-import org.maveniverse.domtrip.maven.ExtensionsEditor;
+import eu.maveniverse.domtrip.maven.ExtensionsEditor;
 
 /**
  * Some simple suppliers of extensions.

@@ -11,15 +11,15 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.domtrip.Document;
 import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.domtrip.maven.MavenExtensionsElements;
+import eu.maveniverse.domtrip.maven.MavenPomElements;
+import eu.maveniverse.domtrip.maven.PomEditor;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
-import org.maveniverse.domtrip.maven.MavenExtensionsElements;
-import org.maveniverse.domtrip.maven.MavenPomElements;
-import org.maveniverse.domtrip.maven.PomEditor;
 
 /**
  * Utils.

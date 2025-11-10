@@ -19,6 +19,8 @@ import com.github.packageurl.MalformedPackageURLException;
 import com.github.packageurl.PackageURL;
 import com.github.packageurl.PackageURLBuilder;
 import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.maven.ExtensionsEditor;
+import eu.maveniverse.domtrip.maven.PomEditor;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.HTTPProxy;
@@ -138,8 +140,6 @@ import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
-import org.maveniverse.domtrip.maven.ExtensionsEditor;
-import org.maveniverse.domtrip.maven.PomEditor;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
     protected final Output output;

@@ -10,12 +10,12 @@ package eu.maveniverse.maven.toolbox.shared.internal.domtrip;
 import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.fromPom;
 
 import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.maven.PomEditor;
 import java.nio.file.Path;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.maveniverse.domtrip.maven.PomEditor;
 
 public class SmartPomEditorTest {
     @Test

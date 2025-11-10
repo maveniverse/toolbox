@@ -33,7 +33,16 @@ public class AddManagedPlugin extends HelloProjectMojoSupport {
         Artifact plugin = toPluginArtifact(gav);
         try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
             getToolboxCommando()
-                    .editPom(editSession, Collections.singletonList(s -> s.updateManagedPlugin(true, plugin)));
+                    .editPom(
+                            editSession,
+                            Collections.singletonList(s -> s.updateManagedPlugin(
+                                    true,
+                                    eu.maveniverse.domtrip.maven.Artifact.of(
+                                            plugin.getGroupId(),
+                                            plugin.getArtifactId(),
+                                            plugin.getVersion(),
+                                            plugin.getClassifier(),
+                                            plugin.getExtension()))));
         }
         return Result.success(Boolean.TRUE);
     }

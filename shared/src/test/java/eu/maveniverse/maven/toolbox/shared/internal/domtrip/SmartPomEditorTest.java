@@ -10,10 +10,8 @@ package eu.maveniverse.maven.toolbox.shared.internal.domtrip;
 import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.fromPom;
 
 import eu.maveniverse.domtrip.Document;
-import eu.maveniverse.domtrip.maven.PomEditor;
 import java.nio.file.Path;
 import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -30,8 +28,8 @@ public class SmartPomEditorTest {
         Assertions.assertEquals("", artifact.getClassifier());
         Assertions.assertEquals(pom.toFile(), artifact.getFile());
 
-        SmartPomEditor subject = new SmartPomEditor(new PomEditor(Document.of(pom)));
-        subject.updateManagedPlugin(true, new DefaultArtifact("org.example:plugin:1.0"));
-        System.out.println(subject.editor().toXml());
+        SmartPomEditor subject = new SmartPomEditor(Document.of(pom));
+        subject.updateManagedPlugin(true, eu.maveniverse.domtrip.maven.Artifact.of("org.example", "plugin", "1.0"));
+        System.out.println(subject.toXml());
     }
 }

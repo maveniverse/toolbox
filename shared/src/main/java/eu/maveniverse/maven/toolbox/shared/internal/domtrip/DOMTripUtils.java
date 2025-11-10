@@ -11,21 +11,31 @@ import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.domtrip.Document;
 import eu.maveniverse.domtrip.Element;
-import eu.maveniverse.domtrip.maven.MavenExtensionsElements;
 import eu.maveniverse.domtrip.maven.MavenPomElements;
 import eu.maveniverse.domtrip.maven.PomEditor;
 import java.nio.file.Path;
-import java.util.Objects;
-import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 
 /**
  * Utils.
  */
 public final class DOMTripUtils {
     private DOMTripUtils() {}
+
+    public static Artifact toResolver(eu.maveniverse.domtrip.maven.Artifact artifact) {
+        return new DefaultArtifact(
+                artifact.groupId(), artifact.artifactId(), artifact.classifier(), artifact.type(), artifact.version());
+    }
+
+    public static eu.maveniverse.domtrip.maven.Artifact toDomTrip(Artifact artifact) {
+        return eu.maveniverse.domtrip.maven.Artifact.of(
+                artifact.getGroupId(),
+                artifact.getArtifactId(),
+                artifact.getVersion(),
+                artifact.getClassifier(),
+                artifact.getExtension());
+    }
 
     public static String textContent(Element element, String defaultValue) {
         if (element != null) {
@@ -52,90 +62,6 @@ public final class DOMTripUtils {
      */
     public static String requiredTextContentOfChild(Element element, String descendant) {
         return textContent(element.child(descendant).orElseThrow());
-    }
-
-    /**
-     * Constructs GA string out of {@link Element}.
-     */
-    public static String toGA(Element element) {
-        requireNonNull(element);
-        return requiredTextContentOfChild(element, MavenExtensionsElements.Elements.GROUP_ID) + ":"
-                + requiredTextContentOfChild(element, MavenExtensionsElements.Elements.ARTIFACT_ID);
-    }
-
-    /**
-     * Constructs GA string out of {@link Element} specific for Maven Plugins (G if absent is "org.apache.maven.plugins").
-     */
-    public static String toPluginGA(Element element) {
-        requireNonNull(element);
-        return optionalTextContentOfChild(
-                        element, MavenExtensionsElements.Elements.GROUP_ID, "org.apache.maven.plugins")
-                + ":" + requiredTextContentOfChild(element, MavenExtensionsElements.Elements.ARTIFACT_ID);
-    }
-
-    /**
-     * Constructs GATC string out of {@link Element}.
-     */
-    public static String toGATC(Element element) {
-        requireNonNull(element);
-        String type = optionalTextContentOfChild(element, MavenExtensionsElements.Elements.TYPE, "jar");
-        String classifier = optionalTextContentOfChild(element, MavenExtensionsElements.Elements.CLASSIFIER, null);
-        if (classifier != null) {
-            return toGA(element) + ":" + type + ":" + classifier;
-        } else {
-            return toGA(element) + ":" + type;
-        }
-    }
-
-    /**
-     * Element matcher predicate for GA.
-     */
-    public static Predicate<Element> predicateGA(Artifact artifact) {
-        requireNonNull(artifact);
-        return element -> Objects.equals(toGA(element), artifact.getGroupId() + ":" + artifact.getArtifactId());
-    }
-
-    /**
-     * Element matcher predicate for GA.
-     */
-    public static Predicate<Element> predicatePluginGA(Artifact artifact) {
-        requireNonNull(artifact);
-        return element -> Objects.equals(toPluginGA(element), artifact.getGroupId() + ":" + artifact.getArtifactId());
-    }
-
-    /**
-     * Element matcher predicate for GATC.
-     */
-    public static Predicate<Element> predicateGATC(Artifact artifact) {
-        requireNonNull(artifact);
-        return element -> Objects.equals(toGATC(element), ArtifactIdUtils.toVersionlessId(artifact));
-    }
-
-    /**
-     * Creates a JAR {@link Artifact} out of {@link Element}. This method is usable ONLY when all three elements
-     * are mandatory to be present, like in {@code extensions.xml} or alike.
-     */
-    public static Artifact gavToArtifact(Element element, String extension) {
-        requireNonNull(element);
-        return new DefaultArtifact(
-                requiredTextContentOfChild(element, MavenExtensionsElements.Elements.GROUP_ID),
-                requiredTextContentOfChild(element, MavenExtensionsElements.Elements.ARTIFACT_ID),
-                extension,
-                requiredTextContentOfChild(element, MavenExtensionsElements.Elements.VERSION));
-    }
-
-    /**
-     * Creates a JAR {@link Artifact} out of {@link Element}.
-     */
-    public static Artifact gavToJarArtifact(Element element) {
-        return gavToArtifact(element, "jar");
-    }
-
-    /**
-     * Creates a POM {@link Artifact} out of {@link Element}.
-     */
-    public static Artifact gavToPomArtifact(Element element) {
-        return gavToArtifact(element, "pom");
     }
 
     /**

@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.toDomTrip;
+
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
@@ -122,7 +124,7 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
     private List<Consumer<SmartPomEditor>> toConsumers(List<Artifact> pluginsUpdates) {
         ArrayList<Consumer<SmartPomEditor>> consumers = new ArrayList<>(pluginsUpdates.size());
         for (Artifact artifact : pluginsUpdates) {
-            consumers.add(s -> s.removePluginVersion(artifact));
+            consumers.add(s -> s.removePluginVersion(toDomTrip(artifact)));
         }
         return consumers;
     }

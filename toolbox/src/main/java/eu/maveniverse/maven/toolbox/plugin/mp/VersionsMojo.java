@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.toDomTrip;
+
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
@@ -174,7 +176,7 @@ public class VersionsMojo extends MPPluginMojoSupport {
                         toolboxCommando.editPom(
                                 editSession,
                                 Collections.singletonList(s -> s.updateParent(
-                                        false, parentsUpdates.get().get(0))));
+                                        false, toDomTrip(parentsUpdates.get().get(0)))));
                     }
                     if (!extensionUpdates.isEmpty()) {
                         toolboxCommando.editPom(

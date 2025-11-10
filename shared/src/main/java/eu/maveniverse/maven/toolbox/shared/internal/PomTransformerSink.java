@@ -7,10 +7,10 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.toDomTrip;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.domtrip.Document;
-import eu.maveniverse.domtrip.maven.PomEditor;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.FileUtils;
@@ -99,20 +99,21 @@ public final class PomTransformerSink implements Artifacts.Sink {
         this.transformation = switch (op) {
             case UPSERT, UPDATE ->
                 switch (subject) {
-                    case MANAGED_PLUGINS -> a -> (e -> e.updateManagedPlugin(op == ToolboxCommando.Op.UPSERT, a));
-                    case PLUGINS -> a -> (e -> e.updatePlugin(op == ToolboxCommando.Op.UPSERT, a));
+                    case MANAGED_PLUGINS ->
+                        a -> (e -> e.updateManagedPlugin(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)));
+                    case PLUGINS -> a -> (e -> e.updatePlugin(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)));
                     case MANAGED_DEPENDENCIES ->
-                        a -> (e -> e.updateManagedDependency(op == ToolboxCommando.Op.UPSERT, a));
-                    case DEPENDENCIES -> a -> (e -> e.updateDependency(op == ToolboxCommando.Op.UPSERT, a));
-                    case EXTENSIONS -> a -> (e -> e.updateExtension(op == ToolboxCommando.Op.UPSERT, a));
+                        a -> (e -> e.updateManagedDependency(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)));
+                    case DEPENDENCIES -> a -> (e -> e.updateDependency(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)));
+                    case EXTENSIONS -> a -> (e -> e.updateExtension(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)));
                 };
             case DELETE ->
                 switch (subject) {
-                    case MANAGED_PLUGINS -> a -> (e -> e.deleteManagedPlugin(a));
-                    case PLUGINS -> a -> (e -> e.deletePlugin(a));
-                    case MANAGED_DEPENDENCIES -> a -> (e -> e.deleteManagedDependency(a));
-                    case DEPENDENCIES -> a -> (e -> e.deleteDependency(a));
-                    case EXTENSIONS -> a -> (e -> e.deleteExtension(a));
+                    case MANAGED_PLUGINS -> a -> (e -> e.deleteManagedPlugin(toDomTrip(a)));
+                    case PLUGINS -> a -> (e -> e.deletePlugin(toDomTrip(a)));
+                    case MANAGED_DEPENDENCIES -> a -> (e -> e.deleteManagedDependency(toDomTrip(a)));
+                    case DEPENDENCIES -> a -> (e -> e.deleteDependency(toDomTrip(a)));
+                    case EXTENSIONS -> a -> (e -> e.deleteExtension(toDomTrip(a)));
                 };
         };
         this.applicableTransformations = new ArrayList<>();
@@ -152,7 +153,7 @@ public final class PomTransformerSink implements Artifacts.Sink {
         } else {
             document = Document.of(pom);
         }
-        SmartPomEditor editor = new SmartPomEditor(new PomEditor(document));
+        SmartPomEditor editor = new SmartPomEditor(document);
         try (FileUtils.CollocatedTempFile tempFile = FileUtils.newTempFile(pom, false)) {
             for (Consumer<SmartPomEditor> transformation : applicableTransformations) {
                 transformation.accept(editor);

@@ -33,7 +33,16 @@ public class AddManagedDependency extends HelloProjectMojoSupport {
         Artifact dependency = toDependencyArtifact(gav);
         try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
             getToolboxCommando()
-                    .editPom(editSession, Collections.singletonList(s -> s.updateManagedDependency(true, dependency)));
+                    .editPom(
+                            editSession,
+                            Collections.singletonList(s -> s.updateManagedDependency(
+                                    true,
+                                    eu.maveniverse.domtrip.maven.Artifact.of(
+                                            dependency.getGroupId(),
+                                            dependency.getArtifactId(),
+                                            dependency.getVersion(),
+                                            dependency.getClassifier(),
+                                            dependency.getExtension()))));
         }
         return Result.success(Boolean.TRUE);
     }

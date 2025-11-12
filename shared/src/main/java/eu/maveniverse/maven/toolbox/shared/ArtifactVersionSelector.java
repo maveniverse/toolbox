@@ -65,6 +65,44 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
     }
 
     /**
+     * Selector that return previous version as relative to current one.
+     */
+    static ArtifactVersionSelector prev() {
+        return new ArtifactVersionSelector() {
+            @Override
+            public String apply(Artifact artifact, List<Version> versions) {
+                if (!versions.isEmpty()) {
+                    List<String> vstr = versions.stream().map(Version::toString).toList();
+                    int idx = vstr.indexOf(artifact.getVersion());
+                    if (idx > 0) {
+                        return vstr.get(idx - 1);
+                    }
+                }
+                return identity().apply(artifact, versions);
+            }
+        };
+    }
+
+    /**
+     * Selector that return next version as relative to current one.
+     */
+    static ArtifactVersionSelector next() {
+        return new ArtifactVersionSelector() {
+            @Override
+            public String apply(Artifact artifact, List<Version> versions) {
+                if (!versions.isEmpty()) {
+                    List<String> vstr = versions.stream().map(Version::toString).toList();
+                    int idx = vstr.indexOf(artifact.getVersion());
+                    if (idx > 0 && idx < vstr.size() - 1) {
+                        return vstr.get(idx + 1);
+                    }
+                }
+                return identity().apply(artifact, versions);
+            }
+        };
+    }
+
+    /**
      * Selector that return last version with same "major" as artifact.
      */
     static ArtifactVersionSelector major() {
@@ -73,8 +111,8 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
             public String apply(Artifact artifact, List<Version> versions) {
                 String ver = artifact.getVersion();
                 int firstDot = ver.indexOf('.');
-                if (firstDot > 0) {
-                    String prefix = ver.substring(0, firstDot);
+                if (firstDot > 0 && firstDot < ver.length() - 1) {
+                    String prefix = ver.substring(0, firstDot + 1);
                     for (int i = versions.size() - 1; i >= 0; i--) {
                         String version = versions.get(i).toString();
                         if (version.startsWith(prefix)) {
@@ -96,10 +134,10 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
             public String apply(Artifact artifact, List<Version> versions) {
                 String ver = artifact.getVersion();
                 int firstDot = ver.indexOf('.');
-                if (firstDot > 0) {
+                if (firstDot > 0 && firstDot < ver.length() - 1) {
                     int secondDot = ver.indexOf('.', firstDot + 1);
-                    if (secondDot > firstDot) {
-                        String prefix = ver.substring(0, secondDot);
+                    if (secondDot > firstDot && secondDot < ver.length() - 1) {
+                        String prefix = ver.substring(0, secondDot + 1);
                         for (int i = versions.size() - 1; i >= 0; i--) {
                             String version = versions.get(i).toString();
                             if (version.startsWith(prefix)) {
@@ -189,6 +227,12 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                     break;
                 case "last":
                     params.add(last());
+                    break;
+                case "prev":
+                    params.add(prev());
+                    break;
+                case "next":
+                    params.add(next());
                     break;
                 case "major":
                     params.add(major());

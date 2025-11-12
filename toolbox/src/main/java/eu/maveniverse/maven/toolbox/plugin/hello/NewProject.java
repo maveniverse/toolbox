@@ -78,7 +78,7 @@ public class NewProject extends HelloMojoSupport {
                 }
                 s.setPackaging(effectivePackaging);
                 if (parentArtifact != null) {
-                    s.setParent(toDomTrip(parentArtifact));
+                    s.parent().setParent(toDomTrip(parentArtifact));
                 }
             }));
         }

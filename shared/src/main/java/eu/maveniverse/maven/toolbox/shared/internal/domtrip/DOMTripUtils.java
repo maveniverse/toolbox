@@ -23,13 +23,13 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 public final class DOMTripUtils {
     private DOMTripUtils() {}
 
-    public static Artifact toResolver(eu.maveniverse.domtrip.maven.Artifact artifact) {
+    public static Artifact toResolver(eu.maveniverse.domtrip.maven.Coordinates artifact) {
         return new DefaultArtifact(
                 artifact.groupId(), artifact.artifactId(), artifact.classifier(), artifact.type(), artifact.version());
     }
 
-    public static eu.maveniverse.domtrip.maven.Artifact toDomTrip(Artifact artifact) {
-        return eu.maveniverse.domtrip.maven.Artifact.of(
+    public static eu.maveniverse.domtrip.maven.Coordinates toDomTrip(Artifact artifact) {
+        return eu.maveniverse.domtrip.maven.Coordinates.of(
                 artifact.getGroupId(),
                 artifact.getArtifactId(),
                 artifact.getVersion(),

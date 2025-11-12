@@ -20,6 +20,7 @@ import com.github.packageurl.PackageURL;
 import com.github.packageurl.PackageURLBuilder;
 import eu.maveniverse.domtrip.Document;
 import eu.maveniverse.domtrip.maven.ExtensionsEditor;
+import eu.maveniverse.domtrip.maven.PomEditor;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.HTTPProxy;
@@ -49,7 +50,6 @@ import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils;
-import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import guru.nidi.graphviz.attribute.Color;
 import guru.nidi.graphviz.attribute.Label;
@@ -1761,10 +1761,10 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<Boolean> editPom(EditSession es, List<Consumer<SmartPomEditor>> transformers) throws Exception {
+    public Result<Boolean> editPom(EditSession es, List<Consumer<PomEditor>> transformers) throws Exception {
         es.edit(pom -> {
-            SmartPomEditor pomEditor = new SmartPomEditor(Document.of(pom));
-            for (Consumer<SmartPomEditor> transformer : transformers) {
+            PomEditor pomEditor = new PomEditor(Document.of(pom));
+            for (Consumer<PomEditor> transformer : transformers) {
                 transformer.accept(pomEditor);
             }
             Files.writeString(pom, pomEditor.toXml());

@@ -7,8 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.hello;
 
-import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.fromPom;
-
+import eu.maveniverse.domtrip.maven.Coordinates;
+import eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils;
 import java.nio.file.Files;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -21,7 +21,7 @@ public abstract class HelloProjectMojoSupport extends HelloMojoSupport {
         if (!Files.exists(getRootPom())) {
             throw new IllegalStateException("This directory does not contain pom.xml");
         }
-        return fromPom(getRootPom());
+        return DOMTripUtils.toResolver(Coordinates.fromPom(getRootPom()));
     }
 
     /**

@@ -7,6 +7,9 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.mp;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.toDomTrip;
+
+import eu.maveniverse.domtrip.maven.PomEditor;
 import eu.maveniverse.maven.toolbox.plugin.MPPluginMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
@@ -14,7 +17,6 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -119,10 +121,10 @@ public class LockPluginVersionsMojo extends MPPluginMojoSupport {
         return Result.success(true);
     }
 
-    private List<Consumer<SmartPomEditor>> toConsumers(List<Artifact> pluginsUpdates) {
-        ArrayList<Consumer<SmartPomEditor>> consumers = new ArrayList<>(pluginsUpdates.size());
+    private List<Consumer<PomEditor>> toConsumers(List<Artifact> pluginsUpdates) {
+        ArrayList<Consumer<PomEditor>> consumers = new ArrayList<>(pluginsUpdates.size());
         for (Artifact artifact : pluginsUpdates) {
-            consumers.add(s -> s.removePluginVersion(artifact));
+            consumers.add(s -> s.plugins().deletePluginVersion(toDomTrip(artifact)));
         }
         return consumers;
     }

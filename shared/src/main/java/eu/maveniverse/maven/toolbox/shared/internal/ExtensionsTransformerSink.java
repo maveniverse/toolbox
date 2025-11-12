@@ -7,14 +7,15 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.toDomTrip;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.maven.ExtensionsEditor;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMapper;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.FileUtils;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartExtensionsEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,7 +26,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.eclipse.aether.artifact.Artifact;
-import org.maveniverse.domtrip.maven.ExtensionsEditor;
 
 /**
  * Construction to accept collection of artifacts, and applies it to some extensions.xml based on provided transformations.
@@ -64,8 +64,8 @@ public final class ExtensionsTransformerSink implements Artifacts.Sink {
     private final Supplier<String> extensionsSupplier;
     private final Predicate<Artifact> artifactMatcher;
     private final Function<Artifact, Artifact> artifactMapper;
-    private final Function<Artifact, Consumer<SmartExtensionsEditor>> transformation;
-    private final ArrayList<Consumer<SmartExtensionsEditor>> applicableTransformations;
+    private final Function<Artifact, Consumer<ExtensionsEditor>> transformation;
+    private final ArrayList<Consumer<ExtensionsEditor>> applicableTransformations;
 
     /**
      * Creates a directory sink.
@@ -92,8 +92,8 @@ public final class ExtensionsTransformerSink implements Artifacts.Sink {
         requireNonNull(op, "op");
 
         this.transformation = switch (op) {
-            case UPSERT, UPDATE -> a -> (e -> e.updateExtension(op == ToolboxCommando.Op.UPSERT, a));
-            case DELETE -> a -> (e -> e.deleteExtension(a));
+            case UPSERT, UPDATE -> a -> (e -> e.updateExtension(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)));
+            case DELETE -> a -> (e -> e.deleteExtension(toDomTrip(a)));
         };
         this.applicableTransformations = new ArrayList<>();
     }
@@ -106,7 +106,7 @@ public final class ExtensionsTransformerSink implements Artifacts.Sink {
     public void accept(Artifact artifact) throws IOException {
         requireNonNull(artifact, "artifact");
         if (artifactMatcher.test(artifact)) {
-            Consumer<SmartExtensionsEditor> transformation = this.transformation.apply(artifactMapper.apply(artifact));
+            Consumer<ExtensionsEditor> transformation = this.transformation.apply(artifactMapper.apply(artifact));
             if (transformation != null) {
                 output.chatter("Accepted {}", artifact);
                 applicableTransformations.add(transformation);
@@ -132,9 +132,9 @@ public final class ExtensionsTransformerSink implements Artifacts.Sink {
         } else {
             document = Document.of(extensions);
         }
-        SmartExtensionsEditor editor = new SmartExtensionsEditor(new ExtensionsEditor(document));
+        ExtensionsEditor editor = new ExtensionsEditor(document);
         try (FileUtils.CollocatedTempFile tempFile = FileUtils.newTempFile(extensions, false)) {
-            for (Consumer<SmartExtensionsEditor> transformation : applicableTransformations) {
+            for (Consumer<ExtensionsEditor> transformation : applicableTransformations) {
                 transformation.accept(editor);
             }
             Files.writeString(tempFile.getPath(), document.toXml());

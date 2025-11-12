@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.hello;
 
+import static eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils.toDomTrip;
+
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.internal.PomSuppliers;
@@ -64,15 +66,13 @@ public class NewSubProject extends HelloProjectMojoSupport {
                     effectivePackaging = "pom";
                 }
                 s.setPackaging(effectivePackaging);
-                s.setParent(getCurrentProjectArtifact());
+                s.parent().setParent(toDomTrip(getCurrentProjectArtifact()));
             }));
         }
         // add subproject to parent
         try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
-            getToolboxCommando()
-                    .editPom(
-                            editSession,
-                            Collections.singletonList(s -> s.addSubProject(subProjectArtifact.getArtifactId())));
+            getToolboxCommando().editPom(editSession, Collections.singletonList(s -> s.subprojects()
+                    .addSubProject(subProjectArtifact.getArtifactId())));
         }
         return Result.success(Boolean.TRUE);
     }

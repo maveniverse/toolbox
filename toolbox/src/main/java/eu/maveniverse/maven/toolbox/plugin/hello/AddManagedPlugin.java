@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin.hello;
 
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils;
 import java.util.Collections;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -32,8 +33,8 @@ public class AddManagedPlugin extends HelloProjectMojoSupport {
     protected Result<Boolean> doExecute() throws Exception {
         Artifact plugin = toPluginArtifact(gav);
         try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
-            getToolboxCommando()
-                    .editPom(editSession, Collections.singletonList(s -> s.updateManagedPlugin(true, plugin)));
+            getToolboxCommando().editPom(editSession, Collections.singletonList(s -> s.plugins()
+                    .updateManagedPlugin(true, DOMTripUtils.toDomTrip(plugin))));
         }
         return Result.success(Boolean.TRUE);
     }

@@ -19,6 +19,8 @@ import com.github.packageurl.MalformedPackageURLException;
 import com.github.packageurl.PackageURL;
 import com.github.packageurl.PackageURLBuilder;
 import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.maven.ExtensionsEditor;
+import eu.maveniverse.domtrip.maven.PomEditor;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.HTTPProxy;
@@ -47,8 +49,7 @@ import eu.maveniverse.maven.toolbox.shared.Source;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
-import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartExtensionsEditor;
-import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
+import eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import guru.nidi.graphviz.attribute.Color;
 import guru.nidi.graphviz.attribute.Label;
@@ -138,8 +139,6 @@ import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionScheme;
-import org.maveniverse.domtrip.maven.ExtensionsEditor;
-import org.maveniverse.domtrip.maven.PomEditor;
 
 public class ToolboxCommandoImpl implements ToolboxCommando {
     protected final Output output;
@@ -1762,13 +1761,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<Boolean> editPom(EditSession es, List<Consumer<SmartPomEditor>> transformers) throws Exception {
+    public Result<Boolean> editPom(EditSession es, List<Consumer<PomEditor>> transformers) throws Exception {
         es.edit(pom -> {
-            SmartPomEditor smartPomEditor = new SmartPomEditor(new PomEditor(Document.of(pom)));
-            for (Consumer<SmartPomEditor> transformer : transformers) {
-                transformer.accept(smartPomEditor);
+            PomEditor pomEditor = new PomEditor(Document.of(pom));
+            for (Consumer<PomEditor> transformer : transformers) {
+                transformer.accept(pomEditor);
             }
-            Files.writeString(pom, smartPomEditor.editor().toXml());
+            Files.writeString(pom, pomEditor.toXml());
         });
         return Result.success(true);
     }
@@ -1786,8 +1785,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<List<Artifact>> listExtensions(Path extensions) throws Exception {
         requireNonNull(extensions, "extensions");
         if (Files.isRegularFile(extensions)) {
-            return Result.success(
-                    new SmartExtensionsEditor(new ExtensionsEditor(Document.of(extensions))).listExtensions());
+            return Result.success(new ExtensionsEditor(Document.of(extensions))
+                    .listExtensions().stream().map(DOMTripUtils::toResolver).toList());
         }
         return Result.failure("File does not exists");
     }

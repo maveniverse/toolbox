@@ -10,10 +10,10 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import com.github.packageurl.PackageURL;
+import eu.maveniverse.domtrip.maven.PomEditor;
 import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl;
-import eu.maveniverse.maven.toolbox.shared.internal.domtrip.SmartPomEditor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.Closeable;
 import java.io.IOException;
@@ -612,7 +612,7 @@ public interface ToolboxCommando extends Closeable {
     Result<List<Artifact>> editPom(EditSession es, PomOpSubject subject, Op op, Source<Artifact> artifacts)
             throws Exception;
 
-    Result<Boolean> editPom(EditSession es, List<Consumer<SmartPomEditor>> transformers) throws Exception;
+    Result<Boolean> editPom(EditSession es, List<Consumer<PomEditor>> transformers) throws Exception;
 
     enum ExtensionsScope {
         PROJECT,

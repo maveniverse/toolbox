@@ -38,6 +38,7 @@
     <module>shared</module>
     <module>toolbox</module>
     <module>mvnsh</module>
+    <module>mcp</module>
     <module>it</module>
   </modules>
 
@@ -341,6 +342,13 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
           <version>${version.mavenPluginTools}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <parameters>true</parameters>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>

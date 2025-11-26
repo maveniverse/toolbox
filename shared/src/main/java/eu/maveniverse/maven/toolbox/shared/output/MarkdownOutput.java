@@ -36,15 +36,15 @@ public class MarkdownOutput extends OutputSupport {
     public <T> T tool(Class<? extends T> klazz, Supplier<T> supplier) {
         if (DependencyGraphDumper.LineFormatter.class.isAssignableFrom(klazz)) {
             if (DependencyGraphDecorators.TreeDecorator.class.equals(klazz)) {
-                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new TreeIntentMapper());
+                return (T) new MarkdownTreeFormatter(marker(Verbosity.NORMAL), new TreeIntentMapper());
             } else if (DependencyGraphDecorators.DmTreeDecorator.class.equals(klazz)) {
-                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new DmTreeIntentMapper());
+                return (T) new MarkdownTreeFormatter(marker(Verbosity.NORMAL), new DmTreeIntentMapper());
             } else if (DependencyGraphDecorators.ParentChildTreeDecorator.class.equals(klazz)) {
-                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
+                return (T) new MarkdownTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
             } else if (DependencyGraphDecorators.SubprojectTreeDecorator.class.equals(klazz)) {
-                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
+                return (T) new MarkdownTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
             } else if (DependencyGraphDecorators.ProjectDependenciesTreeDecorator.class.equals(klazz)) {
-                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
+                return (T) new MarkdownTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
             }
         }
         return supplier.get();
@@ -141,11 +141,11 @@ public class MarkdownOutput extends OutputSupport {
 
     // Tree
 
-    private static class AnsiTreeFormatter extends DependencyGraphDecorators.TreeDecorator {
+    private static class MarkdownTreeFormatter extends DependencyGraphDecorators.TreeDecorator {
         private final Marker marker;
         private final Function<Deque<DependencyNode>, Marker.Intent> intentMapper;
 
-        public AnsiTreeFormatter(Marker marker, Function<Deque<DependencyNode>, Marker.Intent> intentMapper) {
+        public MarkdownTreeFormatter(Marker marker, Function<Deque<DependencyNode>, Marker.Intent> intentMapper) {
             this.marker = marker;
             this.intentMapper = intentMapper;
         }

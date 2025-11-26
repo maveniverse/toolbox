@@ -12,3 +12,5 @@ To use it:
         }
     }
 ```
+
+Example session with Claude Desktop: ![session-example.png](session-example.png)

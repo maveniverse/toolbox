@@ -9,6 +9,8 @@ package eu.maveniverse.maven.toolbox.mcp;
 
 import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.mima.context.Runtimes;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
@@ -38,12 +40,38 @@ public class ToolboxTools {
 
     private ToolboxCommandoImpl createToolboxCommando(OutputStream output) {
         return (ToolboxCommandoImpl) ToolboxCommando.create(
-                new MarkdownOutput(new PrintStreamOutput(new PrintStream(output), Output.Verbosity.NORMAL, false)),
+                new MarkdownOutput(new PrintStreamOutput(new PrintStream(output), Output.Verbosity.SUGGEST, false)),
                 Runtimes.INSTANCE.getRuntime().create(createCLIContextOverrides()));
     }
 
+    @Tool(description = "Check for Maven Artifact existence.")
+    String artifactExists(@ToolArg(description = "The artifact as groupId:artifactId:version") String gav) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
+            toolboxCommando.exists(ContextOverrides.CENTRAL, gav, true, true, true, true, false, null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return outputStream.toString(StandardCharsets.UTF_8);
+    }
+
+    @Tool(description = "Get the Maven Artifact newer versions that the one specified.")
+    String artifactNewerVersions(@ToolArg(description = "The artifact as groupId:artifactId:version") String gav) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
+            toolboxCommando.versions(
+                    "artifact",
+                    ArtifactSources.gavArtifactSource(gav),
+                    ArtifactVersionMatcher.noPreviews(),
+                    ArtifactVersionSelector.last());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return outputStream.toString(StandardCharsets.UTF_8);
+    }
+
     @Tool(description = "Get the Maven Artifact basic properties.")
-    String artifactDescription(@ToolArg(description = "The artifact as groupId:artifactId:version") String gav) {
+    String artifactBasicProperties(@ToolArg(description = "The artifact as groupId:artifactId:version") String gav) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
             toolboxCommando.copy(

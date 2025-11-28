@@ -55,7 +55,7 @@ public class ToolboxTools {
         return outputStream.toString(StandardCharsets.UTF_8);
     }
 
-    @Tool(description = "Get the Maven Artifact newer versions that the one specified.")
+    @Tool(description = "Get the Maven Artifact newer versions than the one specified.")
     String artifactNewerVersions(@ToolArg(description = "The artifact as groupId:artifactId:version") String gav) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {

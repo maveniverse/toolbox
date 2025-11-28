@@ -155,7 +155,7 @@ public class MarkdownOutput extends OutputSupport {
                 int cmp, Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
             String diff;
             if (cmp == 0) {
-                diff = color("white", "  ");
+                diff = color("white", "   ");
             } else if (cmp < 0) {
                 diff = color("red", "---");
             } else {

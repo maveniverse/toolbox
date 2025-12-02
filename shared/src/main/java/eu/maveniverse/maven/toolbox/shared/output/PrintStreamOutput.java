@@ -32,13 +32,14 @@ public class PrintStreamOutput extends OutputSupport {
 
     @Override
     protected void doHandle(Intent intent, Verbosity verbosity, String message, Object... params) {
+        PrintStream ps = intent == Intent.OUT ? output : error;
         FormattingTuple tuple = MessageFormatter.arrayFormat(message, params);
-        output.println(tuple.getMessage());
+        ps.println(tuple.getMessage());
         if (tuple.getThrowable() != null) {
             if (errors) {
-                tuple.getThrowable().printStackTrace(output);
+                tuple.getThrowable().printStackTrace(ps);
             } else {
-                output.println(tuple.getThrowable().getMessage());
+                ps.println(tuple.getThrowable().getMessage());
             }
         }
     }

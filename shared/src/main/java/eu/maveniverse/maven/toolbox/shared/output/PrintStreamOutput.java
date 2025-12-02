@@ -7,6 +7,8 @@
  */
 package eu.maveniverse.maven.toolbox.shared.output;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.PrintStream;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
@@ -16,14 +18,20 @@ import org.slf4j.helpers.MessageFormatter;
  */
 public class PrintStreamOutput extends OutputSupport {
     protected final PrintStream output;
+    protected final PrintStream error;
 
     public PrintStreamOutput(PrintStream output, Verbosity verbosity, boolean errors) {
+        this(output, output, verbosity, errors);
+    }
+
+    public PrintStreamOutput(PrintStream output, PrintStream error, Verbosity verbosity, boolean errors) {
         super(verbosity, errors);
-        this.output = output;
+        this.output = requireNonNull(output);
+        this.error = requireNonNull(error);
     }
 
     @Override
-    protected void doHandle(Verbosity verbosity, String message, Object... params) {
+    protected void doHandle(Intent intent, Verbosity verbosity, String message, Object... params) {
         FormattingTuple tuple = MessageFormatter.arrayFormat(message, params);
         output.println(tuple.getMessage());
         if (tuple.getThrowable() != null) {

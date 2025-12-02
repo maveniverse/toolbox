@@ -53,19 +53,19 @@ public class AnsiOutput extends OutputSupport {
 
     @Override
     public Marker marker(Verbosity verbosity) {
-        return new AnsiMarker(this, verbosity);
+        return new AnsiMarker(this, Intent.OUT, verbosity);
     }
 
     @Override
-    protected void doHandle(Verbosity verbosity, String message, Object... params) {
+    protected void doHandle(Intent intent, Verbosity verbosity, String message, Object... params) {
         FormattingTuple tuple = MessageFormatter.arrayFormat(message, params);
-        output.handle(verbosity, tuple.getMessage());
+        output.handle(intent, verbosity, tuple.getMessage());
         if (tuple.getThrowable() != null) {
-            writeThrowable(tuple.getThrowable(), output, verbosity);
+            writeThrowable(tuple.getThrowable(), output, intent, verbosity);
         }
     }
 
-    private void writeThrowable(Throwable t, Output output, Verbosity verbosity) {
+    private void writeThrowable(Throwable t, Output output, Intent intent, Verbosity verbosity) {
         if (t == null) {
             return;
         }
@@ -73,15 +73,15 @@ public class AnsiOutput extends OutputSupport {
         if (t.getMessage() != null) {
             builder += ": " + italic(t.getMessage());
         }
-        output.handle(verbosity, builder);
+        output.handle(intent, verbosity, builder);
 
         if (errors) {
-            printStackTrace(t, output, verbosity, "");
+            printStackTrace(t, output, intent, verbosity, "");
         }
-        output.handle(verbosity, Ansi.ansi().reset().toString());
+        output.handle(intent, verbosity, Ansi.ansi().reset().toString());
     }
 
-    private void printStackTrace(Throwable t, Output output, Verbosity verbosity, String prefix) {
+    private void printStackTrace(Throwable t, Output output, Intent intent, Verbosity verbosity, String prefix) {
         StringBuilder builder = new StringBuilder();
         for (StackTraceElement e : t.getStackTrace()) {
             builder.append(prefix);
@@ -94,19 +94,20 @@ public class AnsiOutput extends OutputSupport {
             builder.append(" (");
             builder.append(bold(getLocation(e)));
             builder.append(")");
-            output.handle(verbosity, builder.toString());
+            output.handle(intent, verbosity, builder.toString());
             builder.setLength(0);
         }
         for (Throwable se : t.getSuppressed()) {
-            writeThrowable(se, output, verbosity, "Suppressed", prefix + "    ");
+            writeThrowable(se, output, intent, verbosity, "Suppressed", prefix + "    ");
         }
         Throwable cause = t.getCause();
         if (cause != null && t != cause) {
-            writeThrowable(cause, output, verbosity, "Caused by", prefix);
+            writeThrowable(cause, output, intent, verbosity, "Caused by", prefix);
         }
     }
 
-    private void writeThrowable(Throwable t, Output output, Verbosity verbosity, String caption, String prefix) {
+    private void writeThrowable(
+            Throwable t, Output output, Intent intent, Verbosity verbosity, String caption, String prefix) {
         StringBuilder builder = new StringBuilder();
         builder.append(prefix)
                 .append(bold(caption))
@@ -115,9 +116,9 @@ public class AnsiOutput extends OutputSupport {
         if (t.getMessage() != null) {
             builder.append(": ").append(italic(t.getMessage()));
         }
-        output.handle(verbosity, builder.toString());
+        output.handle(intent, verbosity, builder.toString());
 
-        printStackTrace(t, output, verbosity, prefix);
+        printStackTrace(t, output, intent, verbosity, prefix);
     }
 
     private String getLocation(final StackTraceElement e) {
@@ -245,8 +246,8 @@ public class AnsiOutput extends OutputSupport {
     // MessageBuilder
 
     private static class AnsiMarker extends Marker {
-        public AnsiMarker(Output output, Verbosity verbosity) {
-            super(output, verbosity);
+        public AnsiMarker(Output output, Output.Intent intent, Output.Verbosity verbosity) {
+            super(output, intent, verbosity);
         }
 
         @Override

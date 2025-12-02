@@ -44,7 +44,11 @@ public final class LoggerOutput extends OutputSupport {
     }
 
     @Override
-    protected void doHandle(Verbosity verbosity, String message, Object... params) {
-        output.info(message, params);
+    protected void doHandle(Intent intent, Verbosity verbosity, String message, Object... params) {
+        if (intent == Intent.OUT) {
+            output.info(message, params);
+        } else {
+            output.warn(message, params);
+        }
     }
 }

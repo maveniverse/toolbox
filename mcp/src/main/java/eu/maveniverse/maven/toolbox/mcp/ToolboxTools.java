@@ -41,7 +41,8 @@ public class ToolboxTools {
 
     private ToolboxCommandoImpl createToolboxCommando(OutputStream output) {
         return (ToolboxCommandoImpl) ToolboxCommando.create(
-                new MarkdownOutput(new PrintStreamOutput(new PrintStream(output), Output.Verbosity.SUGGEST, false)),
+                new MarkdownOutput(
+                        new PrintStreamOutput(new PrintStream(output), System.err, Output.Verbosity.SUGGEST, false)),
                 Runtimes.INSTANCE.getRuntime().create(createCLIContextOverrides()));
     }
 

@@ -15,11 +15,13 @@ import static java.util.Objects.requireNonNull;
  */
 public class Marker {
     private final Output output;
+    private final Output.Intent intent;
     private final Output.Verbosity verbosity;
     private final StringBuilder message;
 
-    public Marker(Output output, Output.Verbosity verbosity) {
+    public Marker(Output output, Output.Intent intent, Output.Verbosity verbosity) {
         this.output = output;
+        this.intent = intent;
         this.verbosity = verbosity;
         this.message = new StringBuilder();
     }
@@ -71,7 +73,7 @@ public class Marker {
 
     public void say(Object... params) {
         if (output.isHeard(verbosity)) {
-            output.handle(verbosity, toString(), params);
+            output.handle(intent, verbosity, toString(), params);
         }
     }
 

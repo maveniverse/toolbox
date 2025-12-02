@@ -610,11 +610,13 @@ public final class ArtifactSinks {
             countingArtifactSink.accept(artifact);
             sizingArtifactSink.accept(artifact);
             if (details) {
-                moduleDescriptorExtractingSink.accept(artifact);
                 checksumArtifactSink.accept(artifact);
                 artifactUriSink.accept(artifact);
                 artifactPurlSink.accept(artifact);
-                if (artifact.getFile() != null) {
+                if (artifact.getFile() != null
+                        && artifact.getFile().isFile()
+                        && artifact.getFile().getPath().endsWith(".jar")) {
+                    moduleDescriptorExtractingSink.accept(artifact);
                     bytecodeVersions.put(
                             artifact,
                             new BytecodeShowJarProcessor(new PathBasedJarFileResolver(

@@ -7,6 +7,7 @@
  */
 package eu.maveniverse.maven.toolbox.plugin.gav;
 
+import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -33,6 +34,6 @@ public class GavSearchMojo extends GavSearchMojoSupport {
     @Override
     protected Result<List<Artifact>> doExecute() throws IOException {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        return toolboxCommando.search(getRemoteRepository(toolboxCommando), expression);
+        return toolboxCommando.search(ContextOverrides.CENTRAL, expression);
     }
 }

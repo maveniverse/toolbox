@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>45</version>
+    <version>46</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
@@ -68,7 +68,7 @@
     <maven.compiler.release>17</maven.compiler.release>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.36</version.mima>
+    <version.mima>2.4.37</version.mima>
     <version.maven>3.9.11</version.maven>
     <version.resolver>1.9.24</version.resolver>
     <version.mavenIndexer>7.1.6</version.mavenIndexer>

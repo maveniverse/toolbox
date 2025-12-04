@@ -33,6 +33,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.graph.Dependency;
@@ -72,6 +74,16 @@ public interface ToolboxCommando extends Closeable {
 
     @Override
     void close();
+
+    Path basedir();
+
+    Output output();
+
+    RepositorySystem repositorySystem();
+
+    RepositorySystemSession session();
+
+    List<RemoteRepository> remoteRepositories();
 
     default String getVersion() {
         return ToolboxCommandoVersion.getVersion();

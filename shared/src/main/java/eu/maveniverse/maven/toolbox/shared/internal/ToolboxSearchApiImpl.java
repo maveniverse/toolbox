@@ -108,8 +108,10 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
         } else if ("nx2".equalsIgnoreCase(repositoryVendor)) {
             extractor = new Nx2ResponseExtractor();
         } else {
-            throw new IllegalArgumentException(
-                    "Unsupported Search RR extractor: '" + repositoryVendor + "'; (supported are 'central', 'nx2')");
+            output.warn(
+                    "Unknown repository vendor type '{}' (supported are 'central', 'nx2'); fallback to Central",
+                    repositoryVendor);
+            extractor = new MavenCentralResponseExtractor();
         }
         output.chatter(
                 "Creating backend {}-rr {}:{}:{}",

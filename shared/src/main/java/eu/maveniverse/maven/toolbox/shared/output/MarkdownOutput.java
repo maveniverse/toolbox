@@ -17,17 +17,16 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.util.artifact.JavaScopes;
-import org.jline.jansi.Ansi;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
 /**
- * ANSI output that wraps another {@link Output} to decorate it.
+ * Markdown output that wraps another {@link Output} to decorate it.
  */
-public class AnsiOutput extends OutputSupport {
+public class MarkdownOutput extends OutputSupport {
     private final Output output;
 
-    public AnsiOutput(Output output) {
+    public MarkdownOutput(Output output) {
         super(output.getVerbosity(), output.isShowErrors());
         this.output = output;
     }
@@ -37,15 +36,15 @@ public class AnsiOutput extends OutputSupport {
     public <T> T tool(Class<? extends T> klazz, Supplier<T> supplier) {
         if (DependencyGraphDumper.LineFormatter.class.isAssignableFrom(klazz)) {
             if (DependencyGraphDecorators.TreeDecorator.class.equals(klazz)) {
-                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new TreeIntentMapper());
+                return (T) new MarkdownTreeFormatter(marker(Verbosity.NORMAL), new TreeIntentMapper());
             } else if (DependencyGraphDecorators.DmTreeDecorator.class.equals(klazz)) {
-                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new DmTreeIntentMapper());
+                return (T) new MarkdownTreeFormatter(marker(Verbosity.NORMAL), new DmTreeIntentMapper());
             } else if (DependencyGraphDecorators.ParentChildTreeDecorator.class.equals(klazz)) {
-                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
+                return (T) new MarkdownTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
             } else if (DependencyGraphDecorators.SubprojectTreeDecorator.class.equals(klazz)) {
-                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
+                return (T) new MarkdownTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
             } else if (DependencyGraphDecorators.ProjectDependenciesTreeDecorator.class.equals(klazz)) {
-                return (T) new AnsiTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
+                return (T) new MarkdownTreeFormatter(marker(Verbosity.NORMAL), new SourceTreeIntentMapper());
             }
         }
         return supplier.get();
@@ -53,7 +52,7 @@ public class AnsiOutput extends OutputSupport {
 
     @Override
     public Marker marker(Verbosity verbosity) {
-        return new AnsiMarker(this, Intent.OUT, verbosity);
+        return new MarkdownMarker(this, verbosity);
     }
 
     @Override
@@ -78,7 +77,7 @@ public class AnsiOutput extends OutputSupport {
         if (errors) {
             printStackTrace(t, output, intent, verbosity, "");
         }
-        output.handle(intent, verbosity, Ansi.ansi().reset().toString());
+        output.handle(intent, verbosity, "");
     }
 
     private void printStackTrace(Throwable t, Output output, Intent intent, Verbosity verbosity, String prefix) {
@@ -134,28 +133,20 @@ public class AnsiOutput extends OutputSupport {
     }
 
     private static String italic(String format) {
-        return Ansi.ansi()
-                .a(Ansi.Attribute.ITALIC)
-                .a(format)
-                .a(Ansi.Attribute.ITALIC_OFF)
-                .toString();
+        return "_" + format + "_";
     }
 
     private static String bold(String format) {
-        return Ansi.ansi()
-                .a(Ansi.Attribute.INTENSITY_BOLD)
-                .a(format)
-                .a(Ansi.Attribute.INTENSITY_BOLD_OFF)
-                .toString();
+        return "**" + format + "**";
     }
 
     // Tree
 
-    private static class AnsiTreeFormatter extends DependencyGraphDecorators.TreeDecorator {
+    private static class MarkdownTreeFormatter extends DependencyGraphDecorators.TreeDecorator {
         private final Marker marker;
         private final Function<Deque<DependencyNode>, Marker.Intent> intentMapper;
 
-        public AnsiTreeFormatter(Marker marker, Function<Deque<DependencyNode>, Marker.Intent> intentMapper) {
+        public MarkdownTreeFormatter(Marker marker, Function<Deque<DependencyNode>, Marker.Intent> intentMapper) {
             this.marker = marker;
             this.intentMapper = intentMapper;
         }
@@ -165,11 +156,11 @@ public class AnsiOutput extends OutputSupport {
                 int cmp, Deque<DependencyNode> nodes, List<Function<DependencyNode, String>> decorators) {
             String diff;
             if (cmp == 0) {
-                diff = Ansi.ansi().fg(Ansi.Color.WHITE).a("   ").reset().toString();
+                diff = color("white", "   ");
             } else if (cmp < 0) {
-                diff = Ansi.ansi().fg(Ansi.Color.RED).a("---").reset().toString();
+                diff = color("red", "---");
             } else {
-                diff = Ansi.ansi().fg(Ansi.Color.GREEN).a("+++").reset().toString();
+                diff = color("green", "+++");
             }
             return diff + " " + formatLine(nodes, decorators);
         }
@@ -194,6 +185,10 @@ public class AnsiOutput extends OutputSupport {
                 case BLOODY -> String.format("%s%s %s", indentationStr, marker.bloody(nodeLabel), nodeDecorators);
             };
         }
+    }
+
+    private static String color(String color, String text) {
+        return "<span style=\"color:" + color + "\">" + text + "</span>";
     }
 
     private static class TreeIntentMapper implements Function<Deque<DependencyNode>, Marker.Intent> {
@@ -245,49 +240,39 @@ public class AnsiOutput extends OutputSupport {
 
     // MessageBuilder
 
-    private static class AnsiMarker extends Marker {
-        public AnsiMarker(Output output, Output.Intent intent, Output.Verbosity verbosity) {
-            super(output, intent, verbosity);
+    private static class MarkdownMarker extends Marker {
+        public MarkdownMarker(Output output, Verbosity verbosity) {
+            super(output, Output.Intent.OUT, verbosity);
         }
 
         @Override
         public Marker emphasize(String word) {
-            return super.emphasize(Ansi.ansi()
-                    .bold()
-                    .fgBright(Ansi.Color.WHITE)
-                    .a(word)
-                    .reset()
-                    .toString());
+            return super.emphasize(color("white", word));
         }
 
         @Override
         public Marker outstanding(String word) {
-            return super.outstanding(
-                    Ansi.ansi().fgBright(Ansi.Color.GREEN).a(word).reset().toString());
+            return super.outstanding(color("green", word));
         }
 
         @Override
         public Marker detail(String word) {
-            return super.detail(
-                    Ansi.ansi().fgBright(Ansi.Color.BLUE).a(word).reset().toString());
+            return super.detail(color("blue", word));
         }
 
         @Override
         public Marker unimportant(String word) {
-            return super.unimportant(
-                    Ansi.ansi().fg(Ansi.Color.BLUE).a(word).reset().toString());
+            return super.unimportant(color("blue", word));
         }
 
         @Override
         public Marker scary(String word) {
-            return super.scary(
-                    Ansi.ansi().fgBright(Ansi.Color.YELLOW).a(word).reset().toString());
+            return super.scary(color("yellow", word));
         }
 
         @Override
         public Marker bloody(String word) {
-            return super.bloody(
-                    Ansi.ansi().bold().fgBright(Ansi.Color.RED).a(word).reset().toString());
+            return super.bloody(color("red", word));
         }
     }
 }

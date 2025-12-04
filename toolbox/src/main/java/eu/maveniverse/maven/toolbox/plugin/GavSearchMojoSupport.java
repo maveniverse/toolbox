@@ -21,9 +21,8 @@ public abstract class GavSearchMojoSupport extends GavMojoSupport {
      */
     @CommandLine.Option(
             names = {"--repositoryId"},
-            defaultValue = "central",
             description = "A repository ID. Maybe a 'well known' one, or if all repository data given, a new one")
-    @Parameter(property = "repositoryId", defaultValue = "central")
+    @Parameter(property = "repositoryId")
     protected String repositoryId;
 
     /**
@@ -45,14 +44,27 @@ public abstract class GavSearchMojoSupport extends GavMojoSupport {
     protected String repositoryVendor;
 
     protected RemoteRepository getRemoteRepository(ToolboxCommando toolboxCommando) {
-        RemoteRepository remoteRepository =
-                toolboxCommando.getKnownSearchRemoteRepositories().get(repositoryId);
-        if (remoteRepository != null) {
-            return remoteRepository;
+        if (repositoryId != null) {
+            RemoteRepository remoteRepository = toolboxCommando.remoteRepositories().stream()
+                    .filter(r -> repositoryId.equals(r.getId()))
+                    .findFirst()
+                    .orElse(null);
+            if (remoteRepository == null) {
+                remoteRepository =
+                        toolboxCommando.getKnownSearchRemoteRepositories().get(repositoryId);
+            }
+            if (remoteRepository != null) {
+                return remoteRepository;
+            }
         }
-        if (repositoryBaseUri == null && repositoryVendor == null) {
-            throw new IllegalArgumentException("for new remote repository one must specify all information");
+        if (repositoryId != null && repositoryBaseUri != null && repositoryVendor != null) {
+            return toolboxCommando.parseRemoteRepository(
+                    repositoryId + "::" + repositoryVendor + "::" + repositoryBaseUri);
         }
-        return toolboxCommando.parseRemoteRepository(repositoryId + "::" + repositoryVendor + "::" + repositoryBaseUri);
+        if (!toolboxCommando.remoteRepositories().isEmpty()) {
+            return toolboxCommando.remoteRepositories().get(0);
+        } else {
+            throw new IllegalArgumentException("Could not select usable remote repository");
+        }
     }
 }

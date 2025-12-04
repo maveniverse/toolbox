@@ -43,7 +43,7 @@ public abstract class OutputSupport implements Output {
     }
 
     public Marker marker(Verbosity verbosity) {
-        return new Marker(this, verbosity);
+        return new Marker(this, Intent.OUT, verbosity);
     }
 
     public boolean isHeard(Verbosity verbosity) {
@@ -53,42 +53,42 @@ public abstract class OutputSupport implements Output {
 
     public void doTell(String message, Object... params) {
         if (isHeard(Verbosity.TIGHT)) {
-            handle(Verbosity.TIGHT, message, params);
+            handle(Intent.OUT, Verbosity.TIGHT, message, params);
         }
     }
 
     public void tell(String message, Object... params) {
         if (isHeard(Verbosity.NORMAL)) {
-            handle(Verbosity.NORMAL, message, params);
+            handle(Intent.OUT, Verbosity.NORMAL, message, params);
         }
     }
 
     public void suggest(String message, Object... params) {
         if (isHeard(Verbosity.SUGGEST)) {
-            handle(Verbosity.SUGGEST, message, params);
+            handle(Intent.OUT, Verbosity.SUGGEST, message, params);
         }
     }
 
     public void chatter(String message, Object... params) {
         if (isHeard(Verbosity.CHATTER)) {
-            handle(Verbosity.CHATTER, message, params);
+            handle(Intent.OUT, Verbosity.CHATTER, message, params);
         }
     }
 
     public void warn(String message, Object... params) {
-        new Marker(this, Verbosity.TIGHT).scary("[W] " + message).say(params);
+        new Marker(this, Intent.ERR, Verbosity.TIGHT).scary("[W] " + message).say(params);
     }
 
     public void error(String message, Object... params) {
-        new Marker(this, Verbosity.TIGHT).bloody("[E] " + message).say(params);
+        new Marker(this, Intent.ERR, Verbosity.TIGHT).bloody("[E] " + message).say(params);
     }
 
     @Override
-    public void handle(Verbosity verbosity, String message, Object... params) {
+    public void handle(Intent intent, Verbosity verbosity, String message, Object... params) {
         if (isHeard(verbosity)) {
-            doHandle(verbosity, message, params);
+            doHandle(intent, verbosity, message, params);
         }
     }
 
-    protected abstract void doHandle(Verbosity verbosity, String message, Object... params);
+    protected abstract void doHandle(Intent intent, Verbosity verbosity, String message, Object... params);
 }

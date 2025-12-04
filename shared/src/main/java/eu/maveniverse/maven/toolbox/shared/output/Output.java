@@ -41,6 +41,14 @@ public interface Output extends Closeable {
     }
 
     /**
+     * The intent of the message.
+     */
+    enum Intent {
+        OUT,
+        ERR
+    }
+
+    /**
      * The effective verbosity level of this output.
      */
     Verbosity getVerbosity();
@@ -104,5 +112,5 @@ public interface Output extends Closeable {
     /**
      * Handles message at given verbosity.
      */
-    void handle(Verbosity verbosity, String message, Object... params);
+    void handle(Intent intent, Verbosity verbosity, String message, Object... params);
 }

@@ -173,22 +173,27 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());
     }
 
+    @Override
     public Path basedir() {
         return context.basedir();
     }
 
+    @Override
     public Output output() {
         return output;
     }
 
+    @Override
     public RepositorySystem repositorySystem() {
         return context.repositorySystem();
     }
 
+    @Override
     public RepositorySystemSession session() {
         return session;
     }
 
+    @Override
     public List<RemoteRepository> remoteRepositories() {
         return context.remoteRepositories();
     }

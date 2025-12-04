@@ -18,5 +18,5 @@ public final class NopOutput extends OutputSupport {
     }
 
     @Override
-    protected void doHandle(Verbosity verbosity, String message, Object... params) {}
+    protected void doHandle(Intent intent, Verbosity verbosity, String message, Object... params) {}
 }

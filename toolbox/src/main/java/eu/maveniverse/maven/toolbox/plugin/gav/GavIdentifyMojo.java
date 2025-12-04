@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 
 import static eu.maveniverse.maven.toolbox.shared.input.StringSlurper.csv;
 
+import eu.maveniverse.maven.mima.context.ContextOverrides;
 import eu.maveniverse.maven.toolbox.plugin.GavSearchMojoSupport;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -43,6 +44,6 @@ public class GavIdentifyMojo extends GavSearchMojoSupport {
     @Override
     protected Result<Map<String, Artifact>> doExecute() throws IOException {
         ToolboxCommando toolboxCommando = getToolboxCommando();
-        return toolboxCommando.identify(getRemoteRepository(toolboxCommando), csv(target), decorated);
+        return toolboxCommando.identify(ContextOverrides.CENTRAL, csv(target), decorated);
     }
 }

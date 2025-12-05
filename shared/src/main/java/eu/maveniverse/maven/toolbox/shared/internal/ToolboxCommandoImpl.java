@@ -1186,6 +1186,35 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
+    public Result<Map<List<Dependency>, List<Dependency>>> dmListConflict(
+            ResolutionRoot resolutionRoot1,
+            ResolutionRoot resolutionRoot2,
+            ArtifactKeyFactory artifactKeyFactory,
+            Map<String, Function<Artifact, String>> differentiators)
+            throws Exception {
+        output.suggest("Resolving {}", resolutionRoot1.getArtifact());
+        List<Dependency> dependencyResult1 =
+                toolboxResolver.loadRoot(resolutionRoot1).getManagedDependencies();
+        output.suggest("Resolving {}", resolutionRoot2.getArtifact());
+        List<Dependency> dependencyResult2 =
+                toolboxResolver.loadRoot(resolutionRoot2).getManagedDependencies();
+
+        new ArtifactConflictComparator(output, artifactKeyFactory, differentiators)
+                .compare(
+                        resolutionRoot1.getArtifact(),
+                        dependencyResult1.stream()
+                                .map(Dependency::getArtifact)
+                                .filter(Objects::nonNull)
+                                .toList(),
+                        resolutionRoot2.getArtifact(),
+                        dependencyResult2.stream()
+                                .map(Dependency::getArtifact)
+                                .filter(Objects::nonNull)
+                                .toList());
+        return Result.success(Map.of(dependencyResult1, dependencyResult2));
+    }
+
+    @Override
     public Result<CollectResult> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree) throws Exception {
         resolutionRoot = toolboxResolver.loadRoot(resolutionRoot);
         CollectResult collectResult = toolboxResolver.collectDm(
@@ -1199,6 +1228,51 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                                 DependencyGraphDecorators.DmTreeDecorator.class,
                                 DependencyGraphDecorators.defaultSupplier())));
         return Result.success(collectResult);
+    }
+
+    @Override
+    public Result<Map<CollectResult, CollectResult>> dmTreeDiff(
+            ResolutionRoot resolutionRoot1, ResolutionRoot resolutionRoot2, boolean verboseTree) throws Exception {
+        CollectResult collectResult1 = toolboxResolver.collectDm(
+                resolutionRoot1.getArtifact(), resolutionRoot1.getManagedDependencies(), verboseTree);
+        CollectResult collectResult2 = toolboxResolver.collectDm(
+                resolutionRoot2.getArtifact(), resolutionRoot2.getManagedDependencies(), verboseTree);
+        new DependencyGraphComparator(
+                        output::tell,
+                        DependencyGraphDumper.defaultsWith(),
+                        output.tool(
+                                DependencyGraphDecorators.TreeDecorator.class,
+                                DependencyGraphDecorators.defaultSupplier()))
+                .compare(collectResult1.getRoot(), collectResult2.getRoot());
+        return Result.success(Map.of(collectResult1, collectResult2));
+    }
+
+    @Override
+    public Result<List<List<Artifact>>> dmTreeFind(
+            ResolutionRoot resolutionRoot, boolean verboseTree, ArtifactMatcher artifactMatcher) throws Exception {
+        output.suggest("Loading root of: {}", resolutionRoot.getArtifact());
+        ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
+        output.suggest("Collecting graph of: {}", resolutionRoot.getArtifact());
+        CollectResult collectResult =
+                toolboxResolver.collectDm(root.getArtifact(), root.getManagedDependencies(), verboseTree);
+        PathRecordingDependencyVisitor pathRecordingDependencyVisitor = new PathRecordingDependencyVisitor(
+                (node, parents) -> node.getArtifact() != null && artifactMatcher.test(node.getArtifact()));
+        collectResult.getRoot().accept(pathRecordingDependencyVisitor);
+        List<List<Artifact>> result = new ArrayList<>();
+        if (!pathRecordingDependencyVisitor.getPaths().isEmpty()) {
+            for (List<DependencyNode> path : pathRecordingDependencyVisitor.getPaths()) {
+                result.add(path.stream().map(DependencyNode::getArtifact).collect(Collectors.toList()));
+                String indent = "";
+                for (DependencyNode node : path) {
+                    output.tell(
+                            "{}-> {}",
+                            indent,
+                            node.getDependency() != null ? node.getDependency() : node.getArtifact());
+                    indent += "  ";
+                }
+            }
+        }
+        return Result.success(result);
     }
 
     @Override

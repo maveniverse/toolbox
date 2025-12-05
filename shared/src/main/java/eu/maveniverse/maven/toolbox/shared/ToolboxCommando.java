@@ -417,10 +417,31 @@ public interface ToolboxCommando extends Closeable {
     Result<List<Dependency>> dmList(ResolutionRoot resolutionRoot, boolean verboseList) throws Exception;
 
     /**
+     * Shows conflicts in depMgt lists.
+     */
+    Result<Map<List<Dependency>, List<Dependency>>> dmListConflict(
+            ResolutionRoot resolutionRoot1,
+            ResolutionRoot resolutionRoot2,
+            ArtifactKeyFactory artifactKeyFactory,
+            Map<String, Function<Artifact, String>> differentiators)
+            throws Exception;
+
+    /**
      * Returns the depMgt tree of given root.
      */
     Result<CollectResult> dmTree(ResolutionRoot resolutionRoot, boolean verboseTree) throws Exception;
 
+    /**
+     * Returns the tree of root of both roots, as side effect outputs the diff.
+     */
+    Result<Map<CollectResult, CollectResult>> dmTreeDiff(
+            ResolutionRoot resolutionRoot1, ResolutionRoot resolutionRoot2, boolean verboseTree) throws Exception;
+
+    /**
+     * Finds artifacts in dm tree.
+     */
+    Result<List<List<Artifact>>> dmTreeFind(
+            ResolutionRoot resolutionRoot, boolean verboseTree, ArtifactMatcher artifactMatcher) throws Exception;
     /**
      * Returns the project inheritance tree of given root.
      */

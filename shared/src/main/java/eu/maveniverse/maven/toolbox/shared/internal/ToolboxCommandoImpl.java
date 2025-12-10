@@ -255,7 +255,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .normal(" (MIMA Runtime '{}' version {})")
                 .say(getVersion(), runtime.name(), runtime.version());
         output.doTell("");
-        output.tell("          Maven version {}", runtime.mavenVersion());
+        output.tell("                  Maven {}", runtime.mavenVersion());
+        output.tell("               Resolver {}", runtime.resolverVersion());
         output.tell("                Managed {}", runtime.managedRepositorySystem());
         output.tell("                Basedir {}", context.basedir());
         output.tell(

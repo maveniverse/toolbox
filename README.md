@@ -58,6 +58,8 @@ To use mvnsh extension, add this to your `extensions.xml`:
 
 ## MCP Usage
 
+This setup example below require [JBang](https://www.jbang.dev/) on path.
+
 Add it to MCP client (ie Claude Desktop uses `$HOME/.config/Claude/claude_desktop_config.json`):
 ```json
     "mcpServers": {

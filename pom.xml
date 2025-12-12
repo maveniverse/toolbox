@@ -38,6 +38,7 @@
     <module>shared</module>
     <module>toolbox</module>
     <module>mvnsh</module>
+    <module>mcp</module>
     <module>it</module>
   </modules>
 
@@ -134,6 +135,11 @@
       <dependency>
         <groupId>eu.maveniverse.maven.mima.runtime</groupId>
         <artifactId>standalone-static-uber</artifactId>
+        <version>${version.mima}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mima.runtime</groupId>
+        <artifactId>standalone-static</artifactId>
         <version>${version.mima}</version>
       </dependency>
       <dependency>
@@ -341,6 +347,13 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
           <version>${version.mavenPluginTools}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <parameters>true</parameters>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>

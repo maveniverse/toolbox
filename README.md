@@ -56,6 +56,21 @@ To use mvnsh extension, add this to your `extensions.xml`:
 </extensions>
 ```
 
+## MCP Usage
+
+Add it to MCP client (ie Claude Desktop uses `$HOME/.config/Claude/claude_desktop_config.json`):
+```json
+    "mcpServers": {
+        "toolbox": {
+            "command": "jbang",
+            "args": ["--quiet",
+                    "eu.maveniverse.maven.toolbox:mcp:$CURRENT_VERSION:runner"]
+        }
+    }
+```
+
+Note: **$CURRENT_VERSION** should be latest release.
+
 ## Requirements
 
 Runtime requirement:

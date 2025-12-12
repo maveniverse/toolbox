@@ -24,7 +24,7 @@
   <properties>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.20.3</quarkus.platform.version>
+    <quarkus.platform.version>3.30.3</quarkus.platform.version>
     <quarkus.mcp-server.version>1.8.1</quarkus.mcp-server.version>
     <skipITs>true</skipITs>
   </properties>
@@ -50,8 +50,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>eu.maveniverse.maven.plugins</groupId>
-      <artifactId>toolbox</artifactId>
+      <groupId>eu.maveniverse.maven.toolbox</groupId>
+      <artifactId>shared</artifactId>
       <exclusions>
         <exclusion>
           <groupId>info.picocli</groupId>
@@ -69,7 +69,7 @@
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mima.runtime</groupId>
-      <artifactId>standalone-static-uber</artifactId>
+      <artifactId>standalone-static</artifactId>
     </dependency>
 
     <dependency>

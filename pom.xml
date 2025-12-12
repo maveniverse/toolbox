@@ -138,6 +138,11 @@
         <version>${version.mima}</version>
       </dependency>
       <dependency>
+        <groupId>eu.maveniverse.maven.mima.runtime</groupId>
+        <artifactId>standalone-static</artifactId>
+        <version>${version.mima}</version>
+      </dependency>
+      <dependency>
         <groupId>eu.maveniverse.maven.mima.extensions</groupId>
         <artifactId>mmr</artifactId>
         <version>${version.mima}</version>

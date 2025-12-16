@@ -7,4 +7,5 @@
  */
 String buildLog = new File(basedir, 'build.log').text
 assert buildLog.contains('Toolbox ' + projectVersion)
-assert buildLog.contains('Maven version ' + mavenVersion)
+assert buildLog.contains('Maven ' + mavenVersion)
+assert buildLog.contains('Resolver embedded')

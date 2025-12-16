@@ -69,7 +69,7 @@
     <maven.compiler.release>17</maven.compiler.release>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.37</version.mima>
+    <version.mima>2.4.38</version.mima>
     <version.maven>3.9.11</version.maven>
     <version.resolver>1.9.24</version.resolver>
     <version.mavenIndexer>7.1.6</version.mavenIndexer>
@@ -152,6 +152,11 @@
       <dependency>
         <groupId>org.apache.maven.resolver</groupId>
         <artifactId>maven-resolver-api</artifactId>
+        <version>${version.resolver}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.resolver</groupId>
+        <artifactId>maven-resolver-spi</artifactId>
         <version>${version.resolver}</version>
       </dependency>
       <dependency>

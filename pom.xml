@@ -70,7 +70,7 @@
 
     <!-- Dependency versions -->
     <version.mima>2.4.38</version.mima>
-    <version.maven>3.9.11</version.maven>
+    <version.maven>3.9.12</version.maven>
     <version.resolver>1.9.24</version.resolver>
     <version.mavenIndexer>7.1.6</version.mavenIndexer>
     <version.mavenPluginTools>3.15.2</version.mavenPluginTools>

@@ -25,7 +25,6 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.version.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
 
 /**
  * Lists available parents of Maven Project.
@@ -34,19 +33,15 @@ import picocli.CommandLine;
 public class ParentVersionsMojo extends MPPluginMojoSupport {
     private static final Logger log = LoggerFactory.getLogger(ParentVersionsMojo.class);
     /**
-     * Artifact version matcher spec string, default is 'noSnapshotsAndPreviews()'.
+     * Artifact version matcher spec string, default is 'any()'.
      */
-    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "any()")
     private String artifactVersionMatcherSpec;
 
     /**
-     * Artifact version selector spec string to select the version from candidates, default is 'last()'.
+     * Artifact version selector spec string to select the version from candidates, default is 'contextualSnapshotsAndPreviews()'.
      */
-    @CommandLine.Option(
-            names = {"--artifactVersionSelectorSpec"},
-            defaultValue = "last()",
-            description = "Artifact version selector spec (default 'last()')")
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "contextualSnapshotsAndPreviews()")
     private String artifactVersionSelectorSpec;
 
     /**

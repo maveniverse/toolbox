@@ -39,9 +39,13 @@ public class ArtifactVersionSelectorTest {
             version("3.1.0"),
             version("3.1.1M1"),
             version("3.100.0"),
+            version("3.101.0RC"),
+            version("3.200.0-SNAPSHOT"),
             version("4.0.0RC"),
             version("4.0.0"),
-            version("400.0.0"));
+            version("400.0.0"),
+            version("401.0.0RC"),
+            version("410.0.0-SNAPSHOT"));
 
     @Test
     void identity() {
@@ -52,7 +56,7 @@ public class ArtifactVersionSelectorTest {
 
     @Test
     void last() {
-        assertEquals("400.0.0", ArtifactVersionSelector.last().apply(new DefaultArtifact("g:a:v1"), versions));
+        assertEquals("410.0.0-SNAPSHOT", ArtifactVersionSelector.last().apply(new DefaultArtifact("g:a:v1"), versions));
         assertEquals(
                 "v1", ArtifactVersionSelector.last().apply(new DefaultArtifact("g:a:v1"), Collections.emptyList()));
     }
@@ -73,7 +77,8 @@ public class ArtifactVersionSelectorTest {
 
     @Test
     void sameMajor() {
-        assertEquals("3.100.0", ArtifactVersionSelector.major().apply(new DefaultArtifact("g:a:3.0.0"), versions));
+        assertEquals(
+                "3.200.0-SNAPSHOT", ArtifactVersionSelector.major().apply(new DefaultArtifact("g:a:3.0.0"), versions));
         assertEquals("4.0.0", ArtifactVersionSelector.major().apply(new DefaultArtifact("g:a:4.0.0"), versions));
         assertEquals(
                 "v1", ArtifactVersionSelector.major().apply(new DefaultArtifact("g:a:v1"), Collections.emptyList()));
@@ -90,7 +95,7 @@ public class ArtifactVersionSelectorTest {
     @Test
     void sameMajorNoPreviews() {
         assertEquals(
-                "3.100.0",
+                "3.200.0-SNAPSHOT",
                 ArtifactVersionSelector.noPreviews(ArtifactVersionSelector.major())
                         .apply(new DefaultArtifact("g:a:3.0.0"), versions));
         assertEquals(
@@ -124,11 +129,11 @@ public class ArtifactVersionSelectorTest {
                 ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "first()")
                         .apply(artifact, versions));
         assertEquals(
-                "400.0.0",
+                "410.0.0-SNAPSHOT",
                 ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "last()")
                         .apply(artifact, versions));
         assertEquals(
-                "3.100.0",
+                "3.200.0-SNAPSHOT",
                 ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "major()")
                         .apply(artifact, versions));
         assertEquals(
@@ -136,7 +141,7 @@ public class ArtifactVersionSelectorTest {
                 ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "minor()")
                         .apply(artifact, versions));
         assertEquals(
-                "3.100.0",
+                "3.200.0-SNAPSHOT",
                 ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "noPreviews(major())")
                         .apply(artifact, versions));
         assertEquals(
@@ -155,5 +160,25 @@ public class ArtifactVersionSelectorTest {
                 "3.100.0",
                 ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "noSnapshotsAndPreviews(major())")
                         .apply(artifact, versions));
+
+        assertEquals(
+                "401.0.0RC",
+                ArtifactVersionSelector.build(
+                                versionScheme, Collections.emptyMap(), "contextualSnapshotsAndPreviews(last())")
+                        .apply(artifact.setVersion("3.0.0-rc-1"), versions));
+        assertEquals(
+                "410.0.0-SNAPSHOT",
+                ArtifactVersionSelector.build(
+                                versionScheme, Collections.emptyMap(), "contextualSnapshotsAndPreviews(last())")
+                        .apply(artifact.setVersion("3.0.0-SNAPSHOT"), versions));
+
+        assertEquals(
+                "3.101.0RC",
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "contextualSnapshotsAndPreviews()")
+                        .apply(artifact.setVersion("3.0.0-rc-1"), versions));
+        assertEquals(
+                "3.200.0-SNAPSHOT",
+                ArtifactVersionSelector.build(versionScheme, Collections.emptyMap(), "contextualSnapshotsAndPreviews()")
+                        .apply(artifact.setVersion("3.0.0-SNAPSHOT"), versions));
     }
 }

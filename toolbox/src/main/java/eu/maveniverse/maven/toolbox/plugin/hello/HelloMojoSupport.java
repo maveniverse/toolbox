@@ -30,23 +30,23 @@ public abstract class HelloMojoSupport extends GavMojoSupport {
     }
 
     /**
-     * Artifact version matcher spec string to filter version candidates for parent, default is 'noSnapshotsAndPreviews()'.
+     * Artifact version matcher spec string to filter version candidates for parent, default is 'any()'.
      */
     @CommandLine.Option(
             names = {"--parentVersionMatcherSpec"},
-            defaultValue = "noSnapshotsAndPreviews()",
-            description = "Artifact version matcher spec for parent (default 'noSnapshotsAndPreviews()')")
-    @Parameter(property = "parentVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
+            defaultValue = "any()",
+            description = "Artifact version matcher spec for parent (default 'any()')")
+    @Parameter(property = "parentVersionMatcherSpec", defaultValue = "any()")
     protected String parentVersionMatcherSpec;
 
     /**
-     * Artifact version selector spec string to select the version from candidates for parent, default is 'last()'.
+     * Artifact version selector spec string to select the version from candidates for parent, default is 'contextualSnapshotsAndPreviews()'.
      */
     @CommandLine.Option(
             names = {"--artifactVersionSelectorSpec"},
-            defaultValue = "last()",
-            description = "Artifact version selector spec (default 'last()')")
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+            defaultValue = "contextualSnapshotsAndPreviews()",
+            description = "Artifact version selector spec (default 'contextualSnapshotsAndPreviews()')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "contextualSnapshotsAndPreviews()")
     protected String parentVersionSelectorSpec;
 
     /**

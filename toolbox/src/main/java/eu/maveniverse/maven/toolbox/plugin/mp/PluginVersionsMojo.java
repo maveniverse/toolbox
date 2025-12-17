@@ -20,7 +20,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.version.Version;
-import picocli.CommandLine;
 
 /**
  * Lists available versions of Maven Project plugins.
@@ -34,19 +33,15 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     private String artifactMatcherSpec;
 
     /**
-     * Artifact version matcher spec string, default is 'noSnapshotsAndPreviews()'.
+     * Artifact version matcher spec string, default is 'any()'.
      */
-    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "any()")
     private String artifactVersionMatcherSpec;
 
     /**
-     * Artifact version selector spec string to select the version from candidates, default is 'last()'.
+     * Artifact version selector spec string to select the version from candidates, default is 'contextualSnapshotsAndPreviews()'.
      */
-    @CommandLine.Option(
-            names = {"--artifactVersionSelectorSpec"},
-            defaultValue = "last()",
-            description = "Artifact version selector spec (default 'last()')")
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "contextualSnapshotsAndPreviews()")
     private String artifactVersionSelectorSpec;
 
     /**

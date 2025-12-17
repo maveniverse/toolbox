@@ -190,6 +190,35 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                 selector);
     }
 
+    /**
+     * A version selector that drives selection of "snapshot" and "preview" versions based on initial version and
+     * uses {@link #major()}.
+     *
+     * @see #contextualSnapshotsAndPreviews(ArtifactVersionSelector)
+     */
+    static ArtifactVersionSelector contextualSnapshotsAndPreviews() {
+        return contextualSnapshotsAndPreviews(major());
+    }
+
+    /**
+     * A version selector that drives selection of "snapshot" and "preview" versions based on initial version. If initial
+     * version is snapshot, no filtering applied, if initial version is preview, filters out snapshots, and if initial
+     * version is not snapshot nor preview, does same as {@link #noSnapshotsAndPreviews(ArtifactVersionSelector)}.
+     */
+    static ArtifactVersionSelector contextualSnapshotsAndPreviews(ArtifactVersionSelector selector) {
+        return (a, vs) -> {
+            String av = a.getVersion();
+            if (ArtifactVersionMatcher.isSnapshotVersion(av)) {
+                return selector.apply(a, vs);
+            } else if (ArtifactVersionMatcher.isPreviewVersion(av)) {
+                return filtered(ArtifactVersionMatcher.not(ArtifactVersionMatcher.snapshot()), selector)
+                        .apply(a, vs);
+            } else {
+                return noSnapshotsAndPreviews(selector).apply(a, vs);
+            }
+        };
+    }
+
     static ArtifactVersionSelector build(VersionScheme versionScheme, Map<String, ?> properties, String spec) {
         requireNonNull(properties, "properties");
         requireNonNull(spec, "spec");
@@ -263,6 +292,17 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                     break;
                 case "noSnapshotsAndPreviews":
                     params.add(noSnapshotsAndPreviews(typedParam(ArtifactVersionSelector.class, node.getValue())));
+                    break;
+                case "contextualSnapshotsAndPreviews":
+                    if (node.getChildren().size() == 1) {
+                        params.add(contextualSnapshotsAndPreviews(
+                                typedParam(ArtifactVersionSelector.class, node.getValue())));
+                    } else if (node.getChildren().isEmpty()) {
+                        params.add(contextualSnapshotsAndPreviews());
+                    } else {
+                        throw new IllegalArgumentException(
+                                "op contextualSnapshotsAndPreviews accepts only 0..1 argument");
+                    }
                     break;
                 default:
                     throw new IllegalArgumentException("unknown op " + node.getValue());

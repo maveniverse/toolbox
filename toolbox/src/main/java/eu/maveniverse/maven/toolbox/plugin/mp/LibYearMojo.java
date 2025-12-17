@@ -26,15 +26,15 @@ public class LibYearMojo extends MPMojoSupport {
     private String scope;
 
     /**
-     * Artifact version matcher spec string to filter version candidates, default is 'noSnapshotsAndPreviews()'.
+     * Artifact version matcher spec string to filter version candidates, default is 'any()'.
      */
-    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "any()")
     private String artifactVersionMatcherSpec;
 
     /**
-     * Artifact version selector spec string to select "latest", default is 'major()'.
+     * Artifact version selector spec string to select "latest", default is 'contextualSnapshotsAndPreviews()'.
      */
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "major()")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "contextualSnapshotsAndPreviews()")
     private String artifactVersionSelectorSpec;
 
     /**

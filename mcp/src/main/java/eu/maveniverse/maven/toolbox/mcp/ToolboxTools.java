@@ -57,15 +57,30 @@ public class ToolboxTools {
         return outputStream.toString(StandardCharsets.UTF_8);
     }
 
-    @Tool(description = "Get the Maven Artifact newer versions than the one specified.")
-    String artifactNewerVersions(@ToolArg(description = "The artifact as groupId:artifactId:version") String gav) {
+    @Tool(description = "Get the Maven Artifact any newer versions than the one specified.")
+    String artifactNewerAnyVersions(@ToolArg(description = "The artifact as groupId:artifactId:version") String gav) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
             toolboxCommando.versions(
                     "artifact",
                     ArtifactSources.gavArtifactSource(gav),
-                    ArtifactVersionMatcher.noPreviews(),
-                    ArtifactVersionSelector.last());
+                    ArtifactVersionMatcher.any(),
+                    ArtifactVersionSelector.contextualSnapshotsAndPreviews(ArtifactVersionSelector.last()));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return outputStream.toString(StandardCharsets.UTF_8);
+    }
+
+    @Tool(description = "Get the Maven Artifact same major newer versions than the one specified.")
+    String artifactNewerMajorVersions(@ToolArg(description = "The artifact as groupId:artifactId:version") String gav) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
+            toolboxCommando.versions(
+                    "artifact",
+                    ArtifactSources.gavArtifactSource(gav),
+                    ArtifactVersionMatcher.any(),
+                    ArtifactVersionSelector.contextualSnapshotsAndPreviews(ArtifactVersionSelector.major()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -174,8 +189,8 @@ public class ToolboxTools {
                     ResolutionRoot.ofLoaded(new DefaultArtifact(gav)).build(),
                     true,
                     false,
-                    ArtifactVersionMatcher.noPreviews(),
-                    ArtifactVersionSelector.last(),
+                    ArtifactVersionMatcher.any(),
+                    ArtifactVersionSelector.contextualSnapshotsAndPreviews(ArtifactVersionSelector.last()),
                     null);
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -35,23 +35,23 @@ public class GavVersionsMojo extends GavMojoSupport {
     private String gav;
 
     /**
-     * Artifact version matcher spec string to filter version candidates, default is 'noSnapshotsAndPreviews()'.
+     * Artifact version matcher spec string to filter version candidates, default is 'any()'.
      */
     @CommandLine.Option(
             names = {"--artifactVersionMatcherSpec"},
-            defaultValue = "noSnapshotsAndPreviews()",
-            description = "Artifact version matcher spec (default 'noSnapshotsAndPreviews()')")
-    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
+            defaultValue = "any()",
+            description = "Artifact version matcher spec (default 'any()')")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "any()")
     private String artifactVersionMatcherSpec;
 
     /**
-     * Artifact version selector spec string to select the version from candidates, default is 'last()'.
+     * Artifact version selector spec string to select the version from candidates, default is 'contextualSnapshotsAndPreviews()'.
      */
     @CommandLine.Option(
             names = {"--artifactVersionSelectorSpec"},
-            defaultValue = "last()",
-            description = "Artifact version selector spec (default 'last()')")
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+            defaultValue = "contextualSnapshotsAndPreviews()",
+            description = "Artifact version selector spec (default 'contextualSnapshotsAndPreviews()')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "contextualSnapshotsAndPreviews()")
     private String artifactVersionSelectorSpec;
 
     @Override

@@ -51,23 +51,23 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
     private String boms;
 
     /**
-     * Artifact version matcher spec string to filter version candidates, default is 'noSnapshotsAndPreviews()'.
+     * Artifact version matcher spec string to filter version candidates, default is 'any()'.
      */
     @CommandLine.Option(
             names = {"--artifactVersionMatcherSpec"},
             defaultValue = "noSnapshotsAndPreviews()",
-            description = "Artifact version matcher spec (default 'noSnapshotsAndPreviews()')")
-    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
+            description = "Artifact version matcher spec (default 'any()')")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "any()")
     private String artifactVersionMatcherSpec;
 
     /**
-     * Artifact version selector spec string to select "latest", default is 'major()'.
+     * Artifact version selector spec string to select "latest", default is 'contextualSnapshotsAndPreviews()'.
      */
     @CommandLine.Option(
             names = {"--artifactVersionSelectorSpec"},
-            defaultValue = "major()",
-            description = "Artifact version selector spec (default 'major()')")
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "major()")
+            defaultValue = "contextualSnapshotsAndPreviews()",
+            description = "Artifact version selector spec (default 'contextualSnapshotsAndPreviews()')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "contextualSnapshotsAndPreviews()")
     private String artifactVersionSelectorSpec;
 
     /**

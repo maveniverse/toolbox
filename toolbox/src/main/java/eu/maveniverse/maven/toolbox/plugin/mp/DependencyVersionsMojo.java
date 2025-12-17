@@ -33,15 +33,15 @@ public class DependencyVersionsMojo extends MPMojoSupport {
     private String depSpec;
 
     /**
-     * Artifact version matcher spec string, default is 'noSnapshotsAndPreviews()'.
+     * Artifact version matcher spec string, default is 'any()'.
      */
-    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "any()")
     private String artifactVersionMatcherSpec;
 
     /**
-     * Artifact version selector spec string to select the version from candidates, default is 'last()'.
+     * Artifact version selector spec string to select the version from candidates, default is 'contextualSnapshotsAndPreviews()'.
      */
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "contextualSnapshotsAndPreviews()")
     private String artifactVersionSelectorSpec;
 
     /**

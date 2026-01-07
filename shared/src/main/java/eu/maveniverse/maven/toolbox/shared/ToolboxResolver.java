@@ -81,6 +81,24 @@ public interface ToolboxResolver {
             boolean verbose)
             throws DependencyCollectionException;
 
+    CollectResult collectDirty(
+            ResolutionScope resolutionScope,
+            Artifact root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            int dirtyLevelPast,
+            boolean conflictResolve)
+            throws DependencyCollectionException;
+
+    CollectResult collectDirty(
+            ResolutionScope resolutionScope,
+            Dependency root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            int dirtyLevelPast,
+            boolean conflictResolve)
+            throws DependencyCollectionException;
+
     CollectResult collectDm(Artifact root, List<Dependency> managedDependencies, boolean verbose)
             throws ArtifactDescriptorException, ArtifactResolutionException, VersionResolutionException;
 

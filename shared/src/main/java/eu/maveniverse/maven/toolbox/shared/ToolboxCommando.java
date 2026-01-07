@@ -396,8 +396,8 @@ public interface ToolboxCommando extends Closeable {
     Result<CollectResult> dirtyTree(
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
-            int maxLevel,
-            boolean verboseTree,
+            int dirtyLevelPast,
+            boolean conflictResolve,
             DependencyMatcher dependencyMatcher)
             throws Exception;
 

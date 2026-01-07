@@ -73,6 +73,7 @@ import org.eclipse.aether.resolution.VersionResolutionException;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.graph.manager.DependencyManagerUtils;
+import org.eclipse.aether.util.graph.selector.ScopeDependencySelector;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
 import org.eclipse.aether.util.repository.SimpleArtifactDescriptorPolicy;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
@@ -313,6 +314,46 @@ public class ToolboxResolverImpl implements ToolboxResolver {
                 remoteRepositories,
                 dirtyMaxLevel,
                 verbose);
+    }
+
+    @Override
+    public CollectResult collectDirty(
+            ResolutionScope resolutionScope,
+            Artifact root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            int dirtyLevelPast,
+            boolean conflictResolve)
+            throws DependencyCollectionException {
+        return doCollectDirty(
+                resolutionScope,
+                null,
+                root,
+                dependencies,
+                managedDependencies,
+                remoteRepositories,
+                dirtyLevelPast,
+                conflictResolve);
+    }
+
+    @Override
+    public CollectResult collectDirty(
+            ResolutionScope resolutionScope,
+            Dependency root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            int dirtyLevelPast,
+            boolean conflictResolve)
+            throws DependencyCollectionException {
+        return doCollectDirty(
+                resolutionScope,
+                root,
+                null,
+                dependencies,
+                managedDependencies,
+                remoteRepositories,
+                dirtyLevelPast,
+                conflictResolve);
     }
 
     @Override
@@ -564,6 +605,63 @@ public class ToolboxResolverImpl implements ToolboxResolver {
             }
             if (!childrenToRemove.isEmpty()) {
                 result.getRoot().getChildren().removeAll(childrenToRemove);
+            }
+        }
+        return result;
+    }
+
+    protected CollectResult doCollectDirty(
+            ResolutionScope resolutionScope,
+            Dependency rootDependency,
+            Artifact root,
+            List<Dependency> dependencies,
+            List<Dependency> managedDependencies,
+            List<RemoteRepository> remoteRepositories,
+            int dirtyLevelPast,
+            boolean conflictResolve)
+            throws DependencyCollectionException {
+        requireNonNull(resolutionScope);
+        if (rootDependency == null && root == null) {
+            throw new NullPointerException("one of rootDependency or root must be non-null");
+        }
+
+        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
+        session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
+        session.setDependencySelector(new DirtyTreeDependencySelector(
+                session.getDependencySelector(), new ScopeDependencySelector(JavaScopes.TEST), dirtyLevelPast));
+        if (!conflictResolve) {
+            session.setDependencyGraphTransformer(null);
+        }
+        CollectRequest collectRequest = new CollectRequest();
+        if (rootDependency != null) {
+            root = rootDependency.getArtifact();
+        }
+        collectRequest.setRootArtifact(root);
+        if (conflictResolve) {
+            collectRequest.setDependencies(dependencies.stream()
+                    .filter(d -> !resolutionScope.isEliminateTest() || !JavaScopes.TEST.equals(d.getScope()))
+                    .collect(Collectors.toList()));
+        } else {
+            collectRequest.setDependencies(dependencies);
+        }
+        collectRequest.setManagedDependencies(managedDependencies);
+        collectRequest.setRepositories(remoteRepositories);
+        collectRequest.setRequestContext(CTX_TOOLBOX);
+        collectRequest.setTrace(RequestTrace.newChild(null, collectRequest));
+
+        output.chatter("Collecting {} @ {}", collectRequest, resolutionScope.name());
+        CollectResult result = repositorySystem.collectDependencies(session, collectRequest);
+        if (resolutionScope != ResolutionScope.TEST) {
+            ArrayList<DependencyNode> childrenToRemove = new ArrayList<>();
+            for (DependencyNode node : result.getRoot().getChildren()) {
+                if (!resolutionScope
+                        .getDirectInclude()
+                        .contains(node.getDependency().getScope())) {
+                    childrenToRemove.add(node);
+                }
+            }
+            if (!childrenToRemove.isEmpty()) {
+                childrenToRemove.forEach(c -> c.setChildren(Collections.emptyList()));
             }
         }
         return result;

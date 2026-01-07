@@ -230,7 +230,7 @@ public class DependencyGraphDumper implements DependencyVisitor {
         };
     }
     /**
-     * Decorator of "managed exclusions": explains on nodes what was managed.
+     * Decorator of (direct) "exclusions": explains on nodes exclusions are present.
      */
     public static Function<DependencyNode, String> exclusions() {
         return dependencyNode -> {

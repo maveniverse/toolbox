@@ -58,25 +58,25 @@ public class GavDirtyTreeMojo extends GavMojoSupport {
     private String dependencyMatcher;
 
     /**
-     * Set it {@code true} for verbose tree.
-     */
-    @CommandLine.Option(
-            names = {"--verboseTree"},
-            defaultValue = "false",
-            description = "Make it true for verbose tree")
-    @Parameter(property = "verboseTree", defaultValue = "false", required = true)
-    private boolean verboseTree;
-
-    /**
-     * The level up to you want to see dirty tree. Note: keep it low, otherwise this call is OOM pronect.
-     * Default: 3
+     * The level up to you want to see dirty tree. Note: keep it low, otherwise this call is OOM prone.
+     * Default: 0 (direct siblings only)
      */
     @CommandLine.Option(
             names = {"--dirtyLevel"},
-            defaultValue = "3",
+            defaultValue = "0",
             description = "Set the level you want to see dirty tree up to")
-    @Parameter(property = "dirtyLevel", defaultValue = "3", required = true)
+    @Parameter(property = "dirtyLevel", defaultValue = "0", required = true)
     private int dirtyLevel;
+
+    /**
+     * Set it {@code true} to conflict resolve the tree.
+     */
+    @CommandLine.Option(
+            names = {"--conflictResolve"},
+            defaultValue = "false",
+            description = "Make it true tp conflict resolve the tree")
+    @Parameter(property = "conflictResolve", defaultValue = "false", required = true)
+    private boolean conflictResolve;
 
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
@@ -85,7 +85,7 @@ public class GavDirtyTreeMojo extends GavMojoSupport {
                 ResolutionScope.parse(scope),
                 toolboxCommando.loadGav(gav, slurp(boms)),
                 dirtyLevel,
-                verboseTree,
+                conflictResolve,
                 toolboxCommando.parseDependencyMatcherSpec(dependencyMatcher));
     }
 }

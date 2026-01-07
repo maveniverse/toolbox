@@ -33,17 +33,17 @@ public class DirtyTreeMojo extends MPMojoSupport {
     private String dependencyMatcher;
 
     /**
-     * Set it {@code true} for verbose tree.
+     * The level up to you want to see dirty tree. Note: keep it low, otherwise this call is OOM prone.
+     * Default: 0 (direct siblings only)
      */
-    @Parameter(property = "verboseTree", defaultValue = "false", required = true)
-    private boolean verboseTree;
+    @Parameter(property = "dirtyLevel", defaultValue = "0", required = true)
+    private int dirtyLevel;
 
     /**
-     * The level up to you want to see dirty tree. Note: keep it low, otherwise this call is OOM pronect.
-     * Default: 3
+     * Set it {@code true} to conflict resolve the tree.
      */
-    @Parameter(property = "dirtyLevel", defaultValue = "3", required = true)
-    private int dirtyLevel;
+    @Parameter(property = "conflictResolve", defaultValue = "false", required = true)
+    private boolean conflictResolve;
 
     @Override
     protected Result<CollectResult> doExecute() throws Exception {
@@ -52,7 +52,7 @@ public class DirtyTreeMojo extends MPMojoSupport {
                 ResolutionScope.parse(scope),
                 projectAsResolutionRoot(),
                 dirtyLevel,
-                verboseTree,
+                conflictResolve,
                 toolboxCommando.parseDependencyMatcherSpec(dependencyMatcher));
     }
 }

@@ -155,7 +155,7 @@ public class DependencyGraphDumper implements DependencyVisitor {
                 if (premanagedVersion != null
                         && !premanagedVersion.equals(
                                 dependencyNode.getArtifact().getBaseVersion())) {
-                    return "(version managed from " + premanagedVersion + ")";
+                    return "(managed version from " + premanagedVersion + ")";
                 }
             }
             return null;
@@ -170,7 +170,7 @@ public class DependencyGraphDumper implements DependencyVisitor {
             if (d != null) {
                 String premanagedScope = DependencyManagerUtils.getPremanagedScope(dependencyNode);
                 if (premanagedScope != null && !premanagedScope.equals(d.getScope())) {
-                    return "(scope managed from " + premanagedScope + ")";
+                    return "(managed scope from " + premanagedScope + ")";
                 }
             }
             return null;
@@ -185,7 +185,7 @@ public class DependencyGraphDumper implements DependencyVisitor {
             if (d != null) {
                 Boolean premanagedOptional = DependencyManagerUtils.getPremanagedOptional(dependencyNode);
                 if (premanagedOptional != null && !premanagedOptional.equals(d.getOptional())) {
-                    return "(optionality managed from " + premanagedOptional + ")";
+                    return "(managed optionality from " + premanagedOptional + ")";
                 }
             }
             return null;
@@ -202,9 +202,9 @@ public class DependencyGraphDumper implements DependencyVisitor {
                         DependencyManagerUtils.getPremanagedExclusions(dependencyNode);
                 if (premanagedExclusions != null) {
                     if (!equals(premanagedExclusions, d.getExclusions())) {
-                        return "(exclusions managed from " + premanagedExclusions + ")";
+                        return "(managed exclusions altered from " + premanagedExclusions + ")";
                     } else {
-                        return "(exclusions applied: " + premanagedExclusions.size() + ")";
+                        return "(managed exclusions applied: " + premanagedExclusions.size() + ")";
                     }
                 }
             }
@@ -223,7 +223,22 @@ public class DependencyGraphDumper implements DependencyVisitor {
                         && !equals(
                                 premanagedProperties,
                                 dependencyNode.getArtifact().getProperties())) {
-                    return "(properties managed from " + premanagedProperties + ")";
+                    return "(managed properties from " + premanagedProperties + ")";
+                }
+            }
+            return null;
+        };
+    }
+    /**
+     * Decorator of (direct) "exclusions": explains on nodes exclusions are present.
+     */
+    public static Function<DependencyNode, String> exclusions() {
+        return dependencyNode -> {
+            Dependency d = dependencyNode.getDependency();
+            if (d != null) {
+                Collection<Exclusion> exclusions = d.getExclusions();
+                if (exclusions != null && !exclusions.isEmpty()) {
+                    return "(exclusions applied: " + exclusions.size() + ")";
                 }
             }
             return null;
@@ -333,6 +348,7 @@ public class DependencyGraphDumper implements DependencyVisitor {
                     premanagedOptional(),
                     premanagedExclusions(),
                     premanagedProperties(),
+                    exclusions(),
                     rangeMember(),
                     winnerNode(),
                     origin()));

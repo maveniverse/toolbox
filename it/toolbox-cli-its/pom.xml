@@ -95,6 +95,7 @@
                 <script>${itDir}/identify-1/it.groovy</script>
                 <script>${itDir}/identify-2/it.groovy</script>
                 <script>${itDir}/noarg-1/it.groovy</script>
+                <script>${itDir}/resolve-1/it.groovy</script>
                 <!-- fails often, relies heavily on search-api CSC backend -->
                 <!--script>${itDir}/libyear-1/it.groovy</script-->
               </scripts>

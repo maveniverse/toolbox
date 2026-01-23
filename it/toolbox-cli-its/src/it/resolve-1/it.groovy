@@ -17,3 +17,5 @@ process.waitFor()
 
 // this is junit:junit:pom:4.13.2 sha-512 hash:
 assert out.contains("SHA-512: abf1cf90ab6a525ae0cfa5235563b00bc6ef07c59f8cdd5c5495ea8b14941b5803a3f7adffaa36ec37152a7904a10e04939c0d11b48115f1943a1606cc5066c0")
+// this is junit:junit:jar:4.13.2 sha-512 hash:
+assert out.contains("SHA-512: a31b9950f929a7e5a600d89787ef40e42a8a8e2392e210d0c0f45b3572937670a18a524f1815508cd1152cd1eaa7275cb7430ba45c053be365c83c231bccd3f0")

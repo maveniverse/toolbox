@@ -33,6 +33,15 @@ public class GavResolveMojo extends GavMojoSupport {
     private String gav;
 
     /**
+     * Resolve POMs as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--poms"},
+            description = "Resolve POMs as well (derive coordinates from GAV)")
+    @Parameter(property = "poms", defaultValue = "false")
+    private boolean poms;
+
+    /**
      * Resolve sources JAR as well (derive coordinates from GAV).
      */
     @CommandLine.Option(
@@ -74,6 +83,7 @@ public class GavResolveMojo extends GavMojoSupport {
         ToolboxCommando toolboxCommando = getToolboxCommando();
         return toolboxCommando.resolve(
                 () -> slurp(gav).stream().map(DefaultArtifact::new),
+                poms,
                 sources,
                 javadoc,
                 signature,

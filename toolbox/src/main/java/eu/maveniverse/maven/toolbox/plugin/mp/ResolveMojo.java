@@ -27,6 +27,12 @@ public class ResolveMojo extends MPMojoSupport {
     private String depSpec;
 
     /**
+     * Resolve POMs as well (derive coordinates from GAV).
+     */
+    @Parameter(property = "poms", defaultValue = "false")
+    private boolean poms;
+
+    /**
      * Resolve sources JAR as well (derive coordinates from GAV).
      */
     @Parameter(property = "sources", defaultValue = "false")
@@ -57,6 +63,7 @@ public class ResolveMojo extends MPMojoSupport {
                 () -> projectAsResolutionRoot().getDependencies().stream()
                         .filter(toolboxCommando.parseDependencyMatcherSpec(depSpec))
                         .map(toolboxCommando::toArtifact),
+                poms,
                 sources,
                 javadoc,
                 signature,

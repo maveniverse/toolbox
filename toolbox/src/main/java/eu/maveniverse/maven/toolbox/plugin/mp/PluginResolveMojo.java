@@ -25,6 +25,12 @@ import org.eclipse.aether.artifact.Artifact;
 @Mojo(name = "plugin-resolve", threadSafe = true)
 public class PluginResolveMojo extends MPPluginMojoSupport {
     /**
+     * Resolve POMs as well (derive coordinates from GAV).
+     */
+    @Parameter(property = "poms", defaultValue = "false")
+    private boolean poms;
+
+    /**
      * Resolve sources JAR as well (derive coordinates from GAV).
      */
     @Parameter(property = "sources", defaultValue = "false")
@@ -61,6 +67,6 @@ public class PluginResolveMojo extends MPPluginMojoSupport {
                     .collect(Collectors.toList());
         }
         return toolboxCommando.resolve(
-                roots::stream, sources, javadoc, signature, toolboxCommando.artifactSink(sinkSpec, dryRun));
+                roots::stream, poms, sources, javadoc, signature, toolboxCommando.artifactSink(sinkSpec, dryRun));
     }
 }

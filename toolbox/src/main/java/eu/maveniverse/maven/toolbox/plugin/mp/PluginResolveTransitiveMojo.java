@@ -31,6 +31,12 @@ public class PluginResolveTransitiveMojo extends MPPluginMojoSupport {
     private String scope;
 
     /**
+     * Resolve POMs as well (derive coordinates from GAV).
+     */
+    @Parameter(property = "poms", defaultValue = "false")
+    private boolean poms;
+
+    /**
      * Resolve sources JAR as well (derive coordinates from GAV).
      */
     @Parameter(property = "sources", defaultValue = "false")
@@ -67,6 +73,7 @@ public class PluginResolveTransitiveMojo extends MPPluginMojoSupport {
         return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(scope),
                 roots,
+                poms,
                 sources,
                 javadoc,
                 signature,

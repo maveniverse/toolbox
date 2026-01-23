@@ -353,7 +353,12 @@ public interface ToolboxCommando extends Closeable {
      * Resolves given artifacts.
      */
     Result<List<Artifact>> resolve(
-            Source<Artifact> artifacts, boolean sources, boolean javadoc, boolean signature, Sink<Artifact> sink)
+            Source<Artifact> artifacts,
+            boolean poms,
+            boolean sources,
+            boolean javadoc,
+            boolean signature,
+            Sink<Artifact> sink)
             throws Exception;
 
     /**
@@ -362,6 +367,7 @@ public interface ToolboxCommando extends Closeable {
     Result<List<Artifact>> resolveTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
+            boolean poms,
             boolean sources,
             boolean javadoc,
             boolean signature,

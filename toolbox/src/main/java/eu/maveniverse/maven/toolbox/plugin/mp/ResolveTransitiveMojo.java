@@ -34,6 +34,12 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
     private String depSpec;
 
     /**
+     * Resolve POMs as well (derive coordinates from GAV).
+     */
+    @Parameter(property = "poms", defaultValue = "false")
+    private boolean poms;
+
+    /**
      * Resolve sources JAR as well (derive coordinates from GAV).
      */
     @Parameter(property = "sources", defaultValue = "false")
@@ -64,6 +70,7 @@ public class ResolveTransitiveMojo extends MPMojoSupport {
         return toolboxCommando.resolveTransitive(
                 resolutionScope,
                 projectDependenciesAsResolutionRoots(toolboxCommando.parseDependencyMatcherSpec(depSpec)),
+                poms,
                 sources,
                 javadoc,
                 signature,

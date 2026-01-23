@@ -53,6 +53,15 @@ public class GavResolveTransitiveMojo extends GavMojoSupport {
     private String boms;
 
     /**
+     * Resolve POMs as well (derive coordinates from GAV).
+     */
+    @CommandLine.Option(
+            names = {"--poms"},
+            description = "Resolve POMs as well (derive coordinates from GAV)")
+    @Parameter(property = "poms", defaultValue = "false")
+    private boolean poms;
+
+    /**
      * Resolve sources JAR as well (derive coordinates from GAV).
      */
     @CommandLine.Option(
@@ -95,6 +104,7 @@ public class GavResolveTransitiveMojo extends GavMojoSupport {
         return toolboxCommando.resolveTransitive(
                 ResolutionScope.parse(scope),
                 toolboxCommando.loadGavs(slurp(gav), slurp(boms)),
+                poms,
                 sources,
                 javadoc,
                 signature,

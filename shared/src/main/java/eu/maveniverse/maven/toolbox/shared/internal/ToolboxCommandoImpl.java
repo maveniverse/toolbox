@@ -906,11 +906,19 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<List<Artifact>> resolve(
-            Source<Artifact> artifactSource, boolean sources, boolean javadoc, boolean signature, Sink<Artifact> sink)
+            Source<Artifact> artifactSource,
+            boolean poms,
+            boolean sources,
+            boolean javadoc,
+            boolean signature,
+            Sink<Artifact> sink)
             throws Exception {
         List<Artifact> result = new ArrayList<>();
         List<Artifact> artifacts = artifactSource.get().collect(Collectors.toList());
-        output.suggest("Resolving {}", artifacts);
+        output.marker(Output.Verbosity.NORMAL)
+                .emphasize("Resolving ")
+                .outstanding(artifacts.toString())
+                .say();
         try (Sink<Artifact> artifactSink =
                 ArtifactSinks.teeArtifactSink(sink, ArtifactSinks.statArtifactSink(0, true, true, output, this))) {
             List<Artifact> artifactResults = toolboxResolver.resolveArtifacts(artifacts).stream()
@@ -918,9 +926,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     .collect(Collectors.toList());
             result.addAll(artifactResults);
             artifactSink.accept(artifactResults);
-            if (sources || javadoc || signature) {
+            if (poms || sources || javadoc || signature) {
                 HashSet<Artifact> subartifacts = new HashSet<>();
                 artifacts.forEach(a -> {
+                    if (poms && a.getClassifier().isEmpty()) {
+                        subartifacts.add(new SubArtifact(a, "", "pom"));
+                    }
                     if (sources && a.getClassifier().isEmpty()) {
                         subartifacts.add(new SubArtifact(a, "sources", "jar"));
                     }
@@ -958,6 +969,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<List<Artifact>> resolveTransitive(
             ResolutionScope resolutionScope,
             Collection<ResolutionRoot> resolutionRoots,
+            boolean poms,
             boolean sources,
             boolean javadoc,
             boolean signature,
@@ -969,6 +981,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 doResolveTransitive(
                         resolutionScope,
                         resolutionRoot,
+                        poms,
                         sources,
                         javadoc,
                         signature,
@@ -985,6 +998,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     protected void doResolveTransitive(
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
+            boolean poms,
             boolean sources,
             boolean javadoc,
             boolean signature,
@@ -1001,11 +1015,14 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     .map(r -> origin(r.getArtifact(), r.getRepository()))
                     .collect(Collectors.toList()));
 
-            if (sources || javadoc || signature) {
+            if (poms || sources || javadoc || signature) {
                 HashSet<Artifact> subartifacts = new HashSet<>();
                 dependencyResult.getArtifactResults().stream()
                         .map(r -> origin(r.getArtifact(), r.getRepository()))
                         .forEach(a -> {
+                            if (poms && a.getClassifier().isEmpty()) {
+                                subartifacts.add(new SubArtifact(a, "", "pom"));
+                            }
                             if (sources && a.getClassifier().isEmpty()) {
                                 subartifacts.add(new SubArtifact(a, "sources", "jar"));
                             }

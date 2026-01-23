@@ -15,4 +15,5 @@ Process process = proc.start()
 process.consumeProcessOutput(out, err)
 process.waitFor()
 
+// this is junit:junit:pom:4.13.2 sha-512 hash:
 assert out.contains("SHA-512: abf1cf90ab6a525ae0cfa5235563b00bc6ef07c59f8cdd5c5495ea8b14941b5803a3f7adffaa36ec37152a7904a10e04939c0d11b48115f1943a1606cc5066c0")

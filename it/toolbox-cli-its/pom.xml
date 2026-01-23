@@ -70,7 +70,7 @@
           <plugin>
             <groupId>org.codehaus.gmavenplus</groupId>
             <artifactId>gmavenplus-plugin</artifactId>
-            <version>4.2.1</version>
+            <version>4.3.0</version>
             <configuration>
               <properties>
                 <property>
@@ -103,7 +103,7 @@
               <dependency>
                 <groupId>org.apache.groovy</groupId>
                 <artifactId>groovy-all</artifactId>
-                <version>5.0.3</version>
+                <version>5.0.4</version>
                 <type>pom</type>
                 <scope>runtime</scope>
               </dependency>

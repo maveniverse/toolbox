@@ -1109,20 +1109,20 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<CollectResult> dirtyTree(
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
-            int maxLevel,
-            boolean verboseTree,
+            int dirtyLevelPast,
+            boolean conflictResolve,
             DependencyMatcher dependencyMatcher)
             throws Exception {
         output.suggest("Loading root of: {}", resolutionRoot.getArtifact());
         ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
         output.suggest("Collecting graph of: {}", resolutionRoot.getArtifact());
-        CollectResult collectResult = toolboxResolver.collect(
+        CollectResult collectResult = toolboxResolver.collectDirty(
                 resolutionScope,
                 root.getArtifact(),
                 root.getDependencies(),
                 root.getManagedDependencies(),
-                maxLevel,
-                verboseTree);
+                dirtyLevelPast,
+                conflictResolve);
         CloningDependencyVisitor cloningDependencyVisitor = new CloningDependencyVisitor();
         collectResult.getRoot().accept(new FilteringDependencyVisitor(cloningDependencyVisitor, new DependencyFilter() {
             @Override

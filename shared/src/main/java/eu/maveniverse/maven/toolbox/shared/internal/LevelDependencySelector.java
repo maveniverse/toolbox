@@ -17,8 +17,8 @@ public class LevelDependencySelector implements DependencySelector {
     private final int currentLevel;
 
     public LevelDependencySelector(int maxLevel) {
-        if (maxLevel < 1) {
-            throw new IllegalArgumentException("maxLevel must be greater than 0");
+        if (maxLevel < 0) {
+            throw new IllegalArgumentException("maxLevel must be greater than or equal to 0");
         }
         this.maxLevel = maxLevel;
         this.currentLevel = 0;
@@ -31,7 +31,7 @@ public class LevelDependencySelector implements DependencySelector {
 
     @Override
     public boolean selectDependency(Dependency dependency) {
-        return true;
+        return currentLevel < maxLevel;
     }
 
     @Override

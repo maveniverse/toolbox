@@ -204,7 +204,7 @@ public class DependencyGraphDumper implements DependencyVisitor {
                     if (!equals(premanagedExclusions, d.getExclusions())) {
                         return "(managed exclusions altered from " + premanagedExclusions + ")";
                     } else {
-                        return "(managed exclusions applied: " + premanagedExclusions.size() + ")";
+                        return "(managed exclusions applied: " + premanagedExclusions + ")";
                     }
                 }
             }
@@ -238,7 +238,7 @@ public class DependencyGraphDumper implements DependencyVisitor {
             if (d != null) {
                 Collection<Exclusion> exclusions = d.getExclusions();
                 if (exclusions != null && !exclusions.isEmpty()) {
-                    return "(exclusions applied: " + exclusions.size() + ")";
+                    return "(exclusions applied: " + exclusions + ")";
                 }
             }
             return null;

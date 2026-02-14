@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.toolbox</groupId>
     <artifactId>toolbox</artifactId>
-    <version>0.15.2-SNAPSHOT</version>
+    <version>0.15.2</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.toolbox.it</groupId>

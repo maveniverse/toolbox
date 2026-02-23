@@ -117,6 +117,51 @@ public class ArtifactVersionSelectorTest {
     }
 
     @Test
+    void contextualSnapshotsAndPreviews() {
+        // contextually select next same major
+        assertEquals(
+                "3.100.0",
+                ArtifactVersionSelector.contextualSnapshotsAndPreviews()
+                        .apply(new DefaultArtifact("g:a:3.0.0"), versions));
+        assertEquals(
+                "3.200.0-SNAPSHOT",
+                ArtifactVersionSelector.contextualSnapshotsAndPreviews()
+                        .apply(new DefaultArtifact("g:a:3.0.0-SNAPSHOT"), versions));
+        // no available versions; identity
+        assertEquals(
+                "v1",
+                ArtifactVersionSelector.contextualSnapshotsAndPreviews()
+                        .apply(new DefaultArtifact("g:a:v1"), Collections.emptyList()));
+        assertEquals(
+                "v1-SNAPSHOT",
+                ArtifactVersionSelector.contextualSnapshotsAndPreviews()
+                        .apply(new DefaultArtifact("g:a:v1-SNAPSHOT"), Collections.emptyList()));
+        // parent POM like (plain integer counter)
+        assertEquals(
+                "3",
+                ArtifactVersionSelector.contextualSnapshotsAndPreviews()
+                        .apply(new DefaultArtifact("g:a:1"), Arrays.asList(version("1"), version("2"), version("3"))));
+        assertEquals(
+                "2",
+                ArtifactVersionSelector.contextualSnapshotsAndPreviews()
+                        .apply(
+                                new DefaultArtifact("g:a:1"),
+                                Arrays.asList(version("1"), version("2"), version("3-SNAPSHOT"))));
+        assertEquals(
+                "3",
+                ArtifactVersionSelector.contextualSnapshotsAndPreviews()
+                        .apply(
+                                new DefaultArtifact("g:a:1-SNAPSHOT"),
+                                Arrays.asList(version("1"), version("2"), version("3"))));
+        assertEquals(
+                "3-SNAPSHOT",
+                ArtifactVersionSelector.contextualSnapshotsAndPreviews()
+                        .apply(
+                                new DefaultArtifact("g:a:1-SNAPSHOT"),
+                                Arrays.asList(version("1"), version("2"), version("3-SNAPSHOT"))));
+    }
+
+    @Test
     void parse() {
         Artifact artifact = new DefaultArtifact("g:a:3.0.0");
 

@@ -144,15 +144,21 @@ public class ArtifactVersionSelectorTest {
         assertEquals(
                 "2",
                 ArtifactVersionSelector.contextualSnapshotsAndPreviews()
-                        .apply(new DefaultArtifact("g:a:1"), Arrays.asList(version("1"), version("2"), version("3-SNAPSHOT"))));
+                        .apply(
+                                new DefaultArtifact("g:a:1"),
+                                Arrays.asList(version("1"), version("2"), version("3-SNAPSHOT"))));
         assertEquals(
                 "3",
                 ArtifactVersionSelector.contextualSnapshotsAndPreviews()
-                        .apply(new DefaultArtifact("g:a:1-SNAPSHOT"), Arrays.asList(version("1"), version("2"), version("3"))));
+                        .apply(
+                                new DefaultArtifact("g:a:1-SNAPSHOT"),
+                                Arrays.asList(version("1"), version("2"), version("3"))));
         assertEquals(
                 "3-SNAPSHOT",
                 ArtifactVersionSelector.contextualSnapshotsAndPreviews()
-                        .apply(new DefaultArtifact("g:a:1-SNAPSHOT"), Arrays.asList(version("1"), version("2"), version("3-SNAPSHOT"))));
+                        .apply(
+                                new DefaultArtifact("g:a:1-SNAPSHOT"),
+                                Arrays.asList(version("1"), version("2"), version("3-SNAPSHOT"))));
     }
 
     @Test

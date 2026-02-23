@@ -104,8 +104,10 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
 
     /**
      * Selector that return last version with same "major" as artifact.
+     *
+     * @param fallback if {@code true} and version does not contain "major" part, {@link #last()} is applied. Otherwise {@link #identity()} is applied.
      */
-    static ArtifactVersionSelector major() {
+    static ArtifactVersionSelector major(boolean fallback) {
         return new ArtifactVersionSelector() {
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
@@ -120,15 +122,24 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                         }
                     }
                 }
-                return identity().apply(artifact, versions);
+                return fallback ? last().apply(artifact, versions) : identity().apply(artifact, versions);
             }
         };
     }
 
     /**
-     * Selector that return last version with same "minor" as artifact.
+     * Selector that return last version with same "major" as artifact w/ fallback.
      */
-    static ArtifactVersionSelector minor() {
+    static ArtifactVersionSelector major() {
+        return major(true);
+    }
+
+    /**
+     * Selector that return last version with same "minor" as artifact.
+     *
+     * @param fallback if {@code true} and version does not contain "minor" part, {@link #major()} is applied. Otherwise {@link #identity()} is applied.
+     */
+    static ArtifactVersionSelector minor(boolean fallback) {
         return new ArtifactVersionSelector() {
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
@@ -146,9 +157,18 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                         }
                     }
                 }
-                return identity().apply(artifact, versions);
+                return fallback
+                        ? major(fallback).apply(artifact, versions)
+                        : identity().apply(artifact, versions);
             }
         };
+    }
+
+    /**
+     * Selector that return last version with same "minor" as artifact w/ fallback.
+     */
+    static ArtifactVersionSelector minor() {
+        return minor(true);
     }
 
     /**

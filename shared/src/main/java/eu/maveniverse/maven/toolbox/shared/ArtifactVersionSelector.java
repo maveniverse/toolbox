@@ -121,6 +121,8 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                             return version;
                         }
                     }
+                    // major version identified; but no higher version with same major version found
+                    return identity().apply(artifact, versions);
                 }
                 return fallback ? last().apply(artifact, versions) : identity().apply(artifact, versions);
             }
@@ -155,6 +157,8 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
                                 return version;
                             }
                         }
+                        // minor version identified; but no higher version with same minor version found
+                        return identity().apply(artifact, versions);
                     }
                 }
                 return fallback

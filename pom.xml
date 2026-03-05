@@ -77,7 +77,7 @@
     <version.slf4j>2.0.17</version.slf4j>
     <version.picocli>4.7.7</version.picocli>
     <version.jline>3.30.7</version.jline>
-    <version.domtrip>0.5.0</version.domtrip>
+    <version.domtrip>0.6.0</version.domtrip>
   </properties>
 
   <dependencyManagement>

@@ -8,14 +8,12 @@
 package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector.last;
-import static eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl.source;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
 import eu.maveniverse.maven.mima.extensions.mmr.ModelRequest;
 import eu.maveniverse.maven.mima.extensions.mmr.ModelResponse;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
-import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ProjectLocator;
 import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
@@ -28,12 +26,14 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -874,7 +874,11 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     }
 
     @Override
-    public List<Artifact> listAvailablePlugins(Collection<String> groupIds) throws Exception {
+    public Map<Artifact, List<Version>> listAvailablePlugins(
+            Collection<String> groupIds,
+            BiFunction<Artifact, List<Version>, String> selector,
+            Predicate<Version> matcher)
+            throws Exception {
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
         session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_ALWAYS);
 
@@ -890,7 +894,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         }
 
         HashSet<String> processedGAs = new HashSet<>();
-        ArrayList<Artifact> result = new ArrayList<>();
+        TreeMap<Artifact, List<Version>> result = new TreeMap<>(Comparator.comparing(ArtifactIdUtils::toId));
         List<MetadataResult> results = repositorySystem.resolveMetadata(session, requests);
         for (MetadataResult res : results) {
             org.eclipse.aether.metadata.Metadata metadata = res.getMetadata();
@@ -907,14 +911,19 @@ public class ToolboxResolverImpl implements ToolboxResolver {
                         if (processedGAs.add(metadata.getGroupId() + ":" + plugin.getArtifactId())) {
                             Artifact blueprint =
                                     new DefaultArtifact(metadata.getGroupId(), plugin.getArtifactId(), "jar", "0");
-                            Version newestVersion = findNewestVersion(
-                                    blueprint, ArtifactVersionMatcher.not(ArtifactVersionMatcher.snapshot()));
-                            if (newestVersion != null) {
-                                result.add(new DefaultArtifact(
-                                        blueprint.getGroupId(),
-                                        blueprint.getArtifactId(),
-                                        blueprint.getExtension(),
-                                        newestVersion.toString()));
+                            List<Version> newestVersions = findNewerVersions(blueprint, matcher);
+                            if (newestVersions != null && !newestVersions.isEmpty()) {
+                                result.put(
+                                        new DefaultArtifact(
+                                                blueprint.getGroupId(),
+                                                blueprint.getArtifactId(),
+                                                blueprint.getExtension(),
+                                                selector.apply(
+                                                        blueprint.setVersion(newestVersions
+                                                                .get(0)
+                                                                .toString()),
+                                                        newestVersions)),
+                                        newestVersions);
                             }
                         }
                     }

@@ -832,10 +832,17 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<Artifact>> listAvailablePlugins(Collection<String> groupIds) throws Exception {
+    public Result<Map<Artifact, List<Version>>> listAvailablePlugins(
+            Collection<String> groupIds,
+            BiFunction<Artifact, List<Version>, String> selector,
+            Predicate<Version> matcher)
+            throws Exception {
         output.suggest("Listing plugins in groupIds: {}", groupIds);
-        List<Artifact> plugins = toolboxResolver.listAvailablePlugins(groupIds);
-        plugins.forEach(p -> output.tell(p.toString()));
+        Map<Artifact, List<Version>> plugins = toolboxResolver.listAvailablePlugins(groupIds, selector, matcher);
+        for (Map.Entry<Artifact, List<Version>> entry : plugins.entrySet()) {
+            output.tell(entry.getKey().toString());
+            output.chatter(" * Available versions: {}", entry.getValue());
+        }
         return plugins.isEmpty() ? Result.failure("No plugins") : Result.success(plugins);
     }
 

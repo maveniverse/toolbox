@@ -303,7 +303,11 @@ public interface ToolboxCommando extends Closeable {
     /**
      * Lists available plugins in given groupId.
      */
-    Result<List<Artifact>> listAvailablePlugins(Collection<String> groupIds) throws Exception;
+    Result<Map<Artifact, List<Version>>> listAvailablePlugins(
+            Collection<String> groupIds,
+            BiFunction<Artifact, List<Version>, String> selector,
+            Predicate<Version> matcher)
+            throws Exception;
 
     /**
      * Starts the recorder.

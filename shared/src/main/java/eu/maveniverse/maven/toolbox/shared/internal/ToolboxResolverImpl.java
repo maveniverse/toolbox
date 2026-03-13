@@ -26,12 +26,14 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -892,7 +894,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         }
 
         HashSet<String> processedGAs = new HashSet<>();
-        HashMap<Artifact, List<Version>> result = new HashMap<>();
+        TreeMap<Artifact, List<Version>> result = new TreeMap<>(Comparator.comparing(ArtifactIdUtils::toId));
         List<MetadataResult> results = repositorySystem.resolveMetadata(session, requests);
         for (MetadataResult res : results) {
             org.eclipse.aether.metadata.Metadata metadata = res.getMetadata();
@@ -916,7 +918,11 @@ public class ToolboxResolverImpl implements ToolboxResolver {
                                                 blueprint.getGroupId(),
                                                 blueprint.getArtifactId(),
                                                 blueprint.getExtension(),
-                                                selector.apply(blueprint, newestVersions)),
+                                                selector.apply(
+                                                        blueprint.setVersion(newestVersions
+                                                                .get(0)
+                                                                .toString()),
+                                                        newestVersions)),
                                         newestVersions);
                             }
                         }

@@ -14,9 +14,11 @@ import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.version.Version;
 import picocli.CommandLine;
 
 /**
@@ -54,20 +56,44 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
     @Parameter(property = "upsert")
     private boolean upsert;
 
+    /**
+     * Artifact version matcher spec string to filter version candidates, default is 'noSnapshotsAndPreviews()'.
+     */
+    @CommandLine.Option(
+            names = {"--artifactVersionMatcherSpec"},
+            defaultValue = "noSnapshotsAndPreviews()",
+            description = "Artifact version matcher spec (default 'noSnapshotsAndPreviews()')")
+    @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "noSnapshotsAndPreviews()")
+    private String artifactVersionMatcherSpec;
+
+    /**
+     * Artifact version selector spec string to select "latest", default is 'last()'.
+     */
+    @CommandLine.Option(
+            names = {"--artifactVersionSelectorSpec"},
+            defaultValue = "last()",
+            description = "Artifact version selector spec (default 'last()')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+    private String artifactVersionSelectorSpec;
+
     @Override
-    protected Result<List<Artifact>> doExecute() throws Exception {
+    protected Result<Map<Artifact, List<Version>>> doExecute() throws Exception {
         if (groupIds == null || groupIds.trim().isEmpty()) {
             groupIds = String.join(",", mojoSettings.getPluginGroups());
         }
-        Result<List<Artifact>> result = getToolboxCommando().listAvailablePlugins(csv(groupIds));
+        Result<Map<Artifact, List<Version>>> result = getToolboxCommando()
+                .listAvailablePlugins(
+                        csv(groupIds),
+                        getToolboxCommando().parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec),
+                        getToolboxCommando().parseArtifactVersionMatcherSpec(artifactVersionMatcherSpec));
         if (result.isSuccess() && toPom != null) {
             try (ToolboxCommando.EditSession es = getToolboxCommando().createEditSession(toPom.toPath())) {
-                return getToolboxCommando()
+                getToolboxCommando()
                         .editPom(
                                 es,
                                 ToolboxCommando.PomOpSubject.MANAGED_PLUGINS,
                                 upsert ? ToolboxCommando.Op.UPSERT : ToolboxCommando.Op.UPDATE,
-                                () -> result.getData().orElseThrow().stream());
+                                () -> result.getData().orElseThrow().keySet().stream());
             }
         }
         return result;

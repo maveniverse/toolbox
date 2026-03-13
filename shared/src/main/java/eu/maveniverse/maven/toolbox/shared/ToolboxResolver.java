@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.shared;
 import eu.maveniverse.maven.mima.extensions.mmr.ModelResponse;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.eclipse.aether.artifact.Artifact;
@@ -145,5 +146,9 @@ public interface ToolboxResolver {
     List<Version> findNewerVersions(Artifact artifact, Predicate<Version> filter)
             throws VersionRangeResolutionException;
 
-    List<Artifact> listAvailablePlugins(Collection<String> groupIds) throws Exception;
+    Map<Artifact, List<Version>> listAvailablePlugins(
+            Collection<String> groupIds,
+            BiFunction<Artifact, List<Version>, String> selector,
+            Predicate<Version> matcher)
+            throws Exception;
 }

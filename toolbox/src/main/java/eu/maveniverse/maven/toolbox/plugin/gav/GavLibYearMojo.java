@@ -55,7 +55,7 @@ public class GavLibYearMojo extends GavSearchMojoSupport {
      */
     @CommandLine.Option(
             names = {"--artifactVersionMatcherSpec"},
-            defaultValue = "noSnapshotsAndPreviews()",
+            defaultValue = "any()",
             description = "Artifact version matcher spec (default 'any()')")
     @Parameter(property = "artifactVersionMatcherSpec", defaultValue = "any()")
     private String artifactVersionMatcherSpec;

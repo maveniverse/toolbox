@@ -31,8 +31,35 @@ public final class DirectorySink implements Artifacts.Sink {
      */
     public static DirectorySink flat(Output output, Path path, ArtifactNameMapper artifactNameMapper, boolean dryRun)
             throws IOException {
+        return flat(
+                output,
+                path,
+                artifactNameMapper,
+                null, // TODO Here be a noop sink
+                dryRun);
+    }
+
+    /**
+     * Creates plain "flat" directory sink, that accepts all artifacts and copies them out having filenames according
+     * to supplied {@link ArtifactNameMapper} and prevents overwrite (what you usually want).
+     */
+    public static DirectorySink flat(
+            Output output,
+            Path path,
+            ArtifactNameMapper artifactNameMapper,
+            ArtifactSinks.ArtifactUriSink artifactUriSink,
+            boolean dryRun)
+            throws IOException {
         return new DirectorySink(
-                output, path, Mode.COPY, ArtifactMatcher.unique(), false, artifactNameMapper, false, dryRun);
+                output,
+                path,
+                Mode.COPY,
+                ArtifactMatcher.unique(),
+                false,
+                artifactNameMapper,
+                artifactUriSink,
+                false,
+                dryRun);
     }
 
     /**
@@ -51,6 +78,7 @@ public final class DirectorySink implements Artifacts.Sink {
                 ArtifactMatcher.and(ArtifactMatcher.not(ArtifactMatcher.snapshot()), ArtifactMatcher.unique()),
                 true,
                 ArtifactNameMapper.repositoryDefault(),
+                null, // TODO Here be a noop sink
                 false,
                 dryRun);
     }
@@ -71,6 +99,7 @@ public final class DirectorySink implements Artifacts.Sink {
     private final Predicate<Artifact> artifactMatcher;
     private final boolean failIfUnmatched;
     private final Function<Artifact, String> artifactNameMapper;
+    private final ArtifactSinks.ArtifactUriSink artifactUriSink;
     private final boolean allowOverwrite;
     private final HashSet<Path> writtenPaths;
     private final Path indexFile;
@@ -97,6 +126,7 @@ public final class DirectorySink implements Artifacts.Sink {
             Predicate<Artifact> artifactMatcher,
             boolean failIfUnmatched,
             Function<Artifact, String> artifactNameMapper,
+            ArtifactSinks.ArtifactUriSink artifactUriSink,
             boolean allowOverwrite,
             boolean dryRun)
             throws IOException {
@@ -116,6 +146,7 @@ public final class DirectorySink implements Artifacts.Sink {
         this.artifactMatcher = requireNonNull(artifactMatcher, "artifactMatcher");
         this.failIfUnmatched = failIfUnmatched;
         this.artifactNameMapper = requireNonNull(artifactNameMapper, "artifactNameMapper");
+        this.artifactUriSink = artifactUriSink; // TODO requireNonNull(artifactUriSink, "artifactUriSink");
         this.allowOverwrite = allowOverwrite;
         this.writtenPaths = new HashSet<>();
         this.indexFile = directory.resolve(".index");
@@ -147,7 +178,8 @@ public final class DirectorySink implements Artifacts.Sink {
                 throw new IOException("Overwrite prevented; check mappings");
             }
             output.chatter("Accepting artifact {} -> ", artifact, target);
-            indexFileWriter.write(artifact, name);
+            if (artifactUriSink != null) artifactUriSink.accept(artifact);
+            indexFileWriter.write(artifact, artifactUriSink, name);
             Files.createDirectories(target.getParent());
             switch (mode) {
                 case COPY:
@@ -199,6 +231,7 @@ public final class DirectorySink implements Artifacts.Sink {
 
     @Override
     public void close() throws IOException {
+        if (artifactUriSink != null) artifactUriSink.close();
         indexFileWriter.close();
     }
 }

@@ -161,7 +161,9 @@ public final class ArtifactSinks {
                         } else {
                             throw new IllegalArgumentException("op flat accepts only 1..2 argument");
                         }
-                        params.add(DirectorySink.flat(tc.output(), p0, p1, dryRun));
+                        var uriSink = artifactUriSink(tc.output(), tc, false);
+                        var dirSink = DirectorySink.flat(tc.output(), p0, p1, uriSink, dryRun);
+                        params.add(dirSink);
                         node.getChildren().clear();
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);

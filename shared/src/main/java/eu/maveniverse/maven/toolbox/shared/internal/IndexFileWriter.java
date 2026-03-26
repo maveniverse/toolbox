@@ -11,6 +11,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -18,7 +19,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 
 /**
  * Writes "index file", that is a file having GAV per line.
@@ -60,14 +60,22 @@ public final class IndexFileWriter implements AutoCloseable {
         }
     }
 
-    public void write(Artifact artifact, String path) {
+    public void write(Artifact artifact, ArtifactSinks.ArtifactUriSink artifactUriSink, String path) {
         requireNonNull(artifact, "artifact");
+        requireNonNull(artifactUriSink, "artifactUriSink");
         requireNonNull(path, "path");
         if (closed.get()) {
             throw new IllegalStateException("already closed");
         }
         if (!failed.get() && !dryRun) {
-            printWriter.println(ArtifactIdUtils.toId(artifact) + " >> " + path);
+            // printWriter.println(ArtifactIdUtils.toId(artifact) + " >> " + path);
+            var name = ModuleFinder.of(artifact.getFile().toPath())
+                    .findAll()
+                    .iterator()
+                    .next()
+                    .descriptor()
+                    .name();
+            printWriter.println(name + "=" + artifactUriSink.getUri(artifact));
         }
     }
 

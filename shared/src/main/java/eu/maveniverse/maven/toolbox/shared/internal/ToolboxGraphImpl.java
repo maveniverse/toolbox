@@ -8,15 +8,27 @@
 package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static eu.maveniverse.maven.toolbox.shared.internal.ToolboxCommandoImpl.source;
+import static guru.nidi.graphviz.model.Factory.mutGraph;
+import static guru.nidi.graphviz.model.Factory.mutNode;
 import static java.util.Objects.requireNonNull;
 
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.DependencyMatcher;
 import eu.maveniverse.maven.toolbox.shared.ProjectLocator;
 import eu.maveniverse.maven.toolbox.shared.ReactorLocator;
+import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.StringUtils;
 import eu.maveniverse.maven.toolbox.shared.ToolboxGraph;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
+import guru.nidi.graphviz.attribute.Color;
+import guru.nidi.graphviz.attribute.Label;
+import guru.nidi.graphviz.attribute.Shape;
+import guru.nidi.graphviz.engine.Format;
+import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.model.MutableGraph;
+import guru.nidi.graphviz.model.MutableNode;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,12 +40,59 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 
+/**
+ * This class uses Graphviz package, that is optional.
+ */
 public class ToolboxGraphImpl implements ToolboxGraph {
     protected final Output output;
 
     public ToolboxGraphImpl(Output output) {
         this.output = requireNonNull(output, "output");
+    }
+
+    @Override
+    public Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> projectDependencyGraph(
+            ReactorLocator reactorLocator,
+            boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher,
+            Path output)
+            throws IOException {
+        Map<ReactorLocator.ReactorProject, Collection<Dependency>> result = projectDependencyGraph(
+                reactorLocator, showExternal, excludeSubprojectsMatcher, excludeDependencyMatcher);
+        Map<Artifact, String> labels = labels(result);
+        MutableGraph g = mutGraph("reactor")
+                .setDirected(true)
+                .graphAttrs()
+                .add(Label.of(
+                        ArtifactIdUtils.toId(reactorLocator.getTopLevelProject().artifact())))
+                .use((gr, ctx) -> {
+                    for (Map.Entry<ReactorLocator.ReactorProject, Collection<Dependency>> entry : result.entrySet()) {
+                        MutableNode from = mutNode(labels.get(entry.getKey().artifact()))
+                                .add(Color.BLUE)
+                                .add(Shape.BOX);
+                        for (Dependency dependency : entry.getValue()) {
+                            String source = dependency.getArtifact().getProperty("source", "internal");
+                            Color color;
+                            Shape shape;
+                            if ("internal".equals(source)) {
+                                color = Color.BLUE;
+                                shape = Shape.BOX;
+                            } else {
+                                color = Color.GREEN;
+                                shape = Shape.ELLIPSE;
+                            }
+                            from.addLink(mutNode(labels.get(dependency.getArtifact()))
+                                    .add(color)
+                                    .add(shape));
+                        }
+                    }
+                });
+
+        Graphviz.fromGraph(g).render(Format.SVG).toFile(output.toFile());
+        return Result.success(result);
     }
 
     @Override

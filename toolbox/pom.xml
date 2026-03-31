@@ -237,8 +237,8 @@
                 <extraArtifact>org.apache.maven:maven-plugin-api:${version.maven}</extraArtifact>
               </extraArtifacts>
               <artifactSet>
-                <!-- These are already provided by runtime -->
                 <excludes>
+                  <!-- These are already provided by runtime -->
                   <exclude>eu.maveniverse.maven.mima.runtime:embedded-maven</exclude>
                   <exclude>org.apache.maven.resolver:maven-resolver-util</exclude>
                   <exclude>org.codehaus.plexus:plexus-interpolation</exclude>

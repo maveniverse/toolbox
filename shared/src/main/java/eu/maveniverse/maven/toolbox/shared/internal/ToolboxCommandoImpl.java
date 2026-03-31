@@ -7,8 +7,6 @@
  */
 package eu.maveniverse.maven.toolbox.shared.internal;
 
-import static guru.nidi.graphviz.model.Factory.mutGraph;
-import static guru.nidi.graphviz.model.Factory.mutNode;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.maven.search.api.request.BooleanQuery.and;
@@ -47,17 +45,11 @@ import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.Sink;
 import eu.maveniverse.maven.toolbox.shared.Source;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.ToolboxGraph;
 import eu.maveniverse.maven.toolbox.shared.ToolboxResolver;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.internal.domtrip.DOMTripUtils;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
-import guru.nidi.graphviz.attribute.Color;
-import guru.nidi.graphviz.attribute.Label;
-import guru.nidi.graphviz.attribute.Shape;
-import guru.nidi.graphviz.engine.Format;
-import guru.nidi.graphviz.engine.Graphviz;
-import guru.nidi.graphviz.model.MutableGraph;
-import guru.nidi.graphviz.model.MutableNode;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -148,7 +140,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     protected final ToolboxSearchApiImpl toolboxSearchApi;
     protected final ArtifactRecorderImpl artifactRecorder;
     protected final ToolboxResolverImpl toolboxResolver;
-    protected final ToolboxGraphImpl toolboxGraph;
+    protected final ToolboxGraph toolboxGraph; // nullable
 
     protected final Map<String, RemoteRepository> knownSearchRemoteRepositories;
 
@@ -169,7 +161,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 new MavenModelReader(context),
                 context.remoteRepositories(),
                 versionScheme);
-        this.toolboxGraph = new ToolboxGraphImpl(output);
+
+        // Graphviz is optional
+        this.toolboxGraph = ToolboxGraph.create(output).orElse(null);
         this.knownSearchRemoteRepositories = Collections.unmodifiableMap(createKnownSearchRemoteRepositories());
     }
 
@@ -1354,39 +1348,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             DependencyMatcher excludeDependencyMatcher,
             Path output)
             throws IOException {
-        Map<ReactorLocator.ReactorProject, Collection<Dependency>> result = toolboxGraph.projectDependencyGraph(
-                reactorLocator, showExternal, excludeSubprojectsMatcher, excludeDependencyMatcher);
-        Map<Artifact, String> labels = toolboxGraph.labels(result);
-        MutableGraph g = mutGraph("reactor")
-                .setDirected(true)
-                .graphAttrs()
-                .add(Label.of(
-                        ArtifactIdUtils.toId(reactorLocator.getTopLevelProject().artifact())))
-                .use((gr, ctx) -> {
-                    for (Map.Entry<ReactorLocator.ReactorProject, Collection<Dependency>> entry : result.entrySet()) {
-                        MutableNode from = mutNode(labels.get(entry.getKey().artifact()))
-                                .add(Color.BLUE)
-                                .add(Shape.BOX);
-                        for (Dependency dependency : entry.getValue()) {
-                            String source = dependency.getArtifact().getProperty("source", "internal");
-                            Color color;
-                            Shape shape;
-                            if ("internal".equals(source)) {
-                                color = Color.BLUE;
-                                shape = Shape.BOX;
-                            } else {
-                                color = Color.GREEN;
-                                shape = Shape.ELLIPSE;
-                            }
-                            from.addLink(mutNode(labels.get(dependency.getArtifact()))
-                                    .add(color)
-                                    .add(shape));
-                        }
-                    }
-                });
-
-        Graphviz.fromGraph(g).render(Format.SVG).toFile(output.toFile());
-        return Result.success(result);
+        if (toolboxGraph != null) {
+            return toolboxGraph.projectDependencyGraph(
+                    reactorLocator, showExternal, excludeSubprojectsMatcher, excludeDependencyMatcher, output);
+        } else {
+            throw new IllegalStateException("Graphing is not available");
+        }
     }
 
     @Override

@@ -118,6 +118,7 @@
     <dependency>
       <groupId>guru.nidi</groupId>
       <artifactId>graphviz-java</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <!-- Jarviz -->

@@ -7,12 +7,38 @@
  */
 package eu.maveniverse.maven.toolbox.shared;
 
+import eu.maveniverse.maven.toolbox.shared.output.Output;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 
 public interface ToolboxGraph {
+    /**
+     * Creates instance of {@link ToolboxGraph}, if it can. Graphviz is optional dependency.
+     */
+    static Optional<ToolboxGraph> create(Output output) {
+        try {
+            return Optional.of(new eu.maveniverse.maven.toolbox.shared.internal.ToolboxGraphImpl(output));
+        } catch (LinkageError e) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Returns the project module dependency graph of given root. As a side effect it also writes out rendered image.
+     */
+    Result<Map<ReactorLocator.ReactorProject, Collection<Dependency>>> projectDependencyGraph(
+            ReactorLocator reactorLocator,
+            boolean showExternal,
+            ArtifactMatcher excludeSubprojectsMatcher,
+            DependencyMatcher excludeDependencyMatcher,
+            Path output)
+            throws IOException;
+
     Map<ReactorLocator.ReactorProject, Collection<Dependency>> projectDependencyGraph(
             ReactorLocator reactorLocator,
             boolean showExternal,

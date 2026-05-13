@@ -74,10 +74,10 @@
     <version.resolver>1.9.27</version.resolver>
     <version.mavenIndexer>7.1.6</version.mavenIndexer>
     <version.mavenPluginTools>3.15.2</version.mavenPluginTools>
-    <version.slf4j>2.0.17</version.slf4j>
+    <version.slf4j>2.0.18</version.slf4j>
     <version.picocli>4.7.7</version.picocli>
     <version.jline>3.30.13</version.jline>
-    <version.domtrip>1.4.0</version.domtrip>
+    <version.domtrip>1.5.0</version.domtrip>
   </properties>
 
   <dependencyManagement>
@@ -335,7 +335,7 @@
       <dependency>
         <groupId>eu.maveniverse.maven.shared</groupId>
         <artifactId>core</artifactId>
-        <version>0.2.2</version>
+        <version>0.2.3</version>
       </dependency>
 
       <dependency>

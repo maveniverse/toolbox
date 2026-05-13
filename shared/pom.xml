@@ -40,10 +40,6 @@
       <groupId>eu.maveniverse.maven.mima.extensions</groupId>
       <artifactId>mmr</artifactId>
     </dependency>
-    <dependency>
-      <groupId>eu.maveniverse.maven.mima.extensions</groupId>
-      <artifactId>mhc4</artifactId>
-    </dependency>
 
     <!-- Maven -->
     <dependency>

@@ -64,7 +64,7 @@
 
     <!--
     Build time: latest stable Maven and latest Java LTS.
-    Run time: "not so old" Maven (3.6.3+) and Java 17 (Indexer API is 11+, DOMTrip is 17+).
+    Run time: "not so old" Maven (3.6.3+) and Java 17.
     -->
     <maven.compiler.release>17</maven.compiler.release>
 
@@ -72,7 +72,7 @@
     <version.mima>2.4.43</version.mima>
     <version.maven>3.9.15</version.maven>
     <version.resolver>1.9.27</version.resolver>
-    <version.mavenIndexer>7.1.6</version.mavenIndexer>
+    <version.mase>1.1.1</version.mase>
     <version.mavenPluginTools>3.15.2</version.mavenPluginTools>
     <version.slf4j>2.0.18</version.slf4j>
     <version.picocli>4.7.7</version.picocli>
@@ -146,6 +146,11 @@
       <dependency>
         <groupId>eu.maveniverse.maven.mima.extensions</groupId>
         <artifactId>mmr</artifactId>
+        <version>${version.mima}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mima.extensions</groupId>
+        <artifactId>mhc4</artifactId>
         <version>${version.mima}</version>
       </dependency>
 
@@ -233,19 +238,24 @@
 
       <!-- Maven Indexer -->
       <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
+        <groupId>eu.maveniverse.maven.mase</groupId>
         <artifactId>search-api</artifactId>
-        <version>${version.mavenIndexer}</version>
+        <version>${version.mase}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
+        <groupId>eu.maveniverse.maven.mase</groupId>
         <artifactId>search-backend-remoterepository</artifactId>
-        <version>${version.mavenIndexer}</version>
+        <version>${version.mase}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
+        <groupId>eu.maveniverse.maven.mase</groupId>
         <artifactId>search-backend-smo</artifactId>
-        <version>${version.mavenIndexer}</version>
+        <version>${version.mase}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mase</groupId>
+        <artifactId>search-transport-java11</artifactId>
+        <version>${version.mase}</version>
       </dependency>
 
       <!-- Commons -->
@@ -311,7 +321,7 @@
         <version>0.18.1</version>
       </dependency>
 
-      <!-- Jarviz -->
+      <!-- Jarviz (Java 11) -->
       <dependency>
         <groupId>org.kordamp.jarviz</groupId>
         <artifactId>jarviz-core</artifactId>
@@ -364,6 +374,39 @@
       </plugins>
     </pluginManagement>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>extra-enforcer-rules</artifactId>
+            <version>1.12.0</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>enforce-bytecode</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <enforceBytecodeVersion>
+                  <maxJdkVersion>${maven.compiler.release}</maxJdkVersion>
+                  <excludes>
+                    <exclude>org.jline:jline</exclude>
+                    <exclude>org.kordamp.jarviz:jarviz-core</exclude>
+                  </excludes>
+                  <ignoredScopes>
+                    <ignoredScope>test</ignoredScope>
+                  </ignoredScopes>
+                </enforceBytecodeVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.eclipse.sisu</groupId>
         <artifactId>sisu-maven-plugin</artifactId>

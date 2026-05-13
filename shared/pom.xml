@@ -40,6 +40,10 @@
       <groupId>eu.maveniverse.maven.mima.extensions</groupId>
       <artifactId>mmr</artifactId>
     </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mima.extensions</groupId>
+      <artifactId>mhc4</artifactId>
+    </dependency>
 
     <!-- Maven -->
     <dependency>
@@ -96,16 +100,20 @@
 
     <!-- Search -->
     <dependency>
-      <groupId>org.apache.maven.indexer</groupId>
+      <groupId>eu.maveniverse.maven.mase</groupId>
       <artifactId>search-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven.indexer</groupId>
+      <groupId>eu.maveniverse.maven.mase</groupId>
       <artifactId>search-backend-remoterepository</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven.indexer</groupId>
+      <groupId>eu.maveniverse.maven.mase</groupId>
       <artifactId>search-backend-smo</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mase</groupId>
+      <artifactId>search-transport-java11</artifactId>
     </dependency>
 
     <!-- POM editing -->

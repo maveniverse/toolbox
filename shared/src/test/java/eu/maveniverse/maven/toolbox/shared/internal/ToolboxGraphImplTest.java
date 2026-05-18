@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import eu.maveniverse.maven.toolbox.shared.output.NopOutput;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 public class ToolboxGraphImplTest {
@@ -19,7 +19,7 @@ public class ToolboxGraphImplTest {
     void commonPrefix() {
         ToolboxGraphImpl graph = new ToolboxGraphImpl(NopOutput.INSTANCE);
 
-        assertEquals("org.apache.maven", graph.commonPrefix(Collections.singleton("org.apache.maven")));
+        assertEquals("org.apache.maven", graph.commonPrefix(Set.of("org.apache.maven")));
         assertEquals(
                 "org.apache.maven", graph.commonPrefix(Arrays.asList("org.apache.maven", "org.apache.maven.plugins")));
         assertEquals(

@@ -183,15 +183,13 @@ public class AnsiOutput extends OutputSupport {
                     marker.detail(nodeSegments.get(1)) + String.join(" ", nodeSegments.subList(2, nodeSegments.size()));
             Marker.Intent intent = intentMapper.apply(nodes);
             return switch (intent) {
-                case EMPHASIZE -> String.format("%s%s %s", indentationStr, marker.emphasize(nodeLabel), nodeDecorators);
-                case OUTSTANDING ->
-                    String.format("%s%s %s", indentationStr, marker.outstanding(nodeLabel), nodeDecorators);
-                case NORMAL -> String.format("%s%s %s", indentationStr, marker.normal(nodeLabel), nodeDecorators);
-                case DETAIL -> String.format("%s%s %s", indentationStr, marker.detail(nodeLabel), nodeDecorators);
-                case UNIMPORTANT ->
-                    String.format("%s%s %s", indentationStr, marker.unimportant(nodeLabel), nodeDecorators);
-                case SCARY -> String.format("%s%s %s", indentationStr, marker.scary(nodeLabel), nodeDecorators);
-                case BLOODY -> String.format("%s%s %s", indentationStr, marker.bloody(nodeLabel), nodeDecorators);
+                case EMPHASIZE -> "%s%s %s".formatted(indentationStr, marker.emphasize(nodeLabel), nodeDecorators);
+                case OUTSTANDING -> "%s%s %s".formatted(indentationStr, marker.outstanding(nodeLabel), nodeDecorators);
+                case NORMAL -> "%s%s %s".formatted(indentationStr, marker.normal(nodeLabel), nodeDecorators);
+                case DETAIL -> "%s%s %s".formatted(indentationStr, marker.detail(nodeLabel), nodeDecorators);
+                case UNIMPORTANT -> "%s%s %s".formatted(indentationStr, marker.unimportant(nodeLabel), nodeDecorators);
+                case SCARY -> "%s%s %s".formatted(indentationStr, marker.scary(nodeLabel), nodeDecorators);
+                case BLOODY -> "%s%s %s".formatted(indentationStr, marker.bloody(nodeLabel), nodeDecorators);
             };
         }
     }

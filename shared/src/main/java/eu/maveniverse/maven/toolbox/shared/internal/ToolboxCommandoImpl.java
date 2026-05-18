@@ -384,8 +384,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         if (context.httpProxy() != null) {
             HTTPProxy proxy = context.httpProxy();
             result.put(
-                    "session.httpProxy",
-                    String.format("%s://%s:%s", proxy.getProtocol(), proxy.getHost(), proxy.getPort()));
+                    "session.httpProxy", "%s://%s:%s".formatted(proxy.getProtocol(), proxy.getHost(), proxy.getPort()));
             result.put("session.nonProxyHosts", proxy.getNonProxyHosts());
         }
 
@@ -793,7 +792,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             }));
             if (repositories.isEmpty()) {
                 output.tell("No remote repository is used by {} {}.", contextName, resolutionRoot.getArtifact());
-                result.put(contextName, Collections.emptyList());
+                result.put(contextName, List.of());
                 continue;
             }
 
@@ -801,19 +800,15 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             Map<Boolean, List<RemoteRepository>> repoGroupByMirrors = repositories.keySet().stream()
                     .collect(Collectors.groupingBy(
                             repo -> repo.getMirroredRepositories().isEmpty()));
-            repoGroupByMirrors
-                    .getOrDefault(Boolean.TRUE, Collections.emptyList())
-                    .forEach(r -> {
-                        output.tell(" * {}", r);
-                        Dependency firstIntroduced = repositories.get(r);
-                        output.tell(
-                                "   First introduced on {}", firstIntroduced == sentinel ? "root" : firstIntroduced);
-                    });
+            repoGroupByMirrors.getOrDefault(Boolean.TRUE, List.of()).forEach(r -> {
+                output.tell(" * {}", r);
+                Dependency firstIntroduced = repositories.get(r);
+                output.tell("   First introduced on {}", firstIntroduced == sentinel ? "root" : firstIntroduced);
+            });
 
             Map<RemoteRepository, RemoteRepository> mirrorMap = new HashMap<>();
-            repoGroupByMirrors
-                    .getOrDefault(Boolean.FALSE, Collections.emptyList())
-                    .forEach(repo -> repo.getMirroredRepositories().forEach(mrepo -> mirrorMap.put(mrepo, repo)));
+            repoGroupByMirrors.getOrDefault(Boolean.FALSE, List.of()).forEach(repo -> repo.getMirroredRepositories()
+                    .forEach(mrepo -> mirrorMap.put(mrepo, repo)));
             mirrorMap.forEach((r, mirror) -> {
                 output.tell(" * {}", r);
                 Dependency firstIntroduced = repositories.get(mirror);
@@ -1889,7 +1884,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ci.next();
         }
         value *= Long.signum(bytes);
-        return String.format("%.1f %ciB", value / 1024.0, ci.current());
+        return "%.1f %ciB".formatted(value / 1024.0, ci.current());
     }
 
     public static String discoverArtifactVersion(String groupId, String artifactId, String defVal) {

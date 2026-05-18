@@ -14,7 +14,6 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactVersionMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -80,7 +79,7 @@ public class ParentVersionsMojo extends MPPluginMojoSupport {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
                     if (!parentsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(editSession, Collections.singletonList(s -> s.parent()
+                        toolboxCommando.editPom(editSession, List.of(s -> s.parent()
                                 .updateParent(false, toDomTrip(parentsUpdates.get(0)))));
                     }
                 }

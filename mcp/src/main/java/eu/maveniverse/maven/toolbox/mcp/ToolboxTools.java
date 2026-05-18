@@ -29,6 +29,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 import org.eclipse.aether.artifact.DefaultArtifact;
 
 @ApplicationScoped
@@ -148,7 +150,7 @@ public class ToolboxTools {
     String artifactIdentify(@ToolArg(description = "SHA-1 hash of the artifact file") String sha1) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
-            toolboxCommando.identify(ContextOverrides.CENTRAL, java.util.Collections.singleton(sha1), true);
+            toolboxCommando.identify(ContextOverrides.CENTRAL, List.of(sha1), true);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -204,8 +206,7 @@ public class ToolboxTools {
         try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
             toolboxCommando.classpath(
                     ResolutionScope.RUNTIME,
-                    java.util.Collections.singleton(
-                            ResolutionRoot.ofLoaded(new DefaultArtifact(gav)).build()));
+                    List.of(ResolutionRoot.ofLoaded(new DefaultArtifact(gav)).build()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -240,7 +241,7 @@ public class ToolboxTools {
                     ResolutionRoot.ofLoaded(new DefaultArtifact(gav1)).build(),
                     ResolutionRoot.ofLoaded(new DefaultArtifact(gav2)).build(),
                     ArtifactKeyFactory.ga(),
-                    java.util.Collections.emptyMap());
+                    Map.of());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

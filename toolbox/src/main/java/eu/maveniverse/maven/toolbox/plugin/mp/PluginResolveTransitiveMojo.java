@@ -13,7 +13,6 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -66,7 +65,7 @@ public class PluginResolveTransitiveMojo extends MPPluginMojoSupport {
         Collection<ResolutionRoot> roots;
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
         if (root != null) {
-            roots = Collections.singleton(root);
+            roots = List.of(root);
         } else {
             roots = allProjectPluginsAsResolutionRoots(toolboxCommando);
         }

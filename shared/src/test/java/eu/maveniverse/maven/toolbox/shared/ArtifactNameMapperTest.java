@@ -10,8 +10,8 @@ package eu.maveniverse.maven.toolbox.shared;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.Test;
@@ -41,16 +41,15 @@ public class ArtifactNameMapperTest {
         ArtifactNameMapper artifactNameMapper;
         String mapped;
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "fixed(zoo)");
+        artifactNameMapper = ArtifactNameMapper.build(Map.of(), "fixed(zoo)");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals("zoo", mapped);
 
-        artifactNameMapper =
-                ArtifactNameMapper.build(Collections.emptyMap(), "compose(G(), fixed(:), A(), fixed(:), V())");
+        artifactNameMapper = ArtifactNameMapper.build(Map.of(), "compose(G(), fixed(:), A(), fixed(:), V())");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals("g:a:1.0-20240322.113300-2", mapped);
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "repositoryDefault()");
+        artifactNameMapper = ArtifactNameMapper.build(Map.of(), "repositoryDefault()");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals(Path.of("g/a/1.0-SNAPSHOT/a-1.0-20240322.113300-2-classifier.jar"), Path.of(mapped));
 
@@ -62,19 +61,19 @@ public class ArtifactNameMapperTest {
                 "g--this-is-a-separator--a--this-is-a-separator--1.0-SNAPSHOT--this-is-a-separator--a-1.0-20240322.113300-2-classifier.jar",
                 mapped);
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GAKey()");
+        artifactNameMapper = ArtifactNameMapper.build(Map.of(), "GAKey()");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals("g:a", mapped);
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GAVKey()");
+        artifactNameMapper = ArtifactNameMapper.build(Map.of(), "GAVKey()");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals("g:a:1.0-20240322.113300-2", mapped);
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GAbVKey()");
+        artifactNameMapper = ArtifactNameMapper.build(Map.of(), "GAbVKey()");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals("g:a:1.0-SNAPSHOT", mapped);
 
-        artifactNameMapper = ArtifactNameMapper.build(Collections.emptyMap(), "GACEVKey()");
+        artifactNameMapper = ArtifactNameMapper.build(Map.of(), "GACEVKey()");
         mapped = artifactNameMapper.apply(artifact);
         assertEquals(artifact.toString(), mapped);
     }

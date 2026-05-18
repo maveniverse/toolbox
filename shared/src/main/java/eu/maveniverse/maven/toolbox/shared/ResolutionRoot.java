@@ -10,7 +10,6 @@ package eu.maveniverse.maven.toolbox.shared;
 import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.eclipse.aether.artifact.Artifact;
@@ -46,11 +45,8 @@ public final class ResolutionRoot {
         this.applyManagedDependencies = applyManagedDependencies;
         this.cutDependencies = cutDependencies;
         this.prepared = prepared;
-        this.dependencies =
-                dependencies.isEmpty() ? Collections.emptyList() : Collections.unmodifiableList(dependencies);
-        this.managedDependencies = managedDependencies.isEmpty()
-                ? Collections.emptyList()
-                : Collections.unmodifiableList(managedDependencies);
+        this.dependencies = dependencies.isEmpty() ? List.of() : List.copyOf(dependencies);
+        this.managedDependencies = managedDependencies.isEmpty() ? List.of() : List.copyOf(managedDependencies);
     }
 
     /**
@@ -180,7 +176,7 @@ public final class ResolutionRoot {
         private List<Dependency> managedDependencies;
 
         private Builder(Artifact artifact) {
-            this(artifact, false, false, false, Collections.emptyList(), Collections.emptyList());
+            this(artifact, false, false, false, List.of(), List.of());
         }
 
         private Builder(

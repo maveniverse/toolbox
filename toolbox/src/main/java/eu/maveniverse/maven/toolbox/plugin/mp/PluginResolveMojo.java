@@ -12,7 +12,6 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -60,7 +59,7 @@ public class PluginResolveMojo extends MPPluginMojoSupport {
         Collection<Artifact> roots;
         ResolutionRoot root = pluginAsResolutionRoot(toolboxCommando, false);
         if (root != null) {
-            roots = Collections.singleton(root.getArtifact());
+            roots = List.of(root.getArtifact());
         } else {
             roots = allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
                     .map(ResolutionRoot::getArtifact)

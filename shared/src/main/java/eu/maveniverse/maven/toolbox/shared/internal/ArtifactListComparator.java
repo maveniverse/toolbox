@@ -83,7 +83,7 @@ public class ArtifactListComparator {
             String diffSame = Ansi.ansi().fg(Ansi.Color.WHITE).a("   ").reset().toString();
             String diffAdded = Ansi.ansi().fg(Ansi.Color.GREEN).a("+++").reset().toString();
             String diffRemoved = Ansi.ansi().fg(Ansi.Color.RED).a("---").reset().toString();
-            output.tell(marker.outstanding(String.format("Classpath of %s (in order)", ArtifactIdUtils.toId(a1root)))
+            output.tell(marker.outstanding("Classpath of %s (in order)".formatted(ArtifactIdUtils.toId(a1root)))
                     .toString());
             a1.forEach(a -> {
                 if (a2.contains(a)) {
@@ -94,7 +94,7 @@ public class ArtifactListComparator {
                             + marker.bloody(ArtifactIdUtils.toId(a)).toString());
                 }
             });
-            output.tell(marker.outstanding(String.format("Classpath of %s (in order)", ArtifactIdUtils.toId(a2root)))
+            output.tell(marker.outstanding("Classpath of %s (in order)".formatted(ArtifactIdUtils.toId(a2root)))
                     .toString());
             a2.forEach(a -> {
                 if (a1.contains(a)) {

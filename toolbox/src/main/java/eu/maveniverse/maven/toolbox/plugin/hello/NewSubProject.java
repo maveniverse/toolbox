@@ -13,7 +13,7 @@ import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import eu.maveniverse.maven.toolbox.shared.internal.PomSuppliers;
 import java.nio.file.Files;
-import java.util.Collections;
+import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
@@ -58,7 +58,7 @@ public class NewSubProject extends HelloProjectMojoSupport {
                             subProjectArtifact.getGroupId(),
                             subProjectArtifact.getArtifactId(),
                             subProjectArtifact.getVersion())));
-            getToolboxCommando().editPom(editSession, Collections.singletonList(s -> {
+            getToolboxCommando().editPom(editSession, List.of(s -> {
                 String effectivePackaging = "jar";
                 if (packaging != null) {
                     effectivePackaging = packaging;
@@ -71,7 +71,7 @@ public class NewSubProject extends HelloProjectMojoSupport {
         }
         // add subproject to parent
         try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
-            getToolboxCommando().editPom(editSession, Collections.singletonList(s -> s.subprojects()
+            getToolboxCommando().editPom(editSession, List.of(s -> s.subprojects()
                     .addSubProject(subProjectArtifact.getArtifactId())));
         }
         return Result.success(Boolean.TRUE);

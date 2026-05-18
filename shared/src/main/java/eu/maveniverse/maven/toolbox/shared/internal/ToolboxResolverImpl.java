@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -661,7 +660,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
                 }
             }
             if (!childrenToRemove.isEmpty()) {
-                childrenToRemove.forEach(c -> c.setChildren(Collections.emptyList()));
+                childrenToRemove.forEach(c -> c.setChildren(List.of()));
             }
         }
         return result;
@@ -783,8 +782,8 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         DependencyResult result = repositorySystem.resolveDependencies(session, dependencyRequest);
         if (rootDependency != null) {
             try {
-                ArtifactResult rootResult = resolveArtifacts(Collections.singletonList(rootDependency.getArtifact()))
-                        .get(0);
+                ArtifactResult rootResult =
+                        resolveArtifacts(List.of(rootDependency.getArtifact())).get(0);
 
                 DefaultDependencyNode newRoot = new DefaultDependencyNode(new Dependency(rootResult.getArtifact(), ""));
                 newRoot.setChildren(result.getRoot().getChildren());
@@ -802,7 +801,7 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     @Override
     public ArtifactResult resolveArtifact(Artifact artifact) throws ArtifactResolutionException {
         requireNonNull(artifact);
-        return resolveArtifacts(Collections.singleton(artifact)).get(0);
+        return resolveArtifacts(List.of(artifact)).get(0);
     }
 
     @Override

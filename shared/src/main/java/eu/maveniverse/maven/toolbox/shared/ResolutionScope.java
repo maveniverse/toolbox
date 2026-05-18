@@ -11,7 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -31,7 +30,7 @@ public enum ResolutionScope {
     NONE(
             false,
             "none",
-            Collections.emptySet(),
+            Set.of(),
             Arrays.asList(
                     JavaScopes.COMPILE, JavaScopes.SYSTEM, JavaScopes.RUNTIME, JavaScopes.PROVIDED, JavaScopes.TEST)),
     /**

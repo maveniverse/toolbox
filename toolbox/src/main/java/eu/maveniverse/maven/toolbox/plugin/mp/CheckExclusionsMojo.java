@@ -39,7 +39,7 @@ public class CheckExclusionsMojo extends MPPluginMojoSupport {
         for (Dependency dependency : project.getDependencies()) {
             for (Exclusion exclusion : dependency.getExclusions()) {
                 ResolutionRoot dependencyRoot = ResolutionRoot.ofNotLoaded(project.getArtifact())
-                        .withDependencies(List.of(dependency))
+                        .withDependencies(List.of(dependency.setExclusions(null)))
                         .build();
                 getOutput()
                         .marker(Output.Verbosity.NORMAL)

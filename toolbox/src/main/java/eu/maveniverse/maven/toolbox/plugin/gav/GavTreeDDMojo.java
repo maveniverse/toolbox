@@ -52,7 +52,7 @@ public class GavTreeDDMojo extends GavMojoSupport {
             names = {"--dependencyScope"},
             defaultValue = "compile",
             description = "Resolution scope of dependency GAV (default 'compile')")
-    @Parameter(property = "scope", defaultValue = "compile", required = true)
+    @Parameter(property = "dependencyScope", defaultValue = "compile", required = true)
     private String dependencyScope;
 
     /**

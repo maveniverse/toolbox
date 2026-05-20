@@ -13,6 +13,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
+import java.lang.module.ModuleFinder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -178,8 +179,19 @@ public final class DirectorySink implements Artifacts.Sink {
                 throw new IOException("Overwrite prevented; check mappings");
             }
             output.chatter("Accepting artifact {} -> ", artifact, target);
-            if (artifactUriSink != null) artifactUriSink.accept(artifact);
-            indexFileWriter.write(artifact, artifactUriSink, name);
+            if (artifactUriSink != null) {
+                artifactUriSink.accept(artifact);
+                var key = ModuleFinder.of(artifact.getFile().toPath())
+                        .findAll()
+                        .iterator()
+                        .next()
+                        .descriptor()
+                        .name();
+                var uri = artifactUriSink.getUri(artifact);
+                indexFileWriter.writeIndexLine(key + "=" + uri);
+            } else {
+                indexFileWriter.write(artifact, name);
+            }
             Files.createDirectories(target.getParent());
             switch (mode) {
                 case COPY:

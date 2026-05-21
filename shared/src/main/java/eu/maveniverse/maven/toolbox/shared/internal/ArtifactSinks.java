@@ -84,6 +84,7 @@ public final class ArtifactSinks {
                     && !"flat".equals(node.getValue())
                     && !"matching".equals(node.getValue())
                     && !"mapping".equals(node.getValue())
+                    && !"modules".equals(node.getValue())
                     && !"unpack".equals(node.getValue());
         }
 
@@ -114,6 +115,14 @@ public final class ArtifactSinks {
                         throw new IllegalArgumentException("op artifactUri accepts only 0..1 argument");
                     }
                     params.add(artifactUriSink(tc.output, tc, dumpOnClose));
+                    break;
+                }
+                case "modules": {
+                    if (node.getChildren().size() != 1) {
+                        throw new IllegalArgumentException("modules requires 1 argument: output file");
+                    }
+                    Path file = tc.basedir().resolve(node.getChildren().get(0).getValue());
+                    params.add(modulePropertiesArtifactSink(file, tc.output(), tc));
                     break;
                 }
                 case "stat": {
@@ -559,6 +568,72 @@ public final class ArtifactSinks {
             for (Sink<Artifact> sink : artifactSinks) {
                 sink.close();
             }
+        }
+    }
+
+    /**
+     * Create a "module properties" artifact sink for printing a module-url map.
+     */
+    public static ModulePropertiesArtifactSink modulePropertiesArtifactSink(
+            Path file, Output output, ToolboxCommando tc) {
+        return new ModulePropertiesArtifactSink(file, output, tc);
+    }
+
+    public static class ModulePropertiesArtifactSink implements Artifacts.Sink {
+        record Property(String module, URI origin, long size, String sha1) {
+            String toLine() {
+                return "%s=%s#SIZE=%d&SHA-1=%s".formatted(module, origin, size, sha1);
+            }
+        }
+
+        private final Path file;
+        private final Output output;
+        private final Map<String, Property> propertyByModuleName;
+        private final ModuleDescriptorExtractingSink moduleArtifactSink;
+        private final ChecksumArtifactSink checksumArtifactSink;
+        private final ArtifactUriSink artifactUriSink;
+
+        private ModulePropertiesArtifactSink(Path file, Output output, ToolboxCommando tc) {
+            this.file = file;
+            this.output = output;
+            this.propertyByModuleName = new ConcurrentHashMap<>();
+            this.moduleArtifactSink = new ModuleDescriptorExtractingSink(output);
+            this.checksumArtifactSink = checksumArtifactSink();
+            this.artifactUriSink = artifactUriSink(output, tc, false);
+        }
+
+        @Override
+        public void accept(Artifact artifact) throws IOException {
+            var file = artifact.getFile();
+            if (file == null) return;
+            var path = file.toPath();
+            if (!path.getFileName().toString().endsWith(".jar")) return;
+            if (!Files.exists(path)) return;
+
+            moduleArtifactSink.accept(artifact);
+            artifactUriSink.accept(artifact);
+            checksumArtifactSink.accept(artifact);
+
+            String module = moduleArtifactSink.getModuleDescriptor(artifact).name();
+            URI origin = artifactUriSink.getUri(artifact);
+            long size = Files.size(path);
+            String sha1 = checksumArtifactSink.checksums(artifact).get("SHA-1");
+            propertyByModuleName.put(module, new Property(module, origin, size, sha1));
+        }
+
+        @Override
+        public void close() throws Exception {
+            List<String> lines = propertyByModuleName.keySet().stream()
+                    .sorted()
+                    .map(propertyByModuleName::get)
+                    .map(Property::toLine)
+                    .toList();
+            Files.write(file, lines);
+            output.tell("Found {} distinct modules", lines.size());
+            lines.forEach(output::tell);
+            output.tell("------------------------------");
+            output.tell("Module properties written to: {}", file.toUri());
+            output.tell("------------------------------");
         }
     }
 

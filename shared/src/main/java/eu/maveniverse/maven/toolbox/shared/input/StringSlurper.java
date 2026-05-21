@@ -13,7 +13,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 
 /**
  * Input handling helper.
@@ -26,7 +26,7 @@ public final class StringSlurper {
      */
     public static Collection<String> csv(String csv) {
         if (csv == null || csv.trim().isEmpty()) {
-            return Collections.emptyList();
+            return List.of();
         }
         return Arrays.asList(csv.split("[,;|]"));
     }
@@ -37,7 +37,7 @@ public final class StringSlurper {
      */
     public static Collection<String> slurp(String csv) throws IOException {
         if (csv == null || csv.trim().isEmpty()) {
-            return Collections.emptyList();
+            return List.of();
         }
         try {
             Path target = Path.of(csv).toAbsolutePath();

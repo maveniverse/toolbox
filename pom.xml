@@ -14,12 +14,12 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>51</version>
+    <version>53</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
   <artifactId>toolbox</artifactId>
-  <version>0.15.7-SNAPSHOT</version>
+  <version>0.15.13-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>${project.groupId}:${project.artifactId}</name>
@@ -60,24 +60,24 @@
   </ciManagement>
 
   <properties>
-    <project.build.outputTimestamp>2026-03-17T09:29:53Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-05-19T18:00:27Z</project.build.outputTimestamp>
 
     <!--
     Build time: latest stable Maven and latest Java LTS.
-    Run time: "not so old" Maven (3.6.3+) and Java 17 (Indexer API is 11+, DOMTrip is 17+).
+    Run time: "not so old" Maven (3.6.3+) and Java 17.
     -->
     <maven.compiler.release>17</maven.compiler.release>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.42</version.mima>
-    <version.maven>3.9.14</version.maven>
+    <version.mima>2.4.44</version.mima>
+    <version.maven>3.9.16</version.maven>
     <version.resolver>1.9.27</version.resolver>
-    <version.mavenIndexer>7.1.6</version.mavenIndexer>
+    <version.mase>1.1.1</version.mase>
     <version.mavenPluginTools>3.15.2</version.mavenPluginTools>
-    <version.slf4j>2.0.17</version.slf4j>
+    <version.slf4j>2.0.18</version.slf4j>
     <version.picocli>4.7.7</version.picocli>
-    <version.jline>3.30.9</version.jline>
-    <version.domtrip>0.6.0</version.domtrip>
+    <version.jline>3.30.13</version.jline>
+    <version.domtrip>1.5.1</version.domtrip>
   </properties>
 
   <dependencyManagement>
@@ -223,7 +223,7 @@
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
-        <version>3.6.0</version>
+        <version>3.6.1</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
@@ -233,19 +233,24 @@
 
       <!-- Maven Indexer -->
       <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
+        <groupId>eu.maveniverse.maven.mase</groupId>
         <artifactId>search-api</artifactId>
-        <version>${version.mavenIndexer}</version>
+        <version>${version.mase}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
+        <groupId>eu.maveniverse.maven.mase</groupId>
         <artifactId>search-backend-remoterepository</artifactId>
-        <version>${version.mavenIndexer}</version>
+        <version>${version.mase}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.maven.indexer</groupId>
+        <groupId>eu.maveniverse.maven.mase</groupId>
         <artifactId>search-backend-smo</artifactId>
-        <version>${version.mavenIndexer}</version>
+        <version>${version.mase}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mase</groupId>
+        <artifactId>search-transport-java11</artifactId>
+        <version>${version.mase}</version>
       </dependency>
 
       <!-- Commons -->
@@ -311,7 +316,7 @@
         <version>0.18.1</version>
       </dependency>
 
-      <!-- Jarviz -->
+      <!-- Jarviz (Java 11) -->
       <dependency>
         <groupId>org.kordamp.jarviz</groupId>
         <artifactId>jarviz-core</artifactId>
@@ -335,13 +340,13 @@
       <dependency>
         <groupId>eu.maveniverse.maven.shared</groupId>
         <artifactId>core</artifactId>
-        <version>0.1.11</version>
+        <version>0.2.3</version>
       </dependency>
 
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
-        <version>6.0.3</version>
+        <version>6.1.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -364,6 +369,39 @@
       </plugins>
     </pluginManagement>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>extra-enforcer-rules</artifactId>
+            <version>1.12.0</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>enforce-bytecode</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <enforceBytecodeVersion>
+                  <maxJdkVersion>${maven.compiler.release}</maxJdkVersion>
+                  <excludes>
+                    <exclude>org.jline:jline</exclude>
+                    <exclude>org.kordamp.jarviz:jarviz-core</exclude>
+                  </excludes>
+                  <ignoredScopes>
+                    <ignoredScope>test</ignoredScope>
+                  </ignoredScopes>
+                </enforceBytecodeVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.eclipse.sisu</groupId>
         <artifactId>sisu-maven-plugin</artifactId>

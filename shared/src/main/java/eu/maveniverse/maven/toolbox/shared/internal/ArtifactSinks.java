@@ -508,7 +508,7 @@ public final class ArtifactSinks {
         }
 
         public Map<String, String> checksums(Artifact artifact) {
-            return checksums.getOrDefault(artifact, Collections.emptyMap());
+            return checksums.getOrDefault(artifact, Map.of());
         }
     }
 

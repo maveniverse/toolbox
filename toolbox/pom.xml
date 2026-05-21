@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.toolbox</groupId>
     <artifactId>toolbox</artifactId>
-    <version>0.15.7-SNAPSHOT</version>
+    <version>0.15.13-SNAPSHOT</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.plugins</groupId>
@@ -146,16 +146,20 @@
 
     <!-- Search -->
     <dependency>
-      <groupId>org.apache.maven.indexer</groupId>
+      <groupId>eu.maveniverse.maven.mase</groupId>
       <artifactId>search-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven.indexer</groupId>
+      <groupId>eu.maveniverse.maven.mase</groupId>
       <artifactId>search-backend-remoterepository</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven.indexer</groupId>
+      <groupId>eu.maveniverse.maven.mase</groupId>
       <artifactId>search-backend-smo</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mase</groupId>
+      <artifactId>search-transport-java11</artifactId>
     </dependency>
 
     <!-- POM editing -->
@@ -237,8 +241,8 @@
                 <extraArtifact>org.apache.maven:maven-plugin-api:${version.maven}</extraArtifact>
               </extraArtifacts>
               <artifactSet>
-                <!-- These are already provided by runtime -->
                 <excludes>
+                  <!-- These are already provided by runtime -->
                   <exclude>eu.maveniverse.maven.mima.runtime:embedded-maven</exclude>
                   <exclude>org.apache.maven.resolver:maven-resolver-util</exclude>
                   <exclude>org.codehaus.plexus:plexus-interpolation</exclude>

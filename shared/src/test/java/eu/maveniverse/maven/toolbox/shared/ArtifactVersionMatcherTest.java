@@ -10,8 +10,8 @@ package eu.maveniverse.maven.toolbox.shared;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.aether.util.version.GenericVersionScheme;
@@ -47,7 +47,7 @@ public class ArtifactVersionMatcherTest {
         assertEquals(
                 versions,
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(versionScheme, Collections.emptyMap(), "any()"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "any()"))
                         .collect(Collectors.toList()));
 
         assertEquals(
@@ -58,32 +58,31 @@ public class ArtifactVersionMatcherTest {
                         version("3.1.0"),
                         version("4.0.0")),
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(versionScheme, Collections.emptyMap(), "not(preview())"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "not(preview())"))
                         .collect(Collectors.toList()));
 
         assertEquals(
                 Arrays.asList(version("3.0.2-alpha"), version("3.1.0M1"), version("3.1.1M1"), version("4.0.0RC")),
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(versionScheme, Collections.emptyMap(), "preview()"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "preview()"))
                         .collect(Collectors.toList()));
 
         assertEquals(
-                Collections.emptyList(),
+                List.of(),
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(
-                                versionScheme, Collections.emptyMap(), "and(not(preview()),preview())"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "and(not(preview()),preview())"))
                         .collect(Collectors.toList()));
 
         assertEquals(
                 Arrays.asList(version("3.1.1M1"), version("4.0.0RC"), version("4.0.0")),
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(versionScheme, Collections.emptyMap(), "gt(3.1.0)"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "gt(3.1.0)"))
                         .collect(Collectors.toList()));
 
         assertEquals(
                 Arrays.asList(version("3.1.0"), version("3.1.1M1"), version("4.0.0RC"), version("4.0.0")),
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(versionScheme, Collections.emptyMap(), "gte(3.1.0)"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "gte(3.1.0)"))
                         .collect(Collectors.toList()));
 
         assertEquals(
@@ -94,7 +93,7 @@ public class ArtifactVersionMatcherTest {
                         version("3.0.2-alpha"),
                         version("3.1.0M1")),
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(versionScheme, Collections.emptyMap(), "lt(3.1.0)"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "lt(3.1.0)"))
                         .collect(Collectors.toList()));
 
         assertEquals(
@@ -106,14 +105,13 @@ public class ArtifactVersionMatcherTest {
                         version("3.1.0M1"),
                         version("3.1.0")),
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(versionScheme, Collections.emptyMap(), "lte(3.1.0)"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "lte(3.1.0)"))
                         .collect(Collectors.toList()));
 
         assertEquals(
                 Arrays.asList(version("2.0.0"), version("3.0.1-SNAPSHOT"), version("3.0.1"), version("3.1.0")),
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(
-                                versionScheme, Collections.emptyMap(), "and(lte(3.1.0),not(preview()))"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "and(lte(3.1.0),not(preview()))"))
                         .collect(Collectors.toList()));
 
         assertEquals(
@@ -123,7 +121,7 @@ public class ArtifactVersionMatcherTest {
                                 version("2.0.0"),
                                 version("3.0.0-20240524.224522-1"),
                                 version("3.0.0"))
-                        .filter(ArtifactVersionMatcher.build(versionScheme, Collections.emptyMap(), "not(snapshot())"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "not(snapshot())"))
                         .collect(Collectors.toList()));
 
         assertEquals(
@@ -134,7 +132,7 @@ public class ArtifactVersionMatcherTest {
                         version("3.1.0"),
                         version("4.0.0")),
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(versionScheme, Collections.emptyMap(), "noPreviews()"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "noPreviews()"))
                         .collect(Collectors.toList()));
 
         assertEquals(
@@ -148,14 +146,13 @@ public class ArtifactVersionMatcherTest {
                         version("4.0.0RC"),
                         version("4.0.0")),
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(versionScheme, Collections.emptyMap(), "noSnapshots()"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "noSnapshots()"))
                         .collect(Collectors.toList()));
 
         assertEquals(
                 Arrays.asList(version("2.0.0"), version("3.0.1"), version("3.1.0"), version("4.0.0")),
                 versions.stream()
-                        .filter(ArtifactVersionMatcher.build(
-                                versionScheme, Collections.emptyMap(), "noSnapshotsAndPreviews()"))
+                        .filter(ArtifactVersionMatcher.build(versionScheme, Map.of(), "noSnapshotsAndPreviews()"))
                         .collect(Collectors.toList()));
     }
 }

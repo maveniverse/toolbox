@@ -19,7 +19,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.graph.Dependency;
 
 /**
- * Renders project interdependencies of Maven Projects as image.
+ * Renders project interdependencies of Maven Projects as image. It uses <a href="https://github.com/nidi3/graphviz-java">Graphviz Java</a>
+ * that is <strong>optional dependency of the plugin</strong>. If you want to use this goal, you must add Graphviz Java
+ * as dependency to plugin.
  */
 @Mojo(name = "project-dependency-graph", aggregator = true, threadSafe = true)
 public class ProjectDependencyGraphMojo extends MPMojoSupport {

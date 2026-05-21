@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.toolbox</groupId>
     <artifactId>toolbox</artifactId>
-    <version>0.15.7-SNAPSHOT</version>
+    <version>0.15.13-SNAPSHOT</version>
   </parent>
 
   <artifactId>shared</artifactId>
@@ -96,16 +96,20 @@
 
     <!-- Search -->
     <dependency>
-      <groupId>org.apache.maven.indexer</groupId>
+      <groupId>eu.maveniverse.maven.mase</groupId>
       <artifactId>search-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven.indexer</groupId>
+      <groupId>eu.maveniverse.maven.mase</groupId>
       <artifactId>search-backend-remoterepository</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven.indexer</groupId>
+      <groupId>eu.maveniverse.maven.mase</groupId>
       <artifactId>search-backend-smo</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mase</groupId>
+      <artifactId>search-transport-java11</artifactId>
     </dependency>
 
     <!-- POM editing -->
@@ -118,6 +122,7 @@
     <dependency>
       <groupId>guru.nidi</groupId>
       <artifactId>graphviz-java</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <!-- Jarviz -->

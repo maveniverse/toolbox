@@ -21,7 +21,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -169,7 +168,7 @@ public interface ToolboxCommando extends Closeable {
      */
     default ResolutionRoot loadGav(String gav)
             throws InvalidVersionSpecificationException, VersionRangeResolutionException, ArtifactDescriptorException {
-        return loadGav(gav, Collections.emptyList());
+        return loadGav(gav, List.of());
     }
 
     /**

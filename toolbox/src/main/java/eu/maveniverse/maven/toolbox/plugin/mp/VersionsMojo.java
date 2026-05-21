@@ -18,7 +18,6 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -173,7 +172,7 @@ public class VersionsMojo extends MPPluginMojoSupport {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
                     if (parentsUpdates.get() != null && !parentsUpdates.get().isEmpty()) {
-                        toolboxCommando.editPom(editSession, Collections.singletonList(s -> s.parent()
+                        toolboxCommando.editPom(editSession, List.of(s -> s.parent()
                                 .updateParent(
                                         false, toDomTrip(parentsUpdates.get().get(0)))));
                     }

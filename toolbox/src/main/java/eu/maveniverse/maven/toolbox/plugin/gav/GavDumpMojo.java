@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -50,7 +49,7 @@ public class GavDumpMojo extends GavMojoSupport {
         if (asProperties) {
             Result<Map<String, String>> result = getToolboxCommando().dumpAsMap();
             Properties properties = new Properties();
-            properties.putAll(result.getData().orElse(Collections.emptyMap()));
+            properties.putAll(result.getData().orElse(Map.of()));
             if (toFile != null) {
                 toFile.getParentFile().mkdirs();
                 try (OutputStream fos = Files.newOutputStream(toFile.toPath())) {

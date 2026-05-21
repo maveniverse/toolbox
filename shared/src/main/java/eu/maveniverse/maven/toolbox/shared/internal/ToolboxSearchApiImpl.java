@@ -28,7 +28,7 @@ import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
 import org.apache.maven.search.api.SearchResponse;
 import org.apache.maven.search.api.request.Query;
-import org.apache.maven.search.api.transport.Java11HttpClientTransport;
+import org.apache.maven.search.api.transport.java11.Java11HttpClientTransport;
 import org.apache.maven.search.backend.remoterepository.RemoteRepositorySearchBackendFactory;
 import org.apache.maven.search.backend.remoterepository.ResponseExtractor;
 import org.apache.maven.search.backend.remoterepository.extractor.MavenCentralResponseExtractor;

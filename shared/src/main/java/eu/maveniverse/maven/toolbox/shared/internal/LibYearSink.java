@@ -210,18 +210,18 @@ public final class LibYearSink implements Artifacts.Sink {
                     if (libYear.isUpToDate()) {
                         float libCurrentYearsAge = libYear.yearsBetween(libYear.currentVersionDate, now);
                         if (libCurrentYearsAge != LibYear.UNKNOWN_AGE) {
-                            upToDateByAge.add(String.format(
-                                    "%s %s (%s) [latest is %.2f years old]",
-                                    ArtifactIdUtils.toVersionlessId(artifact),
-                                    libYear.currentVersion,
-                                    libYear.currentVersionDate,
-                                    libCurrentYearsAge));
+                            upToDateByAge.add("%s %s (%s) [latest is %.2f years old]"
+                                    .formatted(
+                                            ArtifactIdUtils.toVersionlessId(artifact),
+                                            libYear.currentVersion,
+                                            libYear.currentVersionDate,
+                                            libCurrentYearsAge));
                         } else {
-                            upToDateByAge.add(String.format(
-                                    "%s %s (%s) [latest age unknown]",
-                                    ArtifactIdUtils.toVersionlessId(artifact),
-                                    libYear.currentVersion,
-                                    libYear.currentVersionDate == null ? "?" : libYear.currentVersionDate));
+                            upToDateByAge.add("%s %s (%s) [latest age unknown]"
+                                    .formatted(
+                                            ArtifactIdUtils.toVersionlessId(artifact),
+                                            libYear.currentVersion,
+                                            libYear.currentVersionDate == null ? "?" : libYear.currentVersionDate));
                         }
                     } else {
                         float libCurrentYearsAge =
@@ -234,23 +234,23 @@ public final class LibYearSink implements Artifacts.Sink {
                             totalLibyearAdder.add(libCurrentYearsAge);
                             outdatedWithLibyear
                                     .computeIfAbsent(libCurrentYearsAge, k -> new CopyOnWriteArrayList<>())
-                                    .add(String.format(
-                                            "%.2f years from %s %s (%s) => %s (%s) [latest is %.2f years old]",
-                                            libCurrentYearsAge,
+                                    .add("%.2f years from %s %s (%s) => %s (%s) [latest is %.2f years old]"
+                                            .formatted(
+                                                    libCurrentYearsAge,
+                                                    ArtifactIdUtils.toVersionlessId(artifact),
+                                                    libYear.currentVersion,
+                                                    libYear.currentVersionDate,
+                                                    libYear.latestVersion,
+                                                    libYear.latestVersionDate,
+                                                    libLatestYearsAge));
+                        } else {
+                            outdatedWithoutLibyear.add("%s %s (%s) => %s (%s)"
+                                    .formatted(
                                             ArtifactIdUtils.toVersionlessId(artifact),
                                             libYear.currentVersion,
-                                            libYear.currentVersionDate,
+                                            libYear.currentVersionDate == null ? "?" : libYear.currentVersionDate,
                                             libYear.latestVersion,
-                                            libYear.latestVersionDate,
-                                            libLatestYearsAge));
-                        } else {
-                            outdatedWithoutLibyear.add(String.format(
-                                    "%s %s (%s) => %s (%s)",
-                                    ArtifactIdUtils.toVersionlessId(artifact),
-                                    libYear.currentVersion,
-                                    libYear.currentVersionDate == null ? "?" : libYear.currentVersionDate,
-                                    libYear.latestVersion,
-                                    libYear.latestVersionDate == null ? "?" : libYear.latestVersionDate));
+                                            libYear.latestVersionDate == null ? "?" : libYear.latestVersionDate));
                         }
                     }
                 }
@@ -294,7 +294,7 @@ public final class LibYearSink implements Artifacts.Sink {
             output.marker(Output.Verbosity.TIGHT)
                     .emphasize("Total of {} years from {} outdated dependencies for {}")
                     .say(
-                            String.format("%.2f", getTotalLibyear()),
+                            "%.2f".formatted(getTotalLibyear()),
                             outdatedWithLibyear.values().stream()
                                             .mapToInt(List::size)
                                             .sum()

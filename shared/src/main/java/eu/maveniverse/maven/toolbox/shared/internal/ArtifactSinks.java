@@ -628,6 +628,8 @@ public final class ArtifactSinks {
                     .map(propertyByModuleName::get)
                     .map(Property::toLine)
                     .toList();
+            Path parent = file.toAbsolutePath().getParent();
+            if (parent != null) Files.createDirectories(parent);
             Files.write(file, lines);
             output.tell("Found {} distinct modules", lines.size());
             lines.forEach(output::tell);

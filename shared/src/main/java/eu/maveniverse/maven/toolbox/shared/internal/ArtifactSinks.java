@@ -119,12 +119,13 @@ public final class ArtifactSinks {
                     break;
                 }
                 case "modules": {
-                    if (node.getChildren().isEmpty()) {
-                        throw new IllegalArgumentException("modules requires at least 1 argument: the output file");
+                    if (node.getChildren().isEmpty() || node.getChildren().size() > 2) {
+                        String syntax = "modules(<file>[,<classifier>])";
+                        throw new IllegalArgumentException("modules accepts 1..2 arguments: " + syntax);
                     }
                     Path file = tc.basedir().resolve(node.getChildren().get(0).getValue());
                     String classifier = "";
-                    if (node.getChildren().size() > 1) {
+                    if (node.getChildren().size() == 2) {
                         classifier = node.getChildren().get(1).getValue();
                     }
                     params.add(modulePropertiesArtifactSink(file, classifier, tc.output(), tc));

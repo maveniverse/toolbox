@@ -589,7 +589,8 @@ public final class ArtifactSinks {
     public static class ModulePropertiesArtifactSink implements Artifacts.Sink {
         record Property(String module, URI origin, long size, String sha1) {
             String toLine() {
-                return "%s=%s#SIZE=%d&SHA-1=%s".formatted(module, origin, size, sha1);
+                URI value = URI.create(origin.toString() + "#SIZE=%d&SHA-1=%s".formatted(size, sha1));
+                return "%s=%s".formatted(module, value.toASCIIString());
             }
         }
 

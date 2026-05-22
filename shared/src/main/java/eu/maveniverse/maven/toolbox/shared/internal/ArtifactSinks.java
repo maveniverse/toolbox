@@ -16,6 +16,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.Sink;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.internal.ModuleDescriptorExtractingSink.ModuleDescriptor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -611,14 +612,26 @@ public final class ArtifactSinks {
             if (!Files.exists(path)) return;
 
             moduleArtifactSink.accept(artifact);
+            ModuleDescriptor module = moduleArtifactSink.getModuleDescriptor(artifact);
+            if (!module.available()) {
+                output.tell("No module available, skipping artifact: {}", artifact);
+                return;
+            }
             artifactUriSink.accept(artifact);
-            checksumArtifactSink.accept(artifact);
-
-            String module = moduleArtifactSink.getModuleDescriptor(artifact).name();
             URI origin = artifactUriSink.getUri(artifact);
-            long size = Files.size(path);
+            if (origin == null) {
+                output.tell("No origin uri found, skipping artifact: {}", artifact);
+                return;
+            }
+            checksumArtifactSink.accept(artifact);
             String sha1 = checksumArtifactSink.checksums(artifact).get("SHA-1");
-            propertyByModuleName.put(module, new Property(module, origin, size, sha1));
+            if (sha1 == null) {
+                output.tell("No SHA-1 checksum, skipping artifact: {}", artifact);
+                return;
+            }
+            String name = module.name();
+            long size = Files.size(path);
+            propertyByModuleName.put(name, new Property(name, origin, size, sha1));
         }
 
         @Override
@@ -726,7 +739,7 @@ public final class ArtifactSinks {
                 for (Artifact artifact : seen) {
                     output.tell("{}{}", indent, artifact);
                     if (details) {
-                        ModuleDescriptorExtractingSink.ModuleDescriptor descriptor =
+                        ModuleDescriptor descriptor =
                                 moduleDescriptorExtractingSink.getModuleDescriptor(artifact);
                         String moduleInfo = "";
                         if (descriptor != null) {

@@ -739,8 +739,7 @@ public final class ArtifactSinks {
                 for (Artifact artifact : seen) {
                     output.tell("{}{}", indent, artifact);
                     if (details) {
-                        ModuleDescriptor descriptor =
-                                moduleDescriptorExtractingSink.getModuleDescriptor(artifact);
+                        ModuleDescriptor descriptor = moduleDescriptorExtractingSink.getModuleDescriptor(artifact);
                         String moduleInfo = "";
                         if (descriptor != null) {
                             moduleInfo = moduleDescriptorExtractingSink.formatString(descriptor);

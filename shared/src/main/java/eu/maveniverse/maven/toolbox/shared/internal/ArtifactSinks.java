@@ -16,6 +16,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
 import eu.maveniverse.maven.toolbox.shared.ArtifactNameMapper;
 import eu.maveniverse.maven.toolbox.shared.Sink;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import eu.maveniverse.maven.toolbox.shared.internal.ModuleDescriptorExtractingSink.ModuleDescriptor;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -84,6 +85,7 @@ public final class ArtifactSinks {
                     && !"flat".equals(node.getValue())
                     && !"matching".equals(node.getValue())
                     && !"mapping".equals(node.getValue())
+                    && !"modules".equals(node.getValue())
                     && !"unpack".equals(node.getValue());
         }
 
@@ -114,6 +116,20 @@ public final class ArtifactSinks {
                         throw new IllegalArgumentException("op artifactUri accepts only 0..1 argument");
                     }
                     params.add(artifactUriSink(tc.output, tc, dumpOnClose));
+                    break;
+                }
+                case "modules": {
+                    if (node.getChildren().isEmpty() || node.getChildren().size() > 2) {
+                        String syntax = "modules(<file>[,<classifier>])";
+                        throw new IllegalArgumentException("modules accepts 1..2 arguments: " + syntax);
+                    }
+                    Path file = tc.basedir().resolve(node.getChildren().get(0).getValue());
+                    String classifier = "";
+                    if (node.getChildren().size() == 2) {
+                        classifier = node.getChildren().get(1).getValue();
+                    }
+                    params.add(modulePropertiesArtifactSink(file, classifier, tc.output(), tc));
+                    node.getChildren().clear();
                     break;
                 }
                 case "stat": {
@@ -563,6 +579,95 @@ public final class ArtifactSinks {
     }
 
     /**
+     * Create a "module properties" artifact sink for printing a module-url map.
+     */
+    public static ModulePropertiesArtifactSink modulePropertiesArtifactSink(
+            Path file, String classifier, Output output, ToolboxCommando tc) {
+        return new ModulePropertiesArtifactSink(file, classifier, output, tc);
+    }
+
+    public static class ModulePropertiesArtifactSink implements Artifacts.Sink {
+        record Property(String module, URI origin, long size, String sha1) {
+            String toLine() {
+                URI value = URI.create(origin.toString() + "#SIZE=%d&SHA-1=%s".formatted(size, sha1));
+                return "%s=%s".formatted(module, value.toASCIIString());
+            }
+        }
+
+        private final Path file;
+        private final String classifier;
+        private final Output output;
+        private final Map<String, Property> propertyByModuleName;
+        private final ModuleDescriptorExtractingSink moduleArtifactSink;
+        private final ChecksumArtifactSink checksumArtifactSink;
+        private final ArtifactUriSink artifactUriSink;
+
+        private ModulePropertiesArtifactSink(Path file, String classifier, Output output, ToolboxCommando tc) {
+            this.file = file;
+            this.classifier = classifier;
+            this.output = output;
+            this.propertyByModuleName = new ConcurrentHashMap<>();
+            this.moduleArtifactSink = new ModuleDescriptorExtractingSink(output);
+            this.checksumArtifactSink = checksumArtifactSink();
+            this.artifactUriSink = artifactUriSink(output, tc, false);
+        }
+
+        @Override
+        public void accept(Artifact artifact) throws IOException {
+            // only interesting in Java Archives
+            if (!"jar".equals(artifact.getExtension())) return;
+            // only interested in specific non-empty classifier?
+            if (!classifier.isEmpty() && !classifier.equals(artifact.getClassifier())) return;
+            // only interested in resolved files.
+            var file = artifact.getFile();
+            if (file == null) return;
+            var path = file.toPath();
+            if (!Files.exists(path)) return;
+            // only interested in modular Java Archives
+            moduleArtifactSink.accept(artifact);
+            ModuleDescriptor module = moduleArtifactSink.getModuleDescriptor(artifact);
+            if (!module.available()) {
+                output.tell("No module available, skipping artifact: {}", artifact);
+                return;
+            }
+            // only interested in artifacts with origin URIs
+            artifactUriSink.accept(artifact);
+            URI origin = artifactUriSink.getUri(artifact);
+            if (origin == null) {
+                output.tell("No origin uri found, skipping artifact: {}", artifact);
+                return;
+            }
+            // only interested in artifacts with SHA-1 checksums
+            checksumArtifactSink.accept(artifact);
+            String sha1 = checksumArtifactSink.checksums(artifact).get("SHA-1");
+            if (sha1 == null) {
+                output.tell("No SHA-1 checksum, skipping artifact: {}", artifact);
+                return;
+            }
+            String name = module.name();
+            long size = Files.size(path);
+            propertyByModuleName.put(name, new Property(name, origin, size, sha1));
+        }
+
+        @Override
+        public void close() throws Exception {
+            List<String> lines = propertyByModuleName.keySet().stream()
+                    .sorted()
+                    .map(propertyByModuleName::get)
+                    .map(Property::toLine)
+                    .toList();
+            Path parent = file.toAbsolutePath().getParent();
+            if (parent != null) Files.createDirectories(parent);
+            Files.write(file, lines);
+            output.tell("Found {} distinct modules", lines.size());
+            lines.forEach(output::tell);
+            output.tell("------------------------------");
+            output.tell("Module properties written to: {}", file.toUri());
+            output.tell("------------------------------");
+        }
+    }
+
+    /**
      * Creates a "stat" artifact sink out of supplied sinks.
      */
     public static StatArtifactSink statArtifactSink(
@@ -649,8 +754,7 @@ public final class ArtifactSinks {
                 for (Artifact artifact : seen) {
                     output.tell("{}{}", indent, artifact);
                     if (details) {
-                        ModuleDescriptorExtractingSink.ModuleDescriptor descriptor =
-                                moduleDescriptorExtractingSink.getModuleDescriptor(artifact);
+                        ModuleDescriptor descriptor = moduleDescriptorExtractingSink.getModuleDescriptor(artifact);
                         String moduleInfo = "";
                         if (descriptor != null) {
                             moduleInfo = moduleDescriptorExtractingSink.formatString(descriptor);

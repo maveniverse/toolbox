@@ -119,11 +119,16 @@ public final class ArtifactSinks {
                     break;
                 }
                 case "modules": {
-                    if (node.getChildren().size() != 1) {
-                        throw new IllegalArgumentException("modules requires 1 argument: output file");
+                    if (node.getChildren().isEmpty()) {
+                        throw new IllegalArgumentException("modules requires at least 1 argument: the output file");
                     }
                     Path file = tc.basedir().resolve(node.getChildren().get(0).getValue());
-                    params.add(modulePropertiesArtifactSink(file, tc.output(), tc));
+                    String classifier = "";
+                    if (node.getChildren().size() > 1) {
+                        classifier = node.getChildren().get(1).getValue();
+                    }
+                    params.add(modulePropertiesArtifactSink(file, classifier, tc.output(), tc));
+                    node.getChildren().clear();
                     break;
                 }
                 case "stat": {
@@ -576,8 +581,8 @@ public final class ArtifactSinks {
      * Create a "module properties" artifact sink for printing a module-url map.
      */
     public static ModulePropertiesArtifactSink modulePropertiesArtifactSink(
-            Path file, Output output, ToolboxCommando tc) {
-        return new ModulePropertiesArtifactSink(file, output, tc);
+            Path file, String classifier, Output output, ToolboxCommando tc) {
+        return new ModulePropertiesArtifactSink(file, classifier, output, tc);
     }
 
     public static class ModulePropertiesArtifactSink implements Artifacts.Sink {
@@ -588,14 +593,16 @@ public final class ArtifactSinks {
         }
 
         private final Path file;
+        private final String classifier;
         private final Output output;
         private final Map<String, Property> propertyByModuleName;
         private final ModuleDescriptorExtractingSink moduleArtifactSink;
         private final ChecksumArtifactSink checksumArtifactSink;
         private final ArtifactUriSink artifactUriSink;
 
-        private ModulePropertiesArtifactSink(Path file, Output output, ToolboxCommando tc) {
+        private ModulePropertiesArtifactSink(Path file, String classifier, Output output, ToolboxCommando tc) {
             this.file = file;
+            this.classifier = classifier;
             this.output = output;
             this.propertyByModuleName = new ConcurrentHashMap<>();
             this.moduleArtifactSink = new ModuleDescriptorExtractingSink(output);
@@ -605,24 +612,30 @@ public final class ArtifactSinks {
 
         @Override
         public void accept(Artifact artifact) throws IOException {
+            // only interesting in Java Archives
+            if (!"jar".equals(artifact.getExtension())) return;
+            // only interested in specific non-empty classifier?
+            if (!classifier.isEmpty() && !classifier.equals(artifact.getClassifier())) return;
+            // only interested in resolved files.
             var file = artifact.getFile();
             if (file == null) return;
             var path = file.toPath();
-            if (!path.getFileName().toString().endsWith(".jar")) return;
             if (!Files.exists(path)) return;
-
+            // only interested in modular Java Archives
             moduleArtifactSink.accept(artifact);
             ModuleDescriptor module = moduleArtifactSink.getModuleDescriptor(artifact);
             if (!module.available()) {
                 output.tell("No module available, skipping artifact: {}", artifact);
                 return;
             }
+            // only interested in artifacts with origin URIs
             artifactUriSink.accept(artifact);
             URI origin = artifactUriSink.getUri(artifact);
             if (origin == null) {
                 output.tell("No origin uri found, skipping artifact: {}", artifact);
                 return;
             }
+            // only interested in artifacts with SHA-1 checksums
             checksumArtifactSink.accept(artifact);
             String sha1 = checksumArtifactSink.checksums(artifact).get("SHA-1");
             if (sha1 == null) {

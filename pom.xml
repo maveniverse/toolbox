@@ -372,13 +372,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <dependencies>
-          <dependency>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>extra-enforcer-rules</artifactId>
-            <version>1.12.0</version>
-          </dependency>
-        </dependencies>
         <executions>
           <execution>
             <id>enforce-bytecode</id>
@@ -389,6 +382,9 @@
               <rules>
                 <enforceBytecodeVersion>
                   <maxJdkVersion>${maven.compiler.release}</maxJdkVersion>
+                  <includes>
+                    <include>*:*</include>
+                  </includes>
                   <excludes>
                     <exclude>org.jline:jline</exclude>
                     <exclude>org.kordamp.jarviz:jarviz-core</exclude>

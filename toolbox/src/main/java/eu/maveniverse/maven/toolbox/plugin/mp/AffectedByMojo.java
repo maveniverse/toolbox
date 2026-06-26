@@ -59,7 +59,7 @@ public class AffectedByMojo extends MPMojoSupport {
         for (MavenProject project : mavenSession.getProjects()) {
             ResolutionRoot root = projectAsResolutionRoot(project);
             Result<List<List<Artifact>>> treeFindResult =
-                    toolboxCommando.treeFind(resolutionScope, root, false, artifactMatcher);
+                    toolboxCommando.treeFind(resolutionScope, root, false, artifactMatcher, false);
             if (treeFindResult.isSuccess()
                     && treeFindResult.getData().isPresent()
                     && !treeFindResult.getData().orElseThrow().isEmpty()) {

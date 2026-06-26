@@ -53,7 +53,8 @@ public class CheckExclusionsMojo extends MPPluginMojoSupport {
                         ResolutionScope.RUNTIME,
                         dependencyRoot,
                         verboseTree,
-                        artifactMatcher(dependency.getArtifact(), exclusion));
+                        artifactMatcher(dependency.getArtifact(), exclusion),
+                        false);
                 if (paths.getData().isPresent() && paths.getData().orElseThrow().isEmpty()) {
                     getOutput()
                             .marker(Output.Verbosity.NORMAL)

@@ -48,7 +48,8 @@ public class PluginTreeFindMojo extends MPPluginMojoSupport {
                     ResolutionScope.parse(scope),
                     root,
                     verboseTree,
-                    toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec));
+                    toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec),
+                    false);
         } else {
             for (ResolutionRoot resolutionRoot : allProjectPluginsAsResolutionRoots(toolboxCommando)) {
                 getOutput().doTell("Paths found in plugin {}", resolutionRoot.getArtifact());
@@ -56,7 +57,8 @@ public class PluginTreeFindMojo extends MPPluginMojoSupport {
                         ResolutionScope.parse(scope),
                         resolutionRoot,
                         verboseTree,
-                        toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec));
+                        toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec),
+                        false);
             }
         }
         return Result.success(true);

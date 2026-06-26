@@ -40,6 +40,12 @@ public class TreeFindMojo extends MPMojoSupport {
     @Parameter(property = "verboseTree", defaultValue = "false", required = true)
     private boolean verboseTree;
 
+    /**
+     * Set it {@code true} to have related management displayed.
+     */
+    @Parameter(property = "showManagement", defaultValue = "false", required = true)
+    private boolean showManagement;
+
     @Override
     protected Result<List<List<Artifact>>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
@@ -49,6 +55,7 @@ public class TreeFindMojo extends MPMojoSupport {
                 ResolutionScope.parse(scope),
                 root,
                 verboseTree,
-                toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec));
+                toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec),
+                showManagement);
     }
 }

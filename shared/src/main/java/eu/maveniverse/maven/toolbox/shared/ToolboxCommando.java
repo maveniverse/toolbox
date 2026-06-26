@@ -417,7 +417,8 @@ public interface ToolboxCommando extends Closeable {
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
             boolean verboseTree,
-            ArtifactMatcher artifactMatcher)
+            ArtifactMatcher artifactMatcher,
+            boolean showManagement)
             throws Exception;
 
     /**

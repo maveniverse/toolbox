@@ -1159,7 +1159,8 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             ResolutionScope resolutionScope,
             ResolutionRoot resolutionRoot,
             boolean verboseTree,
-            ArtifactMatcher artifactMatcher)
+            ArtifactMatcher artifactMatcher,
+            boolean showManagement)
             throws Exception {
         output.suggest("Loading root of: {}", resolutionRoot.getArtifact());
         ResolutionRoot root = toolboxResolver.loadRoot(resolutionRoot);
@@ -1175,6 +1176,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         collectResult.getRoot().accept(pathRecordingDependencyVisitor);
         List<List<Artifact>> result = new ArrayList<>();
         if (!pathRecordingDependencyVisitor.getPaths().isEmpty()) {
+            Dependency management = null;
             for (List<DependencyNode> path : pathRecordingDependencyVisitor.getPaths()) {
                 result.add(path.stream().map(DependencyNode::getArtifact).collect(Collectors.toList()));
                 String indent = "";
@@ -1183,6 +1185,39 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                             "{}-> {}",
                             indent,
                             node.getDependency() != null ? node.getDependency() : node.getArtifact());
+                    if (showManagement) {
+                        Dependency newManagement = null;
+                        if (Objects.equals(node.getArtifact(), resolutionRoot.getArtifact())) {
+                            newManagement = resolutionRoot.getManagedDependencies().stream()
+                                    .filter(d -> d.getArtifact() != null && artifactMatcher.test(d.getArtifact()))
+                                    .findFirst()
+                                    .orElse(null);
+                        } else if (node.getArtifact() != null) {
+                            newManagement = toolboxResolver
+                                    .loadRoot(ResolutionRoot.ofLoaded(node.getArtifact())
+                                            .build())
+                                    .getManagedDependencies()
+                                    .stream()
+                                    .filter(d -> d.getArtifact() != null && artifactMatcher.test(d.getArtifact()))
+                                    .findFirst()
+                                    .orElse(null);
+                            ;
+                        }
+                        if (management != null || newManagement != null) {
+                            if (management == null) {
+                                management = newManagement;
+                            }
+                            output.tell("{}   eff mgmt {}", indent, management);
+                            if (newManagement != null && management != newManagement) {
+                                output.tell(
+                                        "{}   new mgmt {}",
+                                        indent,
+                                        output.marker(Output.Verbosity.NORMAL).scary("IGNORED: " + newManagement));
+                            }
+                        } else {
+                            output.tell("{}   eff mgmt n/a", indent);
+                        }
+                    }
                     indent += "  ";
                 }
             }

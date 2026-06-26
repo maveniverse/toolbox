@@ -10,6 +10,7 @@ package eu.maveniverse.maven.toolbox.plugin.gav;
 import static eu.maveniverse.maven.toolbox.shared.input.StringSlurper.slurp;
 
 import eu.maveniverse.maven.toolbox.plugin.GavMojoSupport;
+import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ResolutionScope;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
@@ -17,16 +18,18 @@ import java.util.List;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.graph.Dependency;
 import picocli.CommandLine;
 
 /**
  * Collects and displays paths to matched artifacts in tree, if exists.
  */
 @CommandLine.Command(
-        name = "tree-find",
+        name = "tree-dd-find",
         description = "Collects and displays paths to matched artifacts in tree, if exists")
-@Mojo(name = "gav-tree-find", requiresProject = false, threadSafe = true)
-public class GavTreeFindMojo extends GavMojoSupport {
+@Mojo(name = "gav-tree-dd-find", requiresProject = false, threadSafe = true)
+public class GavTreeDDFindMojo extends GavMojoSupport {
     /**
      * The GAV to show tree for.
      */
@@ -50,6 +53,16 @@ public class GavTreeFindMojo extends GavMojoSupport {
             description = "Resolution scope to resolve (default 'runtime')")
     @Parameter(property = "scope", defaultValue = "runtime", required = true)
     private String scope;
+
+    /**
+     * Resolution scope to resolve (default 'compile').
+     */
+    @CommandLine.Option(
+            names = {"--dependencyScope"},
+            defaultValue = "compile",
+            description = "Resolution scope of dependency GAV (default 'compile')")
+    @Parameter(property = "dependencyScope", defaultValue = "compile", required = true)
+    private String dependencyScope;
 
     /**
      * Comma separated list of BOMs to apply.
@@ -84,9 +97,14 @@ public class GavTreeFindMojo extends GavMojoSupport {
     @Override
     protected Result<List<List<Artifact>>> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
+        ResolutionRoot root = ResolutionRoot.ofNotLoaded(new DefaultArtifact("org.example:some-project:1.0.0"))
+                .withDependencies(List.of(new Dependency(new DefaultArtifact(gav), dependencyScope)))
+                .withManagedDependencies(toolboxCommando.getToolboxResolver().importBOMs(slurp(boms)))
+                .build();
+
         return toolboxCommando.treeFind(
                 ResolutionScope.parse(scope),
-                toolboxCommando.loadGav(gav, slurp(boms)),
+                root,
                 verboseTree,
                 toolboxCommando.parseArtifactMatcherSpec(artifactMatcherSpec),
                 showManagement);

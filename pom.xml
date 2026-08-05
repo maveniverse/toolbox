@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>56</version>
+    <version>59</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
@@ -69,15 +69,15 @@
     <maven.compiler.release>17</maven.compiler.release>
 
     <!-- Dependency versions -->
-    <version.mima>2.4.46</version.mima>
+    <version.mima>2.4.47</version.mima>
     <version.maven>3.9.16</version.maven>
     <version.resolver>1.9.27</version.resolver>
     <version.mase>1.1.1</version.mase>
     <version.mavenPluginTools>3.15.2</version.mavenPluginTools>
     <version.slf4j>2.0.18</version.slf4j>
     <version.picocli>4.7.7</version.picocli>
-    <version.jline>3.30.15</version.jline>
-    <version.domtrip>1.5.2</version.domtrip>
+    <version.jline>3.30.16</version.jline>
+    <version.domtrip>1.6.0</version.domtrip>
   </properties>
 
   <dependencyManagement>
@@ -346,7 +346,7 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
-        <version>6.1.1</version>
+        <version>6.1.2</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

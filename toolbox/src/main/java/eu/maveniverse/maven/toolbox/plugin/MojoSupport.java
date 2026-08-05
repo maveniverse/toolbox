@@ -124,6 +124,15 @@ public abstract class MojoSupport extends AbstractMojo
     @Parameter(property = "extraRepositories")
     private String extraRepositories;
 
+    /**
+     * Force updates.
+     */
+    @CommandLine.Option(
+            names = {"--force-updates"},
+            description = "Forces updates.")
+    @Parameter(property = "update")
+    private boolean forceUpdates;
+
     // cwd
 
     private Path cwd = Path.of(System.getProperty("user.dir"));
@@ -242,15 +251,21 @@ public abstract class MojoSupport extends AbstractMojo
             proxyMixin.addProxy(proxySettings);
             builder.withEffectiveSettingsMixin(proxyMixin);
         }
+        if (forceUpdates) {
+            builder.snapshotUpdatePolicy(ContextOverrides.SnapshotUpdatePolicy.ALWAYS);
+        }
         return builder.build();
     }
 
     private ContextOverrides createMojoContextOverrides() {
-        ContextOverrides.Builder contextOverrides = ContextOverrides.create();
+        ContextOverrides.Builder builder = ContextOverrides.create();
         if (cwd != null) {
-            contextOverrides.withBasedirOverride(cwd);
+            builder.withBasedirOverride(cwd);
         }
-        return contextOverrides.build();
+        if (forceUpdates) {
+            builder.snapshotUpdatePolicy(ContextOverrides.SnapshotUpdatePolicy.ALWAYS);
+        }
+        return builder.build();
     }
 
     protected Context getContext() {

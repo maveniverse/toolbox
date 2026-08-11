@@ -7,7 +7,7 @@
  */
 StringBuilder out = new StringBuilder()
 StringBuilder err = new StringBuilder()
-String[] args = ["${java}", '-jar', "${cli}", "-e", "libyear", "org.junit.jupiter:junit-jupiter-api:5.10.0"]
+String[] args = ["${java}", '-jar', "${cli}", "-B", "-e", "libyear", "org.junit.jupiter:junit-jupiter-api:5.10.0"]
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()

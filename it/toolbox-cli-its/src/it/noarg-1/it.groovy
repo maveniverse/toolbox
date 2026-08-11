@@ -7,7 +7,7 @@
  */
 StringBuilder out = new StringBuilder()
 StringBuilder err = new StringBuilder()
-String[] args = ["${java}", "-Dorg.jline.terminal.provider=dumb", '-jar', "${cli}", "-e"] // dumb to prevent Jline3 warning
+String[] args = ["${java}", "-Dorg.jline.terminal.provider=dumb", '-jar', "${cli}", "-B", "-e"] // dumb to prevent Jline3 warning
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()

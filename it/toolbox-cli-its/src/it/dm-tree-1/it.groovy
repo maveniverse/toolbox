@@ -7,7 +7,7 @@
  */
 StringBuilder out = new StringBuilder()
 StringBuilder err = new StringBuilder()
-String[] args = ["${java}", '-jar', "${cli}", "-e", "dm-tree", "org.springframework.boot:spring-boot-dependencies:3.3.3"]
+String[] args = ["${java}", '-jar', "${cli}", "-B", "-e", "dm-tree", "org.springframework.boot:spring-boot-dependencies:3.3.3"]
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()

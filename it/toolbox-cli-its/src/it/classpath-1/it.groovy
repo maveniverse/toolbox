@@ -7,7 +7,7 @@
  */
 StringBuilder out = new StringBuilder()
 StringBuilder err = new StringBuilder()
-String[] args = ["${java}", '-jar', "${cli}", "-e", "classpath", "eu.maveniverse.maven.toolbox:shared:${project.version}"]
+String[] args = ["${java}", '-jar', "${cli}", "-B", "-e", "classpath", "eu.maveniverse.maven.toolbox:shared:${project.version}"]
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()

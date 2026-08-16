@@ -56,6 +56,23 @@
                 <pomExclude>libyear-1/pom.xml</pomExclude>
               </pomExcludes>
             </configuration>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.groovy</groupId>
+                <artifactId>groovy</artifactId>
+                <version>${version.groovy}</version>
+              </dependency>
+              <dependency>
+                <groupId>org.apache.groovy</groupId>
+                <artifactId>groovy-json</artifactId>
+                <version>${version.groovy}</version>
+              </dependency>
+              <dependency>
+                <groupId>org.apache.groovy</groupId>
+                <artifactId>groovy-xml</artifactId>
+                <version>${version.groovy}</version>
+              </dependency>
+            </dependencies>
             <executions>
               <execution>
                 <id>integration-test</id>

@@ -72,12 +72,13 @@
     <version.mima>2.4.48</version.mima>
     <version.maven>3.9.16</version.maven>
     <version.resolver>1.9.27</version.resolver>
-    <version.mase>1.1.1</version.mase>
+    <version.mase>1.1.2</version.mase>
     <version.mavenPluginTools>3.15.2</version.mavenPluginTools>
     <version.slf4j>2.0.18</version.slf4j>
     <version.picocli>4.7.7</version.picocli>
     <version.jline>3.30.16</version.jline>
     <version.domtrip>1.6.0</version.domtrip>
+    <version.groovy>5.1.0</version.groovy>
   </properties>
 
   <dependencyManagement>

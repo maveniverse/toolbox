@@ -1844,7 +1844,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             HttpGet httpGet = new HttpGet(source.getUrl());
             try (CloseableHttpResponse response = client.execute(httpGet)) {
                 HttpEntity entity = response.getEntity();
-                if (entity != null) {
+                if (response.getStatusLine().getStatusCode() < 299 && entity != null) {
                     if (unpack) {
                         Files.createDirectories(destination);
                         String filename = detectFilename(source.getUrl());

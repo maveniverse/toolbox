@@ -121,7 +121,7 @@ public final class UnpackSink implements Artifacts.Sink {
     }
 
     /**
-     * Unpacks file to given directory. Supports ZIP and TAR (GZ + XZ).
+     * Unpacks file to given directory. Supports ZIP and TAR.
      */
     private void unpack(Path source, Path target, boolean useRoot) throws IOException {
         requireNonNull(source);

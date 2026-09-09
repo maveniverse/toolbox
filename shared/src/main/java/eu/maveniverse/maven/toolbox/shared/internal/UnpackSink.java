@@ -9,30 +9,17 @@ package eu.maveniverse.maven.toolbox.shared.internal;
 
 import static java.util.Objects.requireNonNull;
 
+import ca.vanzyl.provisio.archive.UnArchiver;
 import eu.maveniverse.maven.toolbox.shared.ArtifactMatcher;
-import eu.maveniverse.maven.toolbox.shared.FileUtils;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.apache.commons.compress.archivers.jar.JarArchiveEntry;
-import org.apache.commons.compress.archivers.jar.JarArchiveInputStream;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipFile;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.eclipse.aether.artifact.Artifact;
 
 /**
@@ -46,26 +33,11 @@ public final class UnpackSink implements Artifacts.Sink {
      * @param artifactRootMapper The artifact root mapper, that decides where is root of unpacking for given artifact.
      *                           To achieve "overlay", one can use {@code fixed(.)} mapper that will map roots into
      *                           root of {@code path} parameter.
-     * @param allowEntryOverwrite Does this sink allow entry overlap (among unpacked archives) or not?
      */
     public static UnpackSink unpack(
-            Output output,
-            Path path,
-            Function<Artifact, String> artifactRootMapper,
-            boolean allowEntryOverwrite,
-            boolean dryRun)
+            Output output, Path path, Function<Artifact, String> artifactRootMapper, boolean dryRun)
             throws IOException {
-        return new UnpackSink(
-                output,
-                path,
-                ArtifactMatcher.unique(),
-                false,
-                a -> a,
-                artifactRootMapper,
-                Function.identity(),
-                true,
-                allowEntryOverwrite,
-                dryRun);
+        return new UnpackSink(output, path, ArtifactMatcher.unique(), false, a -> a, artifactRootMapper, true, dryRun);
     }
 
     private final Output output;
@@ -75,9 +47,7 @@ public final class UnpackSink implements Artifacts.Sink {
     private final boolean failIfUnmatched;
     private final Function<Artifact, Artifact> artifactMapper;
     private final Function<Artifact, String> artifactRootMapper;
-    private final Function<String, String> fileNameMapper;
     private final boolean allowRootOverwrite;
-    private final boolean allowEntryOverwrite;
     private final boolean dryRun;
     private final HashSet<Path> writtenPaths;
 
@@ -89,10 +59,7 @@ public final class UnpackSink implements Artifacts.Sink {
      * @param artifactMatcher The matcher, that decides is this sink accepting artifact or not.
      * @param artifactMapper The artifact mapper, that may re-map artifact.
      * @param artifactRootMapper The artifact root mapper, that decides where is root of unpacking for given artifact.
-     * @param fileNameMapper The file name mapper.
      * @param allowRootOverwrite Does sink allow use of same roots for unpack operations.
-     * @param allowEntryOverwrite Does sink allow unpacked entry overwrites. Tip: you usually do not want to allow,
-     *                            as that means you have some overlap in unpacked archives.
      * @throws IOException In case of IO problem.
      */
     private UnpackSink(
@@ -102,9 +69,7 @@ public final class UnpackSink implements Artifacts.Sink {
             boolean failIfUnmatched,
             Function<Artifact, Artifact> artifactMapper,
             Function<Artifact, String> artifactRootMapper,
-            Function<String, String> fileNameMapper,
             boolean allowRootOverwrite,
-            boolean allowEntryOverwrite,
             boolean dryRun)
             throws IOException {
         this.output = requireNonNull(output, "output");
@@ -123,9 +88,7 @@ public final class UnpackSink implements Artifacts.Sink {
         this.failIfUnmatched = failIfUnmatched;
         this.artifactMapper = requireNonNull(artifactMapper, "artifactMapper");
         this.artifactRootMapper = requireNonNull(artifactRootMapper, "artifactRootMapper");
-        this.fileNameMapper = requireNonNull(fileNameMapper, "fileNameMapper");
         this.allowRootOverwrite = allowRootOverwrite;
-        this.allowEntryOverwrite = allowEntryOverwrite;
         this.dryRun = dryRun;
         this.writtenPaths = new HashSet<>();
     }
@@ -149,40 +112,7 @@ public final class UnpackSink implements Artifacts.Sink {
             if (!writtenPaths.add(target) && !allowRootOverwrite) {
                 throw new IOException("Root overwrite prevented; check mappings");
             }
-            switch (artifact.getExtension()) {
-                case "jar": {
-                    if (!dryRun) {
-                        unjar(target, artifact.getFile().toPath());
-                    }
-                    break;
-                }
-                case "zip": {
-                    if (!dryRun) {
-                        unzip(target, artifact.getFile().toPath());
-                    }
-                    break;
-                }
-                case "tar.gz": {
-                    if (!dryRun) {
-                        untar(
-                                target,
-                                new GzipCompressorInputStream(new BufferedInputStream(
-                                        Files.newInputStream(artifact.getFile().toPath()))));
-                    }
-                    break;
-                }
-                case "tar.bz2": {
-                    if (!dryRun) {
-                        untar(
-                                target,
-                                new BZip2CompressorInputStream(new BufferedInputStream(
-                                        Files.newInputStream(artifact.getFile().toPath()))));
-                    }
-                    break;
-                }
-                default:
-                    throw new IllegalArgumentException("unknown archive");
-            }
+            unpack(artifact.getFile().toPath(), target, true);
         } else {
             if (failIfUnmatched) {
                 throw new IllegalArgumentException("not matched");
@@ -190,85 +120,17 @@ public final class UnpackSink implements Artifacts.Sink {
         }
     }
 
-    private void untar(Path target, InputStream input) throws IOException {
-        try (TarArchiveInputStream tar = new TarArchiveInputStream(input)) {
-            TarArchiveEntry entry;
-            while ((entry = tar.getNextEntry()) != null) {
-                if (!tar.canReadEntryData(entry)) {
-                    output.warn("Cannot read entry {}", entry.getName());
-                    continue;
-                }
-                Path f = mapToOutput(target, entry.getName());
-                if (entry.isDirectory()) {
-                    Files.createDirectories(f);
-                } else {
-                    Files.createDirectories(f.getParent());
-                    mayCopy(f, tar, entry.getLastModifiedTime(), entry.getMode());
-                }
-            }
+    /**
+     * Unpacks file to given directory. Supports ZIP and TAR.
+     */
+    private void unpack(Path source, Path target, boolean useRoot) throws IOException {
+        requireNonNull(source);
+        requireNonNull(target);
+        if (!Files.isRegularFile(source)) {
+            throw new IllegalArgumentException("source is not a regular file");
         }
-    }
-
-    private void unzip(Path target, Path zipFile) throws IOException {
-        try (ZipFile zip = ZipFile.builder().setFile(zipFile.toFile()).get()) {
-            Enumeration<ZipArchiveEntry> zipArchiveEntryEnumeration = zip.getEntries();
-            ZipArchiveEntry entry;
-            while (zipArchiveEntryEnumeration.hasMoreElements()) {
-                entry = zipArchiveEntryEnumeration.nextElement();
-                if (!zip.canReadEntryData(entry)) {
-                    output.warn("Cannot read entry {}", entry.getName());
-                    continue;
-                }
-                Path f = mapToOutput(target, entry.getName());
-                if (entry.isDirectory()) {
-                    Files.createDirectories(f);
-                } else {
-                    Files.createDirectories(f.getParent());
-                    mayCopy(f, zip.getInputStream(entry), entry.getLastModifiedTime(), entry.getUnixMode());
-                }
-            }
-        }
-    }
-
-    private void unjar(Path target, Path jarFile) throws IOException {
-        try (JarArchiveInputStream jar =
-                new JarArchiveInputStream(new BufferedInputStream(Files.newInputStream(jarFile)))) {
-            JarArchiveEntry entry;
-            while ((entry = jar.getNextEntry()) != null) {
-                if (!jar.canReadEntryData(entry)) {
-                    output.warn("Cannot read entry {}", entry.getName());
-                    continue;
-                }
-                Path f = mapToOutput(target, entry.getName());
-                if (entry.isDirectory()) {
-                    Files.createDirectories(f);
-                } else {
-                    Files.createDirectories(f.getParent());
-                    mayCopy(f, jar, entry.getLastModifiedTime(), entry.getUnixMode());
-                }
-            }
-        }
-    }
-
-    private Path mapToOutput(Path target, String entryName) throws IOException {
-        Path f = target.resolve(fileNameMapper.apply(entryName)).toAbsolutePath();
-        if (!f.startsWith(target)) {
-            throw new IOException("Path escape prevented");
-        }
-        return f;
-    }
-
-    private void mayCopy(Path target, InputStream inputStream, FileTime fileTime, int mode) throws IOException {
-        if (Files.exists(target) && !allowEntryOverwrite) {
-            throw new IOException("Entry overwrite prevented; overlap in archives");
-        }
-        try (OutputStream o = Files.newOutputStream(target)) {
-            inputStream.transferTo(o);
-            if (fileTime != null) {
-                Files.setLastModifiedTime(target, fileTime);
-            }
-        }
-        FileUtils.setPosixPermissionsFromUnixMode(target, mode);
+        Files.createDirectories(target);
+        UnArchiver.builder().useRoot(useRoot).build().unarchive(source, target);
     }
 
     @Override

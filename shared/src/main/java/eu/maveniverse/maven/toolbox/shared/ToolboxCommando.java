@@ -576,6 +576,12 @@ public interface ToolboxCommando extends Closeable {
             BiFunction<Artifact, List<Version>, String> versionSelector)
             throws Exception;
 
+    // non-artifacts
+
+    Result<String> httpGet(
+            RemoteRepository source, boolean useRoot, boolean unpack, Path destination, Map<String, String> checksums)
+            throws IOException;
+
     // POM editing
 
     @FunctionalInterface

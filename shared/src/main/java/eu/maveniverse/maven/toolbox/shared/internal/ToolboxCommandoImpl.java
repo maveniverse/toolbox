@@ -1837,6 +1837,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             throws IOException {
         requireNonNull(source);
         requireNonNull(destination);
+        requireNonNull(checksums);
         HttpClientBuilder builder = new MavenHttpClient4Factory(context).createResolutionClient(source);
 
         try (CloseableHttpClient client = builder.build()) {
@@ -1930,17 +1931,22 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             throw new IllegalStateException("Checksum enforcement required but have no access to checksum selector");
         }
         boolean result = true;
-        Map<String, String> calculatedChecksums = ChecksumAlgorithmHelper.calculate(
-                content.toFile(), so.orElseThrow().selectList(expectedChecksums.keySet()));
-        for (Map.Entry<String, String> entry : expectedChecksums.entrySet()) {
-            String calculated = calculatedChecksums.get(entry.getKey());
-            if (!Objects.equals(entry.getValue(), calculated)) {
-                result = false;
-                output.error(
-                        "Checksum mismatch for {}: expected {} but calculated {}",
-                        entry.getKey(),
-                        entry.getValue(),
-                        calculated);
+        if (!expectedChecksums.isEmpty()) {
+            Map<String, String> calculatedChecksums = ChecksumAlgorithmHelper.calculate(
+                    content.toFile(), so.orElseThrow().selectList(expectedChecksums.keySet()));
+            for (Map.Entry<String, String> entry : expectedChecksums.entrySet()) {
+                String calculated = calculatedChecksums.get(entry.getKey());
+                if (!Objects.equals(entry.getValue(), calculated)) {
+                    result = false;
+                    output.error(
+                            "Checksum mismatch for {}: expected {} but calculated {}",
+                            entry.getKey(),
+                            entry.getValue(),
+                            calculated);
+                }
+            }
+            if (result) {
+                output.tell("Checksums verified: {}", expectedChecksums.keySet());
             }
         }
         return result;

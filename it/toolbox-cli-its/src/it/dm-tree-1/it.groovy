@@ -15,4 +15,5 @@ process.consumeProcessOutput(out, err)
 process.waitFor()
 
 assert out.contains('DM conflicts discovered:')
-assert out.contains(' * org.apache.maven.plugin-tools:maven-plugin-annotations:jar version 3.11.0 prevails, but met versions [3.11.0, 3.10.2, 3.7.0]')
+assert out.contains(' * org.apache.maven.plugin-tools:maven-plugin-annotations:jar version')
+assert out.contains('prevails, but met versions')

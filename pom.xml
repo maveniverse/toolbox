@@ -146,6 +146,11 @@
       </dependency>
       <dependency>
         <groupId>eu.maveniverse.maven.mima.extensions</groupId>
+        <artifactId>mhc4</artifactId>
+        <version>${version.mima}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.maveniverse.maven.mima.extensions</groupId>
         <artifactId>mmr</artifactId>
         <version>${version.mima}</version>
       </dependency>
@@ -250,8 +255,15 @@
       </dependency>
       <dependency>
         <groupId>eu.maveniverse.maven.mase</groupId>
-        <artifactId>search-transport-java11</artifactId>
+        <artifactId>search-transport-apache</artifactId>
         <version>${version.mase}</version>
+      </dependency>
+
+      <!-- Archiver -->
+      <dependency>
+        <groupId>io.takari</groupId>
+        <artifactId>takari-archiver</artifactId>
+        <version>2.0.0</version>
       </dependency>
 
       <!-- Commons -->
@@ -342,6 +354,29 @@
         <groupId>eu.maveniverse.maven.shared</groupId>
         <artifactId>core</artifactId>
         <version>0.2.6</version>
+      </dependency>
+
+      <!-- hc4 -->
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>4.5.14</version>
+        <exclusions>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpmime</artifactId>
+        <version>4.5.14</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>4.4.16</version>
       </dependency>
 
       <dependency>

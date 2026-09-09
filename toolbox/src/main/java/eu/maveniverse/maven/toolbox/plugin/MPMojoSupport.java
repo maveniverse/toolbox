@@ -16,10 +16,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.interpolation.InterpolationException;
@@ -37,13 +37,13 @@ import org.eclipse.aether.util.artifact.JavaScopes;
  * Support class for "project aware" Mojos.
  */
 public abstract class MPMojoSupport extends MojoSupport {
-    @Component
+    @Inject
     protected MavenSession mavenSession;
 
-    @Component
+    @Inject
     protected MavenProject mavenProject;
 
-    @Component
+    @Inject
     protected ArtifactHandlerManager artifactHandlerManager;
 
     /**

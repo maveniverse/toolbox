@@ -38,6 +38,10 @@
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mima.extensions</groupId>
+      <artifactId>mhc4</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.maveniverse.maven.mima.extensions</groupId>
       <artifactId>mmr</artifactId>
     </dependency>
 
@@ -109,7 +113,7 @@
     </dependency>
     <dependency>
       <groupId>eu.maveniverse.maven.mase</groupId>
-      <artifactId>search-transport-java11</artifactId>
+      <artifactId>search-transport-apache</artifactId>
     </dependency>
 
     <!-- POM editing -->
@@ -145,8 +149,22 @@
 
     <!-- Commons Compress (unpack) -->
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-compress</artifactId>
+      <groupId>io.takari</groupId>
+      <artifactId>takari-archiver</artifactId>
+    </dependency>
+
+    <!-- HttpClient4 (for mhc4 MIMA extension) -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpmime</artifactId>
     </dependency>
 
     <dependency>

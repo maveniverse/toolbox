@@ -13,6 +13,7 @@ import static org.apache.maven.search.api.request.BooleanQuery.and;
 import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 import static org.apache.maven.search.api.request.Query.query;
 
+import ca.vanzyl.provisio.archive.UnArchiver;
 import com.github.packageurl.MalformedPackageURLException;
 import com.github.packageurl.PackageURL;
 import com.github.packageurl.PackageURLBuilder;
@@ -26,6 +27,7 @@ import eu.maveniverse.maven.mima.context.MavenSystemHome;
 import eu.maveniverse.maven.mima.context.MavenUserHome;
 import eu.maveniverse.maven.mima.context.Runtime;
 import eu.maveniverse.maven.mima.context.internal.RuntimeSupport;
+import eu.maveniverse.maven.mima.extensions.mhc4.MavenHttpClient4Factory;
 import eu.maveniverse.maven.mima.extensions.mmr.MavenModelReader;
 import eu.maveniverse.maven.mima.extensions.mmr.ModelResponse;
 import eu.maveniverse.maven.toolbox.shared.ArtifactDifferentiator;
@@ -53,6 +55,7 @@ import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
@@ -84,6 +87,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.InputLocation;
 import org.apache.maven.model.InputSource;
@@ -114,6 +122,8 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactorySelector;
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmHelper;
 import org.eclipse.aether.spi.connector.layout.RepositoryLayout;
 import org.eclipse.aether.spi.connector.layout.RepositoryLayoutProvider;
 import org.eclipse.aether.transfer.NoRepositoryLayoutException;
@@ -148,7 +158,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         this.output = requireNonNull(output, "output");
         this.context = requireNonNull(context, "context");
         this.versionScheme = new GenericVersionScheme();
-        this.toolboxSearchApi = new ToolboxSearchApiImpl(output);
+        this.toolboxSearchApi = new ToolboxSearchApiImpl(output, context);
         this.artifactRecorder = new ArtifactRecorderImpl();
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(context.repositorySystemSession());
         session.setRepositoryListener(
@@ -1817,6 +1827,123 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     .say(ArtifactIdUtils.toId(artifact));
         }
         return Result.success(result);
+    }
+
+    // non-artifacts
+
+    @Override
+    public Result<String> httpGet(
+            RemoteRepository source, boolean useRoot, boolean unpack, Path destination, Map<String, String> checksums)
+            throws IOException {
+        requireNonNull(source);
+        requireNonNull(destination);
+        HttpClientBuilder builder = new MavenHttpClient4Factory(context).createResolutionClient(source);
+
+        try (CloseableHttpClient client = builder.build()) {
+            HttpGet httpGet = new HttpGet(source.getUrl());
+            try (CloseableHttpResponse response = client.execute(httpGet)) {
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    if (unpack) {
+                        Files.createDirectories(destination);
+                        String filename = detectFilename(source.getUrl());
+                        Path target = destination.resolve(filename);
+                        try {
+                            try (FileUtils.CollocatedTempFile result = FileUtils.newTempFile(target, false)) {
+                                try (OutputStream out = Files.newOutputStream(result.getPath())) {
+                                    entity.writeTo(out);
+                                    result.move();
+                                }
+                            }
+                            if (!enforceChecksums(target, checksums)) {
+                                Files.deleteIfExists(target);
+                                return Result.failure("Checksum mismatch");
+                            }
+                            Files.createDirectories(destination);
+                            UnArchiver.builder().useRoot(useRoot).build().unarchive(target, destination);
+                        } finally {
+                            Files.deleteIfExists(target);
+                        }
+                    } else {
+                        Files.createDirectories(destination.getParent());
+                        try (FileUtils.CollocatedTempFile result = FileUtils.newTempFile(destination, false)) {
+                            try (OutputStream out = Files.newOutputStream(result.getPath())) {
+                                entity.writeTo(out);
+                                result.move();
+                            }
+                        }
+                        if (!enforceChecksums(destination, checksums)) {
+                            Files.deleteIfExists(destination);
+                            return Result.failure("Checksum mismatch");
+                        }
+                    }
+                    return Result.success(
+                            destination.toAbsolutePath().normalize().toString());
+                } else {
+                    return Result.failure("Nothing to download (or refused)");
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns detected filename from URI.
+     */
+    private static String detectFilename(String resourceUri) {
+        String path = URI.create(resourceUri).getPath();
+        if (path != null) {
+            int lastSlash = path.lastIndexOf('/');
+            if (lastSlash >= 0) {
+                return path.substring(lastSlash + 1);
+            }
+        }
+        return "unknown";
+    }
+
+    /**
+     * Returns detected and known, most common extensions, if detected, otherwise {@code ".tmp"}.
+     * Leading dot is always present.
+     */
+    private static String detectExtension(String resourceUri) {
+        String path = URI.create(resourceUri).getPath();
+        if (path != null) {
+            int lastSlash = path.lastIndexOf('/');
+            if (lastSlash >= 0) {
+                String filename = path.substring(lastSlash + 1);
+                int lastDot = filename.lastIndexOf('.');
+                if (lastDot >= 0) {
+                    int tar = filename.indexOf(".tar");
+                    if (tar > 0) {
+                        return filename.substring(tar);
+                    } else {
+                        return filename.substring(lastDot);
+                    }
+                }
+            }
+        }
+        return ".tmp";
+    }
+
+    private boolean enforceChecksums(Path content, Map<String, String> expectedChecksums) throws IOException {
+        Optional<ChecksumAlgorithmFactorySelector> so = context.lookup().lookup(ChecksumAlgorithmFactorySelector.class);
+        if (so.isEmpty() && !expectedChecksums.isEmpty()) {
+            throw new IllegalStateException("Checksum enforcement required but have no access to checksum selector");
+        }
+        boolean result = true;
+        Map<String, String> calculatedChecksums = ChecksumAlgorithmHelper.calculate(
+                content.toFile(), so.orElseThrow().selectList(expectedChecksums.keySet()));
+        for (Map.Entry<String, String> entry : expectedChecksums.entrySet()) {
+            String calculated = calculatedChecksums.get(entry.getKey());
+            if (!Objects.equals(entry.getValue(), calculated)) {
+                result = false;
+                output.error(
+                        "Checksum mismatch for {}: expected {} but calculated {}",
+                        entry.getKey(),
+                        entry.getValue(),
+                        calculated);
+            }
+        }
+        return result;
     }
 
     // POM editing

@@ -11,7 +11,9 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.maven.search.api.request.BooleanQuery.and;
 import static org.apache.maven.search.api.request.FieldQuery.fieldQuery;
 
+import eu.maveniverse.maven.mima.context.Context;
 import eu.maveniverse.maven.mima.context.ContextOverrides;
+import eu.maveniverse.maven.mima.extensions.mhc4.MavenHttpClient4Factory;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
@@ -22,13 +24,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Predicate;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.maven.search.api.MAVEN;
 import org.apache.maven.search.api.Record;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
 import org.apache.maven.search.api.SearchResponse;
 import org.apache.maven.search.api.request.Query;
-import org.apache.maven.search.api.transport.java11.Java11HttpClientTransport;
+import org.apache.maven.search.api.transport.Transport;
+import org.apache.maven.search.api.transport.apache.ApacheHttpClientTransport;
 import org.apache.maven.search.backend.remoterepository.RemoteRepositorySearchBackendFactory;
 import org.apache.maven.search.backend.remoterepository.ResponseExtractor;
 import org.apache.maven.search.backend.remoterepository.extractor.MavenCentralResponseExtractor;
@@ -43,9 +47,20 @@ import org.eclipse.aether.util.ConfigUtils;
 
 public class ToolboxSearchApiImpl implements ToolboxSearchApi {
     protected final Output output;
+    protected final Context context;
 
-    public ToolboxSearchApiImpl(Output output) {
+    public ToolboxSearchApiImpl(Output output, Context context) {
         this.output = requireNonNull(output, "output");
+        this.context = requireNonNull(context, "context");
+    }
+
+    protected Transport createTransport(RemoteRepository remoteRepository) {
+        return new ApacheHttpClientTransport(
+                RequestConfig.DEFAULT,
+                () -> null,
+                new MavenHttpClient4Factory(context)
+                        .createResolutionClient(remoteRepository)
+                        .build());
     }
 
     /**
@@ -125,13 +140,7 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
             backendUrl += "/";
         }
         return RemoteRepositorySearchBackendFactory.create(
-                backendId + "-rr",
-                backendId,
-                backendUrl,
-                new Java11HttpClientTransport(
-                        Java11HttpClientFactory.DEFAULT_TIMEOUT,
-                        Java11HttpClientFactory.buildHttpClient(session, remoteRepository)),
-                extractor);
+                backendId + "-rr", backendId, backendUrl, createTransport(remoteRepository), extractor);
     }
 
     /**
@@ -150,18 +159,14 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
                     SmoSearchBackendFactory.CSC_BACKEND_ID,
                     remoteRepository.getId(),
                     SmoSearchBackendFactory.CSC_SMO_URI,
-                    new Java11HttpClientTransport(
-                            Java11HttpClientFactory.DEFAULT_TIMEOUT,
-                            Java11HttpClientFactory.buildHttpClient(session, remoteRepository)));
+                    createTransport(remoteRepository));
         } else if (SmoSearchBackendFactory.SMO_BACKEND_ID.equals(backend)) {
             output.chatter("Creating SMO backend");
             return SmoSearchBackendFactory.create(
                     SmoSearchBackendFactory.SMO_BACKEND_ID,
                     remoteRepository.getId(),
                     SmoSearchBackendFactory.SMO_SMO_URI,
-                    new Java11HttpClientTransport(
-                            Java11HttpClientFactory.DEFAULT_TIMEOUT,
-                            Java11HttpClientFactory.buildHttpClient(session, remoteRepository)));
+                    createTransport(remoteRepository));
         } else {
             throw new IllegalArgumentException("Unknown SMO service backend: " + backend);
         }

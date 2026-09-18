@@ -12,7 +12,9 @@ import static java.util.Objects.requireNonNull;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -284,6 +286,78 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                 definedInModel(mavenProject.getModel()),
                 pluginToResolutionRoot(toolboxCommando),
                 mavenProject);
+    }
+
+    /**
+     * Collects plugins from the main build AND from all profile builds, keyed by scope.
+     * The map key is {@code null} for the main {@code <build>} section, or a profile id string
+     * for plugins declared inside {@code <profiles>/<profile>/<build>/<plugins>}.
+     *
+     * <p>Insertion order is preserved: main build first, then profiles in declaration order.</p>
+     *
+     * @param toolboxCommando the toolbox commando
+     * @return ordered map of scope → resolution roots (null key = main build)
+     */
+    protected Map<String, List<ResolutionRoot>> allProjectPluginsAsResolutionRootsPerScope(
+            ToolboxCommando toolboxCommando) {
+        return allProjectPluginsAsResolutionRootsPerScope(toolboxCommando, mavenProject);
+    }
+
+    /**
+     * Collects managed plugins from the main build AND from all profile builds, keyed by scope.
+     *
+     * @param toolboxCommando the toolbox commando
+     * @return ordered map of scope → resolution roots (null key = main build)
+     */
+    protected Map<String, List<ResolutionRoot>> allProjectManagedPluginsAsResolutionRootsPerScope(
+            ToolboxCommando toolboxCommando) {
+        return allProjectManagedPluginsAsResolutionRootsPerScope(toolboxCommando, mavenProject);
+    }
+
+    protected Map<String, List<ResolutionRoot>> allProjectPluginsAsResolutionRootsPerScope(
+            ToolboxCommando toolboxCommando, MavenProject mavenProject) {
+        Map<String, List<ResolutionRoot>> result = new LinkedHashMap<>();
+        // Main build
+        List<ResolutionRoot> mainPlugins = allProjectPluginsAsResolutionRoots(toolboxCommando, mavenProject);
+        if (!mainPlugins.isEmpty()) {
+            result.put(null, mainPlugins);
+        }
+        // Profile builds
+        for (Profile profile : mavenProject.getModel().getProfiles()) {
+            List<ResolutionRoot> profilePlugins = selectExtractResolutionRoots(
+                    profileBuildBaseSelector(profile.getId()),
+                    buildPluginsExtractor(),
+                    definedInModel(mavenProject.getModel()),
+                    pluginToResolutionRoot(toolboxCommando),
+                    mavenProject);
+            if (!profilePlugins.isEmpty()) {
+                result.put(profile.getId(), profilePlugins);
+            }
+        }
+        return result;
+    }
+
+    protected Map<String, List<ResolutionRoot>> allProjectManagedPluginsAsResolutionRootsPerScope(
+            ToolboxCommando toolboxCommando, MavenProject mavenProject) {
+        Map<String, List<ResolutionRoot>> result = new LinkedHashMap<>();
+        // Main build
+        List<ResolutionRoot> mainPlugins = allProjectManagedPluginsAsResolutionRoots(toolboxCommando, mavenProject);
+        if (!mainPlugins.isEmpty()) {
+            result.put(null, mainPlugins);
+        }
+        // Profile builds
+        for (Profile profile : mavenProject.getModel().getProfiles()) {
+            List<ResolutionRoot> profilePlugins = selectExtractResolutionRoots(
+                    profileBuildBaseSelector(profile.getId()),
+                    buildManagedPluginsExtractor(),
+                    definedInModel(mavenProject.getModel()),
+                    pluginToResolutionRoot(toolboxCommando),
+                    mavenProject);
+            if (!profilePlugins.isEmpty()) {
+                result.put(profile.getId(), profilePlugins);
+            }
+        }
+        return result;
     }
 
     private <T, B extends BuildBase, S> List<T> selectExtractResolutionRoots(

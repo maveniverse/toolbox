@@ -14,6 +14,7 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -59,18 +60,27 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
         ArtifactVersionSelector artifactVersionSelector =
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
 
+        // Collect plugins per scope (null = main build, non-null = profile id)
+        Map<String, List<ResolutionRoot>> managedPluginsPerScope =
+                allProjectManagedPluginsAsResolutionRootsPerScope(toolboxCommando);
+        Map<String, List<ResolutionRoot>> pluginsPerScope = allProjectPluginsAsResolutionRootsPerScope(toolboxCommando);
+
+        // Flatten all roots for version resolution (scope is not relevant for lookup, only for write-back)
+        List<ResolutionRoot> allManagedPlugins = new ArrayList<>();
+        managedPluginsPerScope.values().forEach(allManagedPlugins::addAll);
+        List<ResolutionRoot> allPlugins = new ArrayList<>();
+        pluginsPerScope.values().forEach(allPlugins::addAll);
+
         Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
                 "managed plugins",
-                () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
+                () -> allManagedPlugins.stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(artifactMatcher),
                 artifactVersionMatcher,
                 artifactVersionSelector);
         Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
                 "plugins",
-                () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
-                        .map(ResolutionRoot::getArtifact)
-                        .filter(artifactMatcher),
+                () -> allPlugins.stream().map(ResolutionRoot::getArtifact).filter(artifactMatcher),
                 artifactVersionMatcher,
                 artifactVersionSelector);
 
@@ -82,23 +92,59 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
             if (!managedPluginsUpdates.isEmpty() || !pluginsUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
+                    // Apply updates per scope so profile-declared plugins are updated in the right place
                     if (!managedPluginsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(
+                        applyPluginUpdatesPerScope(
+                                toolboxCommando,
                                 editSession,
-                                ToolboxCommando.PomOpSubject.MANAGED_PLUGINS,
-                                ToolboxCommando.Op.UPDATE,
-                                managedPluginsUpdates::stream);
+                                managedPluginsUpdates,
+                                managedPluginsPerScope,
+                                ToolboxCommando.PomOpSubject.MANAGED_PLUGINS);
                     }
                     if (!pluginsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(
+                        applyPluginUpdatesPerScope(
+                                toolboxCommando,
                                 editSession,
-                                ToolboxCommando.PomOpSubject.PLUGINS,
-                                ToolboxCommando.Op.UPDATE,
-                                pluginsUpdates::stream);
+                                pluginsUpdates,
+                                pluginsPerScope,
+                                ToolboxCommando.PomOpSubject.PLUGINS);
                     }
                 }
             }
         }
         return Result.success(true);
+    }
+
+    /**
+     * Applies plugin version updates, routing each artifact to the correct POM scope (main build or a profile).
+     *
+     * <p>For each scope that contains at least one of the updated artifacts, a separate
+     * {@link eu.maveniverse.maven.toolbox.shared.internal.PomTransformerSink} is created targeting that scope.
+     * This ensures plugins declared inside {@code <profiles>/<profile>/<build>/<plugins>} are updated in the
+     * profile, not in the main build.</p>
+     */
+    private void applyPluginUpdatesPerScope(
+            ToolboxCommando toolboxCommando,
+            ToolboxCommando.EditSession editSession,
+            List<Artifact> updates,
+            Map<String, List<ResolutionRoot>> rootsPerScope,
+            ToolboxCommando.PomOpSubject subject)
+            throws Exception {
+        for (Map.Entry<String, List<ResolutionRoot>> entry : rootsPerScope.entrySet()) {
+            String scopeProfileId = entry.getKey(); // null = main build
+            List<ResolutionRoot> scopeRoots = entry.getValue();
+
+            // Collect updates that belong to this scope
+            List<Artifact> scopeUpdates = updates.stream()
+                    .filter(update -> scopeRoots.stream()
+                            .anyMatch(root -> root.getArtifact().getGroupId().equals(update.getGroupId())
+                                    && root.getArtifact().getArtifactId().equals(update.getArtifactId())))
+                    .toList();
+
+            if (!scopeUpdates.isEmpty()) {
+                toolboxCommando.editPom(
+                        editSession, subject, ToolboxCommando.Op.UPDATE, scopeUpdates::stream, scopeProfileId);
+            }
+        }
     }
 }

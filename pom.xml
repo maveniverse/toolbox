@@ -76,7 +76,7 @@
     <version.mavenPluginTools>3.16.0</version.mavenPluginTools>
     <version.slf4j>2.0.19</version.slf4j>
     <version.picocli>4.7.7</version.picocli>
-    <version.jline>3.30.16</version.jline>
+    <version.jline>3.30.17</version.jline>
     <version.domtrip>1.6.0</version.domtrip>
     <version.groovy>5.1.2</version.groovy>
   </properties>

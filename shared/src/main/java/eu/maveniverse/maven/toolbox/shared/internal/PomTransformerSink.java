@@ -44,7 +44,34 @@ public final class PomTransformerSink implements Artifacts.Sink {
                 ArtifactMatcher.any(),
                 ArtifactMapper.identity(),
                 subject,
-                op);
+                op,
+                null);
+    }
+
+    /**
+     * Creates a profile-scoped "transform" sink. All plugin/managed-plugin operations will be applied
+     * within the specified profile's build section instead of the main build.
+     *
+     * <p>For non-plugin subjects ({@code DEPENDENCIES}, {@code MANAGED_DEPENDENCIES}, {@code EXTENSIONS})
+     * the {@code profileId} is ignored and the operation targets the main build, preserving existing behaviour.</p>
+     *
+     * @param output    the output
+     * @param pom       the POM path
+     * @param subject   the transformation subject
+     * @param op        the operation
+     * @param profileId the profile id to scope plugin operations to; {@code null} targets the main build
+     */
+    public static PomTransformerSink transform(
+            Output output, Path pom, ToolboxCommando.PomOpSubject subject, ToolboxCommando.Op op, String profileId) {
+        return transform(
+                output,
+                pom,
+                () -> PomSuppliers.empty400("org.acme", "acme", "1.0.0-SNAPSHOT"),
+                ArtifactMatcher.any(),
+                ArtifactMapper.identity(),
+                subject,
+                op,
+                profileId);
     }
 
     /**
@@ -58,7 +85,23 @@ public final class PomTransformerSink implements Artifacts.Sink {
             Function<Artifact, Artifact> artifactMapper,
             ToolboxCommando.PomOpSubject subject,
             ToolboxCommando.Op op) {
-        return new PomTransformerSink(output, pom, pomSupplier, artifactMatcher, artifactMapper, subject, op);
+        return new PomTransformerSink(output, pom, pomSupplier, artifactMatcher, artifactMapper, subject, op, null);
+    }
+
+    /**
+     * Creates "transform" sink, fully customizable, with optional profile scope.
+     */
+    public static PomTransformerSink transform(
+            Output output,
+            Path pom,
+            Supplier<String> pomSupplier,
+            Predicate<Artifact> artifactMatcher,
+            Function<Artifact, Artifact> artifactMapper,
+            ToolboxCommando.PomOpSubject subject,
+            ToolboxCommando.Op op,
+            String profileId) {
+        return new PomTransformerSink(
+                output, pom, pomSupplier, artifactMatcher, artifactMapper, subject, op, profileId);
     }
 
     private final Output output;
@@ -70,15 +113,16 @@ public final class PomTransformerSink implements Artifacts.Sink {
     private final ArrayList<Consumer<PomEditor>> applicableTransformations;
 
     /**
-     * Creates a directory sink.
+     * Creates a POM transformer sink.
      *
-     * @param output The output.
-     * @param pom The POM path, if not existing, will be created (as "blank").
-     * @param pomSupplier Required, if pom path points to a non-existent POM file.
+     * @param output         The output.
+     * @param pom            The POM path, if not existing, will be created (as "blank").
+     * @param pomSupplier    Required, if pom path points to a non-existent POM file.
      * @param artifactMatcher The artifact matcher.
-     * @param artifactMapper The artifact mapper.
-     * @param subject The transformation subject.
-     * @param op The transformation op.
+     * @param artifactMapper  The artifact mapper.
+     * @param subject         The transformation subject.
+     * @param op              The transformation op.
+     * @param profileId       If non-null, scope plugin/managed-plugin operations to this profile.
      */
     private PomTransformerSink(
             Output output,
@@ -87,7 +131,8 @@ public final class PomTransformerSink implements Artifacts.Sink {
             Predicate<Artifact> artifactMatcher,
             Function<Artifact, Artifact> artifactMapper,
             ToolboxCommando.PomOpSubject subject,
-            ToolboxCommando.Op op) {
+            ToolboxCommando.Op op,
+            String profileId) {
         this.output = requireNonNull(output, "output");
         this.pom = requireNonNull(pom, "pom").toAbsolutePath();
         this.pomSupplier = requireNonNull(pomSupplier, "pomSupplier");
@@ -100,8 +145,18 @@ public final class PomTransformerSink implements Artifacts.Sink {
             case UPSERT, UPDATE ->
                 switch (subject) {
                     case MANAGED_PLUGINS ->
-                        a -> (e -> e.plugins().updateManagedPlugin(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)));
-                    case PLUGINS -> a -> (e -> e.plugins().updatePlugin(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)));
+                        profileId != null
+                                ? a -> (e -> e.plugins()
+                                        .forProfile(profileId)
+                                        .updateManagedPlugin(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)))
+                                : a -> (e ->
+                                        e.plugins().updateManagedPlugin(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)));
+                    case PLUGINS ->
+                        profileId != null
+                                ? a -> (e -> e.plugins()
+                                        .forProfile(profileId)
+                                        .updatePlugin(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)))
+                                : a -> (e -> e.plugins().updatePlugin(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)));
                     case MANAGED_DEPENDENCIES ->
                         a -> (e -> e.dependencies()
                                 .updateManagedDependency(op == ToolboxCommando.Op.UPSERT, toDomTrip(a)));
@@ -112,8 +167,14 @@ public final class PomTransformerSink implements Artifacts.Sink {
                 };
             case DELETE ->
                 switch (subject) {
-                    case MANAGED_PLUGINS -> a -> (e -> e.plugins().deleteManagedPlugin(toDomTrip(a)));
-                    case PLUGINS -> a -> (e -> e.plugins().deletePlugin(toDomTrip(a)));
+                    case MANAGED_PLUGINS ->
+                        profileId != null
+                                ? a -> (e -> e.plugins().forProfile(profileId).deleteManagedPlugin(toDomTrip(a)))
+                                : a -> (e -> e.plugins().deleteManagedPlugin(toDomTrip(a)));
+                    case PLUGINS ->
+                        profileId != null
+                                ? a -> (e -> e.plugins().forProfile(profileId).deletePlugin(toDomTrip(a)))
+                                : a -> (e -> e.plugins().deletePlugin(toDomTrip(a)));
                     case MANAGED_DEPENDENCIES -> a -> (e -> e.dependencies().deleteManagedDependency(toDomTrip(a)));
                     case DEPENDENCIES -> a -> (e -> e.dependencies().deleteDependency(toDomTrip(a)));
                     case EXTENSIONS -> a -> (e -> e.extensions().deleteExtension(toDomTrip(a)));

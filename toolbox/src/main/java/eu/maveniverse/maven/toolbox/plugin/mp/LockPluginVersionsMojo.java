@@ -31,6 +31,13 @@ import picocli.CommandLine;
 
 /**
  * Locks available versions of Maven Project used plugins.
+ *
+ * <p>This mojo intentionally collects plugins from the effective main build of all projects in the
+ * reactor (plugins of inactive profiles are not included), and consolidates their locked versions
+ * into the root project's {@code <pluginManagement>} section. The goal is a single authoritative
+ * lock entry per plugin GA regardless of which scope (main build or profile) declared it. For
+ * scope-preserving plugin version updates (writing profile-declared updates back into the profile),
+ * see {@link PluginVersionsMojo}.</p>
  */
 @Mojo(name = "lock-plugin-versions", aggregator = true, threadSafe = true)
 public class LockPluginVersionsMojo extends MPPluginMojoSupport {

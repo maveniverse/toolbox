@@ -661,6 +661,33 @@ public interface ToolboxCommando extends Closeable {
     Result<List<Artifact>> editPom(EditSession es, PomOpSubject subject, Op op, Source<Artifact> artifacts)
             throws Exception;
 
+    /**
+     * Applies plugin/managed-plugin updates to a specific profile scope within the POM.
+     *
+     * <p>When {@code profileId} is non-null, plugin and managed-plugin operations are routed to
+     * the profile's {@code <build>} section rather than the main build. For other subjects
+     * ({@code DEPENDENCIES}, {@code MANAGED_DEPENDENCIES}, {@code EXTENSIONS}), {@code profileId}
+     * is ignored and the operation targets the main build.</p>
+     *
+     * <p>This default implementation delegates to {@link #editPom(EditSession, PomOpSubject, Op, Source)}
+     * when {@code profileId} is null, and throws {@link UnsupportedOperationException} for non-null
+     * profile ids. Implementations that support profile-scoped edits should override this method.</p>
+     *
+     * @param es        the active edit session
+     * @param subject   the transformation subject
+     * @param op        the operation
+     * @param artifacts the artifact source
+     * @param profileId if non-null, scope plugin operations to this profile; null targets main build
+     */
+    default Result<List<Artifact>> editPom(
+            EditSession es, PomOpSubject subject, Op op, Source<Artifact> artifacts, String profileId)
+            throws Exception {
+        if (profileId != null) {
+            throw new UnsupportedOperationException("Profile-scoped editPom is not supported by this implementation");
+        }
+        return editPom(es, subject, op, artifacts);
+    }
+
     Result<Boolean> editPom(EditSession es, List<Consumer<PomEditor>> transformers) throws Exception;
 
     enum ExtensionsScope {

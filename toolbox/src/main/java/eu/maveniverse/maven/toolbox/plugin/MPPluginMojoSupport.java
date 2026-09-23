@@ -326,12 +326,13 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
         if (!mainPlugins.isEmpty()) {
             result.put(null, mainPlugins);
         }
-        // Profile builds
+        // Profile builds — skip plugins with no declared version; they inherit from <pluginManagement>
+        // and resolving them as "g:a:null" would cause descriptor errors or spurious version writes.
         for (Profile profile : mavenProject.getModel().getProfiles()) {
             List<ResolutionRoot> profilePlugins = selectExtractResolutionRoots(
                     profileBuildBaseSelector(profile.getId()),
                     buildPluginsExtractor(),
-                    definedInModel(mavenProject.getModel()),
+                    this.<Plugin>definedInModel(mavenProject.getModel()).and(p -> p.getVersion() != null),
                     pluginToResolutionRoot(toolboxCommando),
                     mavenProject);
             if (!profilePlugins.isEmpty()) {
@@ -349,12 +350,13 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
         if (!mainPlugins.isEmpty()) {
             result.put(null, mainPlugins);
         }
-        // Profile builds
+        // Profile builds — skip plugins with no declared version; they inherit from <pluginManagement>
+        // and resolving them as "g:a:null" would cause descriptor errors or spurious version writes.
         for (Profile profile : mavenProject.getModel().getProfiles()) {
             List<ResolutionRoot> profilePlugins = selectExtractResolutionRoots(
                     profileBuildBaseSelector(profile.getId()),
                     buildManagedPluginsExtractor(),
-                    definedInModel(mavenProject.getModel()),
+                    this.<Plugin>definedInModel(mavenProject.getModel()).and(p -> p.getVersion() != null),
                     pluginToResolutionRoot(toolboxCommando),
                     mavenProject);
             if (!profilePlugins.isEmpty()) {

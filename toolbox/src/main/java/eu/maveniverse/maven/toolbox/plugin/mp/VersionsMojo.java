@@ -18,6 +18,7 @@ import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -111,18 +112,28 @@ public class VersionsMojo extends MPPluginMojoSupport {
             parents = toolboxCommando.versions(
                     "parent", () -> Stream.of(parentArtifact.get()), artifactVersionMatcher, artifactVersionSelector);
         }
+
+        // Collect plugins per scope (null = main build, non-null = profile id)
+        Map<String, List<ResolutionRoot>> managedPluginsPerScope =
+                allProjectManagedPluginsAsResolutionRootsPerScope(toolboxCommando);
+        Map<String, List<ResolutionRoot>> pluginsPerScope = allProjectPluginsAsResolutionRootsPerScope(toolboxCommando);
+
+        // Flatten all roots for version resolution (scope is not relevant for lookup, only for write-back)
+        List<ResolutionRoot> allManagedPlugins = new ArrayList<>();
+        managedPluginsPerScope.values().forEach(allManagedPlugins::addAll);
+        List<ResolutionRoot> allPlugins = new ArrayList<>();
+        pluginsPerScope.values().forEach(allPlugins::addAll);
+
         Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
                 "managed plugins",
-                () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
+                () -> allManagedPlugins.stream()
                         .map(ResolutionRoot::getArtifact)
                         .filter(ArtifactMatcher.any()),
                 artifactVersionMatcher,
                 artifactVersionSelector);
         Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
                 "plugins",
-                () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
-                        .map(ResolutionRoot::getArtifact)
-                        .filter(ArtifactMatcher.any()),
+                () -> allPlugins.stream().map(ResolutionRoot::getArtifact).filter(ArtifactMatcher.any()),
                 artifactVersionMatcher,
                 artifactVersionSelector);
 
@@ -156,17 +167,14 @@ public class VersionsMojo extends MPPluginMojoSupport {
             }
             List<Artifact> extensionUpdates =
                     toolboxCommando.calculateUpdates(extensions.getData().orElseThrow(), artifactVersionSelector);
-            List<Artifact> managedPluginsUpdates =
-                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow(), artifactVersionSelector);
-            List<Artifact> pluginsUpdates =
-                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> managedDependenciesUpdates = toolboxCommando.calculateUpdates(
                     managedDependencies.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> dependenciesUpdates =
                     toolboxCommando.calculateUpdates(dependencies.getData().orElseThrow(), artifactVersionSelector);
-            if ((parentsUpdates.get() != null && !parentsUpdates.get().isEmpty()) && !extensionUpdates.isEmpty()
-                    || !managedPluginsUpdates.isEmpty()
-                    || !pluginsUpdates.isEmpty()
+            if ((parentsUpdates.get() != null && !parentsUpdates.get().isEmpty())
+                    || !extensionUpdates.isEmpty()
+                    || !managedPlugins.getData().orElseThrow().isEmpty()
+                    || !plugins.getData().orElseThrow().isEmpty()
                     || !managedDependenciesUpdates.isEmpty()
                     || !dependenciesUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
@@ -183,20 +191,23 @@ public class VersionsMojo extends MPPluginMojoSupport {
                                 ToolboxCommando.Op.UPDATE,
                                 extensionUpdates::stream);
                     }
-                    if (!managedPluginsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(
-                                editSession,
-                                ToolboxCommando.PomOpSubject.MANAGED_PLUGINS,
-                                ToolboxCommando.Op.UPDATE,
-                                managedPluginsUpdates::stream);
-                    }
-                    if (!pluginsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(
-                                editSession,
-                                ToolboxCommando.PomOpSubject.PLUGINS,
-                                ToolboxCommando.Op.UPDATE,
-                                pluginsUpdates::stream);
-                    }
+                    // Apply plugin updates per scope so profile-declared plugins are updated in the right place.
+                    // Updates are calculated per scope to avoid a same-GA plugin declared in multiple scopes
+                    // with different versions causing one scope's target version to bleed into another.
+                    applyPluginUpdatesPerScope(
+                            toolboxCommando,
+                            editSession,
+                            managedPlugins.getData().orElseThrow(),
+                            managedPluginsPerScope,
+                            artifactVersionSelector,
+                            ToolboxCommando.PomOpSubject.MANAGED_PLUGINS);
+                    applyPluginUpdatesPerScope(
+                            toolboxCommando,
+                            editSession,
+                            plugins.getData().orElseThrow(),
+                            pluginsPerScope,
+                            artifactVersionSelector,
+                            ToolboxCommando.PomOpSubject.PLUGINS);
                     if (!managedDependenciesUpdates.isEmpty()) {
                         toolboxCommando.editPom(
                                 editSession,

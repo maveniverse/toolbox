@@ -85,66 +85,30 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
                 artifactVersionSelector);
 
         if (apply) {
-            List<Artifact> managedPluginsUpdates =
-                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow(), artifactVersionSelector);
-            List<Artifact> pluginsUpdates =
-                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow(), artifactVersionSelector);
-            if (!managedPluginsUpdates.isEmpty() || !pluginsUpdates.isEmpty()) {
+            if (!managedPlugins.getData().orElseThrow().isEmpty()
+                    || !plugins.getData().orElseThrow().isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
-                    // Apply updates per scope so profile-declared plugins are updated in the right place
-                    if (!managedPluginsUpdates.isEmpty()) {
-                        applyPluginUpdatesPerScope(
-                                toolboxCommando,
-                                editSession,
-                                managedPluginsUpdates,
-                                managedPluginsPerScope,
-                                ToolboxCommando.PomOpSubject.MANAGED_PLUGINS);
-                    }
-                    if (!pluginsUpdates.isEmpty()) {
-                        applyPluginUpdatesPerScope(
-                                toolboxCommando,
-                                editSession,
-                                pluginsUpdates,
-                                pluginsPerScope,
-                                ToolboxCommando.PomOpSubject.PLUGINS);
-                    }
+                    // Apply updates per scope so profile-declared plugins are updated in the right place.
+                    // Updates are calculated per scope to avoid a same-GA plugin declared in multiple scopes
+                    // with different versions causing one scope's target version to bleed into another.
+                    applyPluginUpdatesPerScope(
+                            toolboxCommando,
+                            editSession,
+                            managedPlugins.getData().orElseThrow(),
+                            managedPluginsPerScope,
+                            artifactVersionSelector,
+                            ToolboxCommando.PomOpSubject.MANAGED_PLUGINS);
+                    applyPluginUpdatesPerScope(
+                            toolboxCommando,
+                            editSession,
+                            plugins.getData().orElseThrow(),
+                            pluginsPerScope,
+                            artifactVersionSelector,
+                            ToolboxCommando.PomOpSubject.PLUGINS);
                 }
             }
         }
         return Result.success(true);
-    }
-
-    /**
-     * Applies plugin version updates, routing each artifact to the correct POM scope (main build or a profile).
-     *
-     * <p>For each scope that contains at least one of the updated artifacts, a separate
-     * {@link eu.maveniverse.maven.toolbox.shared.internal.PomTransformerSink} is created targeting that scope.
-     * This ensures plugins declared inside {@code <profiles>/<profile>/<build>/<plugins>} are updated in the
-     * profile, not in the main build.</p>
-     */
-    private void applyPluginUpdatesPerScope(
-            ToolboxCommando toolboxCommando,
-            ToolboxCommando.EditSession editSession,
-            List<Artifact> updates,
-            Map<String, List<ResolutionRoot>> rootsPerScope,
-            ToolboxCommando.PomOpSubject subject)
-            throws Exception {
-        for (Map.Entry<String, List<ResolutionRoot>> entry : rootsPerScope.entrySet()) {
-            String scopeProfileId = entry.getKey(); // null = main build
-            List<ResolutionRoot> scopeRoots = entry.getValue();
-
-            // Collect updates that belong to this scope
-            List<Artifact> scopeUpdates = updates.stream()
-                    .filter(update -> scopeRoots.stream()
-                            .anyMatch(root -> root.getArtifact().getGroupId().equals(update.getGroupId())
-                                    && root.getArtifact().getArtifactId().equals(update.getArtifactId())))
-                    .toList();
-
-            if (!scopeUpdates.isEmpty()) {
-                toolboxCommando.editPom(
-                        editSession, subject, ToolboxCommando.Op.UPDATE, scopeUpdates::stream, scopeProfileId);
-            }
-        }
     }
 }

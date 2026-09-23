@@ -9,6 +9,7 @@ package eu.maveniverse.maven.toolbox.plugin;
 
 import static java.util.Objects.requireNonNull;
 
+import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.BuildBase;
 import org.apache.maven.model.Extension;
@@ -29,9 +31,11 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.model.Profile;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
+import org.eclipse.aether.version.Version;
 
 /**
  * Support class for "project aware" Mojos dealing with plugins.
@@ -377,5 +381,50 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
             }
         }
         return result;
+    }
+
+    /**
+     * Applies plugin version updates, routing each artifact to the correct POM scope (main build or a profile).
+     *
+     * <p>For each scope, only the artifacts declared in that scope are considered, and their updates are
+     * computed from the per-artifact version data that was already resolved. This prevents a same-GA plugin
+     * declared in two different scopes (e.g. main build at 1.0 and a profile at 2.0) from having one
+     * scope's target version written into the other.</p>
+     *
+     * @param toolboxCommando     the toolbox commando
+     * @param editSession         the active edit session
+     * @param allVersions         the resolved version map for all artifacts (across all scopes)
+     * @param rootsPerScope       plugins grouped by scope (null key = main build, non-null = profile id)
+     * @param artifactVersionSelector the version selector
+     * @param subject             the POM section to update ({@code PLUGINS} or {@code MANAGED_PLUGINS})
+     */
+    protected void applyPluginUpdatesPerScope(
+            ToolboxCommando toolboxCommando,
+            ToolboxCommando.EditSession editSession,
+            Map<Artifact, List<Version>> allVersions,
+            Map<String, List<ResolutionRoot>> rootsPerScope,
+            ArtifactVersionSelector artifactVersionSelector,
+            ToolboxCommando.PomOpSubject subject)
+            throws Exception {
+        for (Map.Entry<String, List<ResolutionRoot>> entry : rootsPerScope.entrySet()) {
+            String scopeProfileId = entry.getKey(); // null = main build
+            List<ResolutionRoot> scopeRoots = entry.getValue();
+
+            // Build a version sub-map containing only artifacts that belong to this scope,
+            // matched by exact artifact identity (groupId + artifactId + version).
+            // This prevents a same-GA plugin at a different version in another scope from
+            // contributing an update to this scope.
+            Map<Artifact, List<Version>> scopeVersions = allVersions.entrySet().stream()
+                    .filter(e -> scopeRoots.stream()
+                            .anyMatch(root -> root.getArtifact().equals(e.getKey())))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+            List<Artifact> scopeUpdates = toolboxCommando.calculateUpdates(scopeVersions, artifactVersionSelector);
+
+            if (!scopeUpdates.isEmpty()) {
+                toolboxCommando.editPom(
+                        editSession, subject, ToolboxCommando.Op.UPDATE, scopeUpdates::stream, scopeProfileId);
+            }
+        }
     }
 }

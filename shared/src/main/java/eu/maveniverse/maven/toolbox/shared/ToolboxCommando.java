@@ -670,8 +670,10 @@ public interface ToolboxCommando extends Closeable {
      * is ignored and the operation targets the main build.</p>
      *
      * <p>This default implementation delegates to {@link #editPom(EditSession, PomOpSubject, Op, Source)}
-     * when {@code profileId} is null, and throws {@link UnsupportedOperationException} for non-null
-     * profile ids. Implementations that support profile-scoped edits should override this method.</p>
+     * when {@code profileId} is null, or when the subject is not plugin-related (non-plugin subjects
+     * ignore the profileId). Throws {@link UnsupportedOperationException} when {@code profileId} is
+     * non-null and the subject is {@code PLUGINS} or {@code MANAGED_PLUGINS}. Implementations that
+     * support profile-scoped plugin edits should override this method.</p>
      *
      * @param es        the active edit session
      * @param subject   the transformation subject
@@ -682,7 +684,7 @@ public interface ToolboxCommando extends Closeable {
     default Result<List<Artifact>> editPom(
             EditSession es, PomOpSubject subject, Op op, Source<Artifact> artifacts, String profileId)
             throws Exception {
-        if (profileId != null) {
+        if (profileId != null && (subject == PomOpSubject.PLUGINS || subject == PomOpSubject.MANAGED_PLUGINS)) {
             throw new UnsupportedOperationException("Profile-scoped editPom is not supported by this implementation");
         }
         return editPom(es, subject, op, artifacts);

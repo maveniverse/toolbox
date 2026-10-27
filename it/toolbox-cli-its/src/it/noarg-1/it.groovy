@@ -11,9 +11,7 @@ String[] args = ["${java}", "-Dorg.jline.terminal.provider=dumb", '-jar', "${cli
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()
-process.consumeProcessOutput(out, err)
-process.getOutputStream().flush()
 process.getOutputStream().close()
-process.waitFor()
+process.waitForProcessOutput(out, err)
 
-assert err.toString().isBlank()
+assert err.toString().isBlank() : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"

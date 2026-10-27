@@ -11,9 +11,8 @@ String[] args = ["${java}", '-jar', "${cli}", "-B", "-e", "dm-tree", "org.spring
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()
-process.consumeProcessOutput(out, err)
-process.waitFor()
+process.waitForProcessOutput(out, err)
 
-assert out.contains('DM conflicts discovered:')
-assert out.contains(' * org.apache.maven.plugin-tools:maven-plugin-annotations:jar version')
-assert out.contains('prevails, but met versions')
+assert out.contains('DM conflicts discovered:') : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"
+assert out.contains(' * org.apache.maven.plugin-tools:maven-plugin-annotations:jar version') : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"
+assert out.contains('prevails, but met versions') : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"

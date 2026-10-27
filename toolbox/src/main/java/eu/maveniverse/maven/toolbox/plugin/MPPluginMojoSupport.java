@@ -304,7 +304,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
      */
     protected Map<String, List<ResolutionRoot>> allProjectPluginsAsResolutionRootsPerScope(
             ToolboxCommando toolboxCommando) {
-        return allProjectPluginsAsResolutionRootsPerScope(toolboxCommando, mavenProject);
+        return perScope(toolboxCommando, allProjectPluginsAsResolutionRoots(toolboxCommando), buildPluginsExtractor());
     }
 
     /**
@@ -315,52 +315,31 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
      */
     protected Map<String, List<ResolutionRoot>> allProjectManagedPluginsAsResolutionRootsPerScope(
             ToolboxCommando toolboxCommando) {
-        return allProjectManagedPluginsAsResolutionRootsPerScope(toolboxCommando, mavenProject);
+        return perScope(
+                toolboxCommando,
+                allProjectManagedPluginsAsResolutionRoots(toolboxCommando),
+                buildManagedPluginsExtractor());
     }
 
-    protected Map<String, List<ResolutionRoot>> allProjectPluginsAsResolutionRootsPerScope(
-            ToolboxCommando toolboxCommando, MavenProject mavenProject) {
+    private Map<String, List<ResolutionRoot>> perScope(
+            ToolboxCommando toolboxCommando,
+            List<ResolutionRoot> mainRoots,
+            Function<BuildBase, List<Plugin>> extractor) {
         Map<String, List<ResolutionRoot>> result = new LinkedHashMap<>();
-        // Main build
-        List<ResolutionRoot> mainPlugins = allProjectPluginsAsResolutionRoots(toolboxCommando, mavenProject);
-        if (!mainPlugins.isEmpty()) {
-            result.put(null, mainPlugins);
+        if (!mainRoots.isEmpty()) {
+            result.put(null, mainRoots);
         }
         // Profile builds — skip plugins with no declared version; they inherit from <pluginManagement>
         // and resolving them as "g:a:null" would cause descriptor errors or spurious version writes.
         for (Profile profile : mavenProject.getModel().getProfiles()) {
-            List<ResolutionRoot> profilePlugins = selectExtractResolutionRoots(
+            List<ResolutionRoot> profileRoots = selectExtractResolutionRoots(
                     profileBuildBaseSelector(profile.getId()),
-                    buildPluginsExtractor(),
+                    extractor,
                     this.<Plugin>definedInModel(mavenProject.getModel()).and(p -> p.getVersion() != null),
                     pluginToResolutionRoot(toolboxCommando),
                     mavenProject);
-            if (!profilePlugins.isEmpty()) {
-                result.put(profile.getId(), profilePlugins);
-            }
-        }
-        return result;
-    }
-
-    protected Map<String, List<ResolutionRoot>> allProjectManagedPluginsAsResolutionRootsPerScope(
-            ToolboxCommando toolboxCommando, MavenProject mavenProject) {
-        Map<String, List<ResolutionRoot>> result = new LinkedHashMap<>();
-        // Main build
-        List<ResolutionRoot> mainPlugins = allProjectManagedPluginsAsResolutionRoots(toolboxCommando, mavenProject);
-        if (!mainPlugins.isEmpty()) {
-            result.put(null, mainPlugins);
-        }
-        // Profile builds — skip plugins with no declared version; they inherit from <pluginManagement>
-        // and resolving them as "g:a:null" would cause descriptor errors or spurious version writes.
-        for (Profile profile : mavenProject.getModel().getProfiles()) {
-            List<ResolutionRoot> profilePlugins = selectExtractResolutionRoots(
-                    profileBuildBaseSelector(profile.getId()),
-                    buildManagedPluginsExtractor(),
-                    this.<Plugin>definedInModel(mavenProject.getModel()).and(p -> p.getVersion() != null),
-                    pluginToResolutionRoot(toolboxCommando),
-                    mavenProject);
-            if (!profilePlugins.isEmpty()) {
-                result.put(profile.getId(), profilePlugins);
+            if (!profileRoots.isEmpty()) {
+                result.put(profile.getId(), profileRoots);
             }
         }
         return result;
@@ -386,7 +365,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
     }
 
     /**
-     * Applies plugin version updates, routing each artifact to the correct POM scope (main build or a profile).
+     * Calculates plugin version updates per POM scope (main build or a profile).
      *
      * <p>For each scope, only the artifacts declared in that scope are considered, and their updates are
      * computed from the per-artifact version data that was already resolved. This prevents a same-GA plugin
@@ -394,39 +373,47 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
      * scope's target version written into the other.</p>
      *
      * @param toolboxCommando     the toolbox commando
-     * @param editSession         the active edit session
      * @param allVersions         the resolved version map for all artifacts (across all scopes)
      * @param rootsPerScope       plugins grouped by scope (null key = main build, non-null = profile id)
      * @param artifactVersionSelector the version selector
-     * @param subject             the POM section to update ({@code PLUGINS} or {@code MANAGED_PLUGINS})
+     * @return ordered map of scope → updates, containing only scopes that have updates
      */
-    protected void applyPluginUpdatesPerScope(
+    protected Map<String, List<Artifact>> calculatePluginUpdatesPerScope(
             ToolboxCommando toolboxCommando,
-            ToolboxCommando.EditSession editSession,
             Map<Artifact, List<Version>> allVersions,
             Map<String, List<ResolutionRoot>> rootsPerScope,
-            ArtifactVersionSelector artifactVersionSelector,
-            ToolboxCommando.PomOpSubject subject)
-            throws Exception {
+            ArtifactVersionSelector artifactVersionSelector) {
+        Map<String, List<Artifact>> result = new LinkedHashMap<>();
         for (Map.Entry<String, List<ResolutionRoot>> entry : rootsPerScope.entrySet()) {
-            String scopeProfileId = entry.getKey(); // null = main build
             List<ResolutionRoot> scopeRoots = entry.getValue();
-
-            // Build a version sub-map containing only artifacts that belong to this scope,
-            // matched by exact artifact identity (groupId + artifactId + version).
-            // This prevents a same-GA plugin at a different version in another scope from
-            // contributing an update to this scope.
+            // Match by exact artifact identity (groupId + artifactId + version), so a same-GA plugin
+            // at a different version in another scope does not contribute an update to this scope.
             Map<Artifact, List<Version>> scopeVersions = allVersions.entrySet().stream()
                     .filter(e -> scopeRoots.stream()
                             .anyMatch(root -> root.getArtifact().equals(e.getKey())))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
             List<Artifact> scopeUpdates = toolboxCommando.calculateUpdates(scopeVersions, artifactVersionSelector);
-
             if (!scopeUpdates.isEmpty()) {
-                toolboxCommando.editPom(
-                        editSession, subject, ToolboxCommando.Op.UPDATE, scopeUpdates::stream, scopeProfileId);
+                result.put(entry.getKey(), scopeUpdates);
             }
+        }
+        return result;
+    }
+
+    /**
+     * Applies updates calculated by {@link #calculatePluginUpdatesPerScope}, each into its own POM scope.
+     *
+     * @param subject the POM section to update ({@code PLUGINS} or {@code MANAGED_PLUGINS})
+     */
+    protected void applyPluginUpdatesPerScope(
+            ToolboxCommando toolboxCommando,
+            ToolboxCommando.EditSession editSession,
+            Map<String, List<Artifact>> updatesPerScope,
+            ToolboxCommando.PomOpSubject subject)
+            throws Exception {
+        for (Map.Entry<String, List<Artifact>> entry : updatesPerScope.entrySet()) {
+            toolboxCommando.editPom(
+                    editSession, subject, ToolboxCommando.Op.UPDATE, entry.getValue()::stream, entry.getKey());
         }
     }
 }

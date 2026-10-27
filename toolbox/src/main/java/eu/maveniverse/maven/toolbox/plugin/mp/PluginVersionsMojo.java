@@ -85,27 +85,24 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
                 artifactVersionSelector);
 
         if (apply) {
-            if (!managedPlugins.getData().orElseThrow().isEmpty()
-                    || !plugins.getData().orElseThrow().isEmpty()) {
+            Map<String, List<Artifact>> managedPluginsUpdates = calculatePluginUpdatesPerScope(
+                    toolboxCommando,
+                    managedPlugins.getData().orElseThrow(),
+                    managedPluginsPerScope,
+                    artifactVersionSelector);
+            Map<String, List<Artifact>> pluginsUpdates = calculatePluginUpdatesPerScope(
+                    toolboxCommando, plugins.getData().orElseThrow(), pluginsPerScope, artifactVersionSelector);
+            if (!managedPluginsUpdates.isEmpty() || !pluginsUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
                     // Apply updates per scope so profile-declared plugins are updated in the right place.
-                    // Updates are calculated per scope to avoid a same-GA plugin declared in multiple scopes
-                    // with different versions causing one scope's target version to bleed into another.
                     applyPluginUpdatesPerScope(
                             toolboxCommando,
                             editSession,
-                            managedPlugins.getData().orElseThrow(),
-                            managedPluginsPerScope,
-                            artifactVersionSelector,
+                            managedPluginsUpdates,
                             ToolboxCommando.PomOpSubject.MANAGED_PLUGINS);
                     applyPluginUpdatesPerScope(
-                            toolboxCommando,
-                            editSession,
-                            plugins.getData().orElseThrow(),
-                            pluginsPerScope,
-                            artifactVersionSelector,
-                            ToolboxCommando.PomOpSubject.PLUGINS);
+                            toolboxCommando, editSession, pluginsUpdates, ToolboxCommando.PomOpSubject.PLUGINS);
                 }
             }
         }

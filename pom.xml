@@ -78,7 +78,7 @@
     <version.picocli>4.7.7</version.picocli>
     <version.jline>3.30.17</version.jline>
     <version.domtrip>1.6.0</version.domtrip>
-    <version.groovy>5.1.2</version.groovy>
+    <version.groovy>6.0.0</version.groovy>
   </properties>
 
   <dependencyManagement>

@@ -303,22 +303,24 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
      * <p>Insertion order is preserved: main build first, then profiles in declaration order.</p>
      *
      * @param toolboxCommando the toolbox commando
+     * @param profiles if {@code false}, only the effective main build is collected (no profile handling at all)
      * @return ordered map of scope → resolution roots (null key = main build)
      */
     protected Map<String, List<ResolutionRoot>> allProjectPluginsAsResolutionRootsPerScope(
-            ToolboxCommando toolboxCommando) {
-        return perScope(toolboxCommando, buildPluginsExtractor());
+            ToolboxCommando toolboxCommando, boolean profiles) {
+        return perScope(toolboxCommando, buildPluginsExtractor(), profiles);
     }
 
     /**
      * Collects managed plugins from the main build AND from all profile builds, keyed by scope.
      *
      * @param toolboxCommando the toolbox commando
+     * @param profiles if {@code false}, only the effective main build is collected (no profile handling at all)
      * @return ordered map of scope → resolution roots (null key = main build)
      */
     protected Map<String, List<ResolutionRoot>> allProjectManagedPluginsAsResolutionRootsPerScope(
-            ToolboxCommando toolboxCommando) {
-        return perScope(toolboxCommando, buildManagedPluginsExtractor());
+            ToolboxCommando toolboxCommando, boolean profiles) {
+        return perScope(toolboxCommando, buildManagedPluginsExtractor(), profiles);
     }
 
     /**
@@ -333,15 +335,23 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
     }
 
     private Map<String, List<ResolutionRoot>> perScope(
-            ToolboxCommando toolboxCommando, Function<BuildBase, List<Plugin>> extractor) {
+            ToolboxCommando toolboxCommando, Function<BuildBase, List<Plugin>> extractor, boolean profiles) {
         Model model = mavenProject.getModel();
         Predicate<Plugin> definedInModel = definedInModel(model);
         Function<Plugin, ResolutionRoot> transformer = pluginToResolutionRoot(toolboxCommando);
         Map<String, List<ResolutionRoot>> result = new LinkedHashMap<>();
+        if (!profiles) {
+            List<ResolutionRoot> mainRoots = selectExtractResolutionRoots(
+                    projectBuildBaseSelector(), extractor, definedInModel, transformer, mavenProject);
+            if (!mainRoots.isEmpty()) {
+                result.put(null, mainRoots);
+            }
+            return result;
+        }
 
-        // The effective main build has active profile plugins merged in. A plugin whose version comes from a
-        // profile must not be updated from that version in the main build: use the main build's own declared
-        // version (from the raw model) instead, or drop it if main does not declare one.
+        // The effective main build has active profile plugins and property overrides merged in. A plugin whose
+        // version comes from a profile must not be updated from that version in the main build: use the main
+        // build's own declared version (from the raw model) instead, or drop it if main does not declare one.
         Set<String> profileVersionLocations = new HashSet<>();
         for (Profile profile : model.getProfiles()) {
             for (Function<BuildBase, List<Plugin>> e :
@@ -362,11 +372,15 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
                 if (!definedInModel.test(plugin)) {
                     continue;
                 }
+                Plugin declared = mainDeclared(plugin, rawMainPlugins, originalModel);
                 if (profileVersionLocations.contains(versionLocation(plugin))) {
-                    plugin = mainDeclared(plugin, rawMainPlugins, originalModel);
-                    if (plugin == null) {
+                    if (declared == null) {
                         continue;
                     }
+                    plugin = declared;
+                } else if (declared != null && !declared.getVersion().equals(plugin.getVersion())) {
+                    // version property overridden elsewhere (active profile, settings, user property)
+                    plugin = declared;
                 }
                 mainRoots.add(transformer.apply(plugin));
             }

@@ -65,20 +65,20 @@
             <build>
                 <pluginManagement>
                     <plugins>
-                        <!-- profile managed; version set directly -->
+                        <!-- profile managed; version set directly; untouched without -Dprofiles -->
                         <plugin>
                             <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
                             <artifactId>second</artifactId>
-                            <version>1.1</version>
+                            <version>1.0</version>
                         </plugin>
                     </plugins>
                 </pluginManagement>
                 <plugins>
-                    <!-- profile; version set directly -->
+                    <!-- profile; version set directly; untouched without -Dprofiles -->
                     <plugin>
                         <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
                         <artifactId>fourth</artifactId>
-                        <version>1.1</version>
+                        <version>1.0</version>
                     </plugin>
                     <!-- profile; no version, must be left alone -->
                     <plugin>

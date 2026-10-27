@@ -14,10 +14,21 @@
     <artifactId>versions</artifactId>
     <version>1.0.0</version>
     <properties>
+        <second.version>1.0</second.version>
         <first.version>1.0</first.version>
     </properties>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <!-- version property overridden by active profile at latest; main property must still be updated -->
+                <plugin>
+                    <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                    <artifactId>second</artifactId>
+                    <version>${second.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <!-- shadowed by active profile at latest; main must still be updated -->
             <plugin>
@@ -36,6 +47,9 @@
     <profiles>
         <profile>
             <id>active</id>
+            <properties>
+                <second.version>1.1</second.version>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -63,7 +77,23 @@
                 <third.version>1.0</third.version>
             </properties>
             <build>
+                <pluginManagement>
+                    <plugins>
+                        <!-- inactive profile managed; version set directly -->
+                        <plugin>
+                            <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                            <artifactId>first</artifactId>
+                            <version>1.0</version>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
                 <plugins>
+                    <!-- inactive profile; version set directly -->
+                    <plugin>
+                        <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                        <artifactId>fourth</artifactId>
+                        <version>1.0</version>
+                    </plugin>
                     <!-- property only defined in inactive profile: must be skipped, not fail the build -->
                     <plugin>
                         <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>

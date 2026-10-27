@@ -50,6 +50,13 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     @Parameter(property = "apply")
     private boolean apply;
 
+    /**
+     * Experimental: also check and update plugins declared in POM profiles, writing updates back into the
+     * profile they were declared in. When disabled (default), only the effective main build is considered.
+     */
+    @Parameter(property = "profiles", defaultValue = "false")
+    private boolean profiles;
+
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
@@ -61,8 +68,9 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
 
         // Collect plugins per scope (null = main build, non-null = profile id)
         Map<String, List<ResolutionRoot>> managedPluginsPerScope =
-                allProjectManagedPluginsAsResolutionRootsPerScope(toolboxCommando);
-        Map<String, List<ResolutionRoot>> pluginsPerScope = allProjectPluginsAsResolutionRootsPerScope(toolboxCommando);
+                allProjectManagedPluginsAsResolutionRootsPerScope(toolboxCommando, profiles);
+        Map<String, List<ResolutionRoot>> pluginsPerScope =
+                allProjectPluginsAsResolutionRootsPerScope(toolboxCommando, profiles);
 
         Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
                 "managed plugins",

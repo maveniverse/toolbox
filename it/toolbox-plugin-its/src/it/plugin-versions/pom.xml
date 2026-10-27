@@ -65,7 +65,7 @@
             <build>
                 <pluginManagement>
                     <plugins>
-                        <!-- profile managed; version set directly -->
+                        <!-- profile managed; version set directly; untouched without -Dprofiles -->
                         <plugin>
                             <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
                             <artifactId>second</artifactId>
@@ -74,7 +74,7 @@
                     </plugins>
                 </pluginManagement>
                 <plugins>
-                    <!-- profile; version set directly -->
+                    <!-- profile; version set directly; untouched without -Dprofiles -->
                     <plugin>
                         <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
                         <artifactId>fourth</artifactId>

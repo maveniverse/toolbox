@@ -13,10 +13,13 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -304,7 +307,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
      */
     protected Map<String, List<ResolutionRoot>> allProjectPluginsAsResolutionRootsPerScope(
             ToolboxCommando toolboxCommando) {
-        return perScope(toolboxCommando, allProjectPluginsAsResolutionRoots(toolboxCommando), buildPluginsExtractor());
+        return perScope(toolboxCommando, buildPluginsExtractor());
     }
 
     /**
@@ -315,34 +318,131 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
      */
     protected Map<String, List<ResolutionRoot>> allProjectManagedPluginsAsResolutionRootsPerScope(
             ToolboxCommando toolboxCommando) {
-        return perScope(
-                toolboxCommando,
-                allProjectManagedPluginsAsResolutionRoots(toolboxCommando),
-                buildManagedPluginsExtractor());
+        return perScope(toolboxCommando, buildManagedPluginsExtractor());
+    }
+
+    /**
+     * Returns the distinct artifacts of all scopes, for version lookup (scope matters only for write-back).
+     */
+    protected static List<Artifact> distinctArtifacts(Map<String, List<ResolutionRoot>> rootsPerScope) {
+        return rootsPerScope.values().stream()
+                .flatMap(List::stream)
+                .map(ResolutionRoot::getArtifact)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     private Map<String, List<ResolutionRoot>> perScope(
-            ToolboxCommando toolboxCommando,
-            List<ResolutionRoot> mainRoots,
-            Function<BuildBase, List<Plugin>> extractor) {
+            ToolboxCommando toolboxCommando, Function<BuildBase, List<Plugin>> extractor) {
+        Model model = mavenProject.getModel();
+        Predicate<Plugin> definedInModel = definedInModel(model);
+        Function<Plugin, ResolutionRoot> transformer = pluginToResolutionRoot(toolboxCommando);
         Map<String, List<ResolutionRoot>> result = new LinkedHashMap<>();
+
+        // The effective main build has active profile plugins merged in. A plugin whose version comes from a
+        // profile must not be updated from that version in the main build: use the main build's own declared
+        // version (from the raw model) instead, or drop it if main does not declare one.
+        Set<String> profileVersionLocations = new HashSet<>();
+        for (Profile profile : model.getProfiles()) {
+            for (Function<BuildBase, List<Plugin>> e :
+                    List.of(buildPluginsExtractor(), buildManagedPluginsExtractor())) {
+                List<Plugin> plugins = e.apply(profile.getBuild());
+                if (plugins != null) {
+                    plugins.forEach(p -> profileVersionLocations.add(versionLocation(p)));
+                }
+            }
+        }
+        profileVersionLocations.remove(null);
+        Model originalModel = mavenProject.getOriginalModel();
+        List<Plugin> rawMainPlugins = extractor.apply(projectBuildBaseSelector().apply(originalModel));
+        List<ResolutionRoot> mainRoots = new ArrayList<>();
+        List<Plugin> mainPlugins = extractor.apply(projectBuildBaseSelector().apply(model));
+        if (mainPlugins != null) {
+            for (Plugin plugin : mainPlugins) {
+                if (!definedInModel.test(plugin)) {
+                    continue;
+                }
+                if (profileVersionLocations.contains(versionLocation(plugin))) {
+                    plugin = mainDeclared(plugin, rawMainPlugins, originalModel);
+                    if (plugin == null) {
+                        continue;
+                    }
+                }
+                mainRoots.add(transformer.apply(plugin));
+            }
+        }
         if (!mainRoots.isEmpty()) {
             result.put(null, mainRoots);
         }
-        // Profile builds — skip plugins with no declared version; they inherit from <pluginManagement>
-        // and resolving them as "g:a:null" would cause descriptor errors or spurious version writes.
-        for (Profile profile : mavenProject.getModel().getProfiles()) {
-            List<ResolutionRoot> profileRoots = selectExtractResolutionRoots(
-                    profileBuildBaseSelector(profile.getId()),
-                    extractor,
-                    this.<Plugin>definedInModel(mavenProject.getModel()).and(p -> p.getVersion() != null),
-                    pluginToResolutionRoot(toolboxCommando),
-                    mavenProject);
+
+        // Profile builds: skip plugins with no declared version (they inherit from <pluginManagement>).
+        // Inactive profiles are not interpolated against their own properties, and may need repositories
+        // that are not in effect, so plugins we cannot resolve are skipped with a warning instead of failing.
+        for (Profile profile : model.getProfiles()) {
+            List<ResolutionRoot> profileRoots = new ArrayList<>();
+            List<Plugin> plugins = extractor.apply(profile.getBuild());
+            if (plugins != null) {
+                for (Plugin plugin : plugins) {
+                    if (plugin.getVersion() == null || !definedInModel.test(plugin)) {
+                        continue;
+                    }
+                    if (plugin.getVersion().contains("${")) {
+                        getOutput()
+                                .warn(
+                                        "Skipping plugin {} in profile {}: version {} cannot be interpolated",
+                                        plugin.getKey(),
+                                        profile.getId(),
+                                        plugin.getVersion());
+                        continue;
+                    }
+                    try {
+                        profileRoots.add(transformer.apply(plugin));
+                    } catch (IllegalArgumentException e) {
+                        getOutput()
+                                .warn(
+                                        "Skipping plugin {} in profile {}: {}",
+                                        plugin.getKey(),
+                                        profile.getId(),
+                                        e.getMessage());
+                    }
+                }
+            }
             if (!profileRoots.isEmpty()) {
                 result.put(profile.getId(), profileRoots);
             }
         }
         return result;
+    }
+
+    /**
+     * Returns a copy of the effective plugin carrying the version declared in the main build of the raw model, or
+     * {@code null} if main does not declare a version (or declares one we cannot resolve from raw properties).
+     */
+    private static Plugin mainDeclared(Plugin effective, List<Plugin> rawMainPlugins, Model originalModel) {
+        if (rawMainPlugins == null) {
+            return null;
+        }
+        for (Plugin raw : rawMainPlugins) {
+            if (effective.getKey().equals(raw.getKey()) && raw.getVersion() != null) {
+                String version = raw.getVersion();
+                if (version.startsWith("${") && version.endsWith("}")) {
+                    // ponytail: only a plain ${prop} from this POM's properties, not nested/inherited expressions
+                    version = originalModel.getProperties().getProperty(version.substring(2, version.length() - 1));
+                }
+                if (version == null || version.contains("${")) {
+                    return null;
+                }
+                Plugin result = effective.clone();
+                result.setVersion(version);
+                return result;
+            }
+        }
+        return null;
+    }
+
+    private static String versionLocation(Plugin plugin) {
+        InputLocation location = plugin.getLocation("version");
+        return location == null ? null : location.getLineNumber() + ":" + location.getColumnNumber();
     }
 
     private <T, B extends BuildBase, S> List<T> selectExtractResolutionRoots(
@@ -385,13 +485,15 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
             ArtifactVersionSelector artifactVersionSelector) {
         Map<String, List<Artifact>> result = new LinkedHashMap<>();
         for (Map.Entry<String, List<ResolutionRoot>> entry : rootsPerScope.entrySet()) {
-            List<ResolutionRoot> scopeRoots = entry.getValue();
-            // Match by exact artifact identity (groupId + artifactId + version), so a same-GA plugin
-            // at a different version in another scope does not contribute an update to this scope.
-            Map<Artifact, List<Version>> scopeVersions = allVersions.entrySet().stream()
-                    .filter(e -> scopeRoots.stream()
-                            .anyMatch(root -> root.getArtifact().equals(e.getKey())))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            // Exact artifact identity (GAV), so a same-GA plugin at another version in another scope does not
+            // contribute an update to this scope.
+            Map<Artifact, List<Version>> scopeVersions = new HashMap<>();
+            for (ResolutionRoot root : entry.getValue()) {
+                List<Version> versions = allVersions.get(root.getArtifact());
+                if (versions != null) {
+                    scopeVersions.put(root.getArtifact(), versions);
+                }
+            }
             List<Artifact> scopeUpdates = toolboxCommando.calculateUpdates(scopeVersions, artifactVersionSelector);
             if (!scopeUpdates.isEmpty()) {
                 result.put(entry.getKey(), scopeUpdates);

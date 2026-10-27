@@ -14,7 +14,6 @@ import eu.maveniverse.maven.toolbox.shared.ArtifactVersionSelector;
 import eu.maveniverse.maven.toolbox.shared.ResolutionRoot;
 import eu.maveniverse.maven.toolbox.shared.Result;
 import eu.maveniverse.maven.toolbox.shared.ToolboxCommando;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -65,22 +64,14 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
                 allProjectManagedPluginsAsResolutionRootsPerScope(toolboxCommando);
         Map<String, List<ResolutionRoot>> pluginsPerScope = allProjectPluginsAsResolutionRootsPerScope(toolboxCommando);
 
-        // Flatten all roots for version resolution (scope is not relevant for lookup, only for write-back)
-        List<ResolutionRoot> allManagedPlugins = new ArrayList<>();
-        managedPluginsPerScope.values().forEach(allManagedPlugins::addAll);
-        List<ResolutionRoot> allPlugins = new ArrayList<>();
-        pluginsPerScope.values().forEach(allPlugins::addAll);
-
         Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
                 "managed plugins",
-                () -> allManagedPlugins.stream()
-                        .map(ResolutionRoot::getArtifact)
-                        .filter(artifactMatcher),
+                () -> distinctArtifacts(managedPluginsPerScope).stream().filter(artifactMatcher),
                 artifactVersionMatcher,
                 artifactVersionSelector);
         Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
                 "plugins",
-                () -> allPlugins.stream().map(ResolutionRoot::getArtifact).filter(artifactMatcher),
+                () -> distinctArtifacts(pluginsPerScope).stream().filter(artifactMatcher),
                 artifactVersionMatcher,
                 artifactVersionSelector);
 

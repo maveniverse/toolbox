@@ -1986,12 +1986,6 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<Artifact>> editPom(EditSession es, PomOpSubject subject, Op op, Source<Artifact> artifacts)
-            throws Exception {
-        return editPom(es, subject, op, artifacts, null);
-    }
-
-    @Override
     public Result<List<Artifact>> editPom(
             EditSession es, PomOpSubject subject, Op op, Source<Artifact> artifacts, String profileId)
             throws Exception {

@@ -50,6 +50,13 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
     @Parameter(property = "apply")
     private boolean apply;
 
+    /**
+     * Experimental: also check and update plugins declared in POM profiles, writing updates back into the
+     * profile they were declared in. When disabled (default), only the effective main build is considered.
+     */
+    @Parameter(property = "profiles", defaultValue = "false")
+    private boolean profiles;
+
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
@@ -59,43 +66,42 @@ public class PluginVersionsMojo extends MPPluginMojoSupport {
         ArtifactVersionSelector artifactVersionSelector =
                 toolboxCommando.parseArtifactVersionSelectorSpec(artifactVersionSelectorSpec);
 
+        // Collect plugins per scope (null = main build, non-null = profile id)
+        Map<String, List<ResolutionRoot>> managedPluginsPerScope =
+                allProjectManagedPluginsAsResolutionRootsPerScope(toolboxCommando, profiles);
+        Map<String, List<ResolutionRoot>> pluginsPerScope =
+                allProjectPluginsAsResolutionRootsPerScope(toolboxCommando, profiles);
+
         Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
                 "managed plugins",
-                () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
-                        .map(ResolutionRoot::getArtifact)
-                        .filter(artifactMatcher),
+                () -> distinctArtifacts(managedPluginsPerScope).stream().filter(artifactMatcher),
                 artifactVersionMatcher,
                 artifactVersionSelector);
         Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
                 "plugins",
-                () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
-                        .map(ResolutionRoot::getArtifact)
-                        .filter(artifactMatcher),
+                () -> distinctArtifacts(pluginsPerScope).stream().filter(artifactMatcher),
                 artifactVersionMatcher,
                 artifactVersionSelector);
 
         if (apply) {
-            List<Artifact> managedPluginsUpdates =
-                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow(), artifactVersionSelector);
-            List<Artifact> pluginsUpdates =
-                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow(), artifactVersionSelector);
+            Map<String, List<Artifact>> managedPluginsUpdates = calculatePluginUpdatesPerScope(
+                    toolboxCommando,
+                    managedPlugins.getData().orElseThrow(),
+                    managedPluginsPerScope,
+                    artifactVersionSelector);
+            Map<String, List<Artifact>> pluginsUpdates = calculatePluginUpdatesPerScope(
+                    toolboxCommando, plugins.getData().orElseThrow(), pluginsPerScope, artifactVersionSelector);
             if (!managedPluginsUpdates.isEmpty() || !pluginsUpdates.isEmpty()) {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
-                    if (!managedPluginsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(
-                                editSession,
-                                ToolboxCommando.PomOpSubject.MANAGED_PLUGINS,
-                                ToolboxCommando.Op.UPDATE,
-                                managedPluginsUpdates::stream);
-                    }
-                    if (!pluginsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(
-                                editSession,
-                                ToolboxCommando.PomOpSubject.PLUGINS,
-                                ToolboxCommando.Op.UPDATE,
-                                pluginsUpdates::stream);
-                    }
+                    // Apply updates per scope so profile-declared plugins are updated in the right place.
+                    applyPluginUpdatesPerScope(
+                            toolboxCommando,
+                            editSession,
+                            managedPluginsUpdates,
+                            ToolboxCommando.PomOpSubject.MANAGED_PLUGINS);
+                    applyPluginUpdatesPerScope(
+                            toolboxCommando, editSession, pluginsUpdates, ToolboxCommando.PomOpSubject.PLUGINS);
                 }
             }
         }

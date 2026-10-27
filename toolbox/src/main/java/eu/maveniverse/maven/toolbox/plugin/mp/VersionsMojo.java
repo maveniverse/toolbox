@@ -58,6 +58,13 @@ public class VersionsMojo extends MPPluginMojoSupport {
     @Parameter(property = "apply")
     private boolean apply;
 
+    /**
+     * Experimental: also check and update plugins declared in POM profiles, writing updates back into the
+     * profile they were declared in. When disabled (default), only the effective main build is considered.
+     */
+    @Parameter(property = "profiles", defaultValue = "false")
+    private boolean profiles;
+
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         ToolboxCommando toolboxCommando = getToolboxCommando();
@@ -111,18 +118,21 @@ public class VersionsMojo extends MPPluginMojoSupport {
             parents = toolboxCommando.versions(
                     "parent", () -> Stream.of(parentArtifact.get()), artifactVersionMatcher, artifactVersionSelector);
         }
+
+        // Collect plugins per scope (null = main build, non-null = profile id)
+        Map<String, List<ResolutionRoot>> managedPluginsPerScope =
+                allProjectManagedPluginsAsResolutionRootsPerScope(toolboxCommando, profiles);
+        Map<String, List<ResolutionRoot>> pluginsPerScope =
+                allProjectPluginsAsResolutionRootsPerScope(toolboxCommando, profiles);
+
         Result<Map<Artifact, List<Version>>> managedPlugins = toolboxCommando.versions(
                 "managed plugins",
-                () -> allProjectManagedPluginsAsResolutionRoots(toolboxCommando).stream()
-                        .map(ResolutionRoot::getArtifact)
-                        .filter(ArtifactMatcher.any()),
+                () -> distinctArtifacts(managedPluginsPerScope).stream().filter(ArtifactMatcher.any()),
                 artifactVersionMatcher,
                 artifactVersionSelector);
         Result<Map<Artifact, List<Version>>> plugins = toolboxCommando.versions(
                 "plugins",
-                () -> allProjectPluginsAsResolutionRoots(toolboxCommando).stream()
-                        .map(ResolutionRoot::getArtifact)
-                        .filter(ArtifactMatcher.any()),
+                () -> distinctArtifacts(pluginsPerScope).stream().filter(ArtifactMatcher.any()),
                 artifactVersionMatcher,
                 artifactVersionSelector);
 
@@ -156,15 +166,19 @@ public class VersionsMojo extends MPPluginMojoSupport {
             }
             List<Artifact> extensionUpdates =
                     toolboxCommando.calculateUpdates(extensions.getData().orElseThrow(), artifactVersionSelector);
-            List<Artifact> managedPluginsUpdates =
-                    toolboxCommando.calculateUpdates(managedPlugins.getData().orElseThrow(), artifactVersionSelector);
-            List<Artifact> pluginsUpdates =
-                    toolboxCommando.calculateUpdates(plugins.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> managedDependenciesUpdates = toolboxCommando.calculateUpdates(
                     managedDependencies.getData().orElseThrow(), artifactVersionSelector);
             List<Artifact> dependenciesUpdates =
                     toolboxCommando.calculateUpdates(dependencies.getData().orElseThrow(), artifactVersionSelector);
-            if ((parentsUpdates.get() != null && !parentsUpdates.get().isEmpty()) && !extensionUpdates.isEmpty()
+            Map<String, List<Artifact>> managedPluginsUpdates = calculatePluginUpdatesPerScope(
+                    toolboxCommando,
+                    managedPlugins.getData().orElseThrow(),
+                    managedPluginsPerScope,
+                    artifactVersionSelector);
+            Map<String, List<Artifact>> pluginsUpdates = calculatePluginUpdatesPerScope(
+                    toolboxCommando, plugins.getData().orElseThrow(), pluginsPerScope, artifactVersionSelector);
+            if ((parentsUpdates.get() != null && !parentsUpdates.get().isEmpty())
+                    || !extensionUpdates.isEmpty()
                     || !managedPluginsUpdates.isEmpty()
                     || !pluginsUpdates.isEmpty()
                     || !managedDependenciesUpdates.isEmpty()
@@ -186,20 +200,14 @@ public class VersionsMojo extends MPPluginMojoSupport {
                                 ToolboxCommando.Op.UPDATE,
                                 extensionUpdates::stream);
                     }
-                    if (!managedPluginsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(
-                                editSession,
-                                ToolboxCommando.PomOpSubject.MANAGED_PLUGINS,
-                                ToolboxCommando.Op.UPDATE,
-                                managedPluginsUpdates::stream);
-                    }
-                    if (!pluginsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(
-                                editSession,
-                                ToolboxCommando.PomOpSubject.PLUGINS,
-                                ToolboxCommando.Op.UPDATE,
-                                pluginsUpdates::stream);
-                    }
+                    // Apply plugin updates per scope so profile-declared plugins are updated in the right place.
+                    applyPluginUpdatesPerScope(
+                            toolboxCommando,
+                            editSession,
+                            managedPluginsUpdates,
+                            ToolboxCommando.PomOpSubject.MANAGED_PLUGINS);
+                    applyPluginUpdatesPerScope(
+                            toolboxCommando, editSession, pluginsUpdates, ToolboxCommando.PomOpSubject.PLUGINS);
                     if (!managedDependenciesUpdates.isEmpty()) {
                         toolboxCommando.editPom(
                                 editSession,

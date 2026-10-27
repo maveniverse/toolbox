@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2023-2026 Maveniverse Org.
+    All rights reserved. This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License v2.0
+    which accompanies this distribution, and is available at
+    https://www.eclipse.org/legal/epl-v20.html
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.maveniverse.maven.toolbox.it</groupId>
+    <artifactId>versions</artifactId>
+    <version>1.0.0</version>
+    <properties>
+        <second.version>1.1</second.version>
+        <first.version>1.1</first.version>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- version property overridden by active profile at latest; main property must still be updated -->
+                <plugin>
+                    <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                    <artifactId>second</artifactId>
+                    <version>${second.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <!-- shadowed by active profile at latest; main must still be updated -->
+            <plugin>
+                <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                <artifactId>fourth</artifactId>
+                <version>1.1</version>
+            </plugin>
+            <!-- shadowed by active profile at latest; main property must still be updated -->
+            <plugin>
+                <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                <artifactId>first</artifactId>
+                <version>${first.version}</version>
+            </plugin>
+        </plugins>
+    </build>
+    <profiles>
+        <profile>
+            <id>active</id>
+            <properties>
+                <second.version>1.1</second.version>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                        <artifactId>fourth</artifactId>
+                        <version>1.1</version>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                        <artifactId>first</artifactId>
+                        <version>1.1</version>
+                    </plugin>
+                    <!-- only in active profile -->
+                    <plugin>
+                        <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                        <artifactId>second</artifactId>
+                        <version>1.1</version>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>inactive</id>
+            <properties>
+                <third.version>1.0</third.version>
+            </properties>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <!-- inactive profile managed; version set directly -->
+                        <plugin>
+                            <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                            <artifactId>first</artifactId>
+                            <version>1.1</version>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+                <plugins>
+                    <!-- inactive profile; version set directly -->
+                    <plugin>
+                        <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                        <artifactId>fourth</artifactId>
+                        <version>1.1</version>
+                    </plugin>
+                    <!-- property only defined in inactive profile: must be skipped, not fail the build -->
+                    <plugin>
+                        <groupId>org.maveniverse.maven.toolbox.it.versions</groupId>
+                        <artifactId>third</artifactId>
+                        <version>${third.version}</version>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+    <repositories>
+        <repository>
+            <id>my-repo</id>
+            <url>file:${basedir}/my-repo</url>
+            <releases>
+                <checksumPolicy>warn</checksumPolicy>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+</project>

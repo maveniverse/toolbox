@@ -71,8 +71,10 @@ public class NewSubProject extends HelloProjectMojoSupport {
         }
         // add subproject to parent
         try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
-            getToolboxCommando().editPom(editSession, List.of(s -> s.subprojects()
-                    .addSubProject(subProjectArtifact.getArtifactId())));
+            getToolboxCommando()
+                    .editPom(
+                            editSession,
+                            List.of(s -> s.subprojects().addSubProject(subProjectArtifact.getArtifactId())));
         }
         return Result.success(Boolean.TRUE);
     }

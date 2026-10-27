@@ -11,7 +11,6 @@ String[] args = ["${java}", '-jar', "${cli}", "-B", "-e", "identify", "eca800aa7
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()
-process.consumeProcessOutput(out, err)
-process.waitFor()
+process.waitForProcessOutput(out, err)
 
-assert out.toString().contains('org.apache.maven:maven-core:jar:3.6.3') : out
+assert out.toString().contains('org.apache.maven:maven-core:jar:3.6.3') : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"

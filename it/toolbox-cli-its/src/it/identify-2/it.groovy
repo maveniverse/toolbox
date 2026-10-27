@@ -11,7 +11,6 @@ String[] args = ["${java}", '-jar', "${cli}", "-B", "-e", "identify", "${itDir}/
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()
-process.consumeProcessOutput(out, err)
-process.waitFor()
+process.waitForProcessOutput(out, err)
 
-assert out.toString().contains('aopalliance:aopalliance:jar:1.0') : out
+assert out.toString().contains('aopalliance:aopalliance:jar:1.0') : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"

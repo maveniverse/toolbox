@@ -11,7 +11,6 @@ String[] args = ["${java}", '-jar', "${cli}", "-B", "-e", "dump", "-Dverbosity=C
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()
-process.consumeProcessOutput(out, err)
-process.waitFor()
+process.waitForProcessOutput(out, err)
 
-assert out.contains("Toolbox ${project.version}")
+assert out.contains("Toolbox ${project.version}") : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"

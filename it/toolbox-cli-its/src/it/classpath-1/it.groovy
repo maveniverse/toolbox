@@ -11,7 +11,6 @@ String[] args = ["${java}", '-jar', "${cli}", "-B", "-e", "classpath", "eu.maven
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()
-process.consumeProcessOutput(out, err)
-process.waitFor()
+process.waitForProcessOutput(out, err)
 
-assert out.contains("shared-${project.version}.jar")
+assert out.contains("shared-${project.version}.jar") : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"

@@ -11,8 +11,7 @@ String[] args = ["${java}", '-jar', "${cli}", "-B", "-e", "libyear", "org.junit.
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()
-process.consumeProcessOutput(out, err)
-process.waitFor()
+process.waitForProcessOutput(out, err)
 
-assert out.contains('Outdated versions with known age')
-assert !out.contains('Total of 0.00 years from 0 outdated dependencies')
+assert out.contains('Outdated versions with known age') : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"
+assert !out.contains('Total of 0.00 years from 0 outdated dependencies') : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"

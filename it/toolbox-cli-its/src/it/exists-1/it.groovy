@@ -12,8 +12,7 @@ String[] args = ["${java}", '-jar', "${cli}", "exists", "-e", "-B", "org.apache.
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()
-process.consumeProcessOutput(out, err)
-process.waitFor()
+process.waitForProcessOutput(out, err)
 
-assert out.contains('org.apache.maven:maven-core:jar:3.6.3 EXISTS')
-assert out.contains('Checked TOTAL of 5 (existing: 5 not existing: 0)')
+assert out.contains('org.apache.maven:maven-core:jar:3.6.3 EXISTS') : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"
+assert out.contains('Checked TOTAL of 5 (existing: 5 not existing: 0)') : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"

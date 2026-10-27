@@ -11,7 +11,6 @@ String[] args = ["${java}", "-Dpicocli.ansi=off", '-jar', "${cli}", "-e", "-h"]
 
 ProcessBuilder proc = new ProcessBuilder(args)
 Process process = proc.start()
-process.consumeProcessOutput(out, err)
-process.waitFor()
+process.waitForProcessOutput(out, err)
 
-assert out.contains('Usage: toolbox')
+assert out.contains('Usage: toolbox') : "exit=${process.exitValue()}\nOUT:\n${out}\nERR:\n${err}"

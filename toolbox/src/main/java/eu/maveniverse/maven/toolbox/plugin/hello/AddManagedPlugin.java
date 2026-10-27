@@ -33,8 +33,10 @@ public class AddManagedPlugin extends HelloProjectMojoSupport {
     protected Result<Boolean> doExecute() throws Exception {
         Artifact plugin = toPluginArtifact(gav);
         try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
-            getToolboxCommando().editPom(editSession, List.of(s -> s.plugins()
-                    .updateManagedPlugin(true, DOMTripUtils.toDomTrip(plugin))));
+            getToolboxCommando()
+                    .editPom(
+                            editSession,
+                            List.of(s -> s.plugins().updateManagedPlugin(true, DOMTripUtils.toDomTrip(plugin))));
         }
         return Result.success(Boolean.TRUE);
     }

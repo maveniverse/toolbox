@@ -67,13 +67,13 @@ public class GavListAvailablePluginsMojo extends GavMojoSupport {
     private String artifactVersionMatcherSpec;
 
     /**
-     * Artifact version selector spec string to select "latest", default is 'last()'.
+     * Artifact version selector spec string to select "latest", default is 'contextualSnapshotsAndPreviews(last())'.
      */
     @CommandLine.Option(
             names = {"--artifactVersionSelectorSpec"},
-            defaultValue = "last()",
-            description = "Artifact version selector spec (default 'last()')")
-    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "last()")
+            defaultValue = "contextualSnapshotsAndPreviews(last())",
+            description = "Artifact version selector spec (default 'contextualSnapshotsAndPreviews(last())')")
+    @Parameter(property = "artifactVersionSelectorSpec", defaultValue = "contextualSnapshotsAndPreviews(last())")
     private String artifactVersionSelectorSpec;
 
     @Override

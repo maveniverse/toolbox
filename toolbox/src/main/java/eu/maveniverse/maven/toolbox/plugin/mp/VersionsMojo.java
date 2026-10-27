@@ -180,9 +180,12 @@ public class VersionsMojo extends MPPluginMojoSupport {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
                     if (parentsUpdates.get() != null && !parentsUpdates.get().isEmpty()) {
-                        toolboxCommando.editPom(editSession, List.of(s -> s.parent()
-                                .updateParent(
-                                        false, toDomTrip(parentsUpdates.get().get(0)))));
+                        toolboxCommando.editPom(
+                                editSession,
+                                List.of(s -> s.parent()
+                                        .updateParent(
+                                                false,
+                                                toDomTrip(parentsUpdates.get().get(0)))));
                     }
                     if (!extensionUpdates.isEmpty()) {
                         toolboxCommando.editPom(

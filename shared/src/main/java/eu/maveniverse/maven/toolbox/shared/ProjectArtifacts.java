@@ -35,13 +35,14 @@ public final class ProjectArtifacts implements Artifacts.Source {
 
     @Override
     public Stream<Artifact> get() {
-        return artifacts.entrySet().stream().map(e -> new DefaultArtifact(
-                        prototype.getGroupId(),
-                        prototype.getArtifactId(),
-                        e.getKey().classifier,
-                        e.getKey().extension,
-                        prototype.getVersion())
-                .setFile(e.getValue().toFile()));
+        return artifacts.entrySet().stream()
+                .map(e -> new DefaultArtifact(
+                                prototype.getGroupId(),
+                                prototype.getArtifactId(),
+                                e.getKey().classifier,
+                                e.getKey().extension,
+                                prototype.getVersion())
+                        .setFile(e.getValue().toFile()));
     }
 
     private static final class CE {

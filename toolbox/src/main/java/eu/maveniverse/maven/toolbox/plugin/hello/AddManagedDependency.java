@@ -33,8 +33,11 @@ public class AddManagedDependency extends HelloProjectMojoSupport {
     protected Result<Boolean> doExecute() throws Exception {
         Artifact dependency = toDependencyArtifact(gav);
         try (ToolboxCommando.EditSession editSession = getToolboxCommando().createEditSession(getRootPom())) {
-            getToolboxCommando().editPom(editSession, List.of(s -> s.dependencies()
-                    .updateManagedDependency(true, DOMTripUtils.toDomTrip(dependency))));
+            getToolboxCommando()
+                    .editPom(
+                            editSession,
+                            List.of(s -> s.dependencies()
+                                    .updateManagedDependency(true, DOMTripUtils.toDomTrip(dependency))));
         }
         return Result.success(Boolean.TRUE);
     }

@@ -79,8 +79,9 @@ public class ParentVersionsMojo extends MPPluginMojoSupport {
                 try (ToolboxCommando.EditSession editSession =
                         toolboxCommando.createEditSession(mavenProject.getFile().toPath())) {
                     if (!parentsUpdates.isEmpty()) {
-                        toolboxCommando.editPom(editSession, List.of(s -> s.parent()
-                                .updateParent(false, toDomTrip(parentsUpdates.get(0)))));
+                        toolboxCommando.editPom(
+                                editSession,
+                                List.of(s -> s.parent().updateParent(false, toDomTrip(parentsUpdates.get(0)))));
                     }
                 }
             }

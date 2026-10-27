@@ -16,6 +16,8 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.util.version.GenericVersionScheme;
+import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionScheme;
 
@@ -24,6 +26,18 @@ import org.eclipse.aether.version.VersionScheme;
  * (same way as resolver sorts versions).
  */
 public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Version>, String> {
+    /**
+     * Parses version string using generic version scheme; versions in list may come from different schemes, and they
+     * are not comparable to each other.
+     */
+    private static Version parse(String version) {
+        try {
+            return new GenericVersionScheme().parseVersion(version);
+        } catch (InvalidVersionSpecificationException e) {
+            throw new IllegalArgumentException(e); // never in generic
+        }
+    }
+
     /**
      * Selector that returns artifact version. This is the "fallback" selector as well.
      */
@@ -71,11 +85,10 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
         return new ArtifactVersionSelector() {
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
-                if (!versions.isEmpty()) {
-                    List<String> vstr = versions.stream().map(Version::toString).toList();
-                    int idx = vstr.indexOf(artifact.getVersion());
-                    if (idx > 0) {
-                        return vstr.get(idx - 1);
+                Version current = parse(artifact.getVersion());
+                for (int i = versions.size() - 1; i >= 0; i--) {
+                    if (parse(versions.get(i).toString()).compareTo(current) < 0) {
+                        return versions.get(i).toString();
                     }
                 }
                 return identity().apply(artifact, versions);
@@ -90,11 +103,11 @@ public interface ArtifactVersionSelector extends BiFunction<Artifact, List<Versi
         return new ArtifactVersionSelector() {
             @Override
             public String apply(Artifact artifact, List<Version> versions) {
-                if (!versions.isEmpty()) {
-                    List<String> vstr = versions.stream().map(Version::toString).toList();
-                    int idx = vstr.indexOf(artifact.getVersion());
-                    if (idx > 0 && idx < vstr.size() - 1) {
-                        return vstr.get(idx + 1);
+                // current version may be absent from list, ie. resolver returns only newer versions
+                Version current = parse(artifact.getVersion());
+                for (Version version : versions) {
+                    if (parse(version.toString()).compareTo(current) > 0) {
+                        return version.toString();
                     }
                 }
                 return identity().apply(artifact, versions);

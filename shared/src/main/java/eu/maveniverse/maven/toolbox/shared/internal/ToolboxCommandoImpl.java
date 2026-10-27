@@ -817,8 +817,9 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             });
 
             Map<RemoteRepository, RemoteRepository> mirrorMap = new HashMap<>();
-            repoGroupByMirrors.getOrDefault(Boolean.FALSE, List.of()).forEach(repo -> repo.getMirroredRepositories()
-                    .forEach(mrepo -> mirrorMap.put(mrepo, repo)));
+            repoGroupByMirrors
+                    .getOrDefault(Boolean.FALSE, List.of())
+                    .forEach(repo -> repo.getMirroredRepositories().forEach(mrepo -> mirrorMap.put(mrepo, repo)));
             mirrorMap.forEach((r, mirror) -> {
                 output.tell(" * {}", r);
                 Dependency firstIntroduced = repositories.get(mirror);
@@ -1807,18 +1808,22 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                 .emphasize("Checking newest versions of {} ({})")
                 .say(context, artifacts.size());
         for (Artifact artifact : artifacts) {
+            List<Version> all = toolboxResolver.findAllVersions(artifact, versionPredicate);
             List<Version> newer = toolboxResolver.findNewerVersions(artifact, versionPredicate);
             result.put(artifact, newer);
-            if (!newer.isEmpty()) {
-                String selected = versionSelector.apply(artifact, newer);
+            if (!all.isEmpty()) {
+                String selected = versionSelector.apply(artifact, all);
                 boolean changed = !Objects.equals(selected, artifact.getVersion());
                 if (changed) {
                     output.marker(Output.Verbosity.NORMAL)
                             .scary("* {} -> {}")
                             .say(ArtifactIdUtils.toId(artifact), selected);
                     output.marker(Output.Verbosity.SUGGEST)
-                            .detail("  Available: {}")
+                            .detail("  Available newer: {}")
                             .say(newer.stream().map(Object::toString).collect(Collectors.joining(", ")));
+                    output.marker(Output.Verbosity.SUGGEST)
+                            .detail("  Available all: {}")
+                            .say(all.stream().map(Object::toString).collect(Collectors.joining(", ")));
                     continue;
                 }
             }

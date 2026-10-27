@@ -63,12 +63,24 @@ public class ArtifactVersionSelectorTest {
     void prev() {
         assertEquals("3.1.0M1", ArtifactVersionSelector.prev().apply(new DefaultArtifact("g:a:3.1.0"), versions));
         assertEquals("v1", ArtifactVersionSelector.prev().apply(new DefaultArtifact("g:a:v1"), List.of()));
+        // current not in list
+        assertEquals("3.1.0", ArtifactVersionSelector.prev().apply(new DefaultArtifact("g:a:3.1.0.1"), versions));
+        assertEquals("1.0", ArtifactVersionSelector.prev().apply(new DefaultArtifact("g:a:1.0"), versions));
     }
 
     @Test
     void next() {
         assertEquals("3.0.2-alpha", ArtifactVersionSelector.next().apply(new DefaultArtifact("g:a:3.0.1"), versions));
         assertEquals("v1", ArtifactVersionSelector.next().apply(new DefaultArtifact("g:a:v1"), List.of()));
+        // current is first in list
+        assertEquals("3.0.1", ArtifactVersionSelector.next().apply(new DefaultArtifact("g:a:2.0.0"), versions));
+        // current not in list (resolver returns only newer versions): GH-442
+        assertEquals("3.0.1", ArtifactVersionSelector.next().apply(new DefaultArtifact("g:a:2.5.0"), versions));
+        assertEquals(
+                "3.0.1",
+                ArtifactVersionSelector.next()
+                        .apply(new DefaultArtifact("g:a:2.0.0"), versions.subList(1, versions.size())));
+        assertEquals("411", ArtifactVersionSelector.next().apply(new DefaultArtifact("g:a:411"), versions));
     }
 
     @Test
@@ -170,6 +182,10 @@ public class ArtifactVersionSelectorTest {
         assertEquals(
                 "410.0.0-SNAPSHOT",
                 ArtifactVersionSelector.build(versionScheme, Map.of(), "last()").apply(artifact, versions));
+        assertEquals(
+                "400.0.0",
+                ArtifactVersionSelector.build(versionScheme, Map.of(), "contextualSnapshotsAndPreviews(last())")
+                        .apply(artifact, versions));
         assertEquals(
                 "3.200.0-SNAPSHOT",
                 ArtifactVersionSelector.build(versionScheme, Map.of(), "major()")

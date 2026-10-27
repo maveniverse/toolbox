@@ -873,6 +873,22 @@ public class ToolboxResolverImpl implements ToolboxResolver {
     }
 
     @Override
+    public List<Version> findAllVersions(Artifact artifact, Predicate<Version> filter)
+            throws VersionRangeResolutionException {
+        VersionRangeRequest rangeRequest = new VersionRangeRequest();
+        rangeRequest.setArtifact(new DefaultArtifact(
+                artifact.getGroupId(),
+                artifact.getArtifactId(),
+                artifact.getClassifier(),
+                artifact.getExtension(),
+                "(0,)"));
+        rangeRequest.setRepositories(remoteRepositories);
+        rangeRequest.setRequestContext(CTX_TOOLBOX);
+        VersionRangeResult result = repositorySystem.resolveVersionRange(session, rangeRequest);
+        return result.getVersions().stream().filter(filter).collect(Collectors.toList());
+    }
+
+    @Override
     public Map<Artifact, List<Version>> listAvailablePlugins(
             Collection<String> groupIds,
             BiFunction<Artifact, List<Version>, String> selector,

@@ -146,6 +146,8 @@ public interface ToolboxResolver {
     List<Version> findNewerVersions(Artifact artifact, Predicate<Version> filter)
             throws VersionRangeResolutionException;
 
+    List<Version> findAllVersions(Artifact artifact, Predicate<Version> filter) throws VersionRangeResolutionException;
+
     Map<Artifact, List<Version>> listAvailablePlugins(
             Collection<String> groupIds,
             BiFunction<Artifact, List<Version>, String> selector,

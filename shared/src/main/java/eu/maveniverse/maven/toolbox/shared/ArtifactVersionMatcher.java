@@ -18,6 +18,8 @@ import java.util.function.Predicate;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
+import org.eclipse.aether.version.VersionConstraint;
+import org.eclipse.aether.version.VersionRange;
 import org.eclipse.aether.version.VersionScheme;
 
 /**
@@ -126,6 +128,20 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
      */
     static ArtifactVersionMatcher noSnapshotsAndPreviews() {
         return and(noPreviews(), noSnapshots());
+    }
+
+    /**
+     * A version matcher that matches version if version range contains it.
+     */
+    static ArtifactVersionMatcher range(VersionRange range) {
+        return range::containsVersion;
+    }
+
+    /**
+     * A version matcher that matches version if version constraint contains it.
+     */
+    static ArtifactVersionMatcher constraint(VersionConstraint constraint) {
+        return constraint::containsVersion;
     }
 
     /**
@@ -242,6 +258,12 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
                 case "noSnapshotsAndPreviews":
                     params.add(noSnapshotsAndPreviews());
                     break;
+                case "range":
+                    params.add(range(versionRangeParam(node.getValue())));
+                    break;
+                case "constraint":
+                    params.add(constraint(versionConstraintParam(node.getValue())));
+                    break;
                 default:
                     throw new IllegalArgumentException("unknown op " + node.getValue());
             }
@@ -252,6 +274,22 @@ public interface ArtifactVersionMatcher extends Predicate<Version> {
                 return versionScheme.parseVersion(stringParam(op));
             } catch (InvalidVersionSpecificationException e) {
                 throw new IllegalArgumentException("invalid version parameter for " + op, e);
+            }
+        }
+
+        protected VersionRange versionRangeParam(String op) {
+            try {
+                return versionScheme.parseVersionRange(stringParam(op));
+            } catch (InvalidVersionSpecificationException e) {
+                throw new IllegalArgumentException("invalid version range parameter for " + op, e);
+            }
+        }
+
+        protected VersionConstraint versionConstraintParam(String op) {
+            try {
+                return versionScheme.parseVersionConstraint(stringParam(op));
+            } catch (InvalidVersionSpecificationException e) {
+                throw new IllegalArgumentException("invalid version constraint parameter for " + op, e);
             }
         }
 

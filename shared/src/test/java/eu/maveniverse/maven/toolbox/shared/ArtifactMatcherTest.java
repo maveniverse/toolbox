@@ -33,6 +33,18 @@ public class ArtifactMatcherTest {
     }
 
     @Test
+    void nestedVariadicDoesNotSwallowSiblings() {
+        Map<String, Object> properties = Map.of();
+        // inner and() must not consume preceding artifact(g) sibling
+        assertTrue(ArtifactMatcher.build(properties, "or(artifact(g), and(artifact(x), artifact(y)))")
+                .test(artifact));
+        assertTrue(ArtifactMatcher.build(properties, "or(and(artifact(x), artifact(y)), and(artifact(g), any()))")
+                .test(artifact));
+        assertFalse(ArtifactMatcher.build(properties, "and(artifact(g), or(artifact(x), artifact(y)))")
+                .test(artifact));
+    }
+
+    @Test
     void composedAnd() {
         assertTrue(ArtifactMatcher.and(
                         ArtifactMatcher.artifact("g:*:*"),

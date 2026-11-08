@@ -17,6 +17,7 @@ import eu.maveniverse.maven.mima.extensions.mhc4.MavenHttpClient4Factory;
 import eu.maveniverse.maven.toolbox.shared.ToolboxSearchApi;
 import eu.maveniverse.maven.toolbox.shared.output.Output;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -198,6 +199,9 @@ public class ToolboxSearchApiImpl implements ToolboxSearchApi {
             }
             if (record.hasField(MAVEN.VERSION)) {
                 sb.append(":").append(record.getValue(MAVEN.VERSION));
+            }
+            if (record.getLastUpdated() != null) {
+                sb.append(" @ ").append(Instant.ofEpochMilli(record.getLastUpdated()));
             }
 
             result.add(sb.toString());

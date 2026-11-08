@@ -161,7 +161,7 @@ public class ToolboxTools {
     String artifactList(@ToolArg(description = "GroupId or groupId:artifactId to list") String gavoid) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
-            toolboxCommando.list(ContextOverrides.CENTRAL, gavoid, null);
+            toolboxCommando.list(ContextOverrides.CENTRAL, gavoid, null, null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

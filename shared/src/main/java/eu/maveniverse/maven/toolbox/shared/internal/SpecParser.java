@@ -56,6 +56,9 @@ public final class SpecParser {
     public abstract static class Builder implements Visitor {
         protected final ArrayList<Object> params = new ArrayList<>();
         protected final Map<String, ?> properties;
+        // params stack size at entry of each op being visited; params below the mark belong to preceding siblings
+        private final ArrayDeque<Integer> marks = new ArrayDeque<>();
+        private int mark;
 
         public Builder(Map<String, ?> properties) {
             this.properties = new HashMap<>(properties);
@@ -63,6 +66,9 @@ public final class SpecParser {
 
         @Override
         public boolean visitEnter(SpecParser.Node node) {
+            if (node instanceof SpecParser.Op) {
+                marks.push(params.size());
+            }
             return true;
         }
 
@@ -71,6 +77,7 @@ public final class SpecParser {
             if (node instanceof SpecParser.Literal) {
                 processLiteral(node);
             } else if (node instanceof SpecParser.Op) {
+                mark = marks.isEmpty() ? 0 : marks.pop();
                 processOp(node);
             }
             return true;
@@ -93,12 +100,13 @@ public final class SpecParser {
          * Implement this, by using "ops" of the thing being built.
          * <p>
          * Important: parameters are REVERSED, so are nibbles but in reversed, so instead {@code [[a,b,c],[d,e]]} we
-         * have nibbles reversed: {@code [[c,b,a],[e,d]]}.
+         * have nibbles reversed: {@code [[c,b,a],[e,d]]}. Param methods only ever return the parameters of the op
+         * being processed, never those of its preceding siblings.
          */
         protected abstract void processOp(Node node);
 
         protected String stringParam(String op) {
-            if (params.isEmpty()) {
+            if (params.size() <= mark) {
                 throw new IllegalArgumentException("bad parameter count for " + op);
             }
             return (String) params.remove(params.size() - 1);
@@ -106,7 +114,7 @@ public final class SpecParser {
 
         protected List<String> stringParams(String op) {
             ArrayList<String> result = new ArrayList<>();
-            while (!params.isEmpty()) {
+            while (params.size() > mark) {
                 if (params.get(params.size() - 1) instanceof String) {
                     result.add(stringParam(op));
                 } else {
@@ -117,21 +125,21 @@ public final class SpecParser {
         }
 
         protected boolean booleanParam(String op) {
-            if (params.isEmpty()) {
+            if (params.size() <= mark) {
                 throw new IllegalArgumentException("bad parameter count for " + op);
             }
             return Boolean.parseBoolean((String) params.remove(params.size() - 1));
         }
 
         protected int intParam(String op) {
-            if (params.isEmpty()) {
+            if (params.size() <= mark) {
                 throw new IllegalArgumentException("bad parameter count for " + op);
             }
             return Integer.parseInt((String) params.remove(params.size() - 1));
         }
 
         protected <T> T typedParam(Class<T> clazz, String op) {
-            if (params.isEmpty()) {
+            if (params.size() <= mark) {
                 throw new IllegalArgumentException("bad parameter count for " + op);
             }
             return clazz.cast(params.remove(params.size() - 1));
@@ -139,7 +147,7 @@ public final class SpecParser {
 
         protected <T> Collection<T> typedParams(Class<T> clazz, String op) {
             ArrayList<T> result = new ArrayList<>();
-            while (!params.isEmpty()) {
+            while (params.size() > mark) {
                 if (clazz.isInstance(params.get(params.size() - 1))) {
                     result.add(typedParam(clazz, op));
                 } else {
@@ -222,7 +230,8 @@ public final class SpecParser {
     /**
      * Spec parsing: spec may be in form of "aaa" when it is string literal, or "aaa()" when it is a function. The
      * spec expression MUST start with function. A function may be {@code 0..n} arguments, that may be string literals
-     * or other ops.
+     * or other ops. String literals may be single-quoted, like {@code 'aaa'}, in which case they may contain any
+     * character except single quote (whitespace is preserved), for example {@code constraint('[,32.1)')}.
      */
     public static Op parse(String spec) {
         requireNonNull(spec);
@@ -230,9 +239,20 @@ public final class SpecParser {
         ArrayDeque<Node> path = new ArrayDeque<>();
         String value = "";
         boolean wasComma = false;
+        boolean inQuote = false;
+        boolean quoted = false;
         for (int idx = 0; idx < spec.length(); idx++) {
             char ch = spec.charAt(idx);
-            if (!Character.isWhitespace(ch)) {
+            if (inQuote) {
+                if ('\'' == ch) {
+                    inQuote = false;
+                } else {
+                    value += ch;
+                }
+            } else if ('\'' == ch) {
+                inQuote = true;
+                quoted = true;
+            } else if (!Character.isWhitespace(ch)) {
                 if (Character.isAlphabetic(ch)
                         || Character.isDigit(ch)
                         || '*' == ch
@@ -243,7 +263,9 @@ public final class SpecParser {
                         || '\\' == ch
                         || '$' == ch
                         || '{' == ch
-                        || '}' == ch) {
+                        || '}' == ch
+                        || '[' == ch
+                        || ']' == ch) {
                     value += ch;
                 } else if ('(' == ch) {
                     Op op = new Op(value);
@@ -251,15 +273,17 @@ public final class SpecParser {
                         root = op;
                     }
                     value = "";
+                    quoted = false;
                     if (!path.isEmpty()) {
                         path.peek().addChild(op);
                     }
                     wasComma = false;
                     path.push(op);
                 } else if (')' == ch) {
-                    if (!value.isEmpty()) {
+                    if (!value.isEmpty() || quoted) {
                         Literal literal = new StringLiteral(value);
                         value = "";
+                        quoted = false;
                         if (!path.isEmpty()) {
                             path.peek().addChild(literal);
                         } else {
@@ -271,9 +295,10 @@ public final class SpecParser {
                     wasComma = false;
                     path.pop();
                 } else if (',' == ch) {
-                    if (!value.isEmpty()) {
+                    if (!value.isEmpty() || quoted) {
                         Literal literal = new StringLiteral(value);
                         value = "";
+                        quoted = false;
                         if (!path.isEmpty()) {
                             path.peek().addChild(literal);
                         } else {
@@ -287,6 +312,9 @@ public final class SpecParser {
                     throw new IllegalArgumentException("invalid character: " + ch);
                 }
             }
+        }
+        if (inQuote) {
+            throw new IllegalArgumentException("unterminated quote");
         }
         if (root == null || !path.isEmpty()) {
             throw new IllegalArgumentException("invalid spec string");

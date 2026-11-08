@@ -100,6 +100,7 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.model.io.xpp3.MavenXpp3WriterEx;
 import org.apache.maven.search.api.MAVEN;
+import org.apache.maven.search.api.Record;
 import org.apache.maven.search.api.SearchBackend;
 import org.apache.maven.search.api.SearchRequest;
 import org.apache.maven.search.api.SearchResponse;
@@ -1634,9 +1635,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     }
 
     @Override
-    public Result<List<String>> list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor)
+    public Result<List<Record>> list(
+            RemoteRepository remoteRepository,
+            String gavoid,
+            String repositoryVendor,
+            ArtifactVersionMatcher artifactVersionMatcher)
             throws IOException {
-        ArrayList<String> result = new ArrayList<>();
+        ArrayList<Record> result = new ArrayList<>();
         try (SearchBackend backend = toolboxSearchApi.getRemoteRepositoryBackend(
                 context.repositorySystemSession(), remoteRepository, repositoryVendor)) {
             String[] elements = gavoid.split(":");
@@ -1669,16 +1674,62 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     query = and(query, fieldQuery(MAVEN.VERSION, elements[2]));
                 }
             }
+            if (artifactVersionMatcher != null) {
+                Predicate<String> matcherPredicate = s -> {
+                    try {
+                        return artifactVersionMatcher.test(versionScheme.parseVersion(s));
+                    } catch (InvalidVersionSpecificationException e) {
+                        return false;
+                    }
+                };
+                versionPredicate = versionPredicate == null ? matcherPredicate : versionPredicate.and(matcherPredicate);
+            }
             SearchRequest searchRequest = new SearchRequest(query);
             SearchResponse searchResponse = backend.search(searchRequest);
 
-            Collection<String> gavoids = toolboxSearchApi.renderGavoid(searchResponse.getPage(), versionPredicate);
-            for (String g : gavoids) {
-                result.add(g);
-                output.tell(g);
+            for (Record record : searchResponse.getPage()) {
+                if (versionPredicate != null
+                        && record.hasField(MAVEN.VERSION)
+                        && !versionPredicate.test(record.getValue(MAVEN.VERSION))) {
+                    continue;
+                }
+                Record enriched = enrichRecord(backend, record);
+                result.add(enriched);
+                toolboxSearchApi.renderGavoid(List.of(enriched), null).forEach(output::tell);
             }
         }
         return Result.success(result);
+    }
+
+    /**
+     * If record is a well-formed artifact (has G, A and V; extension defaults to "jar" as in Maven), looks it up by
+     * itself, as backend returns more details (like last updated timestamp) for exact artifact queries, and copies the
+     * timestamp onto the passed in record. Otherwise, or if lookup yields nothing, returns the passed in record as is.
+     */
+    private Record enrichRecord(SearchBackend backend, Record record) throws IOException {
+        if (record.getLastUpdated() != null
+                || !record.hasField(MAVEN.GROUP_ID)
+                || !record.hasField(MAVEN.ARTIFACT_ID)
+                || !record.hasField(MAVEN.VERSION)) {
+            return record;
+        }
+        String version = record.getValue(MAVEN.VERSION);
+        Artifact artifact = new DefaultArtifact(
+                record.getValue(MAVEN.GROUP_ID),
+                record.getValue(MAVEN.ARTIFACT_ID),
+                record.hasField(MAVEN.CLASSIFIER) ? record.getValue(MAVEN.CLASSIFIER) : null,
+                record.hasField(MAVEN.FILE_EXTENSION) ? record.getValue(MAVEN.FILE_EXTENSION) : "jar",
+                version);
+        SearchResponse response = backend.search(new SearchRequest(toolboxSearchApi.toRrQuery(artifact)));
+        if (response.getCurrentHits() > 0 && response.getPage().get(0).getLastUpdated() != null) {
+            return new Record(
+                    record.getBackendId(),
+                    record.getRepositoryId(),
+                    record.getUid(),
+                    response.getPage().get(0).getLastUpdated(),
+                    record.getFields());
+        }
+        return record;
     }
 
     @Override

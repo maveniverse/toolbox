@@ -80,4 +80,17 @@ public class SpecParserTest {
 
         root.accept(new SpecParser.Dump());
     }
+
+    @Test
+    void quotedLiterals() {
+        SpecParser.Op root = SpecParser.parse("a('[,32.1)', ' x, (y) ', '', b)");
+        assertEquals("a", root.getValue());
+        assertEquals(4, root.getChildren().size());
+        assertEquals("[,32.1)", root.getChildren().get(0).getValue());
+        assertEquals(" x, (y) ", root.getChildren().get(1).getValue());
+        assertEquals("", root.getChildren().get(2).getValue());
+        assertEquals("b", root.getChildren().get(3).getValue());
+
+        assertThrows(IllegalArgumentException.class, () -> SpecParser.parse("a('b)"));
+    }
 }

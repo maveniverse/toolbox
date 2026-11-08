@@ -32,6 +32,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
+import org.apache.maven.search.api.Record;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -534,9 +535,14 @@ public interface ToolboxCommando extends Closeable {
             RemoteRepository remoteRepository, Collection<String> targets, boolean decorated) throws IOException;
 
     /**
-     * Lists given "gavoid" and returns list of "gavoids".
+     * Lists given "gavoid" and returns list of matched records, while also outputting them as "gavoids". If
+     * artifact version matcher is non-null, only records with matching versions are returned.
      */
-    Result<List<String>> list(RemoteRepository remoteRepository, String gavoid, String repositoryVendor)
+    Result<List<Record>> list(
+            RemoteRepository remoteRepository,
+            String gavoid,
+            String repositoryVendor,
+            ArtifactVersionMatcher artifactVersionMatcher)
             throws IOException;
 
     /**

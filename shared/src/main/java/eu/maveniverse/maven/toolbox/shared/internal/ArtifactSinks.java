@@ -199,7 +199,7 @@ public final class ArtifactSinks {
                     } else if (node.getChildren().size() == 1) {
                         String p0 = stringParam(node.getValue());
                         Path altLocalRepository = tc.basedir().resolve(p0);
-                        LocalRepository localRepository = new LocalRepository(altLocalRepository.toFile());
+                        LocalRepository localRepository = new LocalRepository(altLocalRepository);
                         LocalRepositoryManager lrm =
                                 tc.repositorySystem().newLocalRepositoryManager(tc.session(), localRepository);
                         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(tc.session());
@@ -483,7 +483,7 @@ public final class ArtifactSinks {
 
         @Override
         public void accept(Artifact artifact) throws IOException {
-            Path path = artifact.getFile() != null ? artifact.getFile().toPath() : null;
+            Path path = artifact.getPath();
             if (path != null && Files.exists(path)) {
                 size.add(Files.size(path));
             }
@@ -515,7 +515,7 @@ public final class ArtifactSinks {
 
         @Override
         public void accept(Artifact artifact) throws IOException {
-            Path path = artifact.getFile() != null ? artifact.getFile().toPath() : null;
+            Path path = artifact.getPath();
             if (path != null && Files.exists(path)) {
                 checksums.put(artifact, ChecksumAlgorithmHelper.calculate(path.toFile(), algorithmFactories));
             }
@@ -619,10 +619,8 @@ public final class ArtifactSinks {
             // only interested in specific non-empty classifier?
             if (!classifier.isEmpty() && !classifier.equals(artifact.getClassifier())) return;
             // only interested in resolved files.
-            var file = artifact.getFile();
-            if (file == null) return;
-            var path = file.toPath();
-            if (!Files.exists(path)) return;
+            var path = artifact.getPath();
+            if (path == null || !Files.exists(path)) return;
             // only interested in modular Java Archives
             moduleArtifactSink.accept(artifact);
             ModuleDescriptor module = moduleArtifactSink.getModuleDescriptor(artifact);
@@ -718,14 +716,13 @@ public final class ArtifactSinks {
                 checksumArtifactSink.accept(artifact);
                 artifactUriSink.accept(artifact);
                 artifactPurlSink.accept(artifact);
-                if (artifact.getFile() != null
-                        && artifact.getFile().isFile()
-                        && artifact.getFile().getPath().endsWith(".jar")) {
+                if (artifact.getPath() != null
+                        && Files.isRegularFile(artifact.getPath())
+                        && artifact.getPath().getFileName().toString().endsWith(".jar")) {
                     moduleDescriptorExtractingSink.accept(artifact);
                     bytecodeVersions.put(
                             artifact,
-                            new BytecodeShowJarProcessor(new PathBasedJarFileResolver(
-                                            artifact.getFile().toPath()))
+                            new BytecodeShowJarProcessor(new PathBasedJarFileResolver(artifact.getPath()))
                                     .getResult()
                                     .iterator()
                                     .next()

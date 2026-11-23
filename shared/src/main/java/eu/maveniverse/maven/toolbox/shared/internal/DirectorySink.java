@@ -152,17 +152,17 @@ public final class DirectorySink implements Artifacts.Sink {
             switch (mode) {
                 case COPY:
                     if (!dryRun) {
-                        Files.copy(artifact.getFile().toPath(), target, copyFlags);
+                        Files.copy(artifact.getPath(), target, copyFlags);
                     }
                     break;
                 case LINK:
                     if (!dryRun) {
-                        Files.createLink(target, artifact.getFile().toPath());
+                        Files.createLink(target, artifact.getPath());
                     }
                     break;
                 case SYMLINK:
                     if (!dryRun) {
-                        Files.createSymbolicLink(target, artifact.getFile().toPath());
+                        Files.createSymbolicLink(target, artifact.getPath());
                     }
                     break;
                 default:

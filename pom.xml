@@ -14,7 +14,7 @@
   <parent>
     <groupId>eu.maveniverse.maven.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>64</version>
+    <version>65</version>
   </parent>
 
   <groupId>eu.maveniverse.maven.toolbox</groupId>
@@ -68,15 +68,20 @@
     -->
     <maven.compiler.release>17</maven.compiler.release>
 
+    <!--
+    Runtime: Maven 3.10.0 and ${maven.compiler.release}
+    -->
+    <requireRuntimeMavenVersion.range>[3.10.0,)</requireRuntimeMavenVersion.range>
+
     <!-- Dependency versions -->
-    <version.mima>2.4.48</version.mima>
-    <version.maven>3.9.16</version.maven>
-    <version.resolver>1.9.27</version.resolver>
+    <version.mima>3.0.2</version.mima>
+    <version.maven>3.10.2</version.maven>
+    <version.resolver>2.0.26</version.resolver>
     <version.mase>1.1.3</version.mase>
     <version.mavenPluginTools>3.16.0</version.mavenPluginTools>
     <version.slf4j>2.0.20</version.slf4j>
     <version.picocli>4.7.7</version.picocli>
-    <version.jline>3.30.17</version.jline>
+    <version.jline>4.7.0</version.jline>
     <version.domtrip>1.8.0</version.domtrip>
     <version.groovy>6.0.0</version.groovy>
   </properties>
@@ -229,7 +234,7 @@
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
-        <version>3.6.2</version>
+        <version>3.6.4</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
@@ -275,7 +280,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.21.0</version>
+        <version>3.22.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -418,12 +423,9 @@
               <rules>
                 <enforceBytecodeVersion>
                   <maxJdkVersion>${maven.compiler.release}</maxJdkVersion>
-                  <includes>
-                    <include>*:*</include>
-                  </includes>
                   <excludes>
                     <exclude>org.jline:jline</exclude>
-                    <exclude>org.kordamp.jarviz:jarviz-core</exclude>
+                    <exclude>org.kordamp.jarviz:jarviz-core:*</exclude>
                   </excludes>
                   <ignoredScopes>
                     <ignoredScope>test</ignoredScope>

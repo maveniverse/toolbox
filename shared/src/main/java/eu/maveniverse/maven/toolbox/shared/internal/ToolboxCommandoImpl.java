@@ -68,16 +68,19 @@ import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -128,7 +131,6 @@ import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmHelper;
 import org.eclipse.aether.spi.connector.layout.RepositoryLayout;
 import org.eclipse.aether.spi.connector.layout.RepositoryLayoutProvider;
 import org.eclipse.aether.transfer.NoRepositoryLayoutException;
-import org.eclipse.aether.util.ChecksumUtils;
 import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.artifact.SubArtifact;
@@ -586,11 +588,11 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         StringBuilder buffer = new StringBuilder(1024);
         for (ArtifactResult artifactResult : dependencyResult.getArtifactResults()) {
             Artifact artifact = artifactResult.getArtifact();
-            if (artifact.getFile() != null) {
+            if (artifact.getPath() != null) {
                 if (!buffer.isEmpty()) {
                     buffer.append(File.pathSeparatorChar);
                 }
-                buffer.append(artifact.getFile().getAbsolutePath());
+                buffer.append(artifact.getPath().toAbsolutePath());
             }
         }
         return buffer.toString();
@@ -725,7 +727,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                     .accept(source.get()
                             .map(a -> {
                                 try {
-                                    if (a.getFile() == null) {
+                                    if (a.getPath() == null) {
                                         ArtifactResult ar = toolboxResolver.resolveArtifact(a);
                                         if (ar.isResolved()) {
                                             return origin(ar.getArtifact(), ar.getRepository());
@@ -880,8 +882,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
 
     @Override
     public Result<Path> localRepository() throws Exception {
-        Result<Path> result =
-                Result.success(session.getLocalRepository().getBasedir().toPath());
+        Result<Path> result = Result.success(session.getLocalRepository().getBasePath());
         result.getData().ifPresent(path -> output.tell(path.toString()));
         return result;
     }
@@ -890,10 +891,14 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<Path> artifactPath(Artifact artifact, RemoteRepository repository) throws Exception {
         Result<Path> result;
         if (repository == null) {
-            result = Result.success(Path.of(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
+            result = Result.success(session.getLocalRepository()
+                    .getBasePath()
+                    .relativize(session.getLocalRepositoryManager().getAbsolutePathForLocalArtifact(artifact)));
         } else {
-            result = Result.success(Path.of(
-                    session.getLocalRepositoryManager().getPathForRemoteArtifact(artifact, repository, "toolbox")));
+            result = Result.success(session.getLocalRepository()
+                    .getBasePath()
+                    .relativize(session.getLocalRepositoryManager()
+                            .getAbsolutePathForRemoteArtifact(artifact, repository, "toolbox")));
         }
         result.getData().ifPresent(path -> output.tell(path.toString()));
         return result;
@@ -903,10 +908,14 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
     public Result<Path> metadataPath(Metadata metadata, RemoteRepository repository) throws Exception {
         Result<Path> result;
         if (repository == null) {
-            result = Result.success(Path.of(session.getLocalRepositoryManager().getPathForLocalMetadata(metadata)));
+            result = Result.success(session.getLocalRepository()
+                    .getBasePath()
+                    .relativize(session.getLocalRepositoryManager().getAbsolutePathForLocalMetadata(metadata)));
         } else {
-            result = Result.success(Path.of(
-                    session.getLocalRepositoryManager().getPathForRemoteMetadata(metadata, repository, "toolbox")));
+            result = Result.success(session.getLocalRepository()
+                    .getBasePath()
+                    .relativize(session.getLocalRepositoryManager()
+                            .getAbsolutePathForRemoteMetadata(metadata, repository, "toolbox")));
         }
         result.getData().ifPresent(path -> output.tell(path.toString()));
         return result;
@@ -1600,7 +1609,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
                             read = fis.read(buf);
                         }
                     }
-                    sha1s.put(target, ChecksumUtils.toHexString(sha1md.digest()));
+                    sha1s.put(target, HexFormat.of().formatHex(sha1md.digest()));
                 } catch (NoSuchAlgorithmException e) {
                     throw new IllegalStateException("SHA1 MessageDigest unavailable", e);
                 }
@@ -1737,11 +1746,13 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         ArrayList<Artifact> result = new ArrayList<>();
         try (SearchBackend backend =
                 toolboxSearchApi.getSmoBackend(context.repositorySystemSession(), remoteRepository)) {
+            String expr = normalizeSearchExpression(expression);
             Query query;
             try {
-                query = toolboxSearchApi.toSmoQuery(new DefaultArtifact(expression));
+                // only a single token may be coordinates (g:a:v...)
+                query = expr.contains(" ") ? query(expr) : toolboxSearchApi.toSmoQuery(new DefaultArtifact(expr));
             } catch (IllegalArgumentException e) {
-                query = query(expression);
+                query = query(expr);
             }
             SearchRequest searchRequest = new SearchRequest(query);
             SearchResponse searchResponse = backend.search(searchRequest);
@@ -1765,6 +1776,29 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
             }
         }
         return Result.success(result);
+    }
+
+    private static final Set<String> SMO_FIELDS = Set.of("g", "a", "v", "l", "p", "c", "fc", "1", "ec", "id", "tags");
+
+    /**
+     * Central search rejects implicit operators (space separated terms) and colons that are not field prefixes,
+     * so {@code g:a} becomes {@code g:.. AND a:..} and bare terms are AND-ed, unless user used operators or quotes.
+     */
+    static String normalizeSearchExpression(String expression) {
+        String expr = requireNonNull(expression, "expression").trim();
+        if (expr.contains("\"")) {
+            return expr;
+        }
+        String[] terms = expr.split("\\s+");
+        if (terms.length > 1) {
+            boolean explicit = Arrays.stream(terms).anyMatch(t -> t.equals("AND") || t.equals("OR") || t.equals("NOT"));
+            return explicit ? expr : String.join(" AND ", terms);
+        }
+        String[] parts = expr.split(":", -1);
+        if (parts.length == 2 && !SMO_FIELDS.contains(parts[0])) {
+            return "g:" + parts[0] + " AND a:" + parts[1];
+        }
+        return expr;
     }
 
     @Override

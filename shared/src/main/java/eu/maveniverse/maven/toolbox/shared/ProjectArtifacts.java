@@ -42,7 +42,7 @@ public final class ProjectArtifacts implements Artifacts.Source {
                                 e.getKey().classifier,
                                 e.getKey().extension,
                                 prototype.getVersion())
-                        .setFile(e.getValue().toFile()));
+                        .setPath(e.getValue()));
     }
 
     private static final class CE {

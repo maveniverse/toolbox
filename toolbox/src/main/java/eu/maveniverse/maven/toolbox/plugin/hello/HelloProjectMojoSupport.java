@@ -49,10 +49,7 @@ public abstract class HelloProjectMojoSupport extends HelloMojoSupport {
                 }
             }
         }
-        return result.setFile(getRootPom()
-                .getParent()
-                .resolve(result.getArtifactId())
-                .resolve("pom.xml")
-                .toFile());
+        return result.setPath(
+                getRootPom().getParent().resolve(result.getArtifactId()).resolve("pom.xml"));
     }
 }

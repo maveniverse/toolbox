@@ -112,7 +112,7 @@ public final class UnpackSink implements Artifacts.Sink {
             if (!writtenPaths.add(target) && !allowRootOverwrite) {
                 throw new IOException("Root overwrite prevented; check mappings");
             }
-            unpack(artifact.getFile().toPath(), target, true);
+            unpack(artifact.getPath(), target, true);
         } else {
             if (failIfUnmatched) {
                 throw new IllegalArgumentException("not matched");

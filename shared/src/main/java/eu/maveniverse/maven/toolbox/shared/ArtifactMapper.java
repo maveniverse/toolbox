@@ -60,7 +60,7 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
                         artifact.getExtension(),
                         artifact.getVersion() + suffix,
                         artifact.getProperties(),
-                        artifact.getFile());
+                        artifact.getPath());
             }
         };
     }
@@ -76,7 +76,7 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
                         artifact.getExtension(),
                         artifact.getBaseVersion(),
                         artifact.getProperties(),
-                        artifact.getFile());
+                        artifact.getPath());
             }
         };
     }
@@ -95,7 +95,7 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
                         artifact.getExtension(),
                         artifact.getBaseVersion() + suffix,
                         artifact.getProperties(),
-                        artifact.getFile());
+                        artifact.getPath());
             }
         };
     }
@@ -111,7 +111,7 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
                         artifact.getExtension(),
                         artifact.getVersion(),
                         artifact.getProperties(),
-                        artifact.getFile());
+                        artifact.getPath());
             }
         };
     }
@@ -131,7 +131,7 @@ public interface ArtifactMapper extends Function<Artifact, Artifact> {
                         artifact.getExtension(),
                         vf.apply(artifact.getVersion()),
                         artifact.getProperties(),
-                        artifact.getFile());
+                        artifact.getPath());
             }
         };
     }

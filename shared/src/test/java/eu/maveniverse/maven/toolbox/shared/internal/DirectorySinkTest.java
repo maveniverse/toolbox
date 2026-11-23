@@ -30,8 +30,7 @@ public class DirectorySinkTest {
             Files.writeString(a1, "one", StandardCharsets.UTF_8);
             Files.writeString(a2, "two", StandardCharsets.UTF_8);
             sink.accept(Arrays.asList(
-                    new DefaultArtifact("g:a1:1").setFile(a1.toFile()),
-                    new DefaultArtifact("g:a2:1").setFile(a2.toFile())));
+                    new DefaultArtifact("g:a1:1").setPath(a1), new DefaultArtifact("g:a2:1").setPath(a2)));
 
             Path a1target = target.resolve("g.a1.jar");
             Path a2target = target.resolve("g.a2.jar");
@@ -50,8 +49,7 @@ public class DirectorySinkTest {
             Files.writeString(a1, "one", StandardCharsets.UTF_8);
             Files.writeString(a2, "two", StandardCharsets.UTF_8);
             sink.accept(Arrays.asList(
-                    new DefaultArtifact("g:a1:1").setFile(a1.toFile()),
-                    new DefaultArtifact("g:a2:1").setFile(a2.toFile())));
+                    new DefaultArtifact("g:a1:1").setPath(a1), new DefaultArtifact("g:a2:1").setPath(a2)));
 
             Path a1target = target.resolve("g/a1/1/a1-1.jar");
             Path a2target = target.resolve("g/a2/1/a2-1.jar");
@@ -81,8 +79,7 @@ public class DirectorySinkTest {
             Files.writeString(a2, "two", StandardCharsets.UTF_8);
             // we do not throw
             sink.accept(Arrays.asList(
-                    new DefaultArtifact("g1:a1:1").setFile(a1.toFile()),
-                    new DefaultArtifact("g2:a1:1").setFile(a2.toFile())));
+                    new DefaultArtifact("g1:a1:1").setPath(a1), new DefaultArtifact("g2:a1:1").setPath(a2)));
         }
     }
 }

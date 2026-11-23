@@ -32,8 +32,7 @@ public final class IndexFileReader implements AutoCloseable {
                 .filter(l -> !l.trim().isEmpty() && !l.startsWith("#"))
                 .map(l -> {
                     String[] parts = l.split(" >> ", -1);
-                    return new DefaultArtifact(parts[0])
-                            .setFile(pathResolver.apply(parts[1]).toFile());
+                    return new DefaultArtifact(parts[0]).setPath(pathResolver.apply(parts[1]));
                 });
     }
 

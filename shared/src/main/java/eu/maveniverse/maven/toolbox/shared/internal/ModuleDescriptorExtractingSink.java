@@ -66,9 +66,8 @@ public final class ModuleDescriptorExtractingSink implements Artifacts.Sink, Dep
 
     @Override
     public void accept(Artifact artifact) throws IOException {
-        if (artifact.getFile() != null) {
-            moduleDescriptors.computeIfAbsent(
-                    artifact, k -> getModuleDescriptor(artifact.getFile().toPath()));
+        if (artifact.getPath() != null) {
+            moduleDescriptors.computeIfAbsent(artifact, k -> getModuleDescriptor(artifact.getPath()));
         }
     }
 

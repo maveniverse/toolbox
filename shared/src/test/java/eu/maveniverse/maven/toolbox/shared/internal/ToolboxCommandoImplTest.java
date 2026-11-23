@@ -38,6 +38,8 @@ public class ToolboxCommandoImplTest {
                 "g:io.cucumber OR a:cucumber-core",
                 ToolboxCommandoImpl.normalizeSearchExpression("g:io.cucumber OR a:cucumber-core"));
         assertEquals("text:\"foo bar\"", ToolboxCommandoImpl.normalizeSearchExpression("text:\"foo bar\""));
+        assertEquals("\"org.example:demo\"", ToolboxCommandoImpl.normalizeSearchExpression("\"org.example:demo\""));
+        assertEquals("tags:sbtplugin", ToolboxCommandoImpl.normalizeSearchExpression("tags:sbtplugin"));
     }
 
     @Disabled("This test does not test anything")

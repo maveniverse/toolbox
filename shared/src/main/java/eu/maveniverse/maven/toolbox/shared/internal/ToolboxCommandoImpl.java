@@ -1778,7 +1778,7 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
         return Result.success(result);
     }
 
-    private static final Set<String> SMO_FIELDS = Set.of("g", "a", "v", "l", "p", "c", "fc", "1", "ec", "id");
+    private static final Set<String> SMO_FIELDS = Set.of("g", "a", "v", "l", "p", "c", "fc", "1", "ec", "id", "tags");
 
     /**
      * Central search rejects implicit operators (space separated terms) and colons that are not field prefixes,
@@ -1786,10 +1786,12 @@ public class ToolboxCommandoImpl implements ToolboxCommando {
      */
     static String normalizeSearchExpression(String expression) {
         String expr = requireNonNull(expression, "expression").trim();
+        if (expr.contains("\"")) {
+            return expr;
+        }
         String[] terms = expr.split("\\s+");
         if (terms.length > 1) {
-            boolean explicit = expr.contains("\"")
-                    || Arrays.stream(terms).anyMatch(t -> t.equals("AND") || t.equals("OR") || t.equals("NOT"));
+            boolean explicit = Arrays.stream(terms).anyMatch(t -> t.equals("AND") || t.equals("OR") || t.equals("NOT"));
             return explicit ? expr : String.join(" AND ", terms);
         }
         String[] parts = expr.split(":", -1);

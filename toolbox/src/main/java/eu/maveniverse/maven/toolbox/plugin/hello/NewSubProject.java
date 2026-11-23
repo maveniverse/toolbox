@@ -45,13 +45,13 @@ public class NewSubProject extends HelloProjectMojoSupport {
     @Override
     protected Result<Boolean> doExecute() throws Exception {
         Artifact subProjectArtifact = toSubProjectArtifact(gav);
-        if (!force && Files.exists(subProjectArtifact.getFile().toPath())) {
+        if (!force && Files.exists(subProjectArtifact.getPath())) {
             throw new IllegalStateException("pom.xml already exists in this directory; use --force to overwrite it");
         }
-        Files.createDirectories(subProjectArtifact.getFile().toPath().getParent());
+        Files.createDirectories(subProjectArtifact.getPath().getParent());
         // create POM from scratch
-        try (ToolboxCommando.EditSession editSession = getToolboxCommando()
-                .createEditSession(subProjectArtifact.getFile().toPath())) {
+        try (ToolboxCommando.EditSession editSession =
+                getToolboxCommando().createEditSession(subProjectArtifact.getPath())) {
             editSession.edit(p -> Files.writeString(
                     p,
                     PomSuppliers.empty400(

@@ -32,6 +32,9 @@ public class ToolboxShellCommandRegistryFactory implements ShellCommandRegistryF
     // shared context for all mvnsh commands
     private final Map<Object, Object> contextMap = Collections.synchronizedMap(new HashMap<>());
 
+    // shortcut: Maven's mvnsh SPI (and picocli-shell-jline3) still use jline3 CommandRegistry; migrate to
+    // org.jline.shell.CommandGroup once ShellCommandRegistryFactory does
+    @SuppressWarnings("deprecation")
     @Override
     public CommandRegistry createShellCommandRegistry(LookupContext lookupContext) {
         Runtimes.INSTANCE.registerRuntime(new StandaloneStaticRuntime());

@@ -252,7 +252,8 @@ public abstract class MojoSupport extends AbstractMojo
             builder.withEffectiveSettingsMixin(proxyMixin);
         }
         if (forceUpdates) {
-            builder.snapshotUpdatePolicy(ContextOverrides.SnapshotUpdatePolicy.ALWAYS);
+            builder.artifactUpdatePolicy(ContextOverrides.UpdatePolicy.ALWAYS);
+            builder.metadataUpdatePolicy(ContextOverrides.UpdatePolicy.ALWAYS);
         }
         return builder.build();
     }
@@ -263,7 +264,8 @@ public abstract class MojoSupport extends AbstractMojo
             builder.withBasedirOverride(cwd);
         }
         if (forceUpdates) {
-            builder.snapshotUpdatePolicy(ContextOverrides.SnapshotUpdatePolicy.ALWAYS);
+            builder.artifactUpdatePolicy(ContextOverrides.UpdatePolicy.ALWAYS);
+            builder.metadataUpdatePolicy(ContextOverrides.UpdatePolicy.ALWAYS);
         }
         return builder.build();
     }

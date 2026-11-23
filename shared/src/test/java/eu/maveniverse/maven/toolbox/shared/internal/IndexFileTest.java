@@ -29,8 +29,7 @@ public class IndexFileTest {
         try (DirectorySink sink = DirectorySink.repository(NopOutput.INSTANCE, target, false)) {
             indexFile = sink.getIndexFile();
             sink.accept(Arrays.asList(
-                    new DefaultArtifact("g:a1:1").setFile(content.toFile()),
-                    new DefaultArtifact("g:a2:1").setFile(content.toFile())));
+                    new DefaultArtifact("g:a1:1").setPath(content), new DefaultArtifact("g:a2:1").setPath(content)));
         }
 
         Assertions.assertTrue(Files.isRegularFile(indexFile));
@@ -53,14 +52,12 @@ public class IndexFileTest {
             indexFile = sink.getIndexFile();
             Assertions.assertFalse(Files.isRegularFile(indexFile));
             sink.accept(Arrays.asList(
-                    new DefaultArtifact("g:a1:1").setFile(content.toFile()),
-                    new DefaultArtifact("g:a2:1").setFile(content.toFile())));
+                    new DefaultArtifact("g:a1:1").setPath(content), new DefaultArtifact("g:a2:1").setPath(content)));
         }
         Assertions.assertTrue(Files.isRegularFile(indexFile));
         try (DirectorySink sink = DirectorySink.repository(NopOutput.INSTANCE, target, false)) {
             sink.accept(Arrays.asList(
-                    new DefaultArtifact("g:a3:1").setFile(content.toFile()),
-                    new DefaultArtifact("g:a4:1").setFile(content.toFile())));
+                    new DefaultArtifact("g:a3:1").setPath(content), new DefaultArtifact("g:a4:1").setPath(content)));
         }
         Assertions.assertTrue(Files.isRegularFile(indexFile));
 
@@ -80,14 +77,12 @@ public class IndexFileTest {
             indexFile = sink.getIndexFile();
             Assertions.assertFalse(Files.isRegularFile(indexFile));
             sink.accept(Arrays.asList(
-                    new DefaultArtifact("g:a1:1").setFile(content.toFile()),
-                    new DefaultArtifact("g:a2:1").setFile(content.toFile())));
+                    new DefaultArtifact("g:a1:1").setPath(content), new DefaultArtifact("g:a2:1").setPath(content)));
         }
         Assertions.assertTrue(Files.isRegularFile(indexFile));
         try (DirectorySink sink = DirectorySink.repository(NopOutput.INSTANCE, target, false)) {
             sink.accept(Arrays.asList(
-                    new DefaultArtifact("g:a3:1").setFile(content.toFile()),
-                    new DefaultArtifact("g:a4:1").setFile(content.toFile())));
+                    new DefaultArtifact("g:a3:1").setPath(content), new DefaultArtifact("g:a4:1").setPath(content)));
             sink.cleanup(new IOException("boo"));
         }
         Assertions.assertTrue(Files.isRegularFile(indexFile));

@@ -58,7 +58,7 @@ public class NewProject extends HelloMojoSupport {
         Artifact projectArtifact = toRootProjectArtifact(gav);
         Artifact parentArtifact = toParentArtifact(parent);
         try (ToolboxCommando.EditSession editSession =
-                getToolboxCommando().createEditSession(projectArtifact.getFile().toPath())) {
+                getToolboxCommando().createEditSession(projectArtifact.getPath())) {
             // "reset" POM (or just one from scratch)
             editSession.edit(p -> {
                 Files.writeString(

@@ -52,19 +52,19 @@ public class ArtifactSinksTest {
             artifactSink = ArtifactSinks.build(properties, tc, false, "install()");
             assertInstanceOf(InstallingSink.class, artifactSink);
             assertEquals(
-                    ((InstallingSink) artifactSink).getLocalRepository().getBasedir(),
-                    context.repositorySystemSession().getLocalRepository().getBasedir());
+                    ((InstallingSink) artifactSink).getLocalRepository().getBasePath(),
+                    context.repositorySystemSession().getLocalRepository().getBasePath());
 
             artifactSink = ArtifactSinks.build(properties, tc, false, "install(some/path)");
             assertInstanceOf(InstallingSink.class, artifactSink);
             assertEquals(
-                    ((InstallingSink) artifactSink).getLocalRepository().getBasedir(),
-                    context.basedir().resolve("some/path").toFile());
+                    ((InstallingSink) artifactSink).getLocalRepository().getBasePath(),
+                    context.basedir().resolve("some/path"));
 
             artifactSink = ArtifactSinks.build(properties, tc, false, "deploy(test::https://somewhere.com)");
             assertInstanceOf(DeployingSink.class, artifactSink);
             assertEquals(
-                    ((DeployingSink) artifactSink).getRemoteRepository(),
+                    ((DeployingSink) artifactSink).getRemoteRepository().toBareRemoteRepository(),
                     new RemoteRepository.Builder("test", "default", "https://somewhere.com").build());
 
             artifactSink = ArtifactSinks.build(properties, tc, false, "unpack(some/path)");

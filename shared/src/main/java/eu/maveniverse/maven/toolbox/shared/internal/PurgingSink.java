@@ -140,12 +140,10 @@ public final class PurgingSink implements Artifacts.Sink {
     public void accept(Artifact artifact) {
         requireNonNull(artifact, "artifact");
         if (artifactMatcher.test(artifact)) {
-            requireNonNull(artifact.getFile(), "unresolved artifact");
+            requireNonNull(artifact.getPath(), "unresolved artifact");
             if (enforceOrigin
-                    && !artifact.getFile()
-                            .toPath()
-                            .startsWith(
-                                    session.getLocalRepository().getBasedir().toPath())) {
+                    && !artifact.getPath()
+                            .startsWith(session.getLocalRepository().getBasePath())) {
                 throw new IllegalArgumentException("artifact does not originate from local repository to be purged");
             }
             output.chatter("Accepted artifact {}", artifact);
@@ -195,34 +193,23 @@ public final class PurgingSink implements Artifacts.Sink {
             return true;
         }
         int deleted = 0;
-        Path path = session.getLocalRepository()
-                .getBasedir()
-                .toPath()
-                .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact));
+        Path path = session.getLocalRepositoryManager().getAbsolutePathForLocalArtifact(artifact);
         if (Files.isDirectory(path.getParent())) {
             unregisterArtifact(path);
             resetMetadata(
                     path.getParent(),
                     artifact.isSnapshot() && Objects.equals(artifact.getVersion(), artifact.getBaseVersion()));
-            deleted = deleteFileAndSubs(session.getLocalRepository()
-                    .getBasedir()
-                    .toPath()
-                    .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
+            deleted = deleteFileAndSubs(session.getLocalRepositoryManager().getAbsolutePathForLocalArtifact(artifact));
         }
         for (RemoteRepository repository : remoteRepositories) {
-            path = session.getLocalRepository()
-                    .getBasedir()
-                    .toPath()
-                    .resolve(session.getLocalRepositoryManager().getPathForRemoteArtifact(artifact, repository, null));
+            path = session.getLocalRepositoryManager().getAbsolutePathForRemoteArtifact(artifact, repository, null);
             if (Files.isDirectory(path.getParent())) {
                 unregisterArtifact(path);
                 resetMetadata(
                         path.getParent(),
                         artifact.isSnapshot() && Objects.equals(artifact.getVersion(), artifact.getBaseVersion()));
-                deleted += deleteFileAndSubs(session.getLocalRepository()
-                        .getBasedir()
-                        .toPath()
-                        .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact)));
+                deleted += deleteFileAndSubs(
+                        session.getLocalRepositoryManager().getAbsolutePathForLocalArtifact(artifact));
             }
         }
         return deleted != 0;
@@ -234,10 +221,8 @@ public final class PurgingSink implements Artifacts.Sink {
         if (dryRun) {
             return true;
         }
-        return deleteDirectory(session.getLocalRepository()
-                        .getBasedir()
-                        .toPath()
-                        .resolve(session.getLocalRepositoryManager().getPathForLocalArtifact(artifact))
+        return deleteDirectory(session.getLocalRepositoryManager()
+                        .getAbsolutePathForLocalArtifact(artifact)
                         .getParent())
                 != 0;
     }

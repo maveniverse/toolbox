@@ -127,7 +127,7 @@ public final class ArtifactSources {
                 }
                 case "sessionLocalRepository": {
                     params.add(LocalRepositorySource.local(
-                            tc.session().getLocalRepository().getBasedir().toPath()));
+                            tc.session().getLocalRepository().getBasePath()));
                     break;
                 }
                 case "localRepository": {

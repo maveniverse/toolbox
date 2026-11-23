@@ -48,6 +48,7 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
+import org.eclipse.aether.collection.DependencySelector;
 import org.eclipse.aether.graph.DefaultDependencyNode;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
@@ -626,8 +627,11 @@ public class ToolboxResolverImpl implements ToolboxResolver {
 
         DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(this.session);
         session.setConfigProperty(DependencyManagerUtils.CONFIG_PROP_VERBOSE, true);
-        session.setDependencySelector(new DirtyTreeDependencySelector(
-                session.getDependencySelector(), new ScopeDependencySelector(JavaScopes.TEST), dirtyLevelPast));
+        // replacement needs ScopeManager + ResolutionScope, which would change dirty-tree semantics
+        @SuppressWarnings("deprecation")
+        DependencySelector noTransitiveTest = new ScopeDependencySelector(JavaScopes.TEST);
+        session.setDependencySelector(
+                new DirtyTreeDependencySelector(session.getDependencySelector(), noTransitiveTest, dirtyLevelPast));
         if (!conflictResolve) {
             session.setDependencyGraphTransformer(null);
         }
@@ -913,11 +917,8 @@ public class ToolboxResolverImpl implements ToolboxResolver {
         List<MetadataResult> results = repositorySystem.resolveMetadata(session, requests);
         for (MetadataResult res : results) {
             org.eclipse.aether.metadata.Metadata metadata = res.getMetadata();
-            if (metadata != null
-                    && metadata.getFile() != null
-                    && metadata.getFile().isFile()) {
-                try (InputStream inputStream =
-                        Files.newInputStream(metadata.getFile().toPath())) {
+            if (metadata != null && metadata.getPath() != null && Files.isRegularFile(metadata.getPath())) {
+                try (InputStream inputStream = Files.newInputStream(metadata.getPath())) {
                     org.apache.maven.artifact.repository.metadata.Metadata pluginGroupMetadata =
                             new MetadataXpp3Reader().read(inputStream, false);
                     List<org.apache.maven.artifact.repository.metadata.Plugin> plugins =

@@ -111,7 +111,7 @@ public final class LocalRepositorySource implements Artifacts.Source {
             }
 
             if (g != null && a != null && v != null) {
-                return new DefaultArtifact(g, a, null, "pom", v).setFile(file.toFile());
+                return new DefaultArtifact(g, a, null, "pom", v).setPath(file);
             }
         } catch (IOException | XmlPullParserException e) {
             logger.info("Could not parse POM at {}", file, e);
@@ -122,19 +122,19 @@ public final class LocalRepositorySource implements Artifacts.Source {
     private Stream<Artifact> collectPomArtifacts(Artifact pom) {
         ArrayList<Artifact> result = new ArrayList<>();
         result.add(pom);
-        String pomFileName = pom.getFile().getName();
-        String fileNamePrefix = pomFileName.substring(0, pom.getFile().getName().length() - 4);
-        try (Stream<Path> files = Files.list(pom.getFile().toPath().getParent())) {
+        String pomFileName = pom.getPath().getFileName().toString();
+        String fileNamePrefix = pomFileName.substring(0, pomFileName.length() - 4);
+        try (Stream<Path> files = Files.list(pom.getPath().getParent())) {
             files.filter(notItselfAndNotChecksum(pomFileName, fileNamePrefix)).forEach(p -> {
                 String filename = p.getFileName().toString().substring(fileNamePrefix.length());
                 if (filename.startsWith(".")) {
                     // no classifier, only ext
-                    result.add(new SubArtifact(pom, null, filename.substring(1)).setFile(p.toFile()));
+                    result.add(new SubArtifact(pom, null, filename.substring(1)).setPath(p));
                 } else if (filename.startsWith("-")) {
                     // classifier + ext // assuming classifier have no dot!
                     String classifier = filename.substring(1, filename.indexOf("."));
                     String extension = filename.substring(filename.indexOf(".") + 1);
-                    result.add(new SubArtifact(pom, classifier, extension).setFile(p.toFile()));
+                    result.add(new SubArtifact(pom, classifier, extension).setPath(p));
                 }
             });
         } catch (IOException e) {

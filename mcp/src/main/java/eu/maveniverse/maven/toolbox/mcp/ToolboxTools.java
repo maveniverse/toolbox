@@ -24,6 +24,7 @@ import eu.maveniverse.maven.toolbox.shared.output.Output;
 import eu.maveniverse.maven.toolbox.shared.output.PrintStreamOutput;
 import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolArg;
+import io.quarkiverse.mcp.server.ToolCallException;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
@@ -54,7 +55,7 @@ public class ToolboxTools {
         try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
             toolboxCommando.exists(ContextOverrides.CENTRAL, gav, true, true, true, true, false, null);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -69,7 +70,7 @@ public class ToolboxTools {
                     ArtifactVersionMatcher.any(),
                     ArtifactVersionSelector.contextualSnapshotsAndPreviews(ArtifactVersionSelector.last()));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -84,7 +85,7 @@ public class ToolboxTools {
                     ArtifactVersionMatcher.any(),
                     ArtifactVersionSelector.contextualSnapshotsAndPreviews(ArtifactVersionSelector.major()));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -97,7 +98,7 @@ public class ToolboxTools {
                     ArtifactSources.gavArtifactSource(gav),
                     ArtifactSinks.statArtifactSink(0, true, true, toolboxCommando.output(), toolboxCommando));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -112,7 +113,7 @@ public class ToolboxTools {
                             ArtifactSources.gavArtifactSource(gav), toolboxCommando, ResolutionScope.RUNTIME),
                     ArtifactSinks.statArtifactSink(0, true, true, toolboxCommando.output(), toolboxCommando));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -128,20 +129,24 @@ public class ToolboxTools {
                     true,
                     DependencyMatcher.any());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
 
-    @Tool(description = "Search for Maven artifacts by expression (supports query syntax like groupId:artifactId).")
+    @Tool(
+            description =
+                    "Search Maven Central for artifacts. Accepts groupId:artifactId, groupId:artifactId:version, a plain term, or field queries (g: groupId, a: artifactId, v: version, p: packaging, l: classifier, c: class name, fc: fully qualified class name) combined with AND/OR.")
     String artifactSearch(
-            @ToolArg(description = "Search expression (e.g., 'g:org.springframework a:spring-core')")
+            @ToolArg(
+                            description =
+                                    "Search expression, e.g. 'org.springframework:spring-core', 'g:org.springframework AND a:spring-core' or 'spring-core'")
                     String expression) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
             toolboxCommando.search(ContextOverrides.CENTRAL, expression);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -152,7 +157,7 @@ public class ToolboxTools {
         try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
             toolboxCommando.identify(ContextOverrides.CENTRAL, List.of(sha1), true);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -163,7 +168,7 @@ public class ToolboxTools {
         try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
             toolboxCommando.list(ContextOverrides.CENTRAL, gavoid, null, null);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -176,7 +181,7 @@ public class ToolboxTools {
         try (ToolboxCommandoImpl toolboxCommando = createToolboxCommando(outputStream)) {
             toolboxCommando.verify(ContextOverrides.CENTRAL, gav, sha1, null);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -195,7 +200,7 @@ public class ToolboxTools {
                     ArtifactVersionSelector.contextualSnapshotsAndPreviews(ArtifactVersionSelector.last()),
                     null);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -208,7 +213,7 @@ public class ToolboxTools {
                     ResolutionScope.RUNTIME,
                     List.of(ResolutionRoot.ofLoaded(new DefaultArtifact(gav)).build()));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -225,7 +230,7 @@ public class ToolboxTools {
                     ResolutionRoot.ofLoaded(new DefaultArtifact(gav2)).build(),
                     true);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -243,7 +248,7 @@ public class ToolboxTools {
                     ArtifactKeyFactory.ga(),
                     Map.of());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -261,7 +266,7 @@ public class ToolboxTools {
                     true,
                     DependencyMatcher.any());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }
@@ -275,7 +280,7 @@ public class ToolboxTools {
                     "artifact",
                     ResolutionRoot.ofLoaded(new DefaultArtifact(gav)).build());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ToolCallException(e.toString(), e);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
     }

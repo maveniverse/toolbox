@@ -58,7 +58,18 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
 
     protected <T extends InputLocationTracker> Predicate<T> definedInProject(Model model) {
         requireNonNull(model, "model");
-        String modelId = model.getGroupId() + ":" + model.getArtifactId() + ":" + model.getVersion();
+        // "file" model: groupId/version may be inherited from parent; mirrors Maven ModelProblemUtils.toId(Model)
+        String groupId = model.getGroupId();
+        String version = model.getVersion();
+        if (model.getParent() != null) {
+            if (groupId == null) {
+                groupId = model.getParent().getGroupId();
+            }
+            if (version == null) {
+                version = model.getParent().getVersion();
+            }
+        }
+        String modelId = groupId + ":" + model.getArtifactId() + ":" + version;
         return tracker -> {
             if (tracker != null) {
                 InputLocation location = tracker.getLocation("");

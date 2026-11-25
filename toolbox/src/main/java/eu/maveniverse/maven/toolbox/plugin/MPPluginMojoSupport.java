@@ -52,9 +52,24 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
     @Parameter(property = "pluginKey")
     private String pluginKey;
 
-    protected <T extends InputLocationTracker> Predicate<T> definedInModel(Model model) {
+    protected <T extends InputLocationTracker> Predicate<T> definedInCurrentProject() {
+        return definedInProject(mavenProject.getOriginalModel()); // "file" model, due possible placeholder substitution
+    }
+
+    protected <T extends InputLocationTracker> Predicate<T> definedInProject(Model model) {
         requireNonNull(model, "model");
-        String modelId = model.getGroupId() + ":" + model.getArtifactId() + ":" + model.getVersion();
+        // "file" model: groupId/version may be inherited from parent; mirrors Maven ModelProblemUtils.toId(Model)
+        String groupId = model.getGroupId();
+        String version = model.getVersion();
+        if (model.getParent() != null) {
+            if (groupId == null) {
+                groupId = model.getParent().getGroupId();
+            }
+            if (version == null) {
+                version = model.getParent().getVersion();
+            }
+        }
+        String modelId = groupId + ":" + model.getArtifactId() + ":" + version;
         return tracker -> {
             if (tracker != null) {
                 InputLocation location = tracker.getLocation("");
@@ -220,7 +235,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
         return selectExtractResolutionRoots(
                 projectBuildBaseSelector(),
                 buildManagedPluginsExtractor(),
-                definedInModel(mavenProject.getModel()),
+                definedInCurrentProject(),
                 pluginToResolutionRoot(toolboxCommando),
                 mavenProject);
     }
@@ -230,7 +245,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
         return selectExtractResolutionRoots(
                 projectBuildBaseSelector(),
                 buildPluginsExtractor(),
-                definedInModel(mavenProject.getModel()),
+                definedInCurrentProject(),
                 pluginToResolutionRoot(toolboxCommando),
                 mavenProject);
     }
@@ -240,7 +255,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
         return selectExtractResolutionRoots(
                 projectBuildSelector(),
                 buildExtensionsExtractor(),
-                definedInModel(mavenProject.getModel()),
+                definedInCurrentProject(),
                 extensionToResolutionRoot(toolboxCommando),
                 mavenProject);
     }
@@ -280,7 +295,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
         return selectExtractResolutionRoots(
                 profileBuildBaseSelector(profileId),
                 buildManagedPluginsExtractor(),
-                definedInModel(mavenProject.getModel()),
+                definedInCurrentProject(),
                 pluginToResolutionRoot(toolboxCommando),
                 mavenProject);
     }
@@ -290,7 +305,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
         return selectExtractResolutionRoots(
                 profileBuildBaseSelector(profileId),
                 buildPluginsExtractor(),
-                definedInModel(mavenProject.getModel()),
+                definedInCurrentProject(),
                 pluginToResolutionRoot(toolboxCommando),
                 mavenProject);
     }
@@ -336,8 +351,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
 
     private Map<String, List<ResolutionRoot>> perScope(
             ToolboxCommando toolboxCommando, Function<BuildBase, List<Plugin>> extractor, boolean profiles) {
-        Model model = mavenProject.getModel();
-        Predicate<Plugin> definedInModel = definedInModel(model);
+        Predicate<Plugin> definedInModel = definedInCurrentProject();
         Function<Plugin, ResolutionRoot> transformer = pluginToResolutionRoot(toolboxCommando);
         Map<String, List<ResolutionRoot>> result = new LinkedHashMap<>();
         if (!profiles) {
@@ -352,6 +366,7 @@ public abstract class MPPluginMojoSupport extends MPMojoSupport {
         // The effective main build has active profile plugins and property overrides merged in. A plugin whose
         // version comes from a profile must not be updated from that version in the main build: use the main
         // build's own declared version (from the raw model) instead, or drop it if main does not declare one.
+        Model model = mavenProject.getModel();
         Set<String> profileVersionLocations = new HashSet<>();
         for (Profile profile : model.getProfiles()) {
             for (Function<BuildBase, List<Plugin>> e :
